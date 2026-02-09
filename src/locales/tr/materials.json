@@ -1,0 +1,50 @@
+{
+  "title": "Malzeme Listesi",
+  "list": {
+    "addButton": "Yeni Malzeme Ekle",
+    "searchPlaceholder": "Kod veya isim ile ara...",
+    "noMaterials": "Henüz malzeme eklenmemiş.",
+    "columns": {
+      "code": "Kod",
+      "name": "Malzeme Adı",
+      "category": "Kategori",
+      "unit": "Birim",
+      "status": "Durum"
+    }
+  },
+  "form": {
+    "createTitle": "Yeni Malzeme",
+    "editTitle": "Malzeme Düzenle",
+    "fields": {
+      "code": "Malzeme Kodu",
+      "name": "Malzeme Adı",
+      "category": "Kategori",
+      "unit": "Birim",
+      "isActive": "Aktif"
+    },
+    "placeholders": {
+      "code": "Örn: DED-001",
+      "name": "Örn: Optik Duman Dedektörü",
+      "category": "Kategori seçin"
+    }
+  },
+  "categories": {
+    "dedektor": "Dedektör",
+    "siren": "Siren",
+    "panel": "Panel",
+    "buton": "Buton",
+    "kablo": "Kablo",
+    "aksesuar": "Aksesuar",
+    "kamera": "Kamera",
+    "diger": "Diğer"
+  },
+  "units": {
+    "adet": "Adet",
+    "metre": "Metre",
+    "paket": "Paket"
+  },
+  "status": {
+    "active": "Aktif",
+    "inactive": "Pasif"
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "list": {
+    "title": "İş Emirleri",
+    "searchPlaceholder": "Müşteri ara...",
+    "addButton": "Yeni İş Emri",
+    "columns": {
+      "customer": "Müşteri",
+      "title": "Başlık",
+      "type": "Tip",
+      "status": "Durum",
+      "priority": "Öncelik",
+      "scheduledDate": "Planlanan Tarih"
+    },
+    "empty": {
+      "title": "İş emri bulunamadı",
+      "description": "Filtreleri değiştirin veya yeni iş emri oluşturun",
+      "action": "Yeni İş Emri"
+    },
+    "filters": {
+      "all": "Tümü",
+      "type": "Tip",
+      "workType": "İş Tipi",
+      "allTypes": "Tüm Tipler",
+      "status": "Durum",
+      "allStatuses": "Tüm Durumlar",
+      "dateRange": "Tarih Aralığı",
+      "statusPlaceholder": "Durum Filtresi",
+      "typePlaceholder": "Tip Filtresi"
+    },
+    "columns": {
+      "customer": "Müşteri",
+      "title": "Başlık",
+      "type": "Tip",
+      "status": "Durum",
+      "priority": "Öncelik",
+      "scheduledDate": "Planlanan Tarih"
+    }
+  },
+  "detail": {
+    "title": "İş Emri Detayı",
+    "errorTitle": "Hata",
+    "notFound": "İş emri bulunamadı.",
+    "customerInfo": "Müşteri Bilgileri",
+    "siteInfo": "Lokasyon Bilgisi",
+    "companyInfo": "Firma",
+    "materialsUsed": "Kullanılan Malzemeler",
+    "customer": "Müşteri",
+    "details": "Detaylar",
+    "fields": {
+      "customer": "Müşteri",
+      "phone": "Telefon",
+      "address": "Adres",
+      "type": "Tip",
+      "status": "Durum",
+      "priority": "Öncelik",
+      "description": "Açıklama",
+      "panelNumber": "Panel No",
+      "materials": "Malzemeler",
+      "amount": "Tutar",
+      "assignedTo": "Atanan",
+      "scheduledDate": "Planlanan Tarih",
+      "scheduledTime": "Planlanan Saat",
+      "createdAt": "Oluşturulma",
+      "completedAt": "Tamamlanma",
+      "cancelledAt": "İptal",
+      "notes": "Notlar"
+    },
+    "statusModal": {
+      "title": "Durum Güncelle"
+    },
+    "noDescription": "Açıklama eklenmemiş",
+    "noMaterials": "Malzeme bilgisi yok",
+    "noNotes": "Not yok",
+    "history": "İş Geçmişi"
+  },
+  "form": {
+    "addTitle": "Yeni İş Emri",
+    "editTitle": "İş Emri Düzenle",
+    "customerNotFound": "Müşteri bulunamadı.",
+    "sections": {
+      "customerSelection": "Müşteri Seçimi",
+      "customerInfo": "Müşteri ve Lokasyon",
+      "workInfo": "İş Bilgileri",
+      "materials": "Kullanılan Malzemeler",
+      "workers": "Personel Atama",
+      "notes": "Dahili Notlar"
+    },
+    "fields": {
+      "customer": "Müşteri",
+      "site": "Lokasyon",
+      "selectCustomer": "Müşteri seçin",
+      "selectSite": "Lokasyon seçin",
+      "workType": "İş Tipi",
+      "workTypeOther": "Diğer İş Tipi",
+      "priority": "Öncelik",
+      "scheduledDate": "Planlanan Tarih",
+      "scheduledTime": "Planlanan Saat",
+      "assignedTo": "Atanan Personel",
+      "formNo": "Form No",
+      "description": "Açıklama",
+      "amount": "Tutar",
+      "quantity": "Miktar",
+      "title": "Başlık",
+      "notes": "Notlar"
+    },
+    "placeholders": {
+      "selectCustomer": "Müşteri seçin",
+      "searchCustomer": "Müşteri ara...",
+      "selectSite": "Lokasyon seçin",
+      "workTypeOther": "İş tipini belirtin",
+      "formNo": "Örn: 12345",
+      "description": "Yapılacak işin detayları",
+      "notes": "Sadece personelin göreceği notlar"
+    },
+    "success": {
+      "created": "İş emri başarıyla oluşturuldu",
+      "updated": "İş emri başarıyla güncellendi"
+    },
+    "addNewCustomer": "Yeni müşteri ekle",
+    "customerSelect": {
+      "noResults": "Müşteri bulunamadı",
+      "addNew": "Yeni müşteri ekle"
+    },
+    "buttons": {
+      "addCustomer": "Yeni Müşteri Ekle",
+      "addSite": "Yeni Lokasyon Ekle",
+      "addAccountNo": "Hesap No Ekle",
+      "changeCustomer": "Değiştir"
+    }
+  },
+  "common": {
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "confirm": "Onayla",
+    "create": "Oluştur",
+    "backToList": "Listeye Dön"
+  },
+  "types": {
+    "service": "Servis",
+    "installation": "Montaj",
+    "survey": "Keşif",
+    "maintenance": "Bakım",
+    "other": "Diğer"
+  },
+  "statuses": {
+    "pending": "Bekliyor",
+    "scheduled": "Planlandı",
+    "inProgress": "Devam Ediyor",
+    "in_progress": "Devam Ediyor",
+    "completed": "Tamamlandı",
+    "cancelled": "İptal Edildi"
+  },
+  "priorities": {
+    "low": "Düşük",
+    "normal": "Normal",
+    "high": "Yüksek",
+    "urgent": "Acil"
+  },
+  "actions": {
+    "start": "İşe Başla",
+    "complete": "Tamamla",
+    "cancel": "İptal Et",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "viewCustomer": "Müşteriyi Görüntüle"
+  },
+  "statusChange": {
+    "startConfirm": "Bu işe başlamak istediğinizden emin misiniz?",
+    "completeConfirm": "Bu işi tamamlamak istediğinizden emin misiniz?",
+    "cancelConfirm": "Bu işi iptal etmek istediğinizden emin misiniz?",
+    "started": "İş başlatıldı",
+    "completed": "İş tamamlandı",
+    "cancelled": "İş iptal edildi"
+  },
+  "delete": {
+    "title": "İş Emri Sil",
+    "message": "Bu iş emrini silmek istediğinizden emin misiniz?",
+    "warning": "Bu işlem geri alınamaz.",
+    "success": "İş emri başarıyla silindi",
+    "permissionDenied": "İş emri sadece yönetici (admin) hesabı tarafından silinebilir. Hesabınızın rolünü kontrol edin."
+  },
+  "validation": {
+    "fillRequired": "Lütfen zorunlu alanları kontrol edin (müşteri/lokasyon seçimi gerekli).",
+    "accountNoRequired": "Bu iş tipi için hesap numarası gerekli",
+    "accountNoRequiredHint": "Bu iş tipini kaydetmek için hesap numarası girilmelidir.",
+    "siteRequired": "Lokasyon seçimi zorunludur",
+    "assignedToMin": "En az 1 personel seçin",
+    "assignedToMax": "En fazla 3 personel seçilebilir",
+    "workTypeOtherRequired": "Diğer iş tipi belirtilmelidir"
+  },
+  "warnings": {
+    "montajNoAccountNo": "Montaj için hesap numarası girilmedi. Sonra eklenebilir.",
+    "montajNoAccountNoHint": "Montaj sonrası alarm kontrol merkezinden alınan hesap numarası eklenebilir.",
+    "installationNoAccountNo": "Montaj için hesap numarası girilmedi. Sonra eklenebilir.",
+    "installationNoAccountNoHint": "Hesap numarası olmadan devam edebilirsiniz, ancak daha sonra eklemeniz önerilir."
+  }
+}

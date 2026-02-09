@@ -1,0 +1,83 @@
+{
+  "title": "SIM Kart Yönetimi",
+  "list": {
+    "title": "SIM Kart Listesi",
+    "empty": {
+      "title": "SIM Kart Bulunamadı",
+      "description": "Henüz sisteme kayıtlı bir SIM kart bulunmuyor."
+    },
+    "columns": {
+      "phoneNumber": "Hat No",
+      "imsi": "IMSI",
+      "iccid": "GPRS Seri No",
+      "operator": "Operatör",
+      "capacity": "Kapasite",
+      "accountNo": "Abone No",
+      "status": "Durum",
+      "customer": "Müşteri",
+      "site": "Lokasyon",
+      "costPrice": "Maliyet",
+      "salePrice": "Satış Fiyatı",
+      "activationDate": "Aktivasyon Tarihi"
+    },
+    "filters": {
+      "all": "Tümü",
+      "available": "Boşta",
+      "active": "Aktif",
+      "inactive": "İnaktif",
+      "sold": "Satıldı"
+    }
+  },
+  "status": {
+    "available": "Boşta",
+    "active": "Aktif",
+    "inactive": "İnaktif",
+    "sold": "Satıldı"
+  },
+  "operators": {
+    "TURKCELL": "Turkcell",
+    "VODAFONE": "Vodafone",
+    "TURK_TELEKOM": "Türk Telekom"
+  },
+  "actions": {
+    "add": "Yeni SIM Kart Ekle",
+    "import": "Excel'den Yükle",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "activate": "Aktifleştir",
+    "deactivate": "İnaktife Çek",
+    "makeAvailable": "Boşa Çıkar"
+  },
+  "form": {
+    "addTitle": "Yeni SIM Kart",
+    "editTitle": "SIM Kart Düzenle",
+    "phoneNumber": "Hat Numarası",
+    "imsi": "IMSI Numarası",
+    "iccid": "GPRS Seri No (EBS)",
+    "operator": "Operatör",
+    "capacity": "Paket Kapasitesi",
+    "accountNo": "AİM Abone No",
+    "costPrice": "Aylık Maliyet",
+    "salePrice": "Aylık Satış Fiyatı",
+    "notes": "Notlar",
+    "validation": {
+      "phoneNumberRequired": "Hat numarası zorunludur",
+      "operatorRequired": "Operatör seçimi zorunludur"
+    }
+  },
+  "history": {
+    "title": "İşlem Geçmişi",
+    "action": "İşlem",
+    "date": "Tarih",
+    "user": "Kullanıcı",
+    "statusChange": "Durum Değişikliği",
+    "assignment": "Müşteri Ataması",
+    "import": "Sisteme Giriş"
+  },
+  "stats": {
+    "total": "Toplam Hat",
+    "available": "Boştaki Hatlar",
+    "active": "Aktif Hatlar",
+    "monthlyProfit": "Tahmini Aylık Kar"
+  }
+}

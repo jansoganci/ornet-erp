@@ -1,0 +1,260 @@
+{
+  "list": {
+    "title": "Abonelikler",
+    "searchPlaceholder": "Müşteri, lokasyon veya hesap no ara...",
+    "addButton": "Yeni Abonelik",
+    "empty": {
+      "title": "Henüz abonelik yok",
+      "description": "Yeni bir abonelik oluşturarak başlayın."
+    },
+    "columns": {
+      "customer": "Müşteri",
+      "site": "Lokasyon",
+      "accountNo": "Hesap No",
+      "type": "Tip",
+      "serviceType": "Hizmet Türü",
+      "monthly": "Aylık",
+      "status": "Durum"
+    }
+  },
+  "detail": {
+    "title": "Abonelik Detayı",
+    "sections": {
+      "customerSite": "Müşteri & Lokasyon",
+      "payments": "Ödeme Takvimi",
+      "pricing": "Fiyatlandırma",
+      "paymentMethod": "Ödeme Yöntemi",
+      "actions": "Aksiyonlar",
+      "assignment": "Atama",
+      "notes": "Notlar"
+    },
+    "fields": {
+      "subtotal": "Ara Toplam",
+      "vatAmount": "KDV",
+      "totalAmount": "Toplam",
+      "cost": "Maliyet",
+      "profit": "Kâr",
+      "startDate": "Başlangıç Tarihi",
+      "endDate": "Bitiş Tarihi",
+      "billingDay": "Fatura Günü",
+      "soldBy": "Satan Kişi",
+      "managedBy": "Sorumlu Kişi",
+      "createdBy": "Oluşturan",
+      "setupNotes": "Kurulum Notları",
+      "pauseReason": "Duraklatma Sebebi",
+      "cancelReason": "İptal Sebebi",
+      "serviceType": "Hizmet Türü",
+      "billingFrequency": "Ödeme Sıklığı",
+      "officialInvoice": "Fatura",
+      "cashCollector": "Tahsil eden"
+    },
+    "officialInvoiceResmi": "Resmi",
+    "officialInvoiceGayri": "Gayri resmi",
+    "noDescription": "Açıklama yok",
+    "noNotes": "Not yok"
+  },
+  "form": {
+    "addTitle": "Yeni Abonelik",
+    "editTitle": "Abonelik Düzenle",
+    "sections": {
+      "customer": "Müşteri & Lokasyon",
+      "details": "Abonelik Detayları",
+      "pricing": "Fiyatlandırma",
+      "payment": "Ödeme Bilgileri",
+      "assignment": "Atama",
+      "notes": "Notlar"
+    },
+    "fields": {
+      "site": "Lokasyon",
+      "subscriptionType": "Abonelik Tipi",
+      "startDate": "Başlangıç Tarihi",
+      "billingDay": "Fatura Günü",
+      "basePrice": "Baz Fiyat",
+      "smsFee": "SMS Ücreti",
+      "lineFee": "Hat Ücreti",
+      "vatRate": "KDV Oranı (%)",
+      "cost": "Maliyet",
+      "currency": "Para Birimi",
+      "paymentMethod": "Ödeme Yöntemi",
+      "soldBy": "Satan Kişi",
+      "managedBy": "Sorumlu Kişi",
+      "notes": "Notlar",
+      "setupNotes": "Kurulum Notları",
+      "serviceType": "Hizmet Türü",
+      "billingFrequency": "Ödeme Sıklığı",
+      "monthly": "Aylık",
+      "yearly": "Yıllık",
+      "officialInvoice": "Resmi fatura (Paraşüt'e gönderilir)",
+      "cardBankName": "Banka Adı",
+      "cardLast4": "Son 4 Hane",
+      "cashCollector": "Tahsil Eden Kişi"
+    },
+    "placeholders": {
+      "selectSite": "Lokasyon seçin...",
+      "selectType": "Abonelik tipi seçin...",
+      "selectPaymentMethod": "Ödeme yöntemi seçin...",
+      "selectPerson": "Kişi seçin...",
+      "selectServiceType": "Hizmet türü seçin...",
+      "notes": "Abonelik hakkında notlar...",
+      "setupNotes": "Kurulum detayları, ekipman notları..."
+    },
+    "success": {
+      "created": "Abonelik başarıyla oluşturuldu",
+      "updated": "Abonelik başarıyla güncellendi"
+    }
+  },
+  "types": {
+    "recurring_card": "Kart (Otomatik)",
+    "manual_cash": "Nakit",
+    "manual_bank": "Banka Transferi",
+    "annual": "Yıllık",
+    "internet_only": "Sadece İnternet"
+  },
+  "serviceTypes": {
+    "alarm_only": "Sadece alarm",
+    "camera_only": "Sadece kamera",
+    "internet_only": "Sadece internet",
+    "alarm_camera": "Alarm + kamera",
+    "alarm_camera_internet": "Alarm + kamera + internet"
+  },
+  "statuses": {
+    "active": "Aktif",
+    "paused": "Duraklatıldı",
+    "cancelled": "İptal Edildi"
+  },
+  "payment": {
+    "title": "Ödeme Takvimi",
+    "recordTitle": "Ödeme Kaydet",
+    "statuses": {
+      "pending": "Bekliyor",
+      "paid": "Ödendi",
+      "failed": "Başarısız",
+      "skipped": "Atlandı",
+      "write_off": "Silindi"
+    },
+    "fields": {
+      "paymentDate": "Ödeme Tarihi",
+      "paymentMethod": "Ödeme Yöntemi",
+      "invoiceNo": "Fatura No",
+      "invoiceType": "Fatura Tipi",
+      "notes": "Not",
+      "referenceNo": "Dekont no"
+    },
+    "methods": {
+      "card": "Kredi Kartı",
+      "cash": "Nakit",
+      "bank_transfer": "Banka Transferi"
+    },
+    "invoiceTypes": {
+      "e_fatura": "e-Fatura",
+      "e_arsiv": "e-Arşiv",
+      "kagit": "Kağıt Fatura"
+    },
+    "invoice": {
+      "shouldInvoice": "Fatura kesilsin mi?",
+      "cardAutoInvoice": "Kart ödemeleri otomatik faturalandırılır",
+      "noInvoiceWarning": "Bu ödeme faturasız kaydedilecektir",
+      "vatRate": "KDV Oranı (%)"
+    },
+    "success": "Ödeme başarıyla kaydedildi"
+  },
+  "compliance": {
+    "overdueAlert": "fatura süresi 7 günü geçti!",
+    "overdueCount": "{{count}} ödeme faturası gecikmiş"
+  },
+  "actions": {
+    "recordPayment": "Ödeme Kaydet",
+    "pause": "Duraklatma",
+    "cancel": "İptal Et",
+    "reactivate": "Yeniden Etkinleştir",
+    "recordPayment": "Ödeme Kaydet"
+  },
+  "pause": {
+    "title": "Aboneliği Duraklat",
+    "message": "Bu aboneliği duraklatmak istediğinize emin misiniz? Bekleyen ödemeler atlanacaktır.",
+    "reasonLabel": "Duraklatma Sebebi",
+    "reasonPlaceholder": "Duraklatma sebebini girin...",
+    "confirm": "Duraklat"
+  },
+  "cancel": {
+    "title": "Aboneliği İptal Et",
+    "message": "Bu aboneliği iptal etmek istediğinize emin misiniz?",
+    "warning": "Bu işlem geri alınamaz.",
+    "writeOffLabel": "Ödenmemiş tutarları zarar yaz",
+    "unpaidInfo": "{{count}} adet ödenmemiş kayıt var.",
+    "confirm": "İptal Et"
+  },
+  "stats": {
+    "mrr": "Aylık Gelir (MRR)",
+    "activeCount": "Aktif Abonelik",
+    "pausedCount": "Duraklatılan",
+    "overdueCount": "Geciken Fatura"
+  },
+  "import": {
+    "title": "Toplu İçe Aktar",
+    "downloadTemplate": "Şablon İndir",
+    "selectFile": "Dosya Seç",
+    "preview": "Önizleme",
+    "previewRows": "İlk {{count}} satır",
+    "totalRows": "Toplam {{count}} satır",
+    "errors": "Hatalar",
+    "importButton": "İçe Aktar",
+    "success": "{{created}} abonelik oluşturuldu.",
+    "partialSuccess": "{{created}} abonelik oluşturuldu, {{failed}} hata.",
+    "failed": "İçe aktarım başarısız.",
+    "limitError": "En fazla 500 satır yükleyebilirsiniz.",
+    "rowError": "Satır {{row}}: {{message}}"
+  },
+  "priceRevision": {
+    "title": "Fiyat Revizyonu",
+    "unauthorized": "Bu sayfaya erişim yetkiniz yok.",
+    "filters": {
+      "title": "Filtreler",
+      "serviceType": "Hizmet Türü",
+      "billingFrequency": "Ödeme Sıklığı",
+      "startMonth": "Başlangıç Ayı",
+      "all": "Tümü",
+      "monthly": "Aylık",
+      "yearly": "Yıllık",
+      "months": {
+        "1": "Ocak",
+        "2": "Şubat",
+        "3": "Mart",
+        "4": "Nisan",
+        "5": "Mayıs",
+        "6": "Haziran",
+        "7": "Temmuz",
+        "8": "Ağustos",
+        "9": "Eylül",
+        "10": "Ekim",
+        "11": "Kasım",
+        "12": "Aralık"
+      }
+    },
+    "columns": {
+      "customer": "Müşteri",
+      "site": "Lokasyon",
+      "accountNo": "Hesap No",
+      "startDate": "Başlangıç",
+      "type": "Tip",
+      "serviceType": "Hizmet Türü",
+      "billingFrequency": "Ödeme Sıklığı",
+      "basePrice": "Baz Fiyat",
+      "smsFee": "SMS Ücreti",
+      "lineFee": "Hat Ücreti",
+      "vatRate": "KDV (%)",
+      "cost": "Maliyet"
+    },
+    "saveButton": "Değişiklikleri kaydet",
+    "saveSuccess": "Fiyat revizyonları başarıyla kaydedildi",
+    "saveSuccess": "Fiyatlar başarıyla güncellendi",
+    "empty": {
+      "title": "Abonelik bulunamadı",
+      "description": "Seçilen filtreye uyan abonelik yok."
+    }
+  },
+  "validation": {
+    "paymentMethodRequired": "Kart aboneliği için ödeme yöntemi zorunludur",
+    "siteAlreadyHasSubscription": "Bu lokasyonun zaten aktif bir aboneliği var"
+  }
+}

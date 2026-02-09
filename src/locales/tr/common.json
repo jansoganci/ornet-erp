@@ -1,0 +1,175 @@
+{
+  "appName": "Ornet ERP",
+  "actions": {
+    "menu": "Menü",
+    "add": "Ekle",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "search": "Ara",
+    "filter": "Filtrele",
+    "back": "Geri",
+    "close": "Kapat",
+    "confirm": "Onayla",
+    "call": "Ara",
+    "viewDetails": "Detayları Gör",
+    "view": "Detayları Gör",
+    "create": "Oluştur",
+    "update": "Güncelle",
+    "submit": "Gönder",
+    "reset": "Sıfırla",
+    "clear": "Temizle",
+    "select": "Seç",
+    "upload": "Yükle",
+    "download": "İndir",
+    "copy": "Kopyala",
+    "refresh": "Yenile",
+    "retry": "Tekrar Dene",
+    "export": "Dışarı Aktar",
+    "clear": "Temizle"
+  },
+  "status": {
+    "pending": "Bekliyor",
+    "scheduled": "Planlandı",
+    "inProgress": "Devam Ediyor",
+    "in_progress": "Devam Ediyor",
+    "completed": "Tamamlandı",
+    "cancelled": "İptal Edildi",
+    "active": "Aktif",
+    "inactive": "Pasif"
+  },
+  "priority": {
+    "low": "Düşük",
+    "normal": "Normal",
+    "high": "Yüksek",
+    "urgent": "Acil"
+  },
+  "theme": {
+    "darkMode": "Karanlık Mod",
+    "lightMode": "Aydınlık Mod",
+    "toggle": "Temayı Değiştir"
+  },
+  "type": {
+    "service": "Servis",
+    "installation": "Montaj",
+    "survey": "Keşif",
+    "maintenance": "Bakım",
+    "other": "Diğer"
+  },
+  "time": {
+    "at": "Saat",
+    "today": "Bugün",
+    "tomorrow": "Yarın",
+    "yesterday": "Dün",
+    "thisWeek": "Bu Hafta",
+    "thisMonth": "Bu Ay",
+    "overdue": "Gecikmiş",
+    "daysAgo": "{{count}} gün önce",
+    "hoursAgo": "{{count}} saat önce",
+    "minutesAgo": "{{count}} dakika önce",
+    "justNow": "Az önce"
+  },
+  "filters": {
+    "all": "Tümü",
+    "allStatuses": "Tüm Durumlar",
+    "allTypes": "Tüm Tipler"
+  },
+  "empty": {
+    "noData": "Veri bulunamadı",
+    "noResults": "Sonuç bulunamadı",
+    "noItems": "Öğe bulunamadı"
+  },
+  "fields": {
+    "amount": "Tutar",
+    "notes": "Notlar"
+  },
+  "deleteConfirm": "silinsin mi?",
+  "noResults": "Sonuç bulunamadı",
+  "success": {
+    "saved": "Başarıyla kaydedildi",
+    "created": "Başarıyla oluşturuldu",
+    "updated": "Başarıyla güncellendi",
+    "deleted": "Başarıyla silindi",
+    "statusUpdated": "Durum başarıyla güncellendi"
+  },
+  "loading": "Yükleniyor...",
+  "saving": "Kaydediliyor...",
+  "deleting": "Siliniyor...",
+  "successLabel": "Başarılı",
+  "error": {
+    "title": "Bir şeyler yanlış gitti",
+    "description": "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+    "boundaryTitle": "Uygulama Hatası",
+    "boundaryDescription": "Beklenmeyen bir hata oluştu. Lütfen sayfayı yenilemeyi veya daha sonra tekrar denemeyi deneyin."
+  },
+  "warning": "Uyarı",
+  "info": "Bilgi",
+  "confirm": {
+    "title": "Emin misiniz?",
+    "deleteMessage": "Bu işlem geri alınamaz.",
+    "yes": "Evet",
+    "no": "Hayır"
+  },
+  "validation": {
+    "required": "Bu alan zorunludur",
+    "email": "Geçerli bir e-posta girin",
+    "phone": "Geçerli bir telefon numarası girin",
+    "minLength": "En az {{count}} karakter olmalı",
+    "maxLength": "En fazla {{count}} karakter olabilir"
+  },
+  "pagination": {
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "page": "Sayfa",
+    "of": "/",
+    "showing": "Gösterilen",
+    "total": "Toplam"
+  },
+  "nav": {
+    "dashboard": "Ana Sayfa",
+    "dailyWork": "Günlük İşler",
+    "customers": "Müşteriler",
+    "workOrders": "İş Emirleri",
+    "workHistory": "İş Geçmişi",
+    "tasks": "Yapılacaklar",
+    "calendar": "Takvim",
+    "materials": "Malzeme Listesi",
+    "subscriptions": "Abonelikler",
+    "priceRevision": "Fiyat Revizyonu",
+    "profile": "Profil",
+    "settings": "Ayarlar",
+    "logout": "Çıkış Yap"
+  },
+  "workType": {
+    "survey": "Keşif",
+    "installation": "Montaj",
+    "service": "Servis",
+    "maintenance": "Bakım",
+    "other": "Diğer",
+    "kesif": "Keşif",
+    "montaj": "Montaj",
+    "servis": "Servis",
+    "bakim": "Bakım",
+    "diger": "Diğer"
+  },
+  "placeholders": {
+    "search": "Ara...",
+    "selectCustomer": "Müşteri seçin...",
+    "searchCustomer": "Müşteri ara...",
+    "noNotes": "Not yok",
+    "notes": "Not yok"
+  },
+  "labels": {
+    "admin": "Yönetici",
+    "unknown": "Bilinmiyor",
+    "phone": "Telefon",
+    "address": "Adres",
+    "statusUpdate": "Durum Güncelleme",
+    "records": "kayıt",
+    "areYouSure": "Emin misiniz?"
+  },
+  "roles": {
+    "field_worker": "Saha Personeli"
+  }
+}

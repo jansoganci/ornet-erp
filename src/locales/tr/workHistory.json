@@ -1,0 +1,31 @@
+{
+  "title": "İş Geçmişi",
+  "subtitle": "Tüm tamamlanmış ve geçmiş iş emirlerini arayın",
+  "search": {
+    "label": "Arama Kriteri",
+    "byAccountNo": "Hesap No",
+    "byCompanyName": "Müşteri Adı",
+    "placeholder": {
+      "accountNo": "Hesap numarası girin...",
+      "companyName": "Müşteri veya firma adı..."
+    },
+    "filters": {
+      "from": "Başlangıç",
+      "to": "Bitiş",
+      "workType": "İş Tipi",
+      "worker": "Personel"
+    }
+  },
+  "results": {
+    "title": "Arama Sonuçları",
+    "count": "{{count}} kayıt bulundu",
+    "noResults": "Arama kriterlerine uygun iş kaydı bulunamadı.",
+    "columns": {
+      "customer": "Müşteri / Lokasyon",
+      "accountNo": "Hesap No",
+      "workType": "İş Tipi",
+      "date": "Tarih",
+      "workers": "Personel"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "validation": {
+    "required": "Bu alan zorunludur",
+    "maxLength": "En fazla {{max}} karakter olabilir",
+    "phone": "Geçerli bir telefon numarası girin",
+    "email": "Geçerli bir e-posta girin",
+    "accountNoRequired": "Bu iş tipi için hesap numarası gereklidir",
+    "invalidNumber": "Geçerli bir sayı girin"
+  },
+  "workOrder": {
+    "notFound": "İş emri bulunamadı."
+  },
+  "site": {
+    "notFound": "Lokasyon bulunamadı."
+  },
+  "customer": {
+    "notFound": "Müşteri bulunamadı."
+  },
+  "common": {
+    "saveFailed": "Kaydetme işlemi başarısız oldu",
+    "createFailed": "Oluşturma işlemi başarısız oldu",
+    "updateFailed": "Güncelleme işlemi başarısız oldu",
+    "deleteFailed": "Silme işlemi başarısız oldu",
+    "unexpected": "Beklenmeyen bir hata oluştu",
+    "networkError": "Bağlantı hatası oluştu. Lütfen internet bağlantınızı kontrol edin.",
+    "unauthorized": "Bu işlem için yetkiniz yok"
+  },
+  "auth": {
+    "sessionExpired": "Oturumunuz sona erdi, lütfen tekrar giriş yapın",
+    "supabaseNotConfigured": "Sistem yapılandırılmamış. Lütfen yöneticiyle iletişime geçin."
+  },
+  "invalid": "Geçersiz işlem. Lütfen tekrar deneyin."
+}

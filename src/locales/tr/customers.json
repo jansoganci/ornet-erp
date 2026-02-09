@@ -1,0 +1,102 @@
+{
+  "list": {
+    "title": "Müşteriler",
+    "searchPlaceholder": "Müşteri ara...",
+    "addButton": "Müşteri Ekle",
+    "empty": {
+      "title": "Henüz müşteri yok",
+      "description": "İlk müşterinizi ekleyerek başlayın",
+      "action": "Müşteri Ekle"
+    },
+    "noResults": {
+      "title": "Sonuç bulunamadı",
+      "description": "Arama kriterlerinize uygun müşteri bulunamadı"
+    }
+  },
+  "detail": {
+    "title": "Müşteri Detayı",
+    "notFound": "Müşteri bulunamadı.",
+    "accountNumber": "Müşteri Kodu",
+    "contactInfo": "İletişim Bilgileri",
+    "address": "Adres",
+    "notes": "Notlar",
+    "noNotes": "Not yok",
+    "workHistory": {
+      "title": "Geçmiş İşler",
+      "empty": "Bu müşteri için iş kaydı yok",
+      "count": "{{count}} iş kaydı"
+    },
+    "actions": {
+      "call": "Ara",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "newWorkOrder": "Yeni İş Emri"
+    }
+  },
+  "sites": {
+    "title": "Lokasyonlar",
+    "addButton": "Yeni Lokasyon Ekle",
+    "editButton": "Lokasyonu Düzenle",
+    "noSites": "Bu müşteri için henüz lokasyon eklenmemiş.",
+    "siteCount": "{{count}} Lokasyon",
+    "fields": {
+      "accountNo": "Hesap No",
+      "siteName": "Lokasyon Adı",
+      "address": "Adres",
+      "city": "Şehir",
+      "district": "İlçe",
+      "contactName": "Yetkili Kişi",
+      "contactPhone": "Yetkili Telefon",
+      "panelInfo": "Panel Bilgisi",
+      "notes": "Notlar",
+      "isActive": "Aktif"
+    },
+    "placeholders": {
+      "accountNo": "Örn: 123456",
+      "siteName": "Örn: Merkez Şube",
+      "address": "Tam adres",
+      "panelInfo": "Örn: DSC 1616",
+      "notes": "Lokasyona özel notlar"
+    }
+  },
+  "form": {
+    "addTitle": "Yeni Müşteri",
+    "editTitle": "Müşteri Düzenle",
+    "fields": {
+      "name": "Müşteri Adı",
+      "companyName": "Müşteri Adı",
+      "accountNumber": "Müşteri Kodu",
+      "phone": "Telefon",
+      "phoneSecondary": "İkinci Telefon",
+      "email": "E-posta",
+      "address": "Adres",
+      "city": "Şehir",
+      "district": "İlçe",
+      "notes": "Notlar",
+      "taxNumber": "Vergi No"
+    },
+    "placeholders": {
+      "name": "Ad veya firma adı",
+      "companyName": "Ad veya firma adı",
+      "accountNumber": "Otomatik oluşturulacak",
+      "phone": "0555 123 4567",
+      "phoneSecondary": "0555 987 6543",
+      "email": "ornek@email.com",
+      "address": "Açık adres",
+      "city": "Şehir seçin",
+      "district": "İlçe seçin",
+      "notes": "Müşteri hakkında notlar",
+      "taxNumber": "Vergi numarası (isteğe bağlı)"
+    },
+    "success": {
+      "created": "Müşteri başarıyla oluşturuldu",
+      "updated": "Müşteri başarıyla güncellendi"
+    }
+  },
+  "delete": {
+    "title": "Müşteri Sil",
+    "message": "\"{{name}}\" müşterisini silmek istediğinizden emin misiniz?",
+    "warning": "Bu işlem geri alınamaz. Müşteriye ait tüm iş emirleri de silinecektir.",
+    "success": "Müşteri başarıyla silindi"
+  }
+}

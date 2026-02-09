@@ -1,0 +1,21 @@
+{
+  "title": "Günlük İş Listesi",
+  "subtitle": "{{date}} tarihindeki işler",
+  "today": "Bugün",
+  "tomorrow": "Yarın",
+  "filters": {
+    "date": "Tarih Seçin",
+    "worker": "Personel Filtresi",
+    "allWorkers": "Tüm Personeller"
+  },
+  "table": {
+    "workType": "İş Tipi",
+    "customer": "Müşteri / Lokasyon",
+    "time": "Saat",
+    "status": "Durum"
+  },
+  "empty": {
+    "title": "Bugün için iş yok",
+    "description": "Seçili tarihte planlanmış bir iş emri bulunamadı."
+  }
+}

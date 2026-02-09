@@ -1,0 +1,81 @@
+{
+  "list": {
+    "title": "Yapılacaklar",
+    "addButton": "Görev Ekle",
+    "empty": {
+      "title": "Görev bulunamadı",
+      "description": "Yeni bir görev ekleyerek başlayın",
+      "action": "Görev Ekle"
+    },
+    "sections": {
+      "overdue": "Geciken",
+      "today": "Bugün",
+      "tomorrow": "Yarın",
+      "upcoming": "Yaklaşan",
+      "noDueDate": "Tarihi Belirsiz",
+      "completed": "Tamamlanan"
+    },
+    "filters": {
+      "all": "Tümü",
+      "pending": "Bekleyen",
+      "inProgress": "Devam Eden",
+      "completed": "Tamamlanan"
+    }
+  },
+  "form": {
+    "addTitle": "Yeni Görev",
+    "editTitle": "Görev Düzenle",
+    "fields": {
+      "title": "Görev",
+      "description": "Açıklama",
+      "dueDate": "Tarih",
+      "dueTime": "Saat",
+      "priority": "Öncelik",
+      "assignedTo": "Atanan",
+      "workOrder": "İlgili İş Emri",
+      "status": "Durum"
+    },
+    "placeholders": {
+      "title": "Görevi kısaca yazın",
+      "description": "Detaylar (isteğe bağlı)",
+      "selectAssignee": "Kişi seçin",
+      "selectWorkOrder": "İş emri seçin (isteğe bağlı)"
+    },
+    "success": {
+      "created": "Görev başarıyla oluşturuldu",
+      "updated": "Görev başarıyla güncellendi"
+    }
+  },
+  "common": {
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "create": "Oluştur"
+  },
+  "statuses": {
+    "pending": "Bekliyor",
+    "inProgress": "Devam Ediyor",
+    "completed": "Tamamlandı",
+    "cancelled": "İptal Edildi"
+  },
+  "priorities": {
+    "low": "Düşük",
+    "normal": "Normal",
+    "high": "Yüksek",
+    "urgent": "Acil"
+  },
+  "actions": {
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "complete": "Tamamla",
+    "start": "Başla"
+  },
+  "delete": {
+    "title": "Görev Sil",
+    "message": "Bu görevi silmek istediğinizden emin misiniz?",
+    "success": "Görev başarıyla silindi"
+  },
+  "statusChange": {
+    "completed": "Görev tamamlandı",
+    "started": "Göreve başlandı"
+  }
+}

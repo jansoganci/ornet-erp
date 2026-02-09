@@ -1,0 +1,34 @@
+{
+  "title": "Ana Sayfa",
+  "welcome": "Hoş geldiniz",
+  "stats": {
+    "todayWorkOrders": "Bugünkü İşler",
+    "pendingWorkOrders": "Bekleyen İşler",
+    "inProgressWorkOrders": "Devam Eden İşler",
+    "completedThisWeek": "Bu Hafta Tamamlanan",
+    "openTasks": "Açık Görevler",
+    "overdueTasks": "Geciken Görevler",
+    "totalCustomers": "Toplam Müşteri"
+  },
+  "todaySchedule": {
+    "title": "Bugünün Programı",
+    "empty": "Bugün için planlanmış iş yok",
+    "viewAll": "Tümünü Gör"
+  },
+  "pendingTasks": {
+    "title": "Bekleyen Görevler",
+    "empty": "Bekleyen görev yok",
+    "viewAll": "Tümünü Gör"
+  },
+  "quickActions": {
+    "title": "Hızlı İşlemler",
+    "addCustomer": "Müşteri Ekle",
+    "addWorkOrder": "İş Emri Oluştur",
+    "addTask": "Görev Ekle",
+    "dailyWork": "Günlük İşler",
+    "workHistory": "İş Geçmişi Ara"
+  },
+  "recentActivity": {
+    "title": "Son Aktiviteler"
+  }
+}

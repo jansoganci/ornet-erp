@@ -1,0 +1,38 @@
+{
+  "title": "Profil",
+  "subtitle": "Hesap bilgilerinizi görüntüleyin ve düzenleyin",
+  "fields": {
+    "fullName": "Ad Soyad",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "role": "Rol",
+    "avatar": "Profil Fotoğrafı"
+  },
+  "roles": {
+    "admin": "Yönetici",
+    "fieldWorker": "Saha Ekibi",
+    "accountant": "Muhasebe"
+  },
+  "placeholders": {
+    "fullName": "Adınızı girin",
+    "phone": "0555 123 4567"
+  },
+  "sections": {
+    "personalInfo": "Kişisel Bilgiler",
+    "security": "Güvenlik",
+    "preferences": "Tercihler"
+  },
+  "actions": {
+    "save": "Değişiklikleri Kaydet",
+    "changePassword": "Şifre Değiştir",
+    "logout": "Çıkış Yap"
+  },
+  "success": {
+    "updated": "Profil başarıyla güncellendi"
+  },
+  "logout": {
+    "title": "Çıkış Yap",
+    "message": "Çıkış yapmak istediğinizden emin misiniz?",
+    "confirm": "Çıkış Yap"
+  }
+}

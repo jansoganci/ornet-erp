@@ -1,0 +1,28 @@
+{
+  "view": {
+    "weekly": "Haftalık",
+    "monthly": "Aylık"
+  },
+  "nav": {
+    "calendar": "Takvim"
+  },
+  "toolbar": {
+    "assigned": "Atanan"
+  },
+  "empty": {
+    "week": "Bu hafta iş emri yok",
+    "month": "Bu ayda iş emri yok",
+    "day": "Bu günde iş emri yok",
+    "hint": "Bir zaman dilimine tıklayarak yeni iş emri oluşturabilirsiniz"
+  },
+  "detail": {
+    "title": "İş emri",
+    "customer": "Müşteri",
+    "time": "Saat",
+    "openFull": "Tam detayı aç"
+  },
+  "error": {
+    "loadFailed": "İş emri yüklenemedi",
+    "loadListFailed": "İş emirleri yüklenemedi"
+  }
+}
