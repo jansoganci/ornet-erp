@@ -43,6 +43,11 @@ import {
   SimCardFormPage,
   SimCardImportPage,
 } from './features/simCards';
+import {
+  ProposalsListPage,
+  ProposalDetailPage,
+  ProposalFormPage,
+} from './features/proposals';
 
 function App() {
   return (
@@ -100,6 +105,12 @@ function App() {
             <Route path="subscriptions/new" element={<SubscriptionFormPage />} />
             <Route path="subscriptions/:id" element={<SubscriptionDetailPage />} />
             <Route path="subscriptions/:id/edit" element={<SubscriptionFormPage />} />
+
+            {/* Proposal routes */}
+            <Route path="proposals" element={<ProposalsListPage />} />
+            <Route path="proposals/new" element={<ProposalFormPage />} />
+            <Route path="proposals/:id" element={<ProposalDetailPage />} />
+            <Route path="proposals/:id/edit" element={<ProposalFormPage />} />
 
             {/* SIM Card routes */}
             <Route path="sim-cards" element={<SimCardsListPage />} />

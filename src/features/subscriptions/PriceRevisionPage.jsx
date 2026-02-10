@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CreditCard, ArrowLeft } from 'lucide-react';
+import { CreditCard, ArrowLeft, StickyNote } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -13,9 +13,11 @@ import {
   EmptyState,
   ErrorState,
   Spinner,
+  IconButton,
 } from '../../components/ui';
 import { formatDate } from '../../lib/utils';
 import { useSubscriptions, useCurrentProfile, useBulkUpdateSubscriptionPrices } from './hooks';
+import { RevisionNotesModal } from './components/RevisionNotesModal';
 import { SERVICE_TYPES, BILLING_FREQUENCIES } from './schema';
 
 function toNum(val, defaultVal = 0) {
@@ -34,6 +36,7 @@ export function PriceRevisionPage() {
   const [billingFrequency, setBillingFrequency] = useState('all');
   const [startMonth, setStartMonth] = useState('');
   const [editsById, setEditsById] = useState({});
+  const [notesModalSubscription, setNotesModalSubscription] = useState(null);
 
   const filters = useMemo(() => {
     const f = {
@@ -176,88 +179,113 @@ export function PriceRevisionPage() {
       ),
     },
     {
-      header: t('subscriptions:priceRevision.columns.basePrice'),
+      header: t('subscriptions:priceRevision.columns.pricing'),
       accessor: 'base_price',
       align: 'right',
-      render: (value, row) => (
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          size="sm"
-          className="w-24"
-          value={value ?? ''}
-          onChange={(e) => updateEdit(row.id, 'base_price', e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-        />
+      render: (_, row) => (
+        <div className="space-y-2 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
+              {t('subscriptions:priceRevision.columns.basePrice')}
+            </span>
+            <Input
+              type="number"
+              min={0}
+              step={0.01}
+              size="sm"
+              className="w-24"
+              value={row.base_price ?? ''}
+              onChange={(e) => updateEdit(row.id, 'base_price', e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              onKeyUp={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
+              {t('subscriptions:priceRevision.columns.smsFee')}
+            </span>
+            <Input
+              type="number"
+              min={0}
+              step={0.01}
+              size="sm"
+              className="w-24"
+              value={row.sms_fee ?? ''}
+              onChange={(e) => updateEdit(row.id, 'sms_fee', e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              onKeyUp={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
+              {t('subscriptions:priceRevision.columns.lineFee')}
+            </span>
+            <Input
+              type="number"
+              min={0}
+              step={0.01}
+              size="sm"
+              className="w-24"
+              value={row.line_fee ?? ''}
+              onChange={(e) => updateEdit(row.id, 'line_fee', e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              onKeyUp={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
+              {t('subscriptions:priceRevision.columns.vatRate')}
+            </span>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              size="sm"
+              className="w-24"
+              value={row.vat_rate ?? ''}
+              onChange={(e) => updateEdit(row.id, 'vat_rate', e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              onKeyUp={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
+              {t('subscriptions:priceRevision.columns.cost')}
+            </span>
+            <Input
+              type="number"
+              min={0}
+              step={0.01}
+              size="sm"
+              className="w-24"
+              value={row.cost ?? ''}
+              onChange={(e) => updateEdit(row.id, 'cost', e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              onKeyUp={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
       ),
     },
     {
-      header: t('subscriptions:priceRevision.columns.smsFee'),
-      accessor: 'sms_fee',
-      align: 'right',
-      render: (value, row) => (
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
+      header: t('subscriptions:priceRevision.columns.notesColumn'),
+      accessor: 'id',
+      render: (_, row) => (
+        <IconButton
+          icon={StickyNote}
           size="sm"
-          className="w-20"
-          value={value ?? ''}
-          onChange={(e) => updateEdit(row.id, 'sms_fee', e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-        />
-      ),
-    },
-    {
-      header: t('subscriptions:priceRevision.columns.lineFee'),
-      accessor: 'line_fee',
-      align: 'right',
-      render: (value, row) => (
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          size="sm"
-          className="w-20"
-          value={value ?? ''}
-          onChange={(e) => updateEdit(row.id, 'line_fee', e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-        />
-      ),
-    },
-    {
-      header: t('subscriptions:priceRevision.columns.vatRate'),
-      accessor: 'vat_rate',
-      align: 'right',
-      render: (value, row) => (
-        <Input
-          type="number"
-          min={0}
-          max={100}
-          step={0.01}
-          size="sm"
-          className="w-16"
-          value={value ?? ''}
-          onChange={(e) => updateEdit(row.id, 'vat_rate', e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-        />
-      ),
-    },
-    {
-      header: t('subscriptions:priceRevision.columns.cost'),
-      accessor: 'cost',
-      align: 'right',
-      render: (value, row) => (
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          size="sm"
-          className="w-24"
-          value={value ?? ''}
-          onChange={(e) => updateEdit(row.id, 'cost', e.target.value)}
-          onClick={(e) => e.stopPropagation()}
+          variant="ghost"
+          aria-label={t('subscriptions:priceRevision.notes.title')}
+          onClick={(e) => {
+            e.stopPropagation();
+            setNotesModalSubscription({ id: row.id, company_name: row.company_name, site_name: row.site_name });
+          }}
         />
       ),
     },
@@ -340,6 +368,12 @@ export function PriceRevisionPage() {
           />
         </div>
       )}
+
+      <RevisionNotesModal
+        open={!!notesModalSubscription}
+        onClose={() => setNotesModalSubscription(null)}
+        subscription={notesModalSubscription}
+      />
     </PageContainer>
   );
 }

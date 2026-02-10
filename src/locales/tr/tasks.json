@@ -1,17 +1,17 @@
 {
   "list": {
-    "title": "Yapılacaklar",
-    "addButton": "Görev Ekle",
+    "title": "Yıllık Plan",
+    "addButton": "Plan Ekle",
     "empty": {
-      "title": "Görev bulunamadı",
-      "description": "Yeni bir görev ekleyerek başlayın",
-      "action": "Görev Ekle"
+      "title": "Plan bulunamadı",
+      "description": "Yeni bir plan ekleyerek başlayın",
+      "action": "Plan Ekle"
     },
     "sections": {
       "overdue": "Geciken",
-      "today": "Bugün",
-      "tomorrow": "Yarın",
-      "upcoming": "Yaklaşan",
+      "thisWeek": "Bu Hafta",
+      "thisMonth": "Bu Ay",
+      "upcoming": "Gelecek",
       "noDueDate": "Tarihi Belirsiz",
       "completed": "Tamamlanan"
     },
@@ -22,11 +22,16 @@
       "completed": "Tamamlanan"
     }
   },
+  "quickAdd": {
+    "placeholder": "Planı kısaca yazın...",
+    "dateHint": "Tarih (isteğe bağlı)",
+    "submitHint": "↵ Enter ile kaydet"
+  },
   "form": {
-    "addTitle": "Yeni Görev",
-    "editTitle": "Görev Düzenle",
+    "addTitle": "Yeni Plan",
+    "editTitle": "Plan Düzenle",
     "fields": {
-      "title": "Görev",
+      "title": "Plan",
       "description": "Açıklama",
       "dueDate": "Tarih",
       "dueTime": "Saat",
@@ -36,14 +41,14 @@
       "status": "Durum"
     },
     "placeholders": {
-      "title": "Görevi kısaca yazın",
+      "title": "Planı kısaca yazın",
       "description": "Detaylar (isteğe bağlı)",
       "selectAssignee": "Kişi seçin",
       "selectWorkOrder": "İş emri seçin (isteğe bağlı)"
     },
     "success": {
-      "created": "Görev başarıyla oluşturuldu",
-      "updated": "Görev başarıyla güncellendi"
+      "created": "Plan başarıyla oluşturuldu",
+      "updated": "Plan başarıyla güncellendi"
     }
   },
   "common": {
@@ -70,12 +75,15 @@
     "start": "Başla"
   },
   "delete": {
-    "title": "Görev Sil",
-    "message": "Bu görevi silmek istediğinizden emin misiniz?",
-    "success": "Görev başarıyla silindi"
+    "title": "Plan Sil",
+    "message": "Bu planı silmek istediğinizden emin misiniz?",
+    "success": "Plan başarıyla silindi"
   },
   "statusChange": {
-    "completed": "Görev tamamlandı",
-    "started": "Göreve başlandı"
+    "completed": "Plan tamamlandı",
+    "started": "Plana başlandı"
+  },
+  "miniCalendar": {
+    "title": "Takvim"
   }
 }

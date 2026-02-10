@@ -15,7 +15,7 @@ import { useCreateTask, useUpdateTask, useProfiles } from './hooks';
 
 export function TaskModal({ open, onClose, task = null }) {
   const { t } = useTranslation('tasks');
-  const isEdit = !!task;
+  const isEdit = !!task?.id;
 
   const { data: profiles, isLoading: isProfilesLoading } = useProfiles();
   const createMutation = useCreateTask();

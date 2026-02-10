@@ -1,26 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, CheckCircle2, Circle, Clock, User, Edit, Trash2, CheckSquare } from 'lucide-react';
+import {
+  Plus,
+  AlertCircle,
+  Calendar,
+  CalendarDays,
+  CalendarRange,
+  HelpCircle,
+  CheckCircle2,
+  Target,
+} from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { 
-  Button, 
-  Select, 
-  Badge, 
-  Spinner, 
+import {
+  Button,
+  Select,
   Card,
-  IconButton,
   Modal,
   EmptyState,
   Skeleton,
   ErrorState,
 } from '../../components/ui';
-import { 
-  formatDate, 
-  priorityVariant, 
-  cn
-} from '../../lib/utils';
 import { useTasks, useUpdateTask, useDeleteTask, useProfiles } from './hooks';
+import { groupPlansByHorizon } from './utils';
 import { TaskModal } from './TaskModal';
+import { QuickPlanInput } from './components/QuickPlanInput';
+import { PlanGroupSection } from './components/PlanGroupSection';
+import { MiniCalendarSidebar } from './components/MiniCalendarSidebar';
 
 function TasksSkeleton() {
   return (
@@ -47,21 +52,35 @@ function TasksSkeleton() {
   );
 }
 
+const SECTION_CONFIG = [
+  { key: 'overdue', icon: AlertCircle, variant: 'error', defaultOpen: true },
+  { key: 'thisWeek', icon: Calendar, variant: 'warning', defaultOpen: true },
+  { key: 'thisMonth', icon: CalendarDays, variant: 'info', defaultOpen: true },
+  { key: 'upcoming', icon: CalendarRange, variant: 'default', defaultOpen: true },
+  { key: 'noDueDate', icon: HelpCircle, variant: 'default', defaultOpen: true },
+  { key: 'completed', icon: CheckCircle2, variant: 'success', defaultOpen: false },
+];
+
 export function TasksPage() {
   const { t } = useTranslation('tasks');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [taskToDelete, setTaskToDelete] = useState(null);
+  const [highlightDate, setHighlightDate] = useState(null);
 
-  const { data: tasks, isLoading, error, refetch } = useTasks({ 
-    status: statusFilter, 
-    assigned_to: assigneeFilter 
+  // Refs for each section to allow scrolling
+  const sectionRefs = useRef({});
+
+  const { data: tasks, isLoading, error, refetch } = useTasks({
+    status: 'all',
+    assigned_to: assigneeFilter,
   });
   const { data: profiles } = useProfiles();
   const updateMutation = useUpdateTask();
   const deleteMutation = useDeleteTask();
+
+  const groups = useMemo(() => groupPlansByHorizon(tasks), [tasks]);
 
   const handleToggleStatus = (task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
@@ -76,7 +95,7 @@ export function TasksPage() {
   const handleDelete = () => {
     if (taskToDelete) {
       deleteMutation.mutate(taskToDelete, {
-        onSuccess: () => setTaskToDelete(null)
+        onSuccess: () => setTaskToDelete(null),
       });
     }
   };
@@ -86,24 +105,42 @@ export function TasksPage() {
     setIsModalOpen(true);
   };
 
-  const statusOptions = [
-    { value: 'all', label: t('list.filters.all') },
-    { value: 'pending', label: t('statuses.pending') },
-    { value: 'in_progress', label: t('statuses.inProgress') },
-    { value: 'completed', label: t('statuses.completed') },
-  ];
-
   const assigneeOptions = [
     { value: 'all', label: t('list.filters.all') },
-    ...(profiles?.map(p => ({ value: p.id, label: p.full_name })) || [])
+    ...(profiles?.map((p) => ({ value: p.id, label: p.full_name })) || []),
   ];
+
+  // Find which section a selected date belongs to, then scroll to it
+  const handleSelectDate = useCallback(
+    (isoDate) => {
+      setHighlightDate(isoDate);
+
+      // Find which section contains tasks with this date
+      for (const { key } of SECTION_CONFIG) {
+        const sectionTasks = groups[key] || [];
+        const found = sectionTasks.some((task) => task.due_date === isoDate);
+        if (found && sectionRefs.current[key]) {
+          sectionRefs.current[key].scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+          return;
+        }
+      }
+    },
+    [groups]
+  );
+
+  const setSectionRef = useCallback((key, el) => {
+    sectionRefs.current[key] = el;
+  }, []);
 
   return (
     <PageContainer maxWidth="xl" padding="default" className="space-y-6">
       <PageHeader
         title={t('list.title')}
         actions={
-          <Button 
+          <Button
             onClick={openNewTaskModal}
             leftIcon={<Plus className="w-4 h-4" />}
           >
@@ -112,14 +149,12 @@ export function TasksPage() {
         }
       />
 
-      <Card className="p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Select
-            label={t('form.fields.status')}
-            options={statusOptions}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          />
+      {/* Quick-add bar */}
+      <QuickPlanInput />
+
+      {/* Assignee filter */}
+      {profiles?.length > 1 && (
+        <div className="max-w-xs">
           <Select
             label={t('form.fields.assignedTo')}
             options={assigneeOptions}
@@ -127,101 +162,58 @@ export function TasksPage() {
             onChange={(e) => setAssigneeFilter(e.target.value)}
           />
         </div>
-      </Card>
+      )}
 
+      {/* Content: 2-column layout on desktop, single on mobile */}
       {isLoading ? (
         <TasksSkeleton />
       ) : error ? (
         <ErrorState message={error.message} onRetry={() => refetch()} />
+      ) : !tasks?.length ? (
+        <EmptyState
+          icon={Target}
+          title={t('list.empty.title')}
+          description={t('list.empty.description')}
+          actionLabel={t('list.addButton')}
+          onAction={openNewTaskModal}
+        />
       ) : (
-        <div className="space-y-3">
-          {tasks?.length === 0 ? (
-            <EmptyState
-              icon={CheckSquare}
-              title={t('list.empty.title')}
-              description={t('list.empty.description') || 'No tasks found. Start by creating one.'}
-              actionLabel={t('list.addButton')}
-              onAction={openNewTaskModal}
-            />
-          ) : (
-            tasks?.map((task) => (
-              <Card 
-                key={task.id} 
-                className="p-4 hover:border-primary-300 dark:hover:border-primary-700 transition-colors group"
-              >
-                <div className="flex items-start gap-4">
-                  <button 
-                    onClick={() => handleToggleStatus(task)}
-                    className="mt-1 text-neutral-400 dark:text-neutral-600 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                  >
-                    {task.status === 'completed' ? (
-                      <CheckCircle2 className="w-6 h-6 text-success-600 dark:text-success-400" />
-                    ) : (
-                      <Circle className="w-6 h-6" />
-                    )}
-                  </button>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className={cn(
-                        "font-semibold truncate text-neutral-900 dark:text-neutral-50",
-                        task.status === 'completed' ? 'line-through text-neutral-400 dark:text-neutral-500' : ''
-                      )}>
-                        {task.title}
-                      </h3>
-                      <Badge variant={priorityVariant[task.priority]}>
-                        {t(`priorities.${task.priority}`)}
-                      </Badge>
-                    </div>
-                    
-                    {task.description && (
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 mb-2">
-                        {task.description}
-                      </p>
-                    )}
-                    
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-                      {task.due_date && (
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{formatDate(task.due_date)} {task.due_time}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        <span>{task.assigned_to_name || t('form.placeholders.selectAssignee')}</span>
-                      </div>
-                    </div>
-                  </div>
+        <div className="flex gap-6 items-start">
+          {/* Main task list */}
+          <div className="flex-1 min-w-0 space-y-4">
+            {SECTION_CONFIG.map(({ key, icon, variant, defaultOpen }) => (
+              <div key={key} ref={(el) => setSectionRef(key, el)}>
+                <PlanGroupSection
+                  title={t(`list.sections.${key}`)}
+                  icon={icon}
+                  count={groups[key]?.length || 0}
+                  variant={variant}
+                  tasks={groups[key] || []}
+                  defaultOpen={defaultOpen}
+                  onToggleStatus={handleToggleStatus}
+                  onEdit={handleEdit}
+                  onDelete={(id) => setTaskToDelete(id)}
+                  highlightDate={highlightDate}
+                />
+              </div>
+            ))}
+          </div>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <IconButton
-                      icon={<Edit className="w-4 h-4" />}
-                      onClick={() => handleEdit(task)}
-                      aria-label={t('actions.edit')}
-                      variant="ghost"
-                      size="sm"
-                    />
-                    <IconButton
-                      icon={<Trash2 className="w-4 h-4" />}
-                      onClick={() => setTaskToDelete(task.id)}
-                      aria-label={t('actions.delete')}
-                      variant="ghost"
-                      size="sm"
-                      className="text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/30"
-                    />
-                  </div>
-                </div>
-              </Card>
-            ))
-          )}
+          {/* Mini calendar sidebar — desktop only */}
+          <div className="hidden lg:block w-64 shrink-0 sticky top-24">
+            <MiniCalendarSidebar
+              tasks={tasks}
+              onSelectDate={handleSelectDate}
+              selectedDate={highlightDate}
+            />
+          </div>
         </div>
       )}
 
-      <TaskModal 
-        open={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        task={selectedTask} 
+      <TaskModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        task={selectedTask}
       />
 
       <Modal
@@ -233,13 +225,19 @@ export function TasksPage() {
             <Button variant="outline" onClick={() => setTaskToDelete(null)}>
               {t('common.cancel')}
             </Button>
-            <Button variant="danger" onClick={handleDelete} loading={deleteMutation.isPending}>
+            <Button
+              variant="danger"
+              onClick={handleDelete}
+              loading={deleteMutation.isPending}
+            >
               {t('actions.delete')}
             </Button>
           </div>
         }
       >
-        <p className="text-neutral-700 dark:text-neutral-300">{t('delete.message')}</p>
+        <p className="text-neutral-700 dark:text-neutral-300">
+          {t('delete.message')}
+        </p>
       </Modal>
     </PageContainer>
   );

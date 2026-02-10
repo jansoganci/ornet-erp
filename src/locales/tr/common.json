@@ -132,11 +132,12 @@
     "customers": "Müşteriler",
     "workOrders": "İş Emirleri",
     "workHistory": "İş Geçmişi",
-    "tasks": "Yapılacaklar",
+    "tasks": "Yıllık Plan",
     "calendar": "Takvim",
     "materials": "Malzeme Listesi",
     "subscriptions": "Abonelikler",
     "priceRevision": "Fiyat Revizyonu",
+    "proposals": "Teklifler",
     "profile": "Profil",
     "settings": "Ayarlar",
     "logout": "Çıkış Yap"

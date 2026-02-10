@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,9 +11,14 @@ import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, IconButton, Spinner, ErrorState, Select } from '../../components/ui';
 import { calendarLocalizer, getCalendarCulture } from './calendarLocalizer';
 import { getWeekRange, getMonthRange, dateToQueryParams, getEventClassName, formatDateRangeLabel } from './utils';
-import { useCalendarWorkOrders, useCalendarRealtime, calendarKeys } from './hooks';
+import { useCalendarWorkOrders, useCalendarTasks, useCalendarRealtime, calendarKeys } from './hooks';
 import { EventDetailModal } from './EventDetailModal';
+import { PlanDetailModal } from './components/PlanDetailModal';
+import { CalendarFilterBar } from './components/CalendarFilterBar';
+import { SlotActionPopover } from './components/SlotActionPopover';
+import { TaskModal } from '../tasks/TaskModal';
 import { useUpdateWorkOrder } from '../workOrders/hooks';
+import { useProfiles } from '../tasks/hooks';
 import { cn } from '../../lib/utils';
 
 const DnDCalendar = withDragAndDrop(Calendar);
@@ -37,7 +42,16 @@ export function CalendarPage() {
   const [view, setView] = useState(VIEW_WEEK);
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
+  const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedPlanEvent, setSelectedPlanEvent] = useState(null);
+
+  // Slot action popover state
+  const [slotPopover, setSlotPopover] = useState({ open: false, position: null, slotDate: null, slotTime: null });
+
+  // TaskModal for creating plan from slot click
+  const [newPlanTask, setNewPlanTask] = useState(null);
 
   const { dateFrom, dateTo } = useMemo(() => {
     return view === VIEW_MONTH
@@ -49,27 +63,92 @@ export function CalendarPage() {
     return formatDateRangeLabel(dateFrom, dateTo, view, i18n.language);
   }, [dateFrom, dateTo, view, i18n.language]);
 
-  const { events, isLoading, isError } = useCalendarWorkOrders({
+  const {
+    events: workOrderEvents,
+    isLoading: isWoLoading,
+    isError: isWoError,
+  } = useCalendarWorkOrders({
     dateFrom,
     dateTo,
     status: statusFilter,
     type: typeFilter,
   });
 
+  const {
+    events: taskEvents,
+    isLoading: isTasksLoading,
+    isError: isTasksError,
+  } = useCalendarTasks({
+    dateFrom,
+    dateTo,
+    assigned_to: assigneeFilter,
+  });
+
+  const { data: profiles } = useProfiles();
+
   useCalendarRealtime();
+
+  const events = useMemo(() => {
+    if (sourceFilter === 'workOrders') return workOrderEvents;
+    if (sourceFilter === 'plans') return taskEvents;
+    return [...workOrderEvents, ...taskEvents];
+  }, [sourceFilter, workOrderEvents, taskEvents]);
+
+  const isLoading = isWoLoading || isTasksLoading;
+  const isError = isWoError || isTasksError;
 
   const culture = getCalendarCulture(i18n.language);
 
   const handleSelectEvent = (event) => {
-    if (event) setSelectedEvent(event);
+    if (!event) return;
+    if (event.resource?._type === 'plan') {
+      setSelectedPlanEvent(event);
+    } else {
+      setSelectedEvent(event);
+    }
   };
 
-  const handleSelectSlot = (slotInfo) => {
+  const handleSelectSlot = useCallback((slotInfo) => {
     const { date, time } = dateToQueryParams(slotInfo.start);
-    navigate(`/work-orders/new?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`);
+
+    // Try to get screen position from the click event or the slot box
+    const box = slotInfo.box || slotInfo.bounds;
+    const x = box?.x ?? box?.left ?? 300;
+    const y = box?.y ?? box?.top ?? 300;
+
+    // Clamp to viewport
+    const clampedX = Math.min(x, window.innerWidth - 200);
+    const clampedY = Math.min(y, window.innerHeight - 120);
+
+    setSlotPopover({
+      open: true,
+      position: { x: clampedX, y: clampedY },
+      slotDate: date,
+      slotTime: time,
+    });
+  }, []);
+
+  const handleSlotAddWorkOrder = () => {
+    const { slotDate, slotTime } = slotPopover;
+    navigate(`/work-orders/new?date=${encodeURIComponent(slotDate)}&time=${encodeURIComponent(slotTime)}`);
+  };
+
+  const handleSlotAddPlan = () => {
+    const { slotDate, slotTime } = slotPopover;
+    setNewPlanTask({
+      title: '',
+      description: '',
+      status: 'pending',
+      priority: 'normal',
+      assigned_to: '',
+      due_date: slotDate,
+      due_time: slotTime,
+    });
   };
 
   const handleEventDrop = ({ event, start }) => {
+    // Only allow drag-drop for work orders, not plan items
+    if (event?.resource?._type === 'plan') return;
     const wo = event?.resource;
     if (!wo?.id) return;
     const { date, time } = dateToQueryParams(start);
@@ -125,40 +204,57 @@ export function CalendarPage() {
     { value: 'other', label: tCommon('workType.other') },
   ];
 
+  const assigneeOptions = useMemo(() => {
+    const opts = [{ value: 'all', label: t('toolbar.assigned') + ': ' + t('filter.all') }];
+    if (Array.isArray(profiles)) {
+      profiles.forEach((p) => {
+        opts.push({ value: p.id, label: p.full_name || p.id });
+      });
+    }
+    return opts;
+  }, [profiles, t]);
+
+  const showWoFilters = sourceFilter !== 'plans';
+
   return (
     <PageContainer maxWidth="full" padding="default">
       <PageHeader title={t('nav.calendar')} />
 
       {/* Toolbar */}
       <div className="space-y-3 mb-4 mt-2">
-        {/* Row 1: View toggle + Actions */}
-        <div className="flex items-center justify-between gap-3">
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 p-0.5 bg-neutral-50 dark:bg-[#1a1a1a]">
-            <button
-              type="button"
-              onClick={() => setView(VIEW_WEEK)}
-              className={cn(
-                'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                view === VIEW_WEEK
-                  ? 'bg-white dark:bg-[#262626] text-neutral-900 dark:text-neutral-100 shadow-sm'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-              )}
-            >
-              {t('view.weekly')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setView(VIEW_MONTH)}
-              className={cn(
-                'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                view === VIEW_MONTH
-                  ? 'bg-white dark:bg-[#262626] text-neutral-900 dark:text-neutral-100 shadow-sm'
-                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-              )}
-            >
-              {t('view.monthly')}
-            </button>
+        {/* Row 1: View toggle + Source filter + Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* View toggle */}
+            <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 p-0.5 bg-neutral-50 dark:bg-[#1a1a1a]">
+              <button
+                type="button"
+                onClick={() => setView(VIEW_WEEK)}
+                className={cn(
+                  'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                  view === VIEW_WEEK
+                    ? 'bg-white dark:bg-[#262626] text-neutral-900 dark:text-neutral-100 shadow-sm'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                )}
+              >
+                {t('view.weekly')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setView(VIEW_MONTH)}
+                className={cn(
+                  'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                  view === VIEW_MONTH
+                    ? 'bg-white dark:bg-[#262626] text-neutral-900 dark:text-neutral-100 shadow-sm'
+                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                )}
+              >
+                {t('view.monthly')}
+              </button>
+            </div>
+
+            {/* Source filter */}
+            <CalendarFilterBar value={sourceFilter} onChange={setSourceFilter} />
           </div>
 
           {/* Actions */}
@@ -204,20 +300,31 @@ export function CalendarPage() {
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {showWoFilters && (
+              <>
+                <Select
+                  options={statusOptions}
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  size="sm"
+                  wrapperClassName="w-36"
+                />
+                <Select
+                  options={typeOptions}
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  size="sm"
+                  wrapperClassName="w-36"
+                />
+              </>
+            )}
             <Select
-              options={statusOptions}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              options={assigneeOptions}
+              value={assigneeFilter}
+              onChange={(e) => setAssigneeFilter(e.target.value)}
               size="sm"
-              wrapperClassName="w-36"
-            />
-            <Select
-              options={typeOptions}
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              size="sm"
-              wrapperClassName="w-36"
+              wrapperClassName="w-40"
             />
           </div>
         </div>
@@ -247,6 +354,7 @@ export function CalendarPage() {
             max={DAY_END}
             selectable
             resizable={false}
+            draggableAccessor={(event) => event?.resource?._type !== 'plan'}
             eventPropGetter={(event) => ({ className: getEventClassName(event) })}
             startAccessor="start"
             endAccessor="end"
@@ -280,10 +388,33 @@ export function CalendarPage() {
         </div>
       )}
 
+      {/* Slot action popover */}
+      <SlotActionPopover
+        open={slotPopover.open}
+        position={slotPopover.position}
+        onAddWorkOrder={handleSlotAddWorkOrder}
+        onAddPlan={handleSlotAddPlan}
+        onClose={() => setSlotPopover({ open: false, position: null, slotDate: null, slotTime: null })}
+      />
+
+      {/* Event detail modals */}
       <EventDetailModal
         open={!!selectedEvent}
         onClose={() => setSelectedEvent(null)}
         event={selectedEvent}
+      />
+
+      <PlanDetailModal
+        open={!!selectedPlanEvent}
+        onClose={() => setSelectedPlanEvent(null)}
+        event={selectedPlanEvent}
+      />
+
+      {/* TaskModal for creating plans from slot click */}
+      <TaskModal
+        open={!!newPlanTask}
+        onClose={() => setNewPlanTask(null)}
+        task={newPlanTask}
       />
     </PageContainer>
   );

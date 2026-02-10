@@ -6,14 +6,19 @@
   "nav": {
     "calendar": "Takvim"
   },
+  "filter": {
+    "all": "Hepsi",
+    "workOrders": "İş Emirleri",
+    "plans": "Yıllık Plan"
+  },
   "toolbar": {
     "assigned": "Atanan"
   },
   "empty": {
-    "week": "Bu hafta iş emri yok",
-    "month": "Bu ayda iş emri yok",
-    "day": "Bu günde iş emri yok",
-    "hint": "Bir zaman dilimine tıklayarak yeni iş emri oluşturabilirsiniz"
+    "week": "Bu hafta etkinlik yok",
+    "month": "Bu ayda etkinlik yok",
+    "day": "Bu günde etkinlik yok",
+    "hint": "Bir zaman dilimine tıklayarak yeni etkinlik oluşturabilirsiniz"
   },
   "detail": {
     "title": "İş emri",
@@ -21,8 +26,17 @@
     "time": "Saat",
     "openFull": "Tam detayı aç"
   },
+  "planDetail": {
+    "title": "Plan Detayı",
+    "openFull": "Plana Git",
+    "noPriority": "Normal"
+  },
+  "slotAction": {
+    "addWorkOrder": "İş Emri Ekle",
+    "addPlan": "Plan Notu Ekle"
+  },
   "error": {
     "loadFailed": "İş emri yüklenemedi",
-    "loadListFailed": "İş emirleri yüklenemedi"
+    "loadListFailed": "Takvim verileri yüklenemedi"
   }
 }

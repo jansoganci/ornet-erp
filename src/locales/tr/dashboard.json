@@ -28,6 +28,13 @@
     "dailyWork": "Günlük İşler",
     "workHistory": "İş Geçmişi Ara"
   },
+  "todoSection": {
+    "title": "Yapılacaklar",
+    "viewWorkOrders": "İş emirleri",
+    "viewTasks": "Görevler",
+    "empty": "Bugün için iş yok, açık görev yok",
+    "openTasksLabel": "Açık görevler"
+  },
   "recentActivity": {
     "title": "Son Aktiviteler"
   }

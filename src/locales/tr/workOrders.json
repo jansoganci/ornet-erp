@@ -71,7 +71,11 @@
     "noDescription": "Açıklama eklenmemiş",
     "noMaterials": "Malzeme bilgisi yok",
     "noNotes": "Not yok",
-    "history": "İş Geçmişi"
+    "history": "İş Geçmişi",
+    "proposalLink": "Teklif",
+    "viewProposal": "Teklifi Görüntüle",
+    "notAssignedYet": "Henüz atanmadı",
+    "amountNotEntered": "Tutar girilmedi"
   },
   "form": {
     "addTitle": "Yeni İş Emri",
@@ -120,6 +124,11 @@
     "customerSelect": {
       "noResults": "Müşteri bulunamadı",
       "addNew": "Yeni müşteri ekle"
+    },
+    "materialSelect": {
+      "noResults": "Malzeme bulunamadı",
+      "addNew": "Yeni Malzeme Ekle",
+      "selected": "Seçili"
     },
     "buttons": {
       "addCustomer": "Yeni Müşteri Ekle",

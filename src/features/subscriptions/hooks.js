@@ -12,6 +12,8 @@ import {
   cancelSubscription,
   reactivateSubscription,
   bulkUpdateSubscriptionPrices,
+  fetchRevisionNotes,
+  createRevisionNote,
 } from './api';
 import { importSubscriptionsFromRows } from './importApi';
 import {
@@ -35,6 +37,7 @@ export const subscriptionKeys = {
   details: () => [...subscriptionKeys.all, 'detail'],
   detail: (id) => [...subscriptionKeys.details(), id],
   payments: (id) => [...subscriptionKeys.detail(id), 'payments'],
+  revisionNotes: (id) => [...subscriptionKeys.detail(id), 'revisionNotes'],
   stats: () => [...subscriptionKeys.all, 'stats'],
   overdueInvoices: () => [...subscriptionKeys.all, 'overdueInvoices'],
 };
@@ -161,6 +164,36 @@ export function useReactivateSubscription() {
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'common.updateFailed'));
+    },
+  });
+}
+
+// ============================================================================
+// Revision notes (price revision timeline)
+// ============================================================================
+
+export function useRevisionNotes(subscriptionId) {
+  return useQuery({
+    queryKey: subscriptionKeys.revisionNotes(subscriptionId),
+    queryFn: () => fetchRevisionNotes(subscriptionId),
+    enabled: !!subscriptionId,
+  });
+}
+
+export function useCreateRevisionNote() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('subscriptions');
+
+  return useMutation({
+    mutationFn: createRevisionNote,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: subscriptionKeys.revisionNotes(variables.subscription_id),
+      });
+      toast.success(t('priceRevision.notes.successCreated'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.createFailed'));
     },
   });
 }

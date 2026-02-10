@@ -209,6 +209,15 @@ export const subscriptionStatusVariant = {
   cancelled: 'default',
 };
 
+export const proposalStatusVariant = {
+  draft: 'default',
+  sent: 'info',
+  accepted: 'success',
+  rejected: 'error',
+  cancelled: 'default',
+  completed: 'primary',
+};
+
 export const paymentStatusVariant = {
   pending: 'default',
   paid: 'success',

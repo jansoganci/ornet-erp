@@ -23,6 +23,7 @@ import { MaterialSelector } from './MaterialSelector';
 import { AccountNoWarning } from './AccountNoWarning';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useSite } from '../customerSites/hooks';
+import { useLinkWorkOrder } from '../proposals/hooks';
 import { toast } from 'sonner';
 
 export function WorkOrderFormPage() {
@@ -38,11 +39,13 @@ export function WorkOrderFormPage() {
   const { data: workOrder, isLoading: isWorkOrderLoading } = useWorkOrder(id);
   const createMutation = useCreateWorkOrder();
   const updateMutation = useUpdateWorkOrder();
+  const linkWorkOrderMutation = useLinkWorkOrder();
 
   const prefilledCustomerId = searchParams.get('customerId') || '';
   const prefilledSiteId = searchParams.get('siteId') || '';
   const prefilledDate = searchParams.get('date') || '';
   const prefilledTime = searchParams.get('time') || '';
+  const prefilledProposalId = searchParams.get('proposalId') || '';
 
   const {
     register,
@@ -167,7 +170,16 @@ export function WorkOrderFormPage() {
         navigate(`/work-orders/${id}`);
       } else {
         const newWo = await createMutation.mutateAsync(formattedData);
-        navigate(`/work-orders/${newWo.id}`);
+        // Auto-link to proposal if created from proposal page
+        if (prefilledProposalId) {
+          await linkWorkOrderMutation.mutateAsync({
+            proposalId: prefilledProposalId,
+            workOrderId: newWo.id,
+          });
+          navigate(`/proposals/${prefilledProposalId}`);
+        } else {
+          navigate(`/work-orders/${newWo.id}`);
+        }
       }
     } catch (err) {
       console.error('[EDIT_SAVE] Save failed:', err);

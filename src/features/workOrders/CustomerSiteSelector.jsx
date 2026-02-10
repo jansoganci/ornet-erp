@@ -19,11 +19,12 @@ export function CustomerSiteSelector({
   selectedSiteId, 
   onCustomerChange, 
   onSiteChange,
-  onAddNewCustomer,
   onAddNewSite,
-  error
+  onAddNewCustomer,
+  error,
+  siteOptional = false,
 }) {
-  const { t } = useTranslation(['workOrders', 'customers', 'common']);
+  const { t } = useTranslation(['workOrders', 'customers', 'common', 'proposals']);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
@@ -49,9 +50,7 @@ export function CustomerSiteSelector({
 
   const handleSiteSelect = (e) => {
     const newSiteId = e.target.value;
-    if (newSiteId) {
-      onSiteChange(newSiteId);
-    }
+    onSiteChange(newSiteId || '');
   };
 
   return (
@@ -182,6 +181,11 @@ export function CustomerSiteSelector({
               <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center">
                 <MapPin className="w-4 h-4 mr-2 text-primary-600" />
                 {t('workOrders:form.fields.selectSite')}
+                {siteOptional && (
+                  <span className="ml-1.5 text-xs font-normal text-neutral-500 dark:text-neutral-400">
+                    {t('proposals:form.siteOptional')}
+                  </span>
+                )}
               </label>
               <Button 
                 variant="ghost" 
@@ -204,10 +208,13 @@ export function CustomerSiteSelector({
                   key={`site-select-${selectedCustomerId}-${sites.length}-${selectedSiteId || 'none'}`}
                   value={selectedSiteId || ''}
                   onChange={handleSiteSelect}
-                  options={sites.map(s => ({
-                    value: s.id,
-                    label: s.site_name ? `${s.site_name} (${s.account_no || '---'})` : `${s.address} (${s.account_no || '---'})`
-                  }))}
+                  options={[
+                    ...(siteOptional ? [{ value: '', label: t('proposals:form.noSite') }] : []),
+                    ...sites.map(s => ({
+                      value: s.id,
+                      label: s.site_name ? `${s.site_name} (${s.account_no || '---'})` : `${s.address} (${s.account_no || '---'})`
+                    }))
+                  ]}
                   placeholder={t('workOrders:form.placeholders.selectSite')}
                   error={error}
                 />

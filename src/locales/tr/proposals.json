@@ -1,0 +1,131 @@
+{
+  "title": "Teklifler",
+  "list": {
+    "title": "Teklifler",
+    "addButton": "Yeni Teklif",
+    "searchPlaceholder": "Teklif veya müşteri ara...",
+    "empty": {
+      "title": "Henüz teklif yok",
+      "description": "İlk teklifinizi oluşturun."
+    },
+    "noResults": {
+      "title": "Sonuç bulunamadı",
+      "description": "Arama kriterlerinizi değiştirin."
+    }
+  },
+  "detail": {
+    "title": "Teklif Detayı",
+    "items": "Kalemler",
+    "total": "Toplam",
+    "scopeOfWork": "İş Kapsamı",
+    "notes": "Dahili Notlar",
+    "workOrders": "İş Emirleri",
+    "workOrderCount": "{{completed}}/{{total}} Tamamlandı",
+    "noWorkOrders": "Henüz iş emri eklenmedi.",
+    "addWorkOrder": "İş Emri Ekle",
+    "addWorkOrderNoSite": "Lokasyon gerekli",
+    "addWorkOrderNoSiteHint": "İş emri eklemek için önce teklife lokasyon ekleyin (Düzenle).",
+    "unlinkWorkOrder": "Bağlantıyı Kaldır",
+    "confirmUnlink": "Bu iş emrinin teklif bağlantısını kaldırmak istediğinize emin misiniz?",
+    "completionBanner": {
+      "title": "Tüm kurulumlar tamamlandı.",
+      "description": "Mali kayıt oluşturmak için devam edin.",
+      "action": "Mali Kayıt Oluştur"
+    },
+    "proposalLink": "Teklif",
+    "actions": {
+      "edit": "Düzenle",
+      "downloadPdf": "PDF İndir",
+      "markSent": "Gönderildi İşaretle",
+      "accept": "Onayla",
+      "reject": "Reddet",
+      "cancel": "İptal Et"
+    },
+    "confirmAccept": "Bu teklifi onaylamak istediğinize emin misiniz?",
+    "confirmReject": "Bu teklifi reddetmek istediğinize emin misiniz?",
+    "confirmSent": "Bu teklifi gönderildi olarak işaretlemek istediğinize emin misiniz?",
+    "netProfit": "Net Kar",
+    "subtotal": "Ara Toplam",
+    "discountPercent": "İskonto %{{percent}}",
+    "discountAmount": "İskonto Tutarı"
+  },
+  "form": {
+    "addTitle": "Yeni Teklif",
+    "noSite": "Lokasyon seçilmedi",
+    "siteOptional": "(isteğe bağlı)",
+    "editTitle": "Teklifi Düzenle",
+    "fields": {
+      "title": "Teklif Başlığı",
+      "scopeOfWork": "Kapsam",
+      "notes": "Dahili Notlar",
+      "companyName": "Firma Adı (PDF)",
+      "surveyDate": "Keşif Tarihi",
+      "authorizedPerson": "Yetkili Kişi",
+      "installationDate": "Montaj Tarihi",
+      "customerRepresentative": "Müşteri Temsilcisi",
+      "completionDate": "Bitiş Tarihi",
+      "discountPercent": "İskonto Oranı (%)",
+      "termsEngineering": "Mühendislik Hizmetleri",
+      "termsPricing": "Fiyatlandırma",
+      "termsWarranty": "Garanti",
+      "termsOther": "Diğer",
+      "termsAttachments": "Ekler"
+    },
+    "placeholders": {
+      "title": "ör. Güvenlik Kamera Sistemi Kurulumu",
+      "scopeOfWork": "İş kapsamını açıklayın...",
+      "notes": "Sadece dahili kullanım...",
+      "companyName": "PDF başlığında görünecek firma adı"
+    },
+    "sections": {
+      "items": "Kalemler",
+      "notes": "Notlar",
+      "logoAndHeader": "Logo ve PDF Başlık Bilgileri",
+      "terms": "Şartlar ve Koşullar"
+    }
+  },
+  "items": {
+    "description": "Açıklama",
+    "quantity": "Adet",
+    "unit": "Birim",
+    "unitPrice": "Birim Fiyat",
+    "total": "Toplam",
+    "addItem": "Kalem Ekle",
+    "units": {
+      "adet": "Adet",
+      "metre": "Metre",
+      "set": "Set",
+      "takim": "Takım"
+    },
+    "sequence": "Sıra",
+    "costTracking": "Maliyet Takibi (dahili)",
+    "cost": "Maliyet",
+    "costProduct": "Ürün Maliyeti",
+    "costLabor": "İşçilik",
+    "costShipping": "Nakliye",
+    "costMaterial": "Malzeme",
+    "costMisc": "Diğer"
+  },
+  "status": {
+    "draft": "Taslak",
+    "sent": "Gönderildi",
+    "accepted": "Onaylandı",
+    "rejected": "Reddedildi",
+    "cancelled": "İptal Edildi",
+    "completed": "Tamamlandı"
+  },
+  "filters": {
+    "allStatuses": "Tüm Durumlar"
+  },
+  "pdf": {
+    "date": "Tarih",
+    "scopeOfWork": "İş Kapsamı",
+    "itemTable": {
+      "description": "Açıklama",
+      "quantity": "Adet",
+      "unitPrice": "Birim Fiyat ($)",
+      "total": "Toplam ($)"
+    },
+    "grandTotal": "Genel Toplam"
+  }
+}

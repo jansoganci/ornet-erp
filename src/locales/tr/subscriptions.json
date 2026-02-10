@@ -26,7 +26,8 @@
       "paymentMethod": "Ödeme Yöntemi",
       "actions": "Aksiyonlar",
       "assignment": "Atama",
-      "notes": "Notlar"
+      "notes": "Notlar",
+      "statusHistory": "Durum Geçmişi"
     },
     "fields": {
       "subtotal": "Ara Toplam",
@@ -37,6 +38,9 @@
       "startDate": "Başlangıç Tarihi",
       "endDate": "Bitiş Tarihi",
       "billingDay": "Fatura Günü",
+      "pausedDate": "Duraklatıldı",
+      "cancelledDate": "İptal Edildi",
+      "reactivatedDate": "Yeniden Etkinleştirildi",
       "soldBy": "Satan Kişi",
       "managedBy": "Sorumlu Kişi",
       "createdBy": "Oluşturan",
@@ -239,11 +243,22 @@
       "type": "Tip",
       "serviceType": "Hizmet Türü",
       "billingFrequency": "Ödeme Sıklığı",
+      "pricing": "Fiyatlar",
       "basePrice": "Baz Fiyat",
       "smsFee": "SMS Ücreti",
       "lineFee": "Hat Ücreti",
       "vatRate": "KDV (%)",
-      "cost": "Maliyet"
+      "cost": "Maliyet",
+      "notesColumn": "Not"
+    },
+    "notes": {
+      "title": "Fiyat revizyon notları",
+      "add": "Not ekle",
+      "revisionDate": "Revizyon tarihi",
+      "empty": "Henüz not yok.",
+      "timelineTitle": "Geçmiş notlar",
+      "noteLabel": "Not",
+      "successCreated": "Not kaydedildi"
     },
     "saveButton": "Değişiklikleri kaydet",
     "saveSuccess": "Fiyat revizyonları başarıyla kaydedildi",

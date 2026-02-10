@@ -175,6 +175,64 @@ export async function deleteTask(id) {
   return { id };
 }
 
+export async function fetchTasksByDateRange({ dateFrom, dateTo, assigned_to } = {}) {
+  if (!isSupabaseConfigured) {
+    return getMockTasksByDateRange(dateFrom, dateTo, assigned_to);
+  }
+
+  try {
+    let query = supabase
+      .from('tasks_with_details')
+      .select('*');
+
+    if (dateFrom) {
+      query = query.gte('due_date', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('due_date', dateTo);
+    }
+
+    if (assigned_to && assigned_to !== 'all') {
+      query = query.eq('assigned_to', assigned_to);
+    }
+
+    const { data, error } = await query
+      .order('due_date', { ascending: true });
+
+    if (error) {
+      if (error.status === 401) return getMockTasksByDateRange(dateFrom, dateTo, assigned_to);
+      throw error;
+    }
+    return data;
+  } catch (err) {
+    if (err.status === 401) return getMockTasksByDateRange(dateFrom, dateTo, assigned_to);
+    throw err;
+  }
+}
+
+function getMockTasksByDateRange(dateFrom, dateTo, assigned_to) {
+  let filtered = [...mockTasks];
+
+  if (dateFrom) {
+    filtered = filtered.filter(t => t.due_date && t.due_date >= dateFrom);
+  }
+  if (dateTo) {
+    filtered = filtered.filter(t => t.due_date && t.due_date <= dateTo);
+  }
+  if (assigned_to && assigned_to !== 'all') {
+    filtered = filtered.filter(t => t.assigned_to === assigned_to);
+  }
+
+  filtered.sort((a, b) => {
+    if (!a.due_date) return 1;
+    if (!b.due_date) return -1;
+    return new Date(a.due_date) - new Date(b.due_date);
+  });
+
+  return filtered;
+}
+
 export async function fetchProfiles(filters = {}) {
   if (!isSupabaseConfigured) {
     const list = mockProfiles;

@@ -15,7 +15,8 @@ import { toast } from 'sonner';
 export function MaterialFormModal({ 
   open, 
   onClose, 
-  material = null 
+  material = null,
+  onSuccess = null
 }) {
   const { t } = useTranslation(['materials', 'common']);
   const isEditing = !!material;
@@ -35,15 +36,19 @@ export function MaterialFormModal({
 
   const onSubmit = async (data) => {
     try {
+      let result;
       if (isEditing) {
-        await updateMutation.mutateAsync({ id: material.id, data });
+        result = await updateMutation.mutateAsync({ id: material.id, data });
         toast.success(t('common:success.updated'));
       } else {
-        await createMutation.mutateAsync(data);
+        result = await createMutation.mutateAsync(data);
         toast.success(t('common:success.created'));
       }
       reset();
       onClose();
+      if (onSuccess && result) {
+        onSuccess(result);
+      }
     } catch (error) {
       console.error(error);
     }

@@ -2,7 +2,7 @@ import {
   Home,
   Users,
   ClipboardList,
-  CheckSquare,
+  Target,
   Calendar,
   CalendarCheck,
   Search,
@@ -10,6 +10,7 @@ import {
   CreditCard,
   Cpu,
   Receipt,
+  FileText,
 } from 'lucide-react';
 
 export const navItems = [
@@ -19,9 +20,10 @@ export const navItems = [
   { to: '/work-orders', icon: ClipboardList, labelKey: 'nav.workOrders' },
   { to: '/work-history', icon: Search, labelKey: 'nav.workHistory' },
   { to: '/calendar', icon: Calendar, labelKey: 'nav.calendar' },
-  { to: '/tasks', icon: CheckSquare, labelKey: 'nav.tasks' },
+  { to: '/tasks', icon: Target, labelKey: 'nav.tasks' },
   { to: '/materials', icon: Package, labelKey: 'nav.materials' },
   { to: '/subscriptions', icon: CreditCard, labelKey: 'nav.subscriptions' },
   { to: '/subscriptions/price-revision', icon: Receipt, labelKey: 'nav.priceRevision', adminOnly: true },
   { to: '/sim-cards', icon: Cpu, labelKey: 'simCards:title' },
+  { to: '/proposals', icon: FileText, labelKey: 'nav.proposals' },
 ];

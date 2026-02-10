@@ -6,7 +6,11 @@
   "filters": {
     "date": "Tarih Seçin",
     "worker": "Personel Filtresi",
-    "allWorkers": "Tüm Personeller"
+    "allWorkers": "Tümü"
+  },
+  "week": {
+    "prevWeek": "Önceki hafta",
+    "nextWeek": "Sonraki hafta"
   },
   "table": {
     "workType": "İş Tipi",
@@ -17,5 +21,9 @@
   "empty": {
     "title": "Bugün için iş yok",
     "description": "Seçili tarihte planlanmış bir iş emri bulunamadı."
+  },
+  "todayPlans": {
+    "title": "Bugünkü Planlar",
+    "empty": "Bugün için plan yok"
   }
 }

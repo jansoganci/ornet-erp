@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Package, Minus, Info } from 'lucide-react';
-import { useActiveMaterials } from '../materials/hooks';
 import { 
   Button, 
-  Select, 
   Input, 
   IconButton, 
   Badge, 
-  Spinner,
   Card
 } from '../../components/ui';
 import { cn } from '../../lib/utils';
+import { MaterialAutocomplete } from './MaterialAutocomplete';
 
 export function MaterialSelector({ 
   value = [], 
@@ -19,16 +17,14 @@ export function MaterialSelector({
 }) {
   const { t } = useTranslation(['workOrders', 'materials', 'common']);
   const [selectedMaterialId, setSelectedMaterialId] = useState('');
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
 
-  const { data: materials = [], isLoading } = useActiveMaterials();
-
   const handleAdd = () => {
-    if (!selectedMaterialId) return;
+    if (!selectedMaterialId || !selectedMaterial) return;
 
-    const material = materials.find(m => m.id === selectedMaterialId);
-    if (!material) return;
+    const material = selectedMaterial;
 
     const existingIndex = value.findIndex(v => v.material_id === selectedMaterialId);
     
@@ -56,6 +52,7 @@ export function MaterialSelector({
 
     onChange(newValue);
     setSelectedMaterialId('');
+    setSelectedMaterial(null);
     setQuantity(1);
     setNotes('');
   };
@@ -88,15 +85,13 @@ export function MaterialSelector({
         <div className="space-y-4 p-1">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-7">
-              <Select
+              <MaterialAutocomplete
                 value={selectedMaterialId}
-                onChange={(e) => setSelectedMaterialId(e.target.value)}
-                options={materials.map(m => ({
-                  value: m.id,
-                  label: `${m.code} - ${m.name}`
-                }))}
-                placeholder={t('materials:list.searchPlaceholder')}
-                disabled={isLoading}
+                onChange={(id) => setSelectedMaterialId(id)}
+                onMaterialSelect={(material) => {
+                  setSelectedMaterial(material);
+                  setSelectedMaterialId(material ? material.id : '');
+                }}
               />
             </div>
             <div className="md:col-span-3">
@@ -112,14 +107,18 @@ export function MaterialSelector({
               <Button 
                 className="w-full" 
                 onClick={handleAdd}
-                disabled={!selectedMaterialId}
+                disabled={!selectedMaterial || quantity < 1}
                 leftIcon={<Plus className="w-4 h-4" />}
               >
                 {t('common:actions.add')}
               </Button>
             </div>
           </div>
-          
+          {selectedMaterial && (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              {t('workOrders:form.materialSelect.selected', 'Seçili')}: {selectedMaterial.code} - {selectedMaterial.name}
+            </p>
+          )}
           <Input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

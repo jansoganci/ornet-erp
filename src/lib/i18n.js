@@ -16,6 +16,7 @@ import profileTr from '../locales/tr/profile.json'
 import calendarTr from '../locales/tr/calendar.json'
 import subscriptionsTr from '../locales/tr/subscriptions.json'
 import simCardsTr from '../locales/tr/simCards.json'
+import proposalsTr from '../locales/tr/proposals.json'
 
 i18n.use(initReactI18next).init({
   lng: 'tr',
@@ -36,6 +37,7 @@ i18n.use(initReactI18next).init({
     'calendar',
     'subscriptions',
     'simCards',
+    'proposals',
   ],
   resources: {
     tr: {
@@ -53,6 +55,7 @@ i18n.use(initReactI18next).init({
       calendar: calendarTr,
       subscriptions: subscriptionsTr,
       simCards: simCardsTr,
+      proposals: proposalsTr,
     },
   },
   interpolation: {

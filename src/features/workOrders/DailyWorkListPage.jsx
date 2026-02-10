@@ -1,143 +1,152 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calendar, User, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-import { PageContainer, PageHeader } from '../../components/layout';
-import { 
-  Button, 
-  Select, 
-  Input, 
-  Spinner, 
-  EmptyState, 
-  Card,
-  Badge,
-  ErrorState
-} from '../../components/ui';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PageContainer } from '../../components/layout';
+import { Spinner, EmptyState, ErrorState } from '../../components/ui';
 import { useDailyWorkList } from './hooks';
 import { useProfiles } from '../tasks/hooks';
 import { DailyWorkCard } from './DailyWorkCard';
-import { formatDate } from '../../lib/utils';
+import { TodayPlansSection } from './TodayPlansSection';
+import { cn } from '../../lib/utils';
+
+/** Given a date string (YYYY-MM-DD), return the Monday of that week (ISO string). Monday = first day of week. */
+function getMondayOfWeek(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.getDay();
+  const diff = d.getDate() - (day === 0 ? 7 : day) + 1;
+  d.setDate(diff);
+  return d.toISOString().split('T')[0];
+}
+
+/** Given Monday ISO string, return array of 7 ISO date strings (Mon..Sun). */
+function getWeekDates(weekStartStr) {
+  const dates = [];
+  const start = new Date(weekStartStr + 'T12:00:00');
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
+const WEEKDAY_OPTIONS = { weekday: 'short' };
 
 export function DailyWorkListPage() {
   const { t } = useTranslation(['dailyWork', 'common', 'workOrders']);
   const navigate = useNavigate();
-  
-  // State
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const todayIso = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  const [weekStart, setWeekStart] = useState(() => getMondayOfWeek(todayIso));
+  const [selectedDate, setSelectedDate] = useState(todayIso);
   const [selectedWorkerId, setSelectedWorkerId] = useState('');
 
-  // Hooks
   const { data: workOrders = [], isLoading, error, refetch } = useDailyWorkList(selectedDate, selectedWorkerId);
   const { data: profiles = [], isLoading: isLoadingProfiles } = useProfiles();
 
-  const handleDateChange = (newDate) => {
-    setSelectedDate(newDate);
+  const weekDates = useMemo(() => getWeekDates(weekStart), [weekStart]);
+
+  const goPrevWeek = () => {
+    const m = new Date(weekStart + 'T12:00:00');
+    m.setDate(m.getDate() - 7);
+    const nextMonday = m.toISOString().split('T')[0];
+    setWeekStart(nextMonday);
+    setSelectedDate(nextMonday);
   };
 
-  const shiftDate = (days) => {
-    const date = new Date(selectedDate);
-    date.setDate(date.getDate() + days);
-    setSelectedDate(date.toISOString().split('T')[0]);
+  const goNextWeek = () => {
+    const m = new Date(weekStart + 'T12:00:00');
+    m.setDate(m.getDate() + 7);
+    const nextMonday = m.toISOString().split('T')[0];
+    setWeekStart(nextMonday);
+    setSelectedDate(nextMonday);
   };
 
-  const workerOptions = [
-    { value: '', label: t('dailyWork:filters.allWorkers') },
-    ...profiles.map(p => ({
-      value: p.id,
-      label: p.full_name
-    }))
-  ];
+  const showTodayPlans = selectedDate === todayIso;
 
   return (
-    <PageContainer maxWidth="lg" padding="default" className="space-y-6">
-      <PageHeader
-        title={t('dailyWork:title')}
-        description={t('dailyWork:subtitle', { date: formatDate(selectedDate) })}
-        breadcrumbs={[
-          { label: t('common:nav.dashboard'), to: '/' },
-          { label: t('dailyWork:title') }
-        ]}
-      />
-
-      {/* Filters */}
-      <Card className="p-4 shadow-sm border-neutral-200/60 dark:border-neutral-800/60">
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 w-full space-y-1.5">
-            <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest ml-1">
-              {t('dailyWork:filters.date')}
-            </label>
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => shiftDate(-1)}
-                className="h-11 px-2"
+    <PageContainer maxWidth="xl" padding="default" className="space-y-5">
+      {/* Week bar */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={goPrevWeek}
+          className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-neutral-50 dark:hover:bg-[#262626] transition-colors"
+          aria-label={t('dailyWork:week.prevWeek')}
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="flex-1 grid grid-cols-7 gap-1">
+          {weekDates.map((dateIso) => {
+            const d = new Date(dateIso + 'T12:00:00');
+            const dayNum = d.getDate();
+            const weekdayShort = new Intl.DateTimeFormat('tr-TR', WEEKDAY_OPTIONS).format(d);
+            const isToday = dateIso === todayIso;
+            const isSelected = dateIso === selectedDate;
+            return (
+              <button
+                key={dateIso}
+                type="button"
+                onClick={() => setSelectedDate(dateIso)}
+                className={cn(
+                  'py-2 px-1 rounded-lg text-center text-sm font-medium transition-colors',
+                  isToday && 'bg-neutral-200 dark:bg-[#262626] text-neutral-900 dark:text-neutral-50',
+                  isSelected && !isToday && 'ring-2 ring-primary-500 dark:ring-primary-400 text-neutral-900 dark:text-neutral-50',
+                  !isToday && !isSelected && 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-[#262626]'
+                )}
+                aria-label={`${weekdayShort} ${dayNum}`}
+                aria-pressed={isSelected}
               >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => handleDateChange(e.target.value)}
-                className="flex-1"
-                leftIcon={Calendar}
-              />
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => shiftDate(1)}
-                className="h-11 px-2"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex-1 w-full space-y-1.5">
-            <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest ml-1">
-              {t('dailyWork:filters.worker')}
-            </label>
-            <Select
-              options={workerOptions}
-              value={selectedWorkerId}
-              onChange={(e) => setSelectedWorkerId(e.target.value)}
-              leftIcon={User}
-              disabled={isLoadingProfiles}
-            />
-          </div>
-
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => {
-              setSelectedDate(new Date().toISOString().split('T')[0]);
-              setSelectedWorkerId('');
-            }}
-            className="text-primary-600 font-bold uppercase tracking-wider text-[10px] h-11"
-          >
-            {t('common:actions.reset')}
-          </Button>
+                <span className="block text-[10px] uppercase text-neutral-500 dark:text-neutral-400">{weekdayShort}</span>
+                <span className="block tabular-nums">{dayNum}</span>
+              </button>
+            );
+          })}
         </div>
-      </Card>
+        <button
+          type="button"
+          onClick={goNextWeek}
+          className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:text-neutral-50 dark:hover:bg-[#262626] transition-colors"
+          aria-label={t('dailyWork:week.nextWeek')}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
 
-      {/* Quick Date Shortcuts */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        <Button 
-          variant={selectedDate === new Date().toISOString().split('T')[0] ? 'primary' : 'outline'}
-          size="sm"
-          onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-          className="whitespace-nowrap rounded-full px-4"
+      {/* Worker filter – minimal one row */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+        <button
+          type="button"
+          onClick={() => setSelectedWorkerId('')}
+          className={cn(
+            'text-left transition-colors',
+            selectedWorkerId === ''
+              ? 'font-semibold text-neutral-900 dark:text-neutral-50'
+              : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50'
+          )}
         >
-          {t('dailyWork:today')}
-        </Button>
-        <Button 
-          variant="outline"
-          size="sm"
-          onClick={() => shiftDate(1)}
-          className="whitespace-nowrap rounded-full px-4"
-        >
-          {t('dailyWork:tomorrow')}
-        </Button>
+          {t('dailyWork:filters.allWorkers')}
+        </button>
+        {profiles.map((p) => (
+          <span key={p.id} className="flex items-center gap-x-2">
+            <span className="text-neutral-300 dark:text-[#404040]">|</span>
+            <button
+              type="button"
+              onClick={() => setSelectedWorkerId(p.id)}
+              disabled={isLoadingProfiles}
+              className={cn(
+                'text-left transition-colors disabled:opacity-50',
+                selectedWorkerId === p.id
+                  ? 'font-semibold text-neutral-900 dark:text-neutral-50'
+                  : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50'
+              )}
+            >
+              {p.full_name}
+            </button>
+          </span>
+        ))}
       </div>
 
       {/* Content */}
@@ -157,23 +166,22 @@ export function DailyWorkListPage() {
           onAction={() => navigate('/work-orders/new')}
         />
       ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-bold text-neutral-500 uppercase tracking-widest">
-              {t('dailyWork:table.workType')}
-            </h3>
-            <Badge variant="secondary">{workOrders.length} {t('common:labels.records')}</Badge>
-          </div>
-          <div className="grid grid-cols-1 gap-4">
-            {workOrders.map((wo) => (
-              <DailyWorkCard 
-                key={wo.id} 
-                workOrder={wo} 
-                onClick={(order) => navigate(`/work-orders/${order.id}`)}
-              />
-            ))}
-          </div>
+        <div className="grid grid-cols-1 gap-4">
+          {workOrders.map((wo) => (
+            <DailyWorkCard
+              key={wo.id}
+              workOrder={wo}
+              onClick={(order) => navigate(`/work-orders/${order.id}`)}
+            />
+          ))}
         </div>
+      )}
+
+      {showTodayPlans && (
+        <TodayPlansSection
+          selectedDate={selectedDate}
+          selectedWorkerId={selectedWorkerId}
+        />
       )}
     </PageContainer>
   );

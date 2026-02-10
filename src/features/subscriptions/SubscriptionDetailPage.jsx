@@ -14,6 +14,8 @@ import {
   Pause,
   XCircle,
   Play,
+  CheckCircle2,
+  Clock,
 } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
@@ -29,6 +31,7 @@ import {
   useSubscriptionPayments,
   useCurrentProfile,
   useReactivateSubscription,
+  useRevisionNotes,
 } from './hooks';
 import { SubscriptionStatusBadge } from './components/SubscriptionStatusBadge';
 import { SubscriptionPricingCard } from './components/SubscriptionPricingCard';
@@ -70,6 +73,7 @@ export function SubscriptionDetailPage() {
 
   const { data: subscription, isLoading, error, refetch } = useSubscription(id);
   const { data: payments = [] } = useSubscriptionPayments(id);
+  const { data: revisionNotes = [], isLoading: revisionNotesLoading } = useRevisionNotes(id);
   const { data: currentProfile } = useCurrentProfile();
   const reactivateMutation = useReactivateSubscription();
 
@@ -298,6 +302,67 @@ export function SubscriptionDetailPage() {
             </div>
           </Card>
 
+          {/* Status History */}
+          <Card className="p-5">
+            <div className="flex items-center space-x-2 mb-4">
+              <Clock className="w-4 h-4 text-primary-600" />
+              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+                {t('subscriptions:detail.sections.statusHistory')}
+              </h3>
+            </div>
+            <div className="space-y-3 text-sm">
+              {/* Start Date */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-success-600" />
+                  <span className="text-xs text-neutral-500">{t('subscriptions:detail.fields.startDate')}</span>
+                </div>
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                  {formatDate(subscription.start_date)}
+                </span>
+              </div>
+
+              {/* Paused Date */}
+              {subscription.paused_at && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Pause className="w-3.5 h-3.5 text-warning-600" />
+                    <span className="text-xs text-neutral-500">{t('subscriptions:detail.fields.pausedDate')}</span>
+                  </div>
+                  <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                    {formatDate(subscription.paused_at)}
+                  </span>
+                </div>
+              )}
+
+              {/* Cancelled Date */}
+              {subscription.cancelled_at && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="w-3.5 h-3.5 text-error-600" />
+                    <span className="text-xs text-neutral-500">{t('subscriptions:detail.fields.cancelledDate')}</span>
+                  </div>
+                  <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                    {formatDate(subscription.cancelled_at)}
+                  </span>
+                </div>
+              )}
+
+              {/* Reactivated Date */}
+              {subscription.reactivated_at && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-success-600" />
+                    <span className="text-xs text-neutral-500">{t('subscriptions:detail.fields.reactivatedDate')}</span>
+                  </div>
+                  <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                    {formatDate(subscription.reactivated_at)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </Card>
+
           {/* Assignment */}
           <Card className="p-5">
             <div className="flex items-center space-x-2 mb-4">
@@ -355,6 +420,42 @@ export function SubscriptionDetailPage() {
               </div>
             </Card>
           )}
+
+          {/* Fiyat revizyon notları */}
+          <Card className="p-5">
+            <div className="flex items-center space-x-2 mb-4">
+              <StickyNote className="w-4 h-4 text-primary-600" />
+              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+                {t('subscriptions:priceRevision.notes.title')}
+              </h3>
+            </div>
+            {revisionNotesLoading ? (
+              <div className="space-y-3">
+                <div className="h-12 rounded bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+                <div className="h-12 rounded bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+              </div>
+            ) : revisionNotes.length === 0 ? (
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                {t('subscriptions:priceRevision.notes.empty')}
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {revisionNotes.map((n) => (
+                  <li
+                    key={n.id}
+                    className="text-sm border-l-2 border-neutral-200 dark:border-[#262626] pl-3 py-1"
+                  >
+                    <span className="font-medium text-neutral-700 dark:text-neutral-300">
+                      {formatDate(n.revision_date)}
+                    </span>
+                    <p className="text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap mt-0.5">
+                      {n.note}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
 
           {/* Pause/Cancel reason */}
           {subscription.status === 'paused' && subscription.pause_reason && (

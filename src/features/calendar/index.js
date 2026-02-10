@@ -1,3 +1,3 @@
 export { CalendarPage } from './CalendarPage';
-export { useCalendarWorkOrders, useCalendarRealtime, calendarKeys } from './hooks';
-export { mapWorkOrdersToEvents, mapWorkOrderToEvent } from './utils';
+export { useCalendarWorkOrders, useCalendarTasks, useCalendarRealtime, calendarKeys } from './hooks';
+export { mapWorkOrdersToEvents, mapWorkOrderToEvent, mapTasksToEvents, mapTaskToEvent } from './utils';

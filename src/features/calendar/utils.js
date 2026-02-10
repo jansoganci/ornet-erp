@@ -97,12 +97,61 @@ export const calendarEventClassByStatus = {
   cancelled: '!bg-neutral-100 !border-l-4 !border-neutral-400 !text-neutral-600 dark:!bg-[#171717] dark:!text-neutral-400',
 };
 
+/** Purple color for plan (task) items — distinct from all work order statuses. */
+export const PLAN_EVENT_CLASS = '!bg-violet-50 !border-l-4 !border-violet-500 !text-violet-800 dark:!bg-violet-900/30 dark:!text-violet-200';
+
 /**
- * Return className for a calendar event based on work order status (resource.status).
+ * Return className for a calendar event based on type and status.
+ * Plan items get purple; work orders keep their status-based color.
  */
 export function getEventClassName(event) {
+  if (event?.resource?._type === 'plan') return PLAN_EVENT_CLASS;
   const status = event?.resource?.status;
   return calendarEventClassByStatus[status] ?? '!bg-neutral-100 !border-l-4 !border-neutral-300 dark:!bg-[#171717] dark:!text-neutral-300';
+}
+
+/**
+ * Parse due_date (YYYY-MM-DD) and due_time (HH:mm or HH:mm:ss) into a local Date.
+ * Falls back to 09:00 if time is missing.
+ */
+function parseDueAt(due_date, due_time) {
+  if (!due_date) return null;
+  const [y, m, d] = due_date.split('-').map(Number);
+  let hour = 9;
+  let minute = 0;
+  if (due_time) {
+    const parts = due_time.split(':');
+    hour = parseInt(parts[0], 10) || 9;
+    minute = parseInt(parts[1], 10) || 0;
+  }
+  return new Date(y, m - 1, d, hour, minute, 0, 0);
+}
+
+/**
+ * Map a task to a calendar event shape.
+ * resource._type = 'plan' so the calendar can distinguish from work orders.
+ */
+export function mapTaskToEvent(task) {
+  const start = parseDueAt(task.due_date, task.due_time);
+  if (!start || Number.isNaN(start.getTime())) return null;
+  const end = new Date(start.getTime() + DEFAULT_EVENT_DURATION_MS);
+
+  return {
+    id: `plan-${task.id}`,
+    title: task.title || '',
+    start,
+    end,
+    resource: { ...task, _type: 'plan' },
+  };
+}
+
+/**
+ * Map an array of tasks to calendar events.
+ * Skips entries without a valid due_date.
+ */
+export function mapTasksToEvents(tasks) {
+  if (!Array.isArray(tasks)) return [];
+  return tasks.map(mapTaskToEvent).filter(Boolean);
 }
 
 /**

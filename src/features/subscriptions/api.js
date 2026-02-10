@@ -165,6 +165,18 @@ export async function updateSubscription({ id, ...updateData }) {
   let payload = cleanSubscriptionPayload(updateData);
   const subscription_type = payload.subscription_type ?? current.subscription_type;
 
+  // Automatically set timestamps when status changes
+  if (payload.status && payload.status !== current.status) {
+    const now = new Date().toISOString();
+    if (payload.status === 'cancelled') {
+      payload.cancelled_at = now;
+    } else if (payload.status === 'paused') {
+      payload.paused_at = now;
+    } else if (payload.status === 'active' && (current.status === 'paused' || current.status === 'cancelled')) {
+      payload.reactivated_at = now;
+    }
+  }
+
   // Card + inline: create payment_method and set payment_method_id if not provided
   if (
     subscription_type === 'recurring_card' &&
@@ -245,7 +257,11 @@ export async function updateSubscription({ id, ...updateData }) {
 export async function pauseSubscription(id, reason) {
   const { data, error } = await supabase
     .from('subscriptions')
-    .update({ status: 'paused', pause_reason: reason })
+    .update({ 
+      status: 'paused', 
+      pause_reason: reason,
+      paused_at: new Date().toISOString()
+    })
     .eq('id', id)
     .select()
     .single();
@@ -273,7 +289,11 @@ export async function pauseSubscription(id, reason) {
 export async function cancelSubscription(id, { reason, writeOffUnpaid = false }) {
   const { data, error } = await supabase
     .from('subscriptions')
-    .update({ status: 'cancelled', cancel_reason: reason })
+    .update({ 
+      status: 'cancelled', 
+      cancel_reason: reason,
+      cancelled_at: new Date().toISOString()
+    })
     .eq('id', id)
     .select()
     .single();
@@ -301,7 +321,10 @@ export async function cancelSubscription(id, { reason, writeOffUnpaid = false })
 export async function reactivateSubscription(id) {
   const { data, error } = await supabase
     .from('subscriptions')
-    .update({ status: 'active' })
+    .update({ 
+      status: 'active',
+      reactivated_at: new Date().toISOString()
+    })
     .eq('id', id)
     .select()
     .single();
@@ -330,6 +353,44 @@ export async function bulkUpdateSubscriptionPrices(updates) {
   const { data, error } = await supabase.rpc('bulk_update_subscription_prices', {
     p_updates: updates,
   });
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Fetch revision notes for a subscription (timeline, ordered by revision_date DESC).
+ * @param {string} subscriptionId
+ * @returns {Promise<Array<{ id: string, note: string, revision_date: string, created_at: string, created_by: string | null }>>}
+ */
+export async function fetchRevisionNotes(subscriptionId) {
+  const { data, error } = await supabase
+    .from('subscription_price_revision_notes')
+    .select('id, note, revision_date, created_at, created_by')
+    .eq('subscription_id', subscriptionId)
+    .order('revision_date', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Create a revision note for a subscription.
+ * @param {{ subscription_id: string, note: string, revision_date: string }} payload
+ * @returns {Promise<object>} Inserted row
+ */
+export async function createRevisionNote({ subscription_id, note, revision_date }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('subscription_price_revision_notes')
+    .insert({
+      subscription_id,
+      note,
+      revision_date,
+      created_by: user?.id ?? null,
+    })
+    .select()
+    .single();
+
   if (error) throw error;
   return data;
 }
