@@ -52,6 +52,7 @@ export function useUpdateSimCard() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: simCardKeys.lists() });
       queryClient.invalidateQueries({ queryKey: simCardKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: [...simCardKeys.all, 'financial-stats'] });
       toast.success(t('success.updated'));
     },
     onError: (error) => {
@@ -96,6 +97,22 @@ export function useSimCardsByCustomer(customerId) {
     queryKey: [...simCardKeys.lists(), 'customer', customerId],
     queryFn: () => api.fetchSimCardsByCustomer(customerId),
     enabled: !!customerId,
+  });
+}
+
+export function useSimCardsBySite(siteId) {
+  return useQuery({
+    queryKey: [...simCardKeys.lists(), 'site', siteId],
+    queryFn: () => api.fetchSimCardsBySite(siteId),
+    enabled: !!siteId,
+  });
+}
+
+export function useSimCardsForSubscription(siteId, search) {
+  return useQuery({
+    queryKey: [...simCardKeys.lists(), 'subscription', siteId, search],
+    queryFn: () => api.fetchSimCardsForSubscription(siteId, search),
+    enabled: !!siteId,
   });
 }
 

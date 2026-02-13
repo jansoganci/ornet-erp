@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +13,7 @@ import {
   Card,
   Spinner,
   Textarea,
+  SimCardCombobox,
 } from '../../components/ui';
 import { subscriptionSchema, subscriptionDefaultValues, SUBSCRIPTION_TYPES, SERVICE_TYPES, BILLING_FREQUENCIES } from './schema';
 import {
@@ -23,6 +24,7 @@ import {
 } from './hooks';
 import { useProfiles } from '../tasks/hooks';
 import { useSite } from '../customerSites/hooks';
+import { useSimCard } from '../simCards/hooks';
 import { CustomerSiteSelector } from '../workOrders/CustomerSiteSelector';
 import { toast } from 'sonner';
 
@@ -34,9 +36,13 @@ const BILLING_DAY_OPTIONS = Array.from({ length: 28 }, (_, i) => ({
 export function SubscriptionFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation(['subscriptions', 'common', 'errors']);
   const { t: tCommon } = useTranslation('common');
   const isEdit = !!id;
+
+  const urlSiteId = searchParams.get('siteId');
+  const urlCustomerId = searchParams.get('customerId');
 
   const { data: subscription, isLoading: isSubLoading } = useSubscription(id);
   const createMutation = useCreateSubscription();
@@ -59,6 +65,7 @@ export function SubscriptionFormPage() {
   });
 
   const selectedSiteId = watch('site_id');
+  const simCardId = watch('sim_card_id');
   const subscriptionType = watch('subscription_type');
   const basePrice = watch('base_price');
   const smsFee = watch('sms_fee');
@@ -66,8 +73,26 @@ export function SubscriptionFormPage() {
   const vatRate = watch('vat_rate');
 
   const { data: siteData } = useSite(selectedSiteId);
+  const { data: selectedSim } = useSimCard(simCardId);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+
+  // Preselect customer and site from URL params (create mode)
+  useEffect(() => {
+    if (!isEdit && urlCustomerId && urlSiteId) {
+      setSelectedCustomerId(urlCustomerId);
+      setValue('site_id', urlSiteId, { shouldValidate: true });
+    }
+  }, [isEdit, urlCustomerId, urlSiteId, setValue]);
+
+  // Clear sim_card_id when site changes in create mode (selected SIM may not be valid for new site)
+  const prevSiteIdRef = useRef('');
+  useEffect(() => {
+    if (!isEdit && prevSiteIdRef.current !== selectedSiteId) {
+      prevSiteIdRef.current = selectedSiteId;
+      setValue('sim_card_id', '', { shouldValidate: false });
+    }
+  }, [selectedSiteId, isEdit, setValue]);
 
   // Populate form when editing
   useEffect(() => {
@@ -94,6 +119,7 @@ export function SubscriptionFormPage() {
         official_invoice: subscription.official_invoice ?? true,
         card_bank_name: subscription.card_bank_name || subscription.pm_bank_name || '',
         card_last4: subscription.card_last4 || subscription.pm_card_last4 || '',
+        sim_card_id: subscription.sim_card_id || '',
       });
       if (subscription.customer_id) setSelectedCustomerId(subscription.customer_id);
     }
@@ -156,6 +182,7 @@ export function SubscriptionFormPage() {
         official_invoice: !!data.official_invoice,
         card_bank_name: cleanValue(data.card_bank_name),
         card_last4: cleanValue(data.card_last4) ? String(data.card_last4).trim().slice(0, 4) : null,
+        sim_card_id: cleanValue(data.sim_card_id),
       };
 
       if (isEdit) {
@@ -293,6 +320,21 @@ export function SubscriptionFormPage() {
                   options={serviceTypeOptions}
                   error={errors.service_type?.message}
                   {...register('service_type')}
+                />
+                <Controller
+                  name="sim_card_id"
+                  control={control}
+                  render={({ field }) => (
+                    <SimCardCombobox
+                      label={t('subscriptions:form.fields.simCard')}
+                      value={field.value || ''}
+                      selectedSim={selectedSim}
+                      onChange={field.onChange}
+                      siteId={selectedSiteId}
+                      error={errors.sim_card_id?.message}
+                      disabled={!selectedSiteId}
+                    />
+                  )}
                 />
                 <Select
                   label={t('subscriptions:form.fields.billingFrequency')}

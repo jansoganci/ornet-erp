@@ -29,6 +29,7 @@ import { formatDate } from '../../lib/utils';
 import {
   useSubscription,
   useSubscriptionPayments,
+  useSubscriptionsBySite,
   useCurrentProfile,
   useReactivateSubscription,
   useRevisionNotes,
@@ -74,11 +75,13 @@ export function SubscriptionDetailPage() {
   const { data: subscription, isLoading, error, refetch } = useSubscription(id);
   const { data: payments = [] } = useSubscriptionPayments(id);
   const { data: revisionNotes = [], isLoading: revisionNotesLoading } = useRevisionNotes(id);
+  const { data: siteSubscriptions = [] } = useSubscriptionsBySite(subscription?.site_id);
   const { data: currentProfile } = useCurrentProfile();
   const reactivateMutation = useReactivateSubscription();
 
   const isAdmin = currentProfile?.role === 'admin';
   const pendingPaymentsCount = payments.filter((p) => p.status === 'pending').length;
+  const otherServicesAtSite = (siteSubscriptions || []).filter((s) => s.id !== id);
 
   if (isLoading) return <DetailSkeleton />;
 
@@ -199,6 +202,17 @@ export function SubscriptionDetailPage() {
                     </a>
                   </div>
                 )}
+                {subscription.sim_phone_number && (
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-1">
+                      {t('subscriptions:form.fields.simCard')}
+                    </p>
+                    <a href={`tel:${subscription.sim_phone_number}`} className="flex items-center text-sm font-bold text-primary-600">
+                      <Phone className="w-4 h-4 mr-2 shrink-0" />
+                      {subscription.sim_phone_number}
+                    </a>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div>
                     <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-1">
@@ -254,9 +268,7 @@ export function SubscriptionDetailPage() {
               <div className="flex items-center justify-between">
                 <span className="text-xs text-neutral-500">{t('subscriptions:detail.fields.billingFrequency')}</span>
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                  {subscription.billing_frequency === 'yearly'
-                    ? t('subscriptions:form.fields.yearly')
-                    : t('subscriptions:form.fields.monthly')}
+                  {t(`subscriptions:form.fields.${subscription.billing_frequency || 'monthly'}`)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -362,6 +374,38 @@ export function SubscriptionDetailPage() {
               )}
             </div>
           </Card>
+
+          {/* Other services at this site */}
+          {otherServicesAtSite.length > 0 && (
+            <Card className="p-5">
+              <div className="flex items-center space-x-2 mb-4">
+                <CreditCard className="w-4 h-4 text-primary-600" />
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+                  {t('subscriptions:multiService.otherServices')}
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {otherServicesAtSite.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    to={`/subscriptions/${sub.id}`}
+                    className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" size="sm">
+                        {sub.service_type ? t(`subscriptions:serviceTypes.${sub.service_type}`) : '—'}
+                      </Badge>
+                      <SubscriptionStatusBadge status={sub.status} />
+                      <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(Number(sub.base_price) || 0)}
+                      </span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-neutral-600" />
+                  </Link>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {/* Assignment */}
           <Card className="p-5">

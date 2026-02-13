@@ -8,7 +8,8 @@
     "completedThisWeek": "Bu Hafta Tamamlanan",
     "openTasks": "Açık Görevler",
     "overdueTasks": "Geciken Görevler",
-    "totalCustomers": "Toplam Müşteri"
+    "totalCustomers": "Toplam Müşteri",
+    "activeSubscriptions": "Aktif Abonelik"
   },
   "todaySchedule": {
     "title": "Bugünün Programı",

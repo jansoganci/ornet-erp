@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, X, Calendar, Clock, FileText, Package, AlertTriangle } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn, getCurrencySymbol } from '../../lib/utils';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { 
   Button, 
@@ -15,11 +15,11 @@ import {
   Textarea,
   Badge
 } from '../../components/ui';
-import { workOrderSchema, workOrderDefaultValues, WORK_TYPES } from './schema';
+import { workOrderSchema, workOrderDefaultValues, WORK_TYPES, CURRENCIES } from './schema';
 import { useWorkOrder, useCreateWorkOrder, useUpdateWorkOrder } from './hooks';
 import { CustomerSiteSelector } from './CustomerSiteSelector';
 import { WorkerSelector } from './WorkerSelector';
-import { MaterialSelector } from './MaterialSelector';
+import { WorkOrderItemsEditor } from './components/WorkOrderItemsEditor';
 import { AccountNoWarning } from './AccountNoWarning';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useSite } from '../customerSites/hooks';
@@ -63,6 +63,7 @@ export function WorkOrderFormPage() {
 
   const selectedSiteId = watch('site_id');
   const workType = watch('work_type');
+  const selectedCurrency = watch('currency') ?? 'TRY';
   const { data: siteData } = useSite(selectedSiteId);
 
   // Prefill from URL params
@@ -81,11 +82,13 @@ export function WorkOrderFormPage() {
     if (workOrder && isEdit) {
       const siteId = workOrder.site_id ?? '';
       const assignedTo = Array.isArray(workOrder.assigned_to) ? workOrder.assigned_to : [];
-      const materials = (workOrder.work_order_materials || []).map(wom => ({
-        material_id: wom.material_id,
-        quantity: Math.max(1, Number(wom.quantity) || 1),
-        notes: wom.notes || '',
-        material: wom.materials
+      const items = (workOrder.work_order_materials || []).map(wom => ({
+        description: wom.description || wom.materials?.name || '',
+        quantity: parseFloat(wom.quantity) || 1,
+        unit: wom.unit || 'adet',
+        unit_price: wom.unit_price ?? wom.unit_price_usd ?? 0,
+        cost: wom.cost ?? wom.cost_usd ?? null,
+        material_id: wom.material_id || null,
       }));
       reset({
         site_id: siteId,
@@ -101,7 +104,8 @@ export function WorkOrderFormPage() {
         notes: workOrder.notes || '',
         amount: workOrder.amount ?? '',
         currency: workOrder.currency || 'TRY',
-        materials,
+        items: items.length > 0 ? items : workOrderDefaultValues.items,
+        materials_discount_percent: workOrder.materials_discount_percent ?? 0,
       });
       if (workOrder.customer_id) setSelectedCustomerId(workOrder.customer_id);
     }
@@ -155,10 +159,11 @@ export function WorkOrderFormPage() {
         notes: cleanValue(data.notes),
         amount: data.amount != null ? parseFloat(data.amount) : null,
         // assigned_to: ensure it's always an array of UUIDs (empty array is valid for UUID[])
-        assigned_to: Array.isArray(data.assigned_to) && data.assigned_to.length > 0 
-          ? data.assigned_to.filter(id => id) // Remove any empty/null values
-          : [], // Empty array is valid
-        materials: data.materials || [],
+        assigned_to: Array.isArray(data.assigned_to) && data.assigned_to.length > 0
+          ? data.assigned_to.filter(uid => uid)
+          : [],
+        items: data.items || [],
+        materials_discount_percent: data.materials_discount_percent ?? 0,
       };
 
       console.log('[EDIT_SAVE] formattedData hazır, API çağrılıyor:', formattedData);
@@ -352,28 +357,34 @@ export function WorkOrderFormPage() {
                   {...register('description')}
                 />
 
-                <Input
-                  label={t('common:fields.amount')}
-                  type="number"
-                  step="0.01"
-                  rightIcon={<span className="text-neutral-400">₺</span>}
-                  error={errors.amount?.message}
-                  {...register('amount')}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Select
+                    label={t('common:fields.currency')}
+                    options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
+                    error={errors.currency?.message}
+                    {...register('currency')}
+                  />
+                  <Input
+                    label={t('common:fields.amount')}
+                    type="number"
+                    step="0.01"
+                    rightIcon={<span className="text-neutral-400">{getCurrencySymbol(selectedCurrency)}</span>}
+                    error={errors.amount?.message}
+                    {...register('amount')}
+                  />
+                </div>
               </div>
             </Card>
 
             {/* 3. Materials */}
             <Card className="p-6">
-              <Controller
-                name="materials"
+              <WorkOrderItemsEditor
                 control={control}
-                render={({ field }) => (
-                  <MaterialSelector
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                )}
+                register={register}
+                errors={errors}
+                watch={watch}
+                setValue={setValue}
+                currency={selectedCurrency}
               />
             </Card>
           </div>

@@ -1,0 +1,52 @@
+{
+  "title": "Bildirimler",
+  "bell": {
+    "label": "Bildirimler",
+    "labelWithCount": "Bildirimler ({{count}} yeni)"
+  },
+  "empty": {
+    "title": "Bildirim yok",
+    "description": "Tüm işler güncel"
+  },
+  "error": {
+    "loadFailed": "Bildirimler yüklenemedi"
+  },
+  "actions": {
+    "resolve": "Tamamlandı işaretle",
+    "viewAll": "Tümünü Gör",
+    "retry": "Tekrar Dene"
+  },
+  "types": {
+    "open_work_order": "Açık İş Emri",
+    "overdue_work_order": "Vadesi Geçmiş İş Emri",
+    "today_not_started": "Bugün Başlanmamış",
+    "proposal_awaiting_response": "Cevap Bekleyen Teklif",
+    "proposal_no_response_2d": "2+ Gündür Cevapsız Teklif",
+    "proposal_approved_no_wo": "Montaj Bekleyen Teklif",
+    "subscription_cancelled": "Abonelik İptal Edildi",
+    "subscription_paused": "Abonelik Duraklatıldı",
+    "payment_due_soon": "Ödeme Vadesi Yaklaşıyor",
+    "renewal_due_soon": "Yenileme Tarihi Yaklaşıyor",
+    "work_order_assigned": "İş Emri Atandı",
+    "task_due_soon": "Görev Vadesi Yaklaşıyor",
+    "user_reminder": "Hatırlatma"
+  },
+  "reminder": {
+    "addButton": "Hatırlatma Ekle",
+    "createTitle": "Hatırlatma Oluştur",
+    "myReminders": "Hatırlatmalarım",
+    "fields": {
+      "title": "Başlık",
+      "content": "Not",
+      "date": "Tarih",
+      "time": "Saat"
+    },
+    "placeholders": {
+      "title": "Ne hatırlatılsın?",
+      "content": "Ek detaylar...",
+      "time": "09:00"
+    },
+    "created": "Hatırlatma oluşturuldu",
+    "completed": "Hatırlatma tamamlandı"
+  }
+}

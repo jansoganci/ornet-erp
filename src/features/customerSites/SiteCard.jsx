@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { MapPin, Phone, User, Edit2, ClipboardList, Info, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { MapPin, Phone, User, Edit2, ClipboardList, Info, ChevronRight, CreditCard, Plus } from 'lucide-react';
 import { 
   Card, 
   Button, 
@@ -10,12 +11,14 @@ import { cn } from '../../lib/utils';
 
 export function SiteCard({ 
   site, 
+  subscriptions = [],
   onEdit, 
   onCreateWorkOrder,
   onViewHistory,
+  onAddSubscription,
   className 
 }) {
-  const { t } = useTranslation(['customers', 'common', 'workOrders']);
+  const { t } = useTranslation(['customers', 'common', 'workOrders', 'subscriptions']);
 
   return (
     <Card 
@@ -79,6 +82,61 @@ export function SiteCard({
               <span className="truncate italic">{site.panel_info}</span>
             </div>
           )}
+
+          {/* Subscriptions section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                <CreditCard className="w-3.5 h-3.5" />
+                {t('subscriptions:multiService.subscriptionsAtSite')}
+              </span>
+              {onAddSubscription && (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  leftIcon={<Plus className="w-3 h-3" />}
+                  onClick={() => onAddSubscription(site)}
+                  className="text-[10px] h-6"
+                >
+                  {t('subscriptions:multiService.addService')}
+                </Button>
+              )}
+            </div>
+            {subscriptions.length > 0 ? (
+              <div className="space-y-1.5">
+                {subscriptions.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    to={`/subscriptions/${sub.id}`}
+                    className="flex items-center justify-between p-2 rounded-md bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge variant="outline" size="sm" className="shrink-0">
+                        {sub.service_type ? t(`subscriptions:serviceTypes.${sub.service_type}`) : '—'}
+                      </Badge>
+                      <Badge
+                        variant={sub.status === 'active' ? 'success' : sub.status === 'paused' ? 'warning' : 'default'}
+                        size="sm"
+                        dot
+                        className="shrink-0"
+                      >
+                        {t(`subscriptions:statuses.${sub.status}`)}
+                      </Badge>
+                      <span className="text-xs text-neutral-600 dark:text-neutral-400 truncate">
+                        {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(Number(sub.base_price) || 0)}
+                        {sub.billing_frequency && sub.billing_frequency !== 'monthly' && ` / ${t(`subscriptions:form.fields.${sub.billing_frequency}`)}`}
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-600 shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-400 dark:text-neutral-500 italic py-1">
+                {t('subscriptions:multiService.noOtherServices')}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Actions */}

@@ -30,6 +30,15 @@
   "success": {
     "updated": "Profil başarıyla güncellendi"
   },
+  "validation": {
+    "fullNameRequired": "Ad Soyad zorunludur"
+  },
+  "changePassword": {
+    "password": "Yeni Şifre",
+    "confirmPassword": "Yeni Şifre Tekrar",
+    "success": "Şifreniz başarıyla güncellendi.",
+    "forgotLink": "Şifremi unuttum"
+  },
   "logout": {
     "title": "Çıkış Yap",
     "message": "Çıkış yapmak istediğinizden emin misiniz?",

@@ -92,7 +92,17 @@ export async function fetchMaterialCategories() {
     .not('category', 'is', null);
 
   if (error) throw error;
-  
+
   // Return unique categories
   return [...new Set(data.map(item => item.category))].sort();
+}
+
+export async function bulkUpsertMaterials(rows) {
+  const { data, error } = await supabase
+    .from('materials')
+    .upsert(rows, { onConflict: 'code' })
+    .select();
+
+  if (error) throw error;
+  return data;
 }

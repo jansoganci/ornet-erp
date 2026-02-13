@@ -1,15 +1,18 @@
+/**
+ * @deprecated Use WorkOrderItemsEditor instead (proposal-style materials card with pricing, cost, discount).
+ * Kept for reference; no longer used in WorkOrderFormPage.
+ */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Package, Minus, Info } from 'lucide-react';
-import { 
-  Button, 
-  Input, 
-  IconButton, 
-  Badge, 
-  Card
+import {
+  Button,
+  Input,
+  IconButton,
+  Badge,
+  Card,
+  MaterialCombobox,
 } from '../../components/ui';
-import { cn } from '../../lib/utils';
-import { MaterialAutocomplete } from './MaterialAutocomplete';
 
 export function MaterialSelector({ 
   value = [], 
@@ -85,8 +88,10 @@ export function MaterialSelector({
         <div className="space-y-4 p-1">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-7">
-              <MaterialAutocomplete
+              <MaterialCombobox
+                mode="workOrders"
                 value={selectedMaterialId}
+                selectedMaterial={selectedMaterial}
                 onChange={(id) => setSelectedMaterialId(id)}
                 onMaterialSelect={(material) => {
                   setSelectedMaterial(material);
@@ -116,7 +121,7 @@ export function MaterialSelector({
           </div>
           {selectedMaterial && (
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {t('workOrders:form.materialSelect.selected', 'Seçili')}: {selectedMaterial.code} - {selectedMaterial.name}
+              {t('workOrders:form.materialSelect.selected', 'Seçili')}: {selectedMaterial.name} ({selectedMaterial.code})
             </p>
           )}
           <Input
@@ -142,14 +147,14 @@ export function MaterialSelector({
                 <div>
                   <div className="flex items-center flex-wrap gap-2">
                     <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                      {item.material?.code}
+                      {item.material?.name}
                     </span>
                     <Badge variant="secondary" size="sm">
                       {t(`materials:categories.${item.material?.category}`)}
                     </Badge>
                   </div>
                   <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">
-                    {item.material?.name}
+                    {item.material?.code}
                   </p>
                   {item.notes && (
                     <p className="text-xs text-neutral-400 italic mt-1 flex items-center">

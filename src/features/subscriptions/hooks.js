@@ -23,6 +23,11 @@ import {
   fetchSubscriptionStats,
 } from './paymentsApi';
 import {
+  profitAndLossKeys,
+  financeDashboardKeys,
+  transactionKeys,
+} from '../finance/api';
+import {
   fetchPaymentMethods,
   createPaymentMethod,
   updatePaymentMethod,
@@ -59,7 +64,7 @@ export function useCurrentProfile() {
       if (!user) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, role')
+        .select('id, full_name, phone, role')
         .eq('id', user.id)
         .single();
       if (error) throw error;
@@ -79,6 +84,14 @@ export function useSubscriptions(filters = {}) {
   });
 }
 
+export function useSubscriptionsBySite(siteId) {
+  return useQuery({
+    queryKey: subscriptionKeys.list({ site_id: siteId }),
+    queryFn: () => fetchSubscriptions({ site_id: siteId }),
+    enabled: !!siteId,
+  });
+}
+
 export function useSubscription(id) {
   return useQuery({
     queryKey: subscriptionKeys.detail(id),
@@ -95,6 +108,7 @@ export function useCreateSubscription() {
     mutationFn: createSubscription,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: subscriptionKeys.stats() });
       toast.success(t('form.success.created'));
     },
     onError: (error) => {
@@ -112,6 +126,7 @@ export function useUpdateSubscription() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: subscriptionKeys.stats() });
       toast.success(t('form.success.updated'));
     },
     onError: (error) => {
@@ -218,6 +233,9 @@ export function useRecordPayment() {
     mutationFn: ({ paymentId, data }) => recordPayment(paymentId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       toast.success(t('payment.success'));
     },
     onError: (error) => {

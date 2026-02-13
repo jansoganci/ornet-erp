@@ -6,7 +6,7 @@ import {
   Input, 
   Button, 
   Select,
-  Card 
+  Textarea,
 } from '../../components/ui';
 import { materialSchema, materialDefaultValues } from './schema';
 import { useCreateMaterial, useUpdateMaterial } from './hooks';
@@ -107,6 +107,14 @@ export function MaterialFormModal({
           placeholder={t('materials:form.placeholders.name')}
           error={errors.name?.message}
           {...register('name')}
+        />
+
+        <Textarea
+          label={t('materials:form.fields.description')}
+          placeholder={t('materials:form.placeholders.description')}
+          error={errors.description?.message}
+          rows={3}
+          {...register('description')}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

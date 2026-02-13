@@ -15,7 +15,7 @@
   },
   "detail": {
     "title": "Teklif Detayı",
-    "items": "Kalemler",
+    "items": "Malzemeler",
     "total": "Toplam",
     "scopeOfWork": "İş Kapsamı",
     "notes": "Dahili Notlar",
@@ -39,11 +39,13 @@
       "markSent": "Gönderildi İşaretle",
       "accept": "Onayla",
       "reject": "Reddet",
-      "cancel": "İptal Et"
+      "cancel": "İptal Et",
+      "markComplete": "Montajı Tamamla"
     },
     "confirmAccept": "Bu teklifi onaylamak istediğinize emin misiniz?",
     "confirmReject": "Bu teklifi reddetmek istediğinize emin misiniz?",
     "confirmSent": "Bu teklifi gönderildi olarak işaretlemek istediğinize emin misiniz?",
+    "confirmComplete": "Montaj tamamlandı olarak işaretlenecek. Emin misiniz?",
     "netProfit": "Net Kar",
     "subtotal": "Ara Toplam",
     "discountPercent": "İskonto %{{percent}}",
@@ -78,7 +80,7 @@
       "companyName": "PDF başlığında görünecek firma adı"
     },
     "sections": {
-      "items": "Kalemler",
+      "items": "Malzemeler",
       "notes": "Notlar",
       "logoAndHeader": "Logo ve PDF Başlık Bilgileri",
       "terms": "Şartlar ve Koşullar"
@@ -86,11 +88,12 @@
   },
   "items": {
     "description": "Açıklama",
+    "material": "Malzeme",
     "quantity": "Adet",
     "unit": "Birim",
     "unitPrice": "Birim Fiyat",
     "total": "Toplam",
-    "addItem": "Kalem Ekle",
+    "addItem": "Malzeme Ekle",
     "units": {
       "adet": "Adet",
       "metre": "Metre",
@@ -122,6 +125,7 @@
     "scopeOfWork": "İş Kapsamı",
     "itemTable": {
       "description": "Açıklama",
+      "material": "Malzeme",
       "quantity": "Adet",
       "unitPrice": "Birim Fiyat ($)",
       "total": "Toplam ($)"

@@ -3,7 +3,19 @@
 ## Structure
 
 ### 🗄️ archived/
-Completed implementation plans and one-time audits.
+Completed implementation plans, design docs, and one-time audits.
+
+**SIM & Finance (2025-02):**
+- `sim-to-finance-phase1-implementation-plan.md` - Phase 1 trigger plan (implemented)
+- `sim-to-finance-integration-analysis.md` - Integration analysis
+- `sim-card-finance-integration-design.md` - Design research
+- `subscription-sim-phone-tracking-research.md` - Subscription↔SIM link research
+- `sim-card-system-redesign.md` - SIM revenue design (deferred)
+- `sim-card-system-design.md` - SIM system technical design (TR)
+- `tcmb-rates-deployment.md` - TCMB rates deployment guide
+- `module_1.5_auto_revenue_plan.md` - Proposal + WO auto-revenue (implemented)
+
+**Other:**
 - `auth-implementation-plan.md` - Auth setup
 - `design-language-proposal.md` - Initial design proposal
 - `design-tokens.md` - Original token definitions
@@ -34,19 +46,15 @@ Living reference documents (technical specs, business requirements).
 - `ui-style-modernization-assessment.md` - Design decisions
 - `calendar-ui-ux-research-prompt.md` - Research template
 
-### 📄 Root Files
-Active planning and tracking documents:
+### 📄 Root & Module Folders
+- `notification-system-concept.md` - Notification system requirements & concept (2026-02)
 - `roadmap.md` - Project phases
 - `progress.md` - Task log
-- `fiyat-revizyonu-plani.md` - Pricing revision
-- `sim-card-system-design.md` - SIM card planning
-- `abonelikler-*.md` - Subscription analysis
-- `subscription-system-architecture.md` - Active subscription work
-- `calendar-feature-planning.md` - Upcoming calendar work
-- `calendar-ui-ux-analysis.md` - Active calendar design
-- `layout-standards-compliance-audit.md` - Active layout migration
-- `mobile-phase3-implementation-audit.md` - Active mobile standards
-- `ui-ux-audit.md` - Active UX improvements
+- `sim-card-management-status.md` - SIM feature status + test results
+- `layout-standards-compliance-audit.md` - Layout migration
+- `ui-ux-audit.md` - UX improvements
+- `subscriptions/` - Price revision, multi-service analysis (analysis only)
+- `dashboard/`, `workOrders/`, etc. - Module overviews & wireframes
 
 ## Next Steps
 - [ ] Create module-specific documentation folders

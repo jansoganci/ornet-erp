@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
-import { Plus, Download, Filter, MoreVertical, Edit2, Trash2, ExternalLink, FileSpreadsheet } from 'lucide-react';
-import { useSimCards, useDeleteSimCard, useSimFinancialStats } from './hooks';
+import { Plus, Download, Filter, Edit2, Trash2, FileSpreadsheet, Pencil } from 'lucide-react';
+import { useSimCards, useDeleteSimCard, useUpdateSimCard, useSimFinancialStats } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { 
   Button, 
@@ -18,6 +18,7 @@ import {
   Table
 } from '../../components/ui';
 import { SimCardStats } from './components/SimCardStats';
+import { QuickStatusSelect } from './components/QuickStatusSelect';
 
 export function SimCardsListPage() {
   const { t } = useTranslation('simCards');
@@ -25,10 +26,12 @@ export function SimCardsListPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [quickEditMode, setQuickEditMode] = useState(false);
 
   const { data: simCards, isLoading, error, refetch } = useSimCards();
   const { data: simStats } = useSimFinancialStats();
   const deleteSimMutation = useDeleteSimCard();
+  const updateSimCardMutation = useUpdateSimCard();
 
   const filteredSimCards = simCards?.filter(sim => {
     const matchesSearch = 
@@ -73,12 +76,16 @@ export function SimCardsListPage() {
     }
   };
 
+  const handleQuickStatusChange = async (simId, newStatus) => {
+    await updateSimCardMutation.mutateAsync({ id: simId, status: newStatus });
+  };
+
   const getStatusVariant = (status) => {
     switch (status) {
       case 'active': return 'success';
       case 'available': return 'info';
-      case 'inactive': return 'warning';
-      case 'sold': return 'default';
+      case 'subscription': return 'primary';
+      case 'cancelled': return 'warning';
       default: return 'default';
     }
   };
@@ -157,12 +164,20 @@ export function SimCardsListPage() {
                 { value: 'all', label: t('list.filters.all') },
                 { value: 'available', label: t('list.filters.available') },
                 { value: 'active', label: t('list.filters.active') },
-                { value: 'inactive', label: t('list.filters.inactive') },
-                { value: 'sold', label: t('list.filters.sold') }
+                { value: 'subscription', label: t('list.filters.subscription') },
+                { value: 'cancelled', label: t('list.filters.cancelled') }
               ]}
               leftIcon={<Filter className="w-4 h-4" />}
             />
           </div>
+          <Button
+            variant={quickEditMode ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setQuickEditMode(!quickEditMode)}
+            leftIcon={<Pencil className="w-4 h-4" />}
+          >
+            {t('list.quickEdit')}
+          </Button>
         </div>
       </Card>
 
@@ -181,23 +196,36 @@ export function SimCardsListPage() {
                   <th className="px-4 py-3 font-medium">{t('list.columns.status')}</th>
                   <th className="px-4 py-3 font-medium">{t('list.columns.operator')}</th>
                   <th className="px-4 py-3 font-medium">{t('list.columns.customer')}</th>
+                  <th className="px-4 py-3 font-medium">{t('list.columns.costPrice')}</th>
                   <th className="px-4 py-3 font-medium">{t('list.columns.salePrice')}</th>
                   <th className="px-4 py-3 font-medium text-right">{tCommon('actions.menu')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
                 {filteredSimCards.map((sim) => (
-                  <tr key={sim.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                  <tr
+                    key={sim.id}
+                    className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer"
+                    onClick={() => handleEdit(sim.id)}
+                  >
                     <td className="px-4 py-3">
                       <div className="font-medium text-neutral-900 dark:text-neutral-50">
                         {sim.phone_number}
                       </div>
                       <div className="text-xs text-neutral-500">{sim.imsi}</div>
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={getStatusVariant(sim.status)}>
-                        {t(`status.${sim.status}`)}
-                      </Badge>
+                    <td className="px-4 py-3" onClick={quickEditMode ? (e) => e.stopPropagation() : undefined}>
+                      {quickEditMode && sim.status !== 'subscription' ? (
+                        <QuickStatusSelect
+                          sim={sim}
+                          onStatusChange={handleQuickStatusChange}
+                          t={t}
+                        />
+                      ) : (
+                        <Badge variant={getStatusVariant(sim.status)}>
+                          {t(`status.${sim.status}`)}
+                        </Badge>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       {t(`operators.${sim.operator}`)}
@@ -205,10 +233,13 @@ export function SimCardsListPage() {
                     <td className="px-4 py-3">
                       {sim.customers?.company_name || '-'}
                     </td>
-                    <td className="px-4 py-3 font-medium">
-                      {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: sim.currency }).format(sim.sale_price)}
+                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                      {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: sim.currency ?? 'TRY' }).format(sim.cost_price ?? 0)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 font-medium">
+                      {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: sim.currency ?? 'TRY' }).format(sim.sale_price)}
+                    </td>
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="ghost"

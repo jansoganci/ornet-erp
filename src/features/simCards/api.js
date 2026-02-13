@@ -99,6 +99,50 @@ export async function fetchSimCardsByCustomer(customerId) {
   return data;
 }
 
+/**
+ * Fetch SIMs eligible for subscription assignment: available (unassigned) OR already at this site
+ */
+export async function fetchSimCardsBySite(siteId) {
+  const { data, error } = await supabase
+    .from('sim_cards')
+    .select(`
+      *,
+      customer_sites:site_id (site_name)
+    `)
+    .or(`site_id.eq.${siteId},status.eq.available`)
+    .order('phone_number', { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Fetch SIMs for subscription with search (phone_number, imsi, account_no)
+ * Uses site filter server-side; search filter applied client-side for reliable behavior with 2500+ rows
+ */
+export async function fetchSimCardsForSubscription(siteId, search = '') {
+  const { data, error } = await supabase
+    .from('sim_cards')
+    .select(`
+      *,
+      customer_sites:site_id (site_name)
+    `)
+    .or(`site_id.eq.${siteId},status.eq.available`)
+    .order('phone_number', { ascending: true });
+
+  if (error) throw error;
+
+  if (!search.trim()) return data;
+
+  const term = search.trim().toLowerCase();
+  return (data || []).filter(
+    (s) =>
+      (s.phone_number || '').toLowerCase().includes(term) ||
+      (s.imsi || '').toLowerCase().includes(term) ||
+      (s.account_no || '').toLowerCase().includes(term)
+  );
+}
+
 export async function fetchSimFinancialStats() {
   const { data: stats, error: statsError } = await supabase
     .from('view_sim_card_stats')

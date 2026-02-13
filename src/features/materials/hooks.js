@@ -82,3 +82,19 @@ export function useMaterialCategories() {
     queryFn: api.fetchMaterialCategories,
   });
 }
+
+export function useBulkUpsertMaterials() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('common');
+
+  return useMutation({
+    mutationFn: api.bulkUpsertMaterials,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: materialKeys.lists() });
+      toast.success(t('success.created'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.createFailed'));
+    },
+  });
+}

@@ -18,6 +18,7 @@
     "fields": {
       "code": "Malzeme Kodu",
       "name": "Malzeme Adı",
+      "description": "Açıklama",
       "category": "Kategori",
       "unit": "Birim",
       "isActive": "Aktif"
@@ -25,6 +26,7 @@
     "placeholders": {
       "code": "Örn: DED-001",
       "name": "Örn: Optik Duman Dedektörü",
+      "description": "Müşteriye gösterilecek ürün açıklaması (isteğe bağlı)",
       "category": "Kategori seçin"
     }
   },
@@ -46,5 +48,23 @@
   "status": {
     "active": "Aktif",
     "inactive": "Pasif"
+  },
+  "import": {
+    "title": "Excel İçe Aktar",
+    "uploadTitle": "Excel Dosyası Yükleyin",
+    "uploadHint": "Malzeme listesini içeren .xlsx veya .xls dosyasını sürükleyin veya seçin.",
+    "validRows": "Geçerli Satır",
+    "invalidRows": "Hatalı Satır",
+    "cancel": "Vazgeç",
+    "startImport": "İçe Aktarımı Başlat",
+    "downloadTemplate": "Şablon İndir",
+    "selectFile": "Dosya Seç",
+    "processing": "Excel dosyası işleniyor...",
+    "errors": "Hatalar",
+    "moreRows": "... ve {{count}} satır daha",
+    "success": "{{created}} eklendi, {{updated}} güncellendi",
+    "parse": "Dosya okunamadı. Lütfen geçerli bir Excel dosyası yükleyin.",
+    "missingCode": "Satır {{row}}: Kod eksik.",
+    "missingName": "Satır {{row}}: Ad eksik."
   }
 }

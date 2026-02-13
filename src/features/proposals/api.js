@@ -39,12 +39,12 @@ export async function fetchProposal(id) {
 }
 
 /**
- * Fetch items for a proposal
+ * Fetch items for a proposal (with material description for PDF)
  */
 export async function fetchProposalItems(proposalId) {
   const { data, error } = await supabase
     .from('proposal_items')
-    .select('*')
+    .select('*, materials(code, name, description)')
     .eq('proposal_id', proposalId)
     .order('sort_order', { ascending: true });
 
@@ -67,6 +67,8 @@ export async function createProposal({ items, ...proposalData }) {
     ...proposalData,
     proposal_no: noResult,
     created_by: user?.id,
+    currency: proposalData.currency || 'USD',
+    total_amount: 0,
     total_amount_usd: 0,
   };
   if (payload.site_id === '' || payload.site_id == null) {
@@ -82,21 +84,33 @@ export async function createProposal({ items, ...proposalData }) {
   if (proposalError) throw proposalError;
 
   if (items?.length > 0) {
-    const itemsToInsert = items.map((item, index) => ({
-      proposal_id: proposal.id,
-      sort_order: index,
-      description: item.description,
-      quantity: item.quantity,
-      unit: item.unit || 'adet',
-      unit_price_usd: item.unit_price_usd,
-      cost_usd: item.cost_usd ?? null,
-      margin_percent: item.margin_percent ?? null,
-      product_cost_usd: item.product_cost_usd ?? null,
-      labor_cost_usd: item.labor_cost_usd ?? null,
-      shipping_cost_usd: item.shipping_cost_usd ?? null,
-      material_cost_usd: item.material_cost_usd ?? null,
-      misc_cost_usd: item.misc_cost_usd ?? null,
-    }));
+    const itemsToInsert = items.map((item, index) => {
+      const unitPrice = item.unit_price ?? 0;
+      const cost = item.cost ?? null;
+      return {
+        proposal_id: proposal.id,
+        sort_order: index,
+        description: item.description,
+        quantity: item.quantity,
+        unit: item.unit || 'adet',
+        unit_price: unitPrice,
+        unit_price_usd: unitPrice,
+        material_id: item.material_id ?? null,
+        cost,
+        cost_usd: cost,
+        margin_percent: item.margin_percent ?? null,
+        product_cost: item.product_cost ?? null,
+        product_cost_usd: item.product_cost ?? null,
+        labor_cost: item.labor_cost ?? null,
+        labor_cost_usd: item.labor_cost ?? null,
+        shipping_cost: item.shipping_cost ?? null,
+        shipping_cost_usd: item.shipping_cost ?? null,
+        material_cost: item.material_cost ?? null,
+        material_cost_usd: item.material_cost ?? null,
+        misc_cost: item.misc_cost ?? null,
+        misc_cost_usd: item.misc_cost ?? null,
+      };
+    });
 
     const { error: itemsError } = await supabase
       .from('proposal_items')
@@ -104,15 +118,15 @@ export async function createProposal({ items, ...proposalData }) {
 
     if (itemsError) throw itemsError;
 
-    // Recalculate total
-    const total = items.reduce(
-      (sum, item) => sum + (item.quantity * item.unit_price_usd),
-      0
-    );
+    const total = items.reduce((sum, i) => sum + (i.quantity * (i.unit_price ?? 0)), 0);
+    const updatePayload = { total_amount: total };
+    if ((proposalData.currency || 'USD') === 'USD') {
+      updatePayload.total_amount_usd = total;
+    }
 
     const { error: updateError } = await supabase
       .from('proposals')
-      .update({ total_amount_usd: total })
+      .update(updatePayload)
       .eq('id', proposal.id);
 
     if (updateError) throw updateError;
@@ -154,21 +168,33 @@ export async function updateProposalItems(proposalId, items) {
 
   // Insert new items
   if (items?.length > 0) {
-    const itemsToInsert = items.map((item, index) => ({
-      proposal_id: proposalId,
-      sort_order: index,
-      description: item.description,
-      quantity: item.quantity,
-      unit: item.unit || 'adet',
-      unit_price_usd: item.unit_price_usd,
-      cost_usd: item.cost_usd ?? null,
-      margin_percent: item.margin_percent ?? null,
-      product_cost_usd: item.product_cost_usd ?? null,
-      labor_cost_usd: item.labor_cost_usd ?? null,
-      shipping_cost_usd: item.shipping_cost_usd ?? null,
-      material_cost_usd: item.material_cost_usd ?? null,
-      misc_cost_usd: item.misc_cost_usd ?? null,
-    }));
+    const itemsToInsert = items.map((item, index) => {
+      const unitPrice = item.unit_price ?? 0;
+      const cost = item.cost ?? null;
+      return {
+        proposal_id: proposalId,
+        sort_order: index,
+        description: item.description,
+        quantity: item.quantity,
+        unit: item.unit || 'adet',
+        unit_price: unitPrice,
+        unit_price_usd: unitPrice,
+        material_id: item.material_id ?? null,
+        cost,
+        cost_usd: cost,
+        margin_percent: item.margin_percent ?? null,
+        product_cost: item.product_cost ?? null,
+        product_cost_usd: item.product_cost ?? null,
+        labor_cost: item.labor_cost ?? null,
+        labor_cost_usd: item.labor_cost ?? null,
+        shipping_cost: item.shipping_cost ?? null,
+        shipping_cost_usd: item.shipping_cost ?? null,
+        material_cost: item.material_cost ?? null,
+        material_cost_usd: item.material_cost ?? null,
+        misc_cost: item.misc_cost ?? null,
+        misc_cost_usd: item.misc_cost ?? null,
+      };
+    });
 
     const { error: insertError } = await supabase
       .from('proposal_items')
@@ -177,15 +203,16 @@ export async function updateProposalItems(proposalId, items) {
     if (insertError) throw insertError;
   }
 
-  // Recalculate total
-  const total = (items || []).reduce(
-    (sum, item) => sum + (item.quantity * item.unit_price_usd),
-    0
-  );
+  const total = (items || []).reduce((sum, i) => sum + (i.quantity * (i.unit_price ?? 0)), 0);
+  const { data: proposal } = await supabase.from('proposals').select('currency').eq('id', proposalId).single();
+  const updatePayload = { total_amount: total };
+  if ((proposal?.currency || 'USD') === 'USD') {
+    updatePayload.total_amount_usd = total;
+  }
 
   const { error: updateError } = await supabase
     .from('proposals')
-    .update({ total_amount_usd: total })
+    .update(updatePayload)
     .eq('id', proposalId);
 
   if (updateError) throw updateError;

@@ -1,0 +1,8 @@
+# Supabase config – https://supabase.com/docs/guides/cli/config
+# fetch-tcmb-rates: disable JWT verification so it can be called from
+# frontend (logged-in user) and pg_cron (anon key) without 401.
+
+project_id = "ornet-erp"
+
+[functions.fetch-tcmb-rates]
+verify_jwt = false

@@ -1,13 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Circle } from 'lucide-react';
 import { PageContainer } from '../../components/layout';
-import { Spinner, EmptyState, ErrorState } from '../../components/ui';
+import { Spinner, EmptyState, ErrorState, Button } from '../../components/ui';
 import { useDailyWorkList } from './hooks';
 import { useProfiles } from '../tasks/hooks';
 import { DailyWorkCard } from './DailyWorkCard';
 import { TodayPlansSection } from './TodayPlansSection';
+import { useReminders, useCompleteReminder } from '../notifications/hooks';
+import { ReminderFormModal } from '../notifications';
 import { cn } from '../../lib/utils';
 
 /** Given a date string (YYYY-MM-DD), return the Monday of that week (ISO string). Monday = first day of week. */
@@ -42,9 +46,14 @@ export function DailyWorkListPage() {
   const [weekStart, setWeekStart] = useState(() => getMondayOfWeek(todayIso));
   const [selectedDate, setSelectedDate] = useState(todayIso);
   const [selectedWorkerId, setSelectedWorkerId] = useState('');
+  const [reminderModalOpen, setReminderModalOpen] = useState(false);
+  const [completingReminder, setCompletingReminder] = useState(null);
+  const [fadingOut, setFadingOut] = useState(false);
 
   const { data: workOrders = [], isLoading, error, refetch } = useDailyWorkList(selectedDate, selectedWorkerId);
   const { data: profiles = [], isLoading: isLoadingProfiles } = useProfiles();
+  const { data: reminders = [] } = useReminders();
+  const completeReminder = useCompleteReminder();
 
   const weekDates = useMemo(() => getWeekDates(weekStart), [weekStart]);
 
@@ -65,6 +74,33 @@ export function DailyWorkListPage() {
   };
 
   const showTodayPlans = selectedDate === todayIso;
+
+  const todayReminders = useMemo(() => {
+    const base = reminders.filter((r) => !r.completed_at && r.remind_date === selectedDate);
+    if (completingReminder) {
+      return base.filter((r) => r.id !== completingReminder.id);
+    }
+    return base;
+  }, [reminders, selectedDate, completingReminder]);
+
+  const handleCompleteReminder = (reminder) => {
+    setCompletingReminder(reminder);
+    setFadingOut(false);
+    completeReminder.mutate(reminder.id);
+  };
+
+  useEffect(() => {
+    if (!completingReminder) return;
+    const startFade = setTimeout(() => setFadingOut(true), 10);
+    const clear = setTimeout(() => {
+      setCompletingReminder(null);
+      setFadingOut(false);
+    }, 310);
+    return () => {
+      clearTimeout(startFade);
+      clearTimeout(clear);
+    };
+  }, [completingReminder]);
 
   return (
     <PageContainer maxWidth="xl" padding="default" className="space-y-5">
@@ -116,7 +152,8 @@ export function DailyWorkListPage() {
       </div>
 
       {/* Worker filter – minimal one row */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm justify-between">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <button
           type="button"
           onClick={() => setSelectedWorkerId('')}
@@ -147,6 +184,18 @@ export function DailyWorkListPage() {
             </button>
           </span>
         ))}
+        </div>
+        {selectedDate === todayIso && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setReminderModalOpen(true)}
+            className="shrink-0"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            {t('notifications:reminder.addButton')}
+          </Button>
+        )}
       </div>
 
       {/* Content */}
@@ -166,15 +215,62 @@ export function DailyWorkListPage() {
           onAction={() => navigate('/work-orders/new')}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {workOrders.map((wo) => (
-            <DailyWorkCard
-              key={wo.id}
-              workOrder={wo}
-              onClick={(order) => navigate(`/work-orders/${order.id}`)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-4">
+            {workOrders.map((wo) => (
+              <DailyWorkCard
+                key={wo.id}
+                workOrder={wo}
+                onClick={(order) => navigate(`/work-orders/${order.id}`)}
+              />
+            ))}
+          </div>
+
+          {selectedDate === todayIso && (todayReminders.length > 0 || completingReminder) && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                {t('notifications:reminder.myReminders')}
+              </h3>
+              <div className="space-y-1">
+                {todayReminders.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => handleCompleteReminder(r)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-neutral-50 dark:bg-[#1a1a1a] hover:bg-neutral-100 dark:hover:bg-[#262626] transition-colors text-left"
+                  >
+                    <Circle className="w-5 h-5 flex-shrink-0 text-neutral-400 dark:text-neutral-500" />
+                    <span className="flex-1 text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
+                      {r.title}
+                    </span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
+                      {format(new Date(r.remind_date + 'T12:00:00'), 'd MMMM', { locale: tr })}
+                      {r.remind_time ? ` · ${r.remind_time}` : ''}
+                    </span>
+                  </button>
+                ))}
+                {completingReminder && (
+                  <div
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 rounded-lg bg-neutral-50 dark:bg-[#1a1a1a] transition-opacity duration-300',
+                      fadingOut ? 'opacity-0' : 'opacity-100'
+                    )}
+                    aria-hidden
+                  >
+                    <Circle className="w-5 h-5 flex-shrink-0 text-neutral-400" />
+                    <span className="flex-1 text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
+                      {completingReminder.title}
+                    </span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {format(new Date(completingReminder.remind_date + 'T12:00:00'), 'd MMMM', { locale: tr })}
+                      {completingReminder.remind_time ? ` · ${completingReminder.remind_time}` : ''}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {showTodayPlans && (
@@ -183,6 +279,11 @@ export function DailyWorkListPage() {
           selectedWorkerId={selectedWorkerId}
         />
       )}
+
+      <ReminderFormModal
+        open={reminderModalOpen}
+        onClose={() => setReminderModalOpen(false)}
+      />
     </PageContainer>
   );
 }

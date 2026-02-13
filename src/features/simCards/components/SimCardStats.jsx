@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Card } from '../../../components/ui';
-import { Cpu as SimIcon, CheckCircle2, XCircle, Package, TrendingUp } from 'lucide-react';
+import { Cpu as SimIcon, CheckCircle2, Package, TrendingUp, CreditCard } from 'lucide-react';
 
 export function SimCardStats({ simCards = [], statsData }) {
   const { t } = useTranslation('simCards');
@@ -9,6 +9,7 @@ export function SimCardStats({ simCards = [], statsData }) {
     total: statsData?.total_count || simCards.length,
     available: statsData?.available_count || simCards.filter(s => s.status === 'available').length,
     active: statsData?.active_sim_count || simCards.filter(s => s.status === 'active').length,
+    subscription: statsData?.subscription_count ?? simCards.filter(s => s.status === 'subscription').length,
     profit: statsData?.total_monthly_profit || simCards.reduce((acc, curr) => acc + (curr.sale_price - curr.cost_price), 0),
   };
 
@@ -35,6 +36,13 @@ export function SimCardStats({ simCards = [], statsData }) {
       bg: 'bg-purple-50 dark:bg-purple-900/20',
     },
     {
+      label: t('stats.subscription'),
+      value: stats.subscription,
+      icon: CreditCard,
+      color: 'text-indigo-600 dark:text-indigo-400',
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+    },
+    {
       label: t('stats.monthlyProfit'),
       value: new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(stats.profit),
       icon: CheckCircle2,
@@ -44,18 +52,18 @@ export function SimCardStats({ simCards = [], statsData }) {
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+    <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mb-6">
       {statItems.map((item, i) => (
         <Card key={i} className="p-4 border-neutral-200/60 dark:border-neutral-800/60 shadow-sm">
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-3">
             <div className={`p-2.5 rounded-xl ${item.bg} shrink-0`}>
               <item.icon className={`w-5 h-5 ${item.color}`} />
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider leading-none mb-1.5 truncate">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider leading-snug mb-1 break-words">
                 {item.label}
               </p>
-              <p className="text-xl font-black text-neutral-900 dark:text-neutral-50 leading-none truncate">
+              <p className="text-xl font-black text-neutral-900 dark:text-neutral-50 leading-tight whitespace-nowrap">
                 {item.value}
               </p>
             </div>

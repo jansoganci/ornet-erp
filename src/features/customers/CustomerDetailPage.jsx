@@ -17,6 +17,7 @@ import { useCustomer, useDeleteCustomer } from './hooks';
 import { useWorkOrdersByCustomer } from '../workOrders/hooks';
 import { useSitesByCustomer } from '../customerSites/hooks';
 import { useSimCardsByCustomer } from '../simCards/hooks';
+import { useSubscriptions } from '../subscriptions/hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -85,7 +86,17 @@ export function CustomerDetailPage() {
   const { data: sites = [], isLoading: sitesLoading } = useSitesByCustomer(id);
   const { data: workOrders = [], isLoading: workOrdersLoading } = useWorkOrdersByCustomer(id);
   const { data: simCards = [], isLoading: simCardsLoading } = useSimCardsByCustomer(id);
+  const { data: allSubscriptions = [] } = useSubscriptions({});
   const deleteCustomer = useDeleteCustomer();
+
+  const siteIds = sites.map((s) => s.id);
+  const subscriptionsBySite = (allSubscriptions || [])
+    .filter((sub) => siteIds.includes(sub.site_id))
+    .reduce((acc, sub) => {
+      if (!acc[sub.site_id]) acc[sub.site_id] = [];
+      acc[sub.site_id].push(sub);
+      return acc;
+    }, {});
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSiteModal, setShowSiteModal] = useState(false);
@@ -192,7 +203,12 @@ export function CustomerDetailPage() {
       header: t('simCards:list.columns.status'),
       render: (_, sim) => (
         <Badge 
-          variant={sim.status === 'active' ? 'success' : sim.status === 'available' ? 'info' : 'warning'} 
+          variant={
+            sim.status === 'active' ? 'success' :
+            sim.status === 'available' ? 'info' :
+            sim.status === 'subscription' ? 'primary' :
+            sim.status === 'cancelled' ? 'warning' : 'default'
+          }
           size="sm"
         >
           {t(`simCards:status.${sim.status}`)}
@@ -305,9 +321,11 @@ export function CustomerDetailPage() {
                   <SiteCard 
                     key={site.id} 
                     site={site} 
+                    subscriptions={subscriptionsBySite[site.id] || []}
                     onEdit={handleEditSite}
                     onCreateWorkOrder={handleNewWorkOrder}
                     onViewHistory={(siteId) => navigate(`/work-history?siteId=${siteId}&type=account_no`)}
+                    onAddSubscription={(s) => navigate(`/subscriptions/new?siteId=${s.id}&customerId=${id}`)}
                   />
                 ))}
               </div>

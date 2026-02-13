@@ -92,8 +92,9 @@ export function ProposalDetailPage() {
     );
   }
 
+  const currency = proposal.currency ?? 'USD';
   const subtotal = items.reduce(
-    (sum, item) => sum + Number(item.total_usd ?? item.quantity * item.unit_price_usd ?? 0),
+    (sum, item) => sum + Number(item.line_total ?? item.total_usd ?? item.quantity * (item.unit_price ?? item.unit_price_usd) ?? 0),
     0
   );
   const discountPercent = Number(proposal.discount_percent) || 0;
@@ -102,15 +103,15 @@ export function ProposalDetailPage() {
 
   const totalCosts = items.reduce((sum, item) => {
     const qty = Number(item.quantity) || 0;
-    const single = item.cost_usd != null && item.cost_usd !== '' ? Number(item.cost_usd) : NaN;
+    const single = (item.cost ?? item.cost_usd) != null && (item.cost ?? item.cost_usd) !== '' ? Number(item.cost ?? item.cost_usd) : NaN;
     if (Number.isFinite(single)) {
       return sum + single * qty;
     }
-    const product = Number(item.product_cost_usd) || 0;
-    const labor = Number(item.labor_cost_usd) || 0;
-    const shipping = Number(item.shipping_cost_usd) || 0;
-    const material = Number(item.material_cost_usd) || 0;
-    const misc = Number(item.misc_cost_usd) || 0;
+    const product = Number(item.product_cost ?? item.product_cost_usd) || 0;
+    const labor = Number(item.labor_cost ?? item.labor_cost_usd) || 0;
+    const shipping = Number(item.shipping_cost ?? item.shipping_cost_usd) || 0;
+    const material = Number(item.material_cost ?? item.material_cost_usd) || 0;
+    const misc = Number(item.misc_cost ?? item.misc_cost_usd) || 0;
     return sum + (product + labor + shipping + material + misc) * qty;
   }, 0);
   const netProfit = grandTotal - totalCosts;
@@ -164,15 +165,13 @@ export function ProposalDetailPage() {
         ]}
         actions={
           <div className="hidden lg:flex items-center gap-2">
-            {proposal.status === 'draft' && (
-              <Button
-                variant="outline"
-                leftIcon={<Edit className="w-4 h-4" />}
-                onClick={() => navigate(`/proposals/${id}/edit`)}
-              >
-                {t('proposals:detail.actions.edit')}
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              leftIcon={<Edit className="w-4 h-4" />}
+              onClick={() => navigate(`/proposals/${id}/edit`)}
+            >
+              {t('proposals:detail.actions.edit')}
+            </Button>
             <Button
               variant="outline"
               leftIcon={<Download className="w-4 h-4" />}
@@ -195,7 +194,7 @@ export function ProposalDetailPage() {
               {t('proposals:detail.total')}
             </p>
             <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(grandTotal, 'USD')}
+              {formatCurrency(grandTotal, currency)}
             </p>
           </div>
         </Card>
@@ -209,7 +208,7 @@ export function ProposalDetailPage() {
               {t('proposals:detail.netProfit')}
             </p>
             <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(netProfit, 'USD')}
+              {formatCurrency(netProfit, currency)}
             </p>
           </div>
         </Card>
@@ -269,7 +268,7 @@ export function ProposalDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {items.map((item, index) => {
-                    const lineTotal = Number(item.total_usd || item.quantity * item.unit_price_usd || 0);
+                    const lineTotal = Number(item.line_total ?? item.total_usd ?? item.quantity * (item.unit_price ?? item.unit_price_usd) ?? 0);
                     return (
                       <div
                         key={item.id || index}
@@ -286,12 +285,12 @@ export function ProposalDetailPage() {
                           </p>
                           {item.quantity > 1 && (
                             <p className="text-xs text-neutral-400 mt-0.5">
-                              @ {formatCurrency(item.unit_price_usd, 'USD')}
+                              @ {formatCurrency(item.unit_price ?? item.unit_price_usd, currency)}
                             </p>
                           )}
                         </div>
                         <span className="font-semibold text-neutral-900 dark:text-neutral-100 ml-4 whitespace-nowrap">
-                          {formatCurrency(lineTotal, 'USD')}
+                          {formatCurrency(lineTotal, currency)}
                         </span>
                       </div>
                     );
@@ -302,11 +301,11 @@ export function ProposalDetailPage() {
                     <>
                       <div className="flex items-center justify-between py-1 text-sm">
                         <span className="text-neutral-600 dark:text-neutral-400">{t('proposals:detail.subtotal')}</span>
-                        <span>{formatCurrency(subtotal, 'USD')}</span>
+                        <span>{formatCurrency(subtotal, currency)}</span>
                       </div>
                       <div className="flex items-center justify-between py-1 text-sm">
                         <span className="text-neutral-600 dark:text-neutral-400">{t('proposals:detail.discountAmount')}</span>
-                        <span>-{formatCurrency(discountAmount, 'USD')}</span>
+                        <span>-{formatCurrency(discountAmount, currency)}</span>
                       </div>
                     </>
                   )}
@@ -315,7 +314,7 @@ export function ProposalDetailPage() {
                       {t('proposals:detail.total')}
                     </span>
                     <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-                      {formatCurrency(grandTotal, 'USD')}
+                      {formatCurrency(grandTotal, currency)}
                     </span>
                   </div>
                 </div>
@@ -577,7 +576,48 @@ export function ProposalDetailPage() {
                 >
                   {t('proposals:detail.actions.reject')}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  leftIcon={<Edit className="w-4 h-4" />}
+                  onClick={() => navigate(`/proposals/${id}/edit`)}
+                >
+                  {t('proposals:detail.actions.edit')}
+                </Button>
               </>
+            )}
+
+            {proposal.status === 'accepted' && (
+              <>
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                  onClick={() => setConfirmAction('completed')}
+                  loading={statusMutation.isPending}
+                >
+                  {t('proposals:detail.actions.markComplete')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  leftIcon={<Edit className="w-4 h-4" />}
+                  onClick={() => navigate(`/proposals/${id}/edit`)}
+                >
+                  {t('proposals:detail.actions.edit')}
+                </Button>
+              </>
+            )}
+
+            {(proposal.status === 'completed' || proposal.status === 'rejected' || proposal.status === 'cancelled') && (
+              <Button
+                variant="outline"
+                className="w-full"
+                leftIcon={<Edit className="w-4 h-4" />}
+                onClick={() => navigate(`/proposals/${id}/edit`)}
+              >
+                {t('proposals:detail.actions.edit')}
+              </Button>
             )}
 
             <Button
@@ -626,6 +666,13 @@ export function ProposalDetailPage() {
         {proposal.status === 'sent' && (
           <>
             <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => navigate(`/proposals/${id}/edit`)}
+            >
+              {t('proposals:detail.actions.edit')}
+            </Button>
+            <Button
               variant="primary"
               className="flex-1"
               onClick={() => setConfirmAction('accepted')}
@@ -642,15 +689,52 @@ export function ProposalDetailPage() {
             </Button>
           </>
         )}
-        {(proposal.status === 'accepted' || proposal.status === 'rejected' || proposal.status === 'cancelled') && (
-          <Button
-            variant="outline"
-            className="flex-1"
-            leftIcon={<Download className="w-4 h-4" />}
-            onClick={handleDownloadPdf}
-          >
-            {t('proposals:detail.actions.downloadPdf')}
-          </Button>
+        {proposal.status === 'accepted' && (
+          <>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => navigate(`/proposals/${id}/edit`)}
+            >
+              {t('proposals:detail.actions.edit')}
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              leftIcon={<CheckCircle2 className="w-4 h-4" />}
+              onClick={() => setConfirmAction('completed')}
+              loading={statusMutation.isPending}
+            >
+              {t('proposals:detail.actions.markComplete')}
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={handleDownloadPdf}
+            >
+              {t('proposals:detail.actions.downloadPdf')}
+            </Button>
+          </>
+        )}
+        {(proposal.status === 'completed' || proposal.status === 'rejected' || proposal.status === 'cancelled') && (
+          <>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => navigate(`/proposals/${id}/edit`)}
+            >
+              {t('proposals:detail.actions.edit')}
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={handleDownloadPdf}
+            >
+              {t('proposals:detail.actions.downloadPdf')}
+            </Button>
+          </>
         )}
       </div>
 
@@ -677,7 +761,8 @@ export function ProposalDetailPage() {
         <p className="text-sm text-neutral-700 dark:text-neutral-300">
           {confirmAction === 'accepted' && t('proposals:detail.confirmAccept')}
           {confirmAction === 'rejected' && t('proposals:detail.confirmReject')}
-          {confirmAction === 'sent' && t('proposals:detail.confirmSent', 'Bu teklifi gönderildi olarak işaretlemek istediğinize emin misiniz?')}
+          {confirmAction === 'sent' && t('proposals:detail.confirmSent')}
+          {confirmAction === 'completed' && t('proposals:detail.confirmComplete')}
         </p>
       </Modal>
 

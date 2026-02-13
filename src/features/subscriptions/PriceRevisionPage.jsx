@@ -43,7 +43,7 @@ export function PriceRevisionPage() {
       service_type: serviceType === 'all' ? undefined : serviceType,
       billing_frequency: billingFrequency === 'all' ? undefined : billingFrequency,
     };
-    if (billingFrequency === 'yearly') {
+    if (billingFrequency === 'yearly' || billingFrequency === '6_month') {
       const monthNum = startMonth === '' || startMonth === 'all' ? null : Number(startMonth);
       if (monthNum >= 1 && monthNum <= 12) f.start_month = monthNum;
     }
@@ -113,6 +113,7 @@ export function PriceRevisionPage() {
   const billingFrequencyOptions = [
     { value: 'all', label: t('subscriptions:priceRevision.filters.all') },
     { value: 'monthly', label: t('subscriptions:priceRevision.filters.monthly') },
+    { value: '6_month', label: t('subscriptions:priceRevision.filters.6_month') },
     { value: 'yearly', label: t('subscriptions:priceRevision.filters.yearly') },
   ];
 
@@ -170,11 +171,7 @@ export function PriceRevisionPage() {
       accessor: 'billing_frequency',
       render: (value) => (
         <span className="text-sm">
-          {value === 'yearly'
-            ? t('subscriptions:priceRevision.filters.yearly')
-            : value === 'monthly'
-              ? t('subscriptions:priceRevision.filters.monthly')
-              : '—'}
+          {t(`subscriptions:priceRevision.filters.${value || 'monthly'}`)}
         </span>
       ),
     },
@@ -330,7 +327,7 @@ export function PriceRevisionPage() {
               size="sm"
             />
           </div>
-          {billingFrequency === 'yearly' && (
+          {(billingFrequency === 'yearly' || billingFrequency === '6_month') && (
             <div className="w-full sm:w-auto min-w-[200px]">
               <Select
                 label={t('subscriptions:priceRevision.filters.startMonth')}

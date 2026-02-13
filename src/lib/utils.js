@@ -99,6 +99,17 @@ export function formatCurrency(amount, currency = 'TRY') {
   }).format(amount);
 }
 
+const CURRENCY_SYMBOLS = { TRY: '₺', USD: '$', EUR: '€', CHF: 'Fr.' };
+
+/**
+ * Get currency symbol for display (e.g. input prefix)
+ * @param {string} currency - Currency code (TRY, USD, EUR, CHF)
+ * @returns {string} - Symbol (₺, $, €, Fr.)
+ */
+export function getCurrencySymbol(currency) {
+  return CURRENCY_SYMBOLS[currency] ?? currency;
+}
+
 /**
  * Get initials from a name
  * @param {string} name - Full name

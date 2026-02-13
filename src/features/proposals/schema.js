@@ -4,19 +4,22 @@ import i18n from '../../lib/i18n';
 const optionalNum = () => z.coerce.number().min(0).optional().nullable();
 const optionalStr = () => z.string().optional().or(z.literal(''));
 
+export const CURRENCIES = ['TRY', 'USD'];
+
 export const proposalItemSchema = z.object({
   description: z.string().min(1, i18n.t('errors:validation.required')),
   quantity: z.coerce.number().positive(),
   unit: z.string().default('adet'),
-  unit_price_usd: z.coerce.number().min(0),
-  cost_usd: z.coerce.number().min(0).optional().nullable(),
+  unit_price: z.coerce.number().min(0),
+  material_id: z.string().uuid().optional().nullable().or(z.literal('')),
+  cost: z.coerce.number().min(0).optional().nullable(),
   margin_percent: z.coerce.number().min(0).max(100).optional().nullable(),
   // Cost tracking (internal only, per-unit)
-  product_cost_usd: optionalNum(),
-  labor_cost_usd: optionalNum(),
-  shipping_cost_usd: optionalNum(),
-  material_cost_usd: optionalNum(),
-  misc_cost_usd: optionalNum(),
+  product_cost: optionalNum(),
+  labor_cost: optionalNum(),
+  shipping_cost: optionalNum(),
+  material_cost: optionalNum(),
+  misc_cost: optionalNum(),
 });
 
 export const proposalSchema = z.object({
@@ -24,6 +27,7 @@ export const proposalSchema = z.object({
   title: z.string().min(1, i18n.t('errors:validation.required')),
   scope_of_work: optionalStr(),
   notes: optionalStr(),
+  currency: z.string().default('USD'),
   items: z.array(proposalItemSchema).min(1, i18n.t('errors:validation.required')),
   // Header fields
   company_name: optionalStr(),
@@ -44,14 +48,15 @@ const defaultItem = {
   description: '',
   quantity: 1,
   unit: 'adet',
-  unit_price_usd: 0,
-  cost_usd: null,
+  unit_price: 0,
+  material_id: null,
+  cost: null,
   margin_percent: null,
-  product_cost_usd: null,
-  labor_cost_usd: null,
-  shipping_cost_usd: null,
-  material_cost_usd: null,
-  misc_cost_usd: null,
+  product_cost: null,
+  labor_cost: null,
+  shipping_cost: null,
+  material_cost: null,
+  misc_cost: null,
 };
 
 // Default terms text (from ORNEK-TEKLIF-FORMU-010724.pdf) – user can edit or delete
@@ -79,6 +84,7 @@ export const proposalDefaultValues = {
   title: '',
   scope_of_work: '',
   notes: '',
+  currency: 'USD',
   company_name: '',
   survey_date: '',
   authorized_person: '',

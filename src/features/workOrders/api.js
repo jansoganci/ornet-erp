@@ -36,8 +36,9 @@ export async function fetchWorkOrders(filters = {}) {
 export async function fetchWorkOrder(id) {
   const { data, error } = await supabase
     .from('work_orders_detail')
-    .select('*, work_order_materials(*, materials(*))')
+    .select('*, work_order_materials(*, materials(code, name, description, unit))')
     .eq('id', id)
+    .order('sort_order', { ascending: true, foreignTable: 'work_order_materials' })
     .single();
 
   if (error) throw error;
@@ -45,23 +46,22 @@ export async function fetchWorkOrder(id) {
 }
 
 export async function createWorkOrder(data) {
-  const { materials, ...workOrderData } = data;
-  
-  // Get current user ID for created_by
+  const { items, materials_discount_percent, ...workOrderData } = data;
+
+  const payload = {
+    ...workOrderData,
+    materials_discount_percent: materials_discount_percent ?? 0,
+  };
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     throw new Error('User not authenticated');
   }
+  payload.created_by = user.id;
 
-  // Add created_by to the data
-  const dataWithCreator = {
-    ...workOrderData,
-    created_by: user.id
-  };
-  
   const { data: created, error } = await supabase
     .from('work_orders')
-    .insert(dataWithCreator)
+    .insert(payload)
     .select()
     .single();
 
@@ -70,41 +70,53 @@ export async function createWorkOrder(data) {
     throw error;
   }
 
-  if (materials && materials.length > 0) {
-    const materialLinks = materials.map(m => ({
+  if (items && items.length > 0) {
+    const materialRows = items.map((item, index) => ({
       work_order_id: created.id,
-      material_id: m.material_id,
-      quantity: m.quantity,
-      notes: m.notes
+      sort_order: index,
+      description: item.description,
+      quantity: item.quantity,
+      unit: item.unit || 'adet',
+      unit_price: item.unit_price ?? 0,
+      cost: item.cost ?? null,
+      material_id: item.material_id || null,
     }));
-    const { error: mError } = await supabase.from('work_order_materials').insert(materialLinks);
+    const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);
     if (mError) throw mError;
   }
 
   return created;
 }
 
-export async function updateWorkOrder({ id, materials, ...data }) {
+export async function updateWorkOrder({ id, items, materials_discount_percent, ...data }) {
+  const updatePayload = { ...data };
+  if (materials_discount_percent !== undefined) {
+    updatePayload.materials_discount_percent = materials_discount_percent;
+  }
+
   const { data: updated, error } = await supabase
     .from('work_orders')
-    .update(data)
+    .update(updatePayload)
     .eq('id', id)
     .select()
     .single();
 
   if (error) throw error;
 
-  if (materials) {
-    // Simple approach: delete all and re-insert
+  if (items !== undefined) {
     await supabase.from('work_order_materials').delete().eq('work_order_id', id);
-    if (materials.length > 0) {
-      const materialLinks = materials.map(m => ({
+    if (items.length > 0) {
+      const materialRows = items.map((item, index) => ({
         work_order_id: id,
-        material_id: m.material_id,
-        quantity: m.quantity,
-        notes: m.notes
+        sort_order: index,
+        description: item.description,
+        quantity: item.quantity,
+        unit: item.unit || 'adet',
+        unit_price: item.unit_price ?? 0,
+        cost: item.cost ?? null,
+        material_id: item.material_id || null,
       }));
-      const { error: mError } = await supabase.from('work_order_materials').insert(materialLinks);
+      const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);
       if (mError) throw mError;
     }
   }

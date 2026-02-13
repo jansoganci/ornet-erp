@@ -9,11 +9,12 @@ import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
   Input,
+  Select,
   Textarea,
   Card,
   Spinner,
 } from '../../components/ui';
-import { proposalSchema, proposalDefaultValues } from './schema';
+import { proposalSchema, proposalDefaultValues, CURRENCIES } from './schema';
 import {
   useProposal,
   useProposalItems,
@@ -56,6 +57,7 @@ export function ProposalFormPage() {
   });
 
   const selectedSiteId = watch('site_id');
+  const selectedCurrency = watch('currency') ?? 'USD';
 
   // Populate form when editing
   useEffect(() => {
@@ -65,14 +67,15 @@ export function ProposalFormPage() {
             description: item.description || '',
             quantity: item.quantity || 1,
             unit: item.unit || 'adet',
-            unit_price_usd: item.unit_price_usd || 0,
-            cost_usd: item.cost_usd ?? null,
+            unit_price: item.unit_price ?? item.unit_price_usd ?? 0,
+            material_id: item.material_id ?? null,
+            cost: item.cost ?? item.cost_usd ?? null,
             margin_percent: item.margin_percent ?? null,
-            product_cost_usd: item.product_cost_usd ?? null,
-            labor_cost_usd: item.labor_cost_usd ?? null,
-            shipping_cost_usd: item.shipping_cost_usd ?? null,
-            material_cost_usd: item.material_cost_usd ?? null,
-            misc_cost_usd: item.misc_cost_usd ?? null,
+            product_cost: item.product_cost ?? item.product_cost_usd ?? null,
+            labor_cost: item.labor_cost ?? item.labor_cost_usd ?? null,
+            shipping_cost: item.shipping_cost ?? item.shipping_cost_usd ?? null,
+            material_cost: item.material_cost ?? item.material_cost_usd ?? null,
+            misc_cost: item.misc_cost ?? item.misc_cost_usd ?? null,
           }))
         : proposalDefaultValues.items;
 
@@ -81,6 +84,7 @@ export function ProposalFormPage() {
         title: proposal.title || '',
         scope_of_work: proposal.scope_of_work || '',
         notes: proposal.notes || '',
+        currency: proposal.currency || 'USD',
         company_name: proposal.company_name || '',
         survey_date: proposal.survey_date || '',
         authorized_person: proposal.authorized_person || '',
@@ -177,12 +181,20 @@ export function ProposalFormPage() {
           className="p-6"
         >
           <div className="space-y-6">
-            <Input
-              label={t('proposals:form.fields.title')}
-              placeholder={t('proposals:form.placeholders.title')}
-              error={errors.title?.message}
-              {...register('title')}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label={t('proposals:form.fields.title')}
+                placeholder={t('proposals:form.placeholders.title')}
+                error={errors.title?.message}
+                {...register('title')}
+              />
+              <Select
+                label={t('common:fields.currency')}
+                options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
+                error={errors.currency?.message}
+                {...register('currency')}
+              />
+            </div>
 
             <Textarea
               label={t('proposals:form.fields.scopeOfWork')}
@@ -244,6 +256,7 @@ export function ProposalFormPage() {
             errors={errors}
             watch={watch}
             setValue={setValue}
+            currency={selectedCurrency}
           />
         </Card>
 

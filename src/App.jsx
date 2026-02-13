@@ -31,7 +31,7 @@ import {
 } from './features/tasks';
 import { CalendarPage } from './features/calendar';
 import { WorkHistoryPage } from './features/workHistory';
-import { MaterialsListPage } from './features/materials';
+import { MaterialsListPage, MaterialImportPage } from './features/materials';
 import {
   SubscriptionsListPage,
   SubscriptionDetailPage,
@@ -48,6 +48,8 @@ import {
   ProposalDetailPage,
   ProposalFormPage,
 } from './features/proposals';
+import { ProfilePage } from './features/profile';
+import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, ReportsPage } from './features/finance';
 
 function App() {
   return (
@@ -75,6 +77,7 @@ function App() {
             }
           >
             <Route index element={<DashboardPage />} />
+            <Route path="profile" element={<ProfilePage />} />
 
             {/* Customer routes */}
             <Route path="customers" element={<CustomersListPage />} />
@@ -92,6 +95,7 @@ function App() {
             <Route path="daily-work" element={<DailyWorkListPage />} />
             <Route path="work-history" element={<WorkHistoryPage />} />
             <Route path="materials" element={<MaterialsListPage />} />
+            <Route path="materials/import" element={<MaterialImportPage />} />
 
             {/* Task routes */}
             <Route path="tasks" element={<TasksPage />} />
@@ -111,6 +115,14 @@ function App() {
             <Route path="proposals/new" element={<ProposalFormPage />} />
             <Route path="proposals/:id" element={<ProposalDetailPage />} />
             <Route path="proposals/:id/edit" element={<ProposalFormPage />} />
+
+            {/* Finance routes */}
+            <Route path="finance" element={<FinanceDashboardPage />} />
+            <Route path="finance/expenses" element={<ExpensesPage />} />
+            <Route path="finance/income" element={<IncomePage />} />
+            <Route path="finance/vat" element={<VatReportPage />} />
+            <Route path="finance/exchange" element={<ExchangeRatePage />} />
+            <Route path="finance/reports" element={<ReportsPage />} />
 
             {/* SIM Card routes */}
             <Route path="sim-cards" element={<SimCardsListPage />} />

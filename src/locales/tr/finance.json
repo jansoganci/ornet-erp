@@ -1,0 +1,168 @@
+{
+  "quickEntry": {
+    "title": "Hızlı Giriş"
+  },
+  "expense": {
+    "title": "Gider Ekle",
+    "addButton": "Gider Ekle",
+    "addAnother": "Kaydet ve Yeni Ekle",
+    "saveAndClose": "Kaydet ve Kapat",
+    "editTitle": "Gider Düzenle",
+    "fields": {
+      "date": "Tarih",
+      "amount": "Tutar (TRY)",
+      "category": "Kategori",
+      "customer": "Müşteri",
+      "source": "Kaynak",
+      "paymentMethod": "Ödeme Yöntemi",
+      "hasInvoice": "Faturalı",
+      "vatRate": "KDV Oranı (%)",
+      "description": "Açıklama"
+    },
+    "placeholders": {
+      "date": "Tarih seçin",
+      "amount": "0",
+      "category": "Kategori seçin",
+      "paymentMethod": "Ödeme yöntemi seçin",
+      "description": "Opsiyonel açıklama"
+    },
+    "paymentMethods": {
+      "card": "Kredi Kartı",
+      "cash": "Nakit",
+      "bank_transfer": "Banka Transferi"
+    }
+  },
+  "income": {
+    "title": "Gelir Ekle",
+    "addButton": "Gelir Ekle",
+    "addAnother": "Kaydet ve Yeni Ekle",
+    "saveAndClose": "Kaydet ve Kapat",
+    "fields": {
+      "date": "Tarih",
+      "amount": "Tutar",
+      "currency": "Para Birimi",
+      "exchangeRate": "Döviz Kuru",
+      "amountTry": "Tutar (TRY)",
+      "incomeType": "Gelir Tipi",
+      "customer": "Müşteri",
+      "site": "Lokasyon",
+      "proposal": "Teklif",
+      "workOrder": "İş Emri",
+      "paymentMethod": "Ödeme Yöntemi",
+      "shouldInvoice": "Faturalansın",
+      "vatRate": "KDV Oranı (%)",
+      "cogs": "Maliyet (TRY)",
+      "description": "Açıklama"
+    },
+    "placeholders": {
+      "date": "Tarih seçin",
+      "amount": "0",
+      "exchangeRate": "Kur girin",
+      "amountTry": "TRY tutarı",
+      "proposal": "Teklif ara...",
+      "workOrder": "İş emri ara...",
+      "description": "Opsiyonel açıklama",
+      "noProposals": "Teklif bulunamadı",
+      "noWorkOrders": "İş emri bulunamadı"
+    },
+    "incomeTypes": {
+      "subscription": "Abonelik",
+      "sim_rental": "SIM Kiralama",
+      "sale": "Satış",
+      "service": "Servis",
+      "installation": "Montaj",
+      "maintenance": "Bakım",
+      "other": "Diğer"
+    },
+    "editTitle": "Gelir Düzenle"
+  },
+  "list": {
+    "title": "Giderler",
+    "titleIncome": "Gelirler",
+    "empty": "Henüz gider kaydı yok",
+    "emptyIncome": "Henüz gelir kaydı yok",
+    "addFirst": "İlk gideri ekleyerek başlayın.",
+    "addFirstIncome": "İlk geliri ekleyerek başlayın."
+  },
+  "dashboard": {
+    "title": "Finans Özeti",
+    "mrr": "MRR",
+    "arpc": "Ortalama Müşteri Geliri",
+    "grossMargin": "Brüt Kar Marjı",
+    "netProfit": "Net Kar",
+    "vatPayable": "KDV Ödenecek",
+    "materialCostPct": "Malzeme Maliyeti %",
+    "simNetProfit": "SIM Net Kar",
+    "subscriptionNetProfit": "Abonelik Net Kar",
+    "revenueVsExpenses": "Gelir vs Gider",
+    "recentTransactions": "Son İşlemler",
+    "expenseByCategory": "Gidere Göre Kategori"
+  },
+  "filters": {
+    "period": "Dönem",
+    "customer": "Müşteri",
+    "category": "Kategori",
+    "paymentMethod": "Ödeme Yöntemi",
+    "all": "Tümü",
+    "viewMode": {
+      "total": "Toplam",
+      "official": "Resmi",
+      "unofficial": "Gayri Resmi"
+    }
+  },
+  "expenseCategories": {
+    "material": "Malzeme / Ekipman",
+    "sim_operator": "Operator Faturaları",
+    "fuel": "Yakıt",
+    "payroll": "Personel Maaşı",
+    "rent": "Kira",
+    "utilities": "Elektrik / Su / Doğalgaz",
+    "communication": "Haberleşme",
+    "vehicle": "Araç Giderleri",
+    "fixed_assets": "Demirbaş",
+    "other": "Diğer"
+  },
+  "actions": {
+    "edit": "Düzenle",
+    "delete": "Sil"
+  },
+  "deleteConfirm": {
+    "title": "Silmek istediğinize emin misiniz?",
+    "message": "Bu işlem geri alınamaz."
+  },
+  "vatReport": {
+    "title": "KDV Raporu",
+    "outputVat": "Çıktı KDV",
+    "inputVat": "Girdi KDV",
+    "netVat": "Net KDV Ödenecek",
+    "periodType": "Dönem Tipi",
+    "month": "Ay",
+    "quarter": "Çeyrek",
+    "total": "Toplam",
+    "empty": "Seçilen dönemde KDV verisi yok"
+  },
+  "exchangeRates": {
+    "title": "Döviz Kurları",
+    "addRate": "Kur Ekle",
+    "currency": "Para Birimi",
+    "date": "Tarih",
+    "buyRate": "Alış",
+    "sellRate": "Satış",
+    "effectiveRate": "Geçerli Kur",
+    "source": "Kaynak",
+    "empty": "Henüz kur kaydı yok",
+    "duplicateDate": "Bu tarih için kur zaten mevcut.",
+    "fetchTcmb": "TCMB'dan Getir",
+    "fetchSuccess": "{{count}} kur başarıyla güncellendi ({{date}})",
+    "fetchNoData": "TCMB'den bugün için kur bulunamadı."
+  },
+  "reports": {
+    "title": "Kar Zarar Raporu",
+    "revenue": "Gelir",
+    "cogs": "Satış Maliyeti",
+    "grossProfit": "Brüt Kar",
+    "operatingExpenses": "İşletme Giderleri",
+    "netProfit": "Net Kar",
+    "empty": "Seçilen dönemde veri yok"
+  }
+}

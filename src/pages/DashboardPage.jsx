@@ -14,6 +14,7 @@ import {
   Circle,
   CalendarCheck,
   Search,
+  CreditCard,
   Cpu as SimIcon
 } from 'lucide-react';
 import { PageContainer } from '../components/layout';
@@ -25,6 +26,7 @@ import {
   usePendingTasks
 } from '../features/dashboard/hooks';
 import { useSimFinancialStats } from '../features/simCards/hooks';
+import { useSubscriptionStats } from '../features/subscriptions/hooks';
 import { StatCard } from '../features/dashboard/StatCard';
 import { TaskModal } from '../features/tasks/TaskModal';
 import { useUpdateTask } from '../features/tasks/hooks';
@@ -67,6 +69,7 @@ export function DashboardPage() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   const { data: stats, isLoading: isStatsLoading, error: statsError, refetch: refetchStats } = useDashboardStats();
+  const { data: subStats, isLoading: isSubStatsLoading } = useSubscriptionStats();
   const { data: simStats, isLoading: isSimStatsLoading } = useSimFinancialStats();
   const { data: schedule, isLoading: isScheduleLoading, error: scheduleError, refetch: refetchSchedule } = useTodaySchedule();
   const { data: tasks, isLoading: isTasksLoading, error: tasksError, refetch: refetchTasks } = usePendingTasks();
@@ -113,30 +116,40 @@ export function DashboardPage() {
       {statsError ? (
         <ErrorState message={statsError.message} onRetry={() => refetchStats()} />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <StatCard
             title={t('stats.todayWorkOrders')}
             value={stats?.today_work_orders ?? 0}
             icon={Clock}
             loading={isStatsLoading}
+            onClick={() => navigate('/daily-work')}
           />
           <StatCard
             title={t('stats.pendingWorkOrders')}
             value={stats?.pending_work_orders ?? 0}
             icon={ClipboardList}
             loading={isStatsLoading}
+            onClick={() => navigate('/work-orders?status=pending')}
           />
           <StatCard
             title={t('stats.openTasks')}
             value={stats?.open_tasks ?? 0}
             icon={Target}
             loading={isStatsLoading}
+            onClick={() => navigate('/tasks')}
           />
           <StatCard
             title={t('stats.totalCustomers')}
             value={stats?.total_customers ?? 0}
             icon={Users}
             loading={isStatsLoading}
+          />
+          <StatCard
+            title={t('stats.activeSubscriptions')}
+            value={subStats?.active_count ?? 0}
+            icon={CreditCard}
+            loading={isSubStatsLoading}
+            onClick={() => navigate('/subscriptions')}
           />
           <StatCard
             title={tCommon('simCards:stats.active')}

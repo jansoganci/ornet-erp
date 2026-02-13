@@ -1,11 +1,8 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
 import { useFieldArray, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Search, Check, Package } from 'lucide-react';
-import { Button, IconButton, Spinner, Badge, Input } from '../../../components/ui';
-import { useMaterials } from '../../materials/hooks';
-import { MaterialFormModal } from '../../materials/MaterialFormModal';
-import { cn } from '../../../lib/utils';
+import { Plus, Trash2, Package } from 'lucide-react';
+import { Button, IconButton, Input, MaterialCombobox } from '../../../components/ui';
+import { cn, getCurrencySymbol, formatCurrency } from '../../../lib/utils';
 
 const UNIT_OPTIONS = [
   { value: 'adet', labelKey: 'items.units.adet' },
@@ -14,186 +11,9 @@ const UNIT_OPTIONS = [
   { value: 'takim', labelKey: 'items.units.takim' },
 ];
 
-function MaterialCombobox({ value, onChange, error }) {
-  const { t } = useTranslation(['proposals', 'materials', 'workOrders']);
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const dropdownRef = useRef(null);
-  const inputRef = useRef(null);
-
-  const filters = useMemo(() => {
-    const f = { active: true };
-    if (search.trim()) f.search = search.trim();
-    return f;
-  }, [search]);
-
-  const { data: materials = [], isLoading } = useMaterials(filters);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false);
-        setSearch('');
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
-
-  const handleSelect = (material) => {
-    onChange(material.name);
-    setIsOpen(false);
-    setSearch('');
-  };
-
-  const handleCreateSuccess = (newMaterial) => {
-    onChange(newMaterial.name);
-    setShowCreateModal(false);
-    setIsOpen(false);
-    setSearch('');
-  };
-
-  const handleInputChange = (e) => {
-    const val = e.target.value;
-    setSearch(val);
-    onChange(val);
-    if (!isOpen && val.length > 0) setIsOpen(true);
-  };
-
-  const handleFocus = () => {
-    setIsOpen(true);
-  };
-
-  return (
-    <div ref={dropdownRef} className="relative">
-      <div className="relative">
-        <input
-          ref={inputRef}
-          type="text"
-          value={value || ''}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          placeholder={t('proposals:items.description')}
-          className={cn(
-            'block w-full h-9 rounded-lg border shadow-sm text-sm transition-colors',
-            'placeholder:text-neutral-500 dark:placeholder:text-neutral-600',
-            'focus:outline-none focus:ring-2 focus:ring-offset-0',
-            'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
-            'pl-9 pr-3',
-            error
-              ? 'border-error-500 focus:border-error-500 focus:ring-error-500/20'
-              : 'border-neutral-300 dark:border-[#262626] focus:border-primary-600 focus:ring-primary-600/20'
-          )}
-        />
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="w-4 h-4 text-neutral-400" />
-        </div>
-      </div>
-
-      {error && (
-        <p className="mt-1 text-xs text-error-600 dark:text-error-400">{error}</p>
-      )}
-
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#171717] border border-neutral-200 dark:border-[#262626] rounded-lg shadow-xl max-h-60 flex flex-col overflow-hidden">
-          <div className="overflow-y-auto flex-1 py-1">
-            {isLoading ? (
-              <div className="p-3 flex justify-center">
-                <Spinner size="sm" />
-              </div>
-            ) : materials.length === 0 ? (
-              <div className="p-3 text-center">
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                  {t('workOrders:form.materialSelect.noResults', 'Malzeme bulunamadı')}
-                </p>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowCreateModal(true);
-                  }}
-                  className="text-xs text-primary-600 dark:text-primary-400 font-medium flex items-center justify-center gap-1 hover:underline mx-auto"
-                >
-                  <Plus className="w-3 h-3" />
-                  {t('workOrders:form.materialSelect.addNew', 'Yeni Malzeme Ekle')}
-                </button>
-              </div>
-            ) : (
-              materials.map((material) => (
-                <button
-                  type="button"
-                  key={material.id}
-                  className={cn(
-                    'w-full px-3 py-2 text-left flex items-center justify-between hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors',
-                    value === material.name && 'bg-primary-50 dark:bg-primary-900/30'
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelect(material);
-                  }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
-                        {material.code}
-                      </span>
-                      {material.category && (
-                        <Badge variant="default" size="sm">
-                          {t(`materials:categories.${material.category}`)}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                      {material.name}
-                    </p>
-                  </div>
-                  {value === material.name && (
-                    <Check className="w-4 h-4 text-primary-600 shrink-0 ml-2" />
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-          <div className="p-1.5 border-t border-neutral-200 dark:border-[#262626] bg-neutral-50 dark:bg-[#1a1a1a]">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowCreateModal(true);
-              }}
-              className="text-xs text-primary-600 dark:text-primary-400 font-medium flex items-center justify-center gap-1 hover:underline py-1 w-full"
-            >
-              <Plus className="w-3 h-3" />
-              {t('workOrders:form.materialSelect.addNew', 'Yeni Malzeme Ekle')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      <MaterialFormModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={handleCreateSuccess}
-      />
-    </div>
-  );
-}
-
-export function ProposalItemsEditor({ control, register, errors, watch, setValue }) {
+export function ProposalItemsEditor({ control, register, errors, watch, setValue, currency = 'USD' }) {
   const { t } = useTranslation('proposals');
+  const symbol = getCurrencySymbol(currency);
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'items',
@@ -203,32 +23,32 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
   const discountPercent = Number(watch('discount_percent')) || 0;
   const subtotal = (watchItems || []).reduce((sum, item) => {
     const qty = parseFloat(item?.quantity) || 0;
-    const price = parseFloat(item?.unit_price_usd) || 0;
+    const price = parseFloat(item?.unit_price) || 0;
     return sum + qty * price;
   }, 0);
   const discountAmount = subtotal * (discountPercent / 100);
   const grandTotal = subtotal - discountAmount;
   const totalCosts = (watchItems || []).reduce((sum, item) => {
     const qty = parseFloat(item?.quantity) || 0;
-    const cost = parseFloat(item?.cost_usd) || 0;
+    const cost = parseFloat(item?.cost) || 0;
     return sum + cost * qty;
   }, 0);
   const netProfit = grandTotal - totalCosts;
-  const formatUsd = (n) => n.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
   const handleAddItem = () => {
     append({
       description: '',
       quantity: 1,
       unit: 'adet',
-      unit_price_usd: 0,
-      cost_usd: null,
+      unit_price: 0,
+      material_id: null,
+      cost: null,
       margin_percent: null,
-      product_cost_usd: null,
-      labor_cost_usd: null,
-      shipping_cost_usd: null,
-      material_cost_usd: null,
-      misc_cost_usd: null,
+      product_cost: null,
+      labor_cost: null,
+      shipping_cost: null,
+      material_cost: null,
+      misc_cost: null,
     });
   };
 
@@ -264,7 +84,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
             {t('items.sequence')}
           </span>
           <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1">
-            {t('items.description')}
+            {t('items.material')}
           </span>
           <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1">
             {t('items.quantity')}
@@ -283,7 +103,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
 
         {fields.map((field, index) => {
           const qty = parseFloat(watchItems?.[index]?.quantity) || 0;
-          const price = parseFloat(watchItems?.[index]?.unit_price_usd) || 0;
+          const price = parseFloat(watchItems?.[index]?.unit_price) || 0;
           const lineTotal = qty * price;
 
           return (
@@ -297,8 +117,18 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
                 </div>
                 <div className="px-1">
                   <MaterialCombobox
+                    mode="proposals"
                     value={watchItems?.[index]?.description || ''}
-                    onChange={(val) => setValue(`items.${index}.description`, val, { shouldValidate: true })}
+                    placeholder={t('items.material')}
+                    onMaterialSelect={(payload) => {
+                      setValue(`items.${index}.description`, payload.description, { shouldValidate: true });
+                      setValue(`items.${index}.material_id`, payload.material_id ?? null);
+                      if (payload.unit) setValue(`items.${index}.unit`, payload.unit);
+                    }}
+                    onDescriptionChange={(val) => {
+                      setValue(`items.${index}.description`, val, { shouldValidate: true });
+                      setValue(`items.${index}.material_id`, null);
+                    }}
                     error={errors?.items?.[index]?.description?.message}
                   />
                 </div>
@@ -352,10 +182,10 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
                   />
                 </div>
                 <div className="px-1 relative z-10">
-                  <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none z-10" aria-hidden>$</span>
+                  <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none z-10" aria-hidden>{symbol}</span>
                   <Controller
                     control={control}
-                    name={`items.${index}.unit_price_usd`}
+                    name={`items.${index}.unit_price`}
                     render={({ field: f }) => (
                       <input
                         type="number"
@@ -379,7 +209,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
                 </div>
                 <div className="px-1 text-right">
                   <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
-                    ${lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    {formatCurrency(lineTotal, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-center">
@@ -405,10 +235,10 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
                     {t('items.cost')}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-400 text-xs">$</span>
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-400 text-xs">{symbol}</span>
                     <Controller
                       control={control}
-                      name={`items.${index}.cost_usd`}
+                      name={`items.${index}.cost`}
                       render={({ field: f }) => (
                         <input
                           type="number"
@@ -439,7 +269,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
       <div className="md:hidden space-y-4">
         {fields.map((field, index) => {
           const qty = parseFloat(watchItems?.[index]?.quantity) || 0;
-          const price = parseFloat(watchItems?.[index]?.unit_price_usd) || 0;
+          const price = parseFloat(watchItems?.[index]?.unit_price) || 0;
           const lineTotal = qty * price;
 
           return (
@@ -463,14 +293,24 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
                 )}
               </div>
 
-              {/* Description - Material Combobox */}
+              {/* Material Combobox */}
               <div>
                 <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">
-                  {t('items.description')}
+                  {t('items.material')}
                 </label>
                 <MaterialCombobox
+                  mode="proposals"
                   value={watchItems?.[index]?.description || ''}
-                  onChange={(val) => setValue(`items.${index}.description`, val, { shouldValidate: true })}
+                  placeholder={t('items.material')}
+                  onMaterialSelect={(payload) => {
+                    setValue(`items.${index}.description`, payload.description, { shouldValidate: true });
+                    setValue(`items.${index}.material_id`, payload.material_id ?? null);
+                    if (payload.unit) setValue(`items.${index}.unit`, payload.unit);
+                  }}
+                  onDescriptionChange={(val) => {
+                    setValue(`items.${index}.description`, val, { shouldValidate: true });
+                    setValue(`items.${index}.material_id`, null);
+                  }}
                   error={errors?.items?.[index]?.description?.message}
                 />
               </div>
@@ -544,11 +384,11 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none">
-                    $
+                    {symbol}
                   </span>
                   <Controller
                     control={control}
-                    name={`items.${index}.unit_price_usd`}
+                    name={`items.${index}.unit_price`}
                     render={({ field }) => (
                       <input
                         type="number"
@@ -578,7 +418,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
               <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#262626]">
                 <span className="text-xs text-neutral-500">{t('items.total')}</span>
                 <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                  ${lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  {formatCurrency(lineTotal, currency)}
                 </span>
               </div>
               {/* Cost tracking - mobile (single total cost) */}
@@ -591,10 +431,10 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
                     {t('items.cost')}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">{symbol}</span>
                     <Controller
                       control={control}
-                      name={`items.${index}.cost_usd`}
+                      name={`items.${index}.cost`}
                       render={({ field: f }) => (
                         <input
                           type="number"
@@ -625,7 +465,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
       <div className="pt-4 border-t-2 border-neutral-300 dark:border-[#333] space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-neutral-600 dark:text-neutral-400">{t('detail.subtotal')}</span>
-          <span className="text-neutral-900 dark:text-neutral-100">${formatUsd(subtotal)}</span>
+          <span className="text-neutral-900 dark:text-neutral-100">{formatCurrency(subtotal, currency)}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <label className="text-sm text-neutral-600 dark:text-neutral-400 shrink-0">
@@ -645,7 +485,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
         {discountPercent > 0 && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-neutral-600 dark:text-neutral-400">{t('detail.discountAmount')}</span>
-            <span className="text-neutral-900 dark:text-neutral-100">-${formatUsd(discountAmount)}</span>
+            <span className="text-neutral-900 dark:text-neutral-100">{formatCurrency(-discountAmount, currency)}</span>
           </div>
         )}
         <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#333]">
@@ -653,7 +493,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
             {t('detail.total')}
           </span>
           <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-            ${formatUsd(grandTotal)}
+            {formatCurrency(grandTotal, currency)}
           </span>
         </div>
         {/* Net Kar (internal only) */}
@@ -667,7 +507,7 @@ export function ProposalItemsEditor({ control, register, errors, watch, setValue
               ? 'text-green-600 dark:text-green-500' 
               : 'text-error-600 dark:text-error-400'
           )}>
-            ${formatUsd(netProfit)}
+            {formatCurrency(netProfit, currency)}
           </span>
         </div>
       </div>

@@ -82,7 +82,12 @@
   },
   "fields": {
     "amount": "Tutar",
+    "currency": "Para Birimi",
     "notes": "Notlar"
+  },
+  "currencies": {
+    "TRY": "TRY (₺)",
+    "USD": "USD ($)"
   },
   "deleteConfirm": "silinsin mi?",
   "noResults": "Sonuç bulunamadı",
@@ -140,7 +145,22 @@
     "proposals": "Teklifler",
     "profile": "Profil",
     "settings": "Ayarlar",
-    "logout": "Çıkış Yap"
+    "logout": "Çıkış Yap",
+    "more": "Menü",
+    "groups": {
+      "planning": "Planlama",
+      "revenueInfra": "Gelir ve Altyapı",
+      "finance": "Finans",
+      "settings": "Ayarlar"
+    },
+    "finance": {
+      "dashboard": "Finans Özeti",
+      "income": "Gelirler",
+      "expenses": "Giderler",
+      "vat": "KDV Raporu",
+      "exchange": "Döviz Kurları",
+      "reports": "Raporlar"
+    }
   },
   "workType": {
     "survey": "Keşif",

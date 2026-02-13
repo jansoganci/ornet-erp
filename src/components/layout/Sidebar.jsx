@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { LogOut, User, Sun, Moon, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -7,8 +8,29 @@ import { cn } from '../../lib/utils';
 import { useTheme } from '../../hooks/themeContext';
 import { useCurrentProfile } from '../../features/subscriptions/hooks';
 import { navItems } from './navItems';
+import { NavGroup } from './NavGroup';
 
-export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) {
+function isFlatItem(item) {
+  return !item.type || item.type !== 'group';
+}
+
+const DEFAULT_GROUP_STATE = {
+  planning: true,
+  revenueInfra: true,
+  settings: false, // Ayarlar default collapsed (less frequently used)
+};
+
+function loadGroupState() {
+  try {
+    const saved = localStorage.getItem('sidebarGroups');
+    if (saved) return { ...DEFAULT_GROUP_STATE, ...JSON.parse(saved) };
+  } catch {
+    // ignore invalid JSON
+  }
+  return DEFAULT_GROUP_STATE;
+}
+
+export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
   const { t: tCommon } = useTranslation('common');
   const { t: tAuth } = useTranslation('auth');
   const { user, signOut } = useAuth();
@@ -16,6 +38,20 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+
+  const [groupState, setGroupState] = useState(loadGroupState);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarGroups', JSON.stringify(groupState));
+  }, [groupState]);
+
+  const handleGroupToggle = (id) => {
+    setGroupState((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleNavClick = () => {
+    if (window.innerWidth < 1024) onClose();
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -71,32 +107,43 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
           'flex-1 py-6 space-y-1 overflow-y-auto',
           isCollapsed ? 'px-2' : 'px-4'
         )}>
-          {visibleNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.exact}
-              onClick={() => {
-                // Close drawer on mobile/tablet after navigation
-                if (window.innerWidth < 1024) onClose();
-              }}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center rounded-lg text-sm font-medium transition-colors',
-                  isCollapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2',
-                  isActive
-                    ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-200'
-                )
-              }
-              title={isCollapsed ? tCommon(item.labelKey) : undefined}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && (
-                <span className="truncate">{tCommon(item.labelKey)}</span>
-              )}
-            </NavLink>
-          ))}
+          {visibleNavItems.map((item) =>
+            isFlatItem(item) ? (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.exact}
+                onClick={handleNavClick}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center rounded-lg text-sm font-medium transition-colors min-h-[44px] min-w-[44px]',
+                    isCollapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2',
+                    isActive
+                      ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-200'
+                  )
+                }
+                title={isCollapsed ? tCommon(item.labelKey) : undefined}
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!isCollapsed && (
+                  <span className="truncate">{tCommon(item.labelKey)}</span>
+                )}
+              </NavLink>
+            ) : (
+              <NavGroup
+                key={item.id}
+                id={item.id}
+                labelKey={item.labelKey}
+                icon={item.icon}
+                children={item.children}
+                isCollapsed={isCollapsed}
+                expanded={groupState[item.id] ?? true}
+                onToggle={() => handleGroupToggle(item.id)}
+                onItemClick={handleNavClick}
+              />
+            )
+          )}
         </nav>
 
         {/* User / Logout */}
@@ -121,20 +168,28 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
             </div>
           </button>
 
-          {/* User Info - Hidden when collapsed */}
-          {!isCollapsed && (
-            <div className="flex items-center gap-3 px-3 py-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
-                <User className="w-4 h-4" />
-              </div>
+          {/* User Info - Clickable link to profile */}
+          <Link
+            to="/profile"
+            onClick={() => window.innerWidth < 1024 && onClose()}
+            className={cn(
+              'flex items-center rounded-lg transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800',
+              isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'
+            )}
+            title={isCollapsed ? tCommon('nav.profile') : undefined}
+          >
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 flex-shrink-0">
+              <User className="w-4 h-4" />
+            </div>
+            {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
-                  {user?.email?.split('@')[0] || tCommon('labels.admin')}
+                  {currentProfile?.full_name || user?.email?.split('@')[0] || tCommon('labels.admin')}
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user?.email}</p>
               </div>
-            </div>
-          )}
+            )}
+          </Link>
           
           {/* Logout Button */}
           {isSupabaseConfigured && (

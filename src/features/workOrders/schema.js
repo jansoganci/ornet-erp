@@ -2,6 +2,7 @@ import { z } from 'zod';
 import i18n from '../../lib/i18n';
 
 export const WORK_TYPES = ['survey', 'installation', 'service', 'maintenance', 'other'];
+export const CURRENCIES = ['TRY', 'USD'];
 
 export const workOrderSchema = z.object({
   site_id: z.string().min(1, i18n.t('errors:validation.required')),
@@ -17,12 +18,15 @@ export const workOrderSchema = z.object({
   notes: z.string().optional().or(z.literal('')),
   amount: z.preprocess((val) => (val === '' ? undefined : Number(val)), z.number({ invalid_type_error: i18n.t('errors:validation.invalidNumber') }).optional()),
   currency: z.string().default('TRY'),
-  materials: z.array(z.object({
-    material_id: z.string(),
-    quantity: z.number().min(0),
-    notes: z.string().optional().or(z.literal('')),
-    material: z.any().optional(),
-  })).default([]),
+  items: z.array(z.object({
+    description: z.string().min(1, i18n.t('errors:validation.required')),
+    quantity: z.coerce.number().positive(),
+    unit: z.string().default('adet'),
+    unit_price: z.coerce.number().min(0),
+    material_id: z.string().uuid().optional().nullable().or(z.literal('')),
+    cost: z.coerce.number().min(0).optional().nullable(),
+  })).min(1, i18n.t('errors:validation.required')),
+  materials_discount_percent: z.coerce.number().min(0).max(100).optional().nullable(),
 }).refine((data) => {
   if (data.work_type === 'other') {
     return data.work_type_other && data.work_type_other.length > 0;
@@ -47,5 +51,8 @@ export const workOrderDefaultValues = {
   notes: '',
   amount: '',
   currency: 'TRY',
-  materials: [],
+  items: [
+    { description: '', quantity: 1, unit: 'adet', unit_price: 0, material_id: null, cost: null },
+  ],
+  materials_discount_percent: 0,
 };

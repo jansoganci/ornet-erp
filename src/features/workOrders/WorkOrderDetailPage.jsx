@@ -66,7 +66,7 @@ function WorkOrderDetailSkeleton() {
 export function WorkOrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation(['workOrders', 'common', 'materials']);
+  const { t } = useTranslation(['workOrders', 'common', 'materials', 'proposals']);
   const { t: tCommon } = useTranslation('common');
   
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -130,30 +130,61 @@ export function WorkOrderDetailPage() {
     });
   };
 
+  const items = workOrder.work_order_materials || [];
+  const discountPercent = Number(workOrder.materials_discount_percent) || 0;
+  const currency = workOrder.currency ?? 'TRY';
+  const subtotal = items.reduce((sum, row) => {
+    const qty = parseFloat(row.quantity) || 0;
+    const price = parseFloat(row.unit_price ?? row.unit_price_usd) || 0;
+    return sum + qty * price;
+  }, 0);
+  const discountAmount = subtotal * (discountPercent / 100);
+  const grandTotal = subtotal - discountAmount;
+  const totalCosts = items.reduce((sum, row) => {
+    const qty = parseFloat(row.quantity) || 0;
+    const cost = parseFloat(row.cost ?? row.cost_usd) || 0;
+    return sum + cost * qty;
+  }, 0);
+  const netProfit = grandTotal - totalCosts;
+
   const materialColumns = [
     {
-      header: t('materials:list.columns.name'),
-      accessor: 'materials',
-      render: (materials) => (
+      header: t('proposals:items.material'),
+      accessor: 'description',
+      render: (val, row) => (
         <div>
-          <p className="font-bold text-neutral-900 dark:text-neutral-100">{materials?.code}</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{materials?.name}</p>
+          <p className="font-bold text-neutral-900 dark:text-neutral-100">{val || row.materials?.name || '-'}</p>
+          {row.materials?.code && (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">{row.materials.code}</p>
+          )}
         </div>
       )
     },
     {
-      header: t('workOrders:form.fields.quantity'),
+      header: t('proposals:items.quantity'),
       accessor: 'quantity',
       render: (val, row) => (
         <span className="font-mono font-bold">
-          {val} <span className="text-[10px] text-neutral-400 font-normal uppercase">{row.materials?.unit}</span>
+          {Number(val)} <span className="text-[10px] text-neutral-400 font-normal uppercase">{row.unit || 'adet'}</span>
         </span>
       )
     },
     {
-      header: t('common:fields.notes'),
-      accessor: 'notes',
-      render: (val) => val ? <span className="text-xs italic text-neutral-500">{val}</span> : '-'
+      header: t('proposals:items.unitPrice'),
+      accessor: 'unit_price',
+      render: (val, row) => {
+        const price = parseFloat(val ?? row.unit_price_usd ?? 0);
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: currency, minimumFractionDigits: 2 }).format(price);
+      }
+    },
+    {
+      header: t('proposals:items.total'),
+      accessor: 'total',
+      render: (_, row) => {
+        const qty = parseFloat(row.quantity) || 0;
+        const price = parseFloat(row.unit_price ?? row.unit_price_usd) || 0;
+        return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: currency, minimumFractionDigits: 2 }).format(qty * price);
+      }
     }
   ];
 
@@ -301,9 +332,39 @@ export function WorkOrderDetailPage() {
           } padding="compact">
             <Table
               columns={materialColumns}
-              data={workOrder.work_order_materials || []}
+              data={items}
               emptyMessage={t('workOrders:detail.noMaterials')}
             />
+            {items.length > 0 && (
+              <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-[#262626] space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400">{t('proposals:detail.subtotal')}</span>
+                  <span className="text-neutral-900 dark:text-neutral-100">{formatCurrency(subtotal, currency)}</span>
+                </div>
+                {discountPercent > 0 && (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-neutral-600 dark:text-neutral-400">{t('proposals:form.fields.discountPercent')}</span>
+                      <span className="text-neutral-900 dark:text-neutral-100">{discountPercent}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-neutral-600 dark:text-neutral-400">{t('proposals:detail.discountAmount')}</span>
+                      <span className="text-neutral-900 dark:text-neutral-100">-{formatCurrency(discountAmount, currency)}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#262626]">
+                  <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300 uppercase">{t('proposals:detail.total')}</span>
+                  <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(grandTotal, currency)}</span>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">{t('proposals:detail.netProfit')} (Dahili)</span>
+                  <span className={`text-base font-bold ${netProfit >= 0 ? 'text-green-600 dark:text-green-500' : 'text-error-600 dark:text-error-400'}`}>
+                    {formatCurrency(netProfit, currency)}
+                  </span>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
 
@@ -359,7 +420,7 @@ export function WorkOrderDetailPage() {
                 <span className="text-xs uppercase font-bold text-neutral-400 tracking-widest">{t('common:fields.amount')}</span>
                 {workOrder.amount && workOrder.amount > 0 ? (
                   <span className="text-xl font-black text-primary-600">
-                    {formatCurrency(workOrder.amount, workOrder.currency)}
+                    {formatCurrency(workOrder.amount, currency)}
                   </span>
                 ) : (
                   <span className="text-sm text-neutral-500 italic">{t('workOrders:detail.amountNotEntered')}</span>

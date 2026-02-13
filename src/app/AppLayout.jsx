@@ -3,19 +3,31 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
 import { Sidebar } from '../components/layout/Sidebar';
-import { navItems } from '../components/layout/navItems';
+import { navItems, topNavRoutes } from '../components/layout/navItems';
+import { MobileNavDrawer } from '../components/layout/MobileNavDrawer';
 import { useTheme } from '../hooks/themeContext';
 import { useCurrentProfile } from '../features/subscriptions/hooks';
-import { Sun, Moon, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sun, Moon, Menu, ChevronLeft, ChevronRight, MoreHorizontal, Plus } from 'lucide-react';
 import { IconButton } from '../components/ui';
+import { QuickEntryModal } from '../features/finance';
+import { NotificationBell } from '../features/notifications';
 
 export function AppLayout() {
   const { t: tCommon } = useTranslation('common');
   const { theme, toggleTheme } = useTheme();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
+  const hasFinanceAccess = isAdmin || currentProfile?.role === 'accountant';
+  const hasNotificationAccess = isAdmin || currentProfile?.role === 'accountant';
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [quickEntryOpen, setQuickEntryOpen] = useState(false);
+
+  // Build top nav items for mobile bar: flat items matching topNavRoutes
+  const topNavItems = visibleNavItems.filter(
+    (item) => (!item.type || item.type !== 'group') && topNavRoutes.includes(item.to)
+  );
   
   // Sidebar collapse state (desktop only) - persist in localStorage
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -27,6 +39,18 @@ export function AppLayout() {
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isSidebarCollapsed));
   }, [isSidebarCollapsed]);
+
+  // Quick entry: Ctrl+N / Cmd+N
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        if (hasFinanceAccess) setQuickEntryOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [hasFinanceAccess]);
 
   const handleToggleCollapse = () => {
     setIsSidebarCollapsed((prev) => !prev);
@@ -72,6 +96,7 @@ export function AppLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            {hasNotificationAccess && <NotificationBell />}
             {/* Theme Toggle */}
             <IconButton
               icon={theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
@@ -89,29 +114,57 @@ export function AppLayout() {
         </main>
       </div>
 
-      {/* Mobile/Tablet Bottom Navigation */}
+      {/* Mobile/Tablet Bottom Navigation - Top 5 + More */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#171717] border-t border-neutral-200 dark:border-[#262626] px-2 py-1 pb-[env(safe-area-inset-bottom)] lg:hidden transition-colors h-[calc(4rem+env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-around h-full">
-          {visibleNavItems.map((item) => (
+          {topNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.exact}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-medium transition-colors min-w-[64px]',
+                  'flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] font-medium transition-colors min-w-[56px] min-h-[44px]',
                   isActive
                     ? 'text-primary-600 dark:text-primary-400'
                     : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                 )
               }
             >
-              <item.icon className="w-5 h-5" />
-              <span>{tCommon(item.labelKey)}</span>
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              <span className="truncate max-w-[64px]">{tCommon(item.labelKey)}</span>
             </NavLink>
           ))}
+          <button
+            type="button"
+            onClick={() => setIsMobileNavOpen(true)}
+            className="flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] font-medium transition-colors min-w-[56px] min-h-[44px] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+            aria-label={tCommon('nav.more')}
+          >
+            <MoreHorizontal className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate max-w-[64px]">{tCommon('nav.more')}</span>
+          </button>
         </div>
       </nav>
+
+      <MobileNavDrawer open={isMobileNavOpen} onClose={() => setIsMobileNavOpen(false)} />
+
+      {/* Quick Entry FAB */}
+      {hasFinanceAccess && (
+        <button
+          type="button"
+          onClick={() => setQuickEntryOpen(true)}
+          className="fixed bottom-24 right-4 lg:bottom-8 lg:right-8 z-40 flex items-center justify-center w-14 h-14 rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg hover:shadow-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          aria-label={tCommon('finance:expense.addButton')}
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
+
+      <QuickEntryModal
+        open={quickEntryOpen}
+        onClose={() => setQuickEntryOpen(false)}
+      />
     </div>
   );
 }

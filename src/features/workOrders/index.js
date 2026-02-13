@@ -7,6 +7,5 @@ export { WorkOrderDetailPage } from './WorkOrderDetailPage';
 export { WorkOrderFormPage } from './WorkOrderFormPage';
 export { CustomerSiteSelector } from './CustomerSiteSelector';
 export { WorkerSelector } from './WorkerSelector';
-export { MaterialSelector } from './MaterialSelector';
 export { AccountNoWarning } from './AccountNoWarning';
 export { DailyWorkCard } from './DailyWorkCard';

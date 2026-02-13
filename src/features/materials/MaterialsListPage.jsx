@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Package, Search, Edit2, Trash2, Filter } from 'lucide-react';
+import { Plus, Package, Search, Edit2, Trash2, Filter, Upload } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { 
   Button, 
@@ -33,6 +34,7 @@ export function MaterialsListPage() {
   const { data: materials = [], isLoading, error, refetch } = useMaterials({ search, category: category === 'all' ? undefined : category });
   const { data: categories = [] } = useMaterialCategories();
   const deleteMutation = useDeleteMaterial();
+  const navigate = useNavigate();
 
   const handleEdit = (material) => {
     setSelectedMaterial(material);
@@ -119,13 +121,22 @@ export function MaterialsListPage() {
           { label: t('materials:title') }
         ]}
         actions={
-          <Button 
-            onClick={handleAdd}
-            leftIcon={<Plus className="w-4 h-4" />}
-            className="shadow-lg shadow-primary-600/20"
-          >
-            {t('materials:list.addButton')}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/materials/import')}
+              leftIcon={<Upload className="w-4 h-4" />}
+            >
+              {t('materials:import.title')}
+            </Button>
+            <Button
+              onClick={handleAdd}
+              leftIcon={<Plus className="w-4 h-4" />}
+              className="shadow-lg shadow-primary-600/20"
+            >
+              {t('materials:list.addButton')}
+            </Button>
+          </div>
         }
       />
 

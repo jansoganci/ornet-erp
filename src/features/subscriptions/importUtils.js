@@ -33,9 +33,14 @@ const SUBSCRIPTION_TYPE_MAP = {
 const BILLING_FREQUENCY_MAP = {
   aylık: 'monthly',
   aylik: 'monthly',
+  '6 aylık': '6_month',
+  '6 aylik': '6_month',
+  '6_aylık': '6_month',
+  '6_aylik': '6_month',
   yıllık: 'yearly',
   yillik: 'yearly',
   monthly: 'monthly',
+  '6_month': '6_month',
   yearly: 'yearly',
 };
 
@@ -53,13 +58,9 @@ const SERVICE_TYPE_MAP = {
   'sadece alarm': 'alarm_only',
   'sadece kamera': 'camera_only',
   'sadece internet': 'internet_only',
-  'alarm + kamera': 'alarm_camera',
-  'alarm + kamera + internet': 'alarm_camera_internet',
   alarm_only: 'alarm_only',
   camera_only: 'camera_only',
   internet_only: 'internet_only',
-  alarm_camera: 'alarm_camera',
-  alarm_camera_internet: 'alarm_camera_internet',
 };
 
 function trim(val) {

@@ -1,4 +1,10 @@
 {
+  "multiService": {
+    "otherServices": "Diğer Hizmetler",
+    "noOtherServices": "Bu lokasyonda henüz abonelik yok",
+    "addService": "Hizmet Ekle",
+    "subscriptionsAtSite": "Bu lokasyondaki abonelikler"
+  },
   "list": {
     "title": "Abonelikler",
     "searchPlaceholder": "Müşteri, lokasyon veya hesap no ara...",
@@ -85,8 +91,14 @@
       "notes": "Notlar",
       "setupNotes": "Kurulum Notları",
       "serviceType": "Hizmet Türü",
+      "simCard": "SIM Kart",
+      "noSim": "SIM kartı seçilmedi",
+      "simCardSearchHint": "Farklı bir arama deneyin veya yeni SIM ekleyin",
+      "simCardSelectSiteFirst": "Önce lokasyon seçin",
+      "simCardClearSelection": "Seçimi kaldır",
       "billingFrequency": "Ödeme Sıklığı",
       "monthly": "Aylık",
+      "6_month": "6 Aylık",
       "yearly": "Yıllık",
       "officialInvoice": "Resmi fatura (Paraşüt'e gönderilir)",
       "cardBankName": "Banka Adı",
@@ -219,6 +231,7 @@
       "startMonth": "Başlangıç Ayı",
       "all": "Tümü",
       "monthly": "Aylık",
+      "6_month": "6 Aylık",
       "yearly": "Yıllık",
       "months": {
         "1": "Ocak",
@@ -269,7 +282,6 @@
     }
   },
   "validation": {
-    "paymentMethodRequired": "Kart aboneliği için ödeme yöntemi zorunludur",
-    "siteAlreadyHasSubscription": "Bu lokasyonun zaten aktif bir aboneliği var"
+    "paymentMethodRequired": "Kart aboneliği için ödeme yöntemi zorunludur"
   }
 }

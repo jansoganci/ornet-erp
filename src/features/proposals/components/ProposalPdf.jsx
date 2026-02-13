@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Font,
 } from '@react-pdf/renderer';
+import { getCurrencySymbol } from '../../../lib/utils';
 
 Font.register({
   family: 'Inter',
@@ -254,10 +255,16 @@ function formatTurkishDate(dateStr) {
   return `${d.getDate()} ${month != null ? month : ''} ${d.getFullYear()}`;
 }
 
-function formatUSD(amount) {
+function formatByCurrency(amount, currency = 'USD') {
   const n = Number(amount);
-  if (Number.isNaN(n)) return '$0.00';
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const symbol = getCurrencySymbol(currency);
+  if (Number.isNaN(n)) return `${symbol}0,00`;
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
 }
 
 function safeStr(val, maxLen = 2000) {
@@ -283,10 +290,12 @@ function HeaderField({ label, value }) {
 
 export function ProposalPdf({ proposal, items }) {
   const prop = proposal || {};
+  const currency = prop.currency ?? 'USD';
+  const symbol = getCurrencySymbol(currency);
   const itemList = Array.isArray(items) ? items : [];
   const subtotal = itemList.reduce(
     (sum, item) =>
-      sum + safeNum(item.total_usd ?? (safeNum(item.quantity) * safeNum(item.unit_price_usd))),
+      sum + safeNum(item.line_total ?? item.total_usd ?? (safeNum(item.quantity) * safeNum(item.unit_price ?? item.unit_price_usd))),
     0
   );
   const discountPercent = safeNum(prop.discount_percent, 0);
@@ -347,24 +356,32 @@ export function ProposalPdf({ proposal, items }) {
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={[styles.colSira, styles.headerText]}>Sıra</Text>
-            <Text style={[styles.colDescription, styles.headerText]}>Açıklama</Text>
+            <Text style={[styles.colDescription, styles.headerText]}>Malzeme</Text>
             <Text style={[styles.colQty, styles.headerText]}>Adet</Text>
             <Text style={[styles.colUnit, styles.headerText]}>Birim</Text>
-            <Text style={[styles.colUnitPrice, styles.headerText]}>B.Fiyat ($)</Text>
-            <Text style={[styles.colTotal, styles.headerText]}>Toplam ($)</Text>
+            <Text style={[styles.colUnitPrice, styles.headerText]}>B.Fiyat ({symbol})</Text>
+            <Text style={[styles.colTotal, styles.headerText]}>Toplam ({symbol})</Text>
           </View>
           {itemList.map((item, index) => {
             const lineTotal = safeNum(
-              item.total_usd ?? (safeNum(item.quantity) * safeNum(item.unit_price_usd))
+              item.line_total ?? item.total_usd ?? (safeNum(item.quantity) * safeNum(item.unit_price ?? item.unit_price_usd))
             );
+            const materialDesc = item.materials?.description ? safeStr(item.materials.description) : '';
             return (
               <View key={item.id || index} style={styles.tableRow}>
                 <Text style={styles.colSira}>{index + 1}</Text>
-                <Text style={styles.colDescription}>{safeStr(item.description)}</Text>
+                <View style={styles.colDescription}>
+                  <Text style={{ fontSize: 9 }}>{safeStr(item.description)}</Text>
+                  {materialDesc ? (
+                    <Text style={{ fontSize: 8, color: '#737373', marginTop: 2, lineHeight: 1.2 }}>
+                      {materialDesc}
+                    </Text>
+                  ) : null}
+                </View>
                 <Text style={styles.colQty}>{safeNum(item.quantity)}</Text>
                 <Text style={styles.colUnit}>{safeStr(item.unit) || 'adet'}</Text>
-                <Text style={styles.colUnitPrice}>{formatUSD(item.unit_price_usd)}</Text>
-                <Text style={styles.colTotal}>{formatUSD(lineTotal)}</Text>
+                <Text style={styles.colUnitPrice}>{formatByCurrency(item.unit_price ?? item.unit_price_usd, currency)}</Text>
+                <Text style={styles.colTotal}>{formatByCurrency(lineTotal, currency)}</Text>
               </View>
             );
           })}
@@ -373,7 +390,7 @@ export function ProposalPdf({ proposal, items }) {
           <View style={styles.totalsBlock}>
             <View style={styles.totalLine}>
               <Text style={styles.totalLineLabel}>Ara Toplam</Text>
-              <Text style={styles.totalLineValue}>{formatUSD(subtotal)}</Text>
+              <Text style={styles.totalLineValue}>{formatByCurrency(subtotal, currency)}</Text>
             </View>
             {discountPercent > 0 && (
               <>
@@ -383,13 +400,13 @@ export function ProposalPdf({ proposal, items }) {
                 </View>
                 <View style={styles.totalLine}>
                   <Text style={styles.totalLineLabel}>İskonto Tutarı</Text>
-                  <Text style={styles.totalLineValue}>-{formatUSD(discountAmount)}</Text>
+                  <Text style={styles.totalLineValue}>{formatByCurrency(-discountAmount, currency)}</Text>
                 </View>
               </>
             )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Genel Toplam</Text>
-              <Text style={styles.totalValue}>{formatUSD(grandTotal)}</Text>
+              <Text style={styles.totalValue}>{formatByCurrency(grandTotal, currency)}</Text>
             </View>
           </View>
         </View>

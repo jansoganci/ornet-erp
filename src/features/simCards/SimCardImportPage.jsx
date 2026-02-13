@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
-import { Upload, FileText, AlertCircle, CheckCircle2, X, ArrowLeft, Save } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle2, X, Save, HelpCircle, Download } from 'lucide-react';
 import { useBulkCreateSimCards } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Card, Badge, Spinner } from '../../components/ui';
@@ -56,6 +56,8 @@ export function SimCardImportPage() {
       'ACCOUNT NO': 'account_no',
       'AYLIK MALIYET': 'cost_price',
       'AYLIK SATIS FIYAT': 'sale_price',
+      'STATUS': 'status',
+      'DURUM': 'status',
       'NOTLAR': 'notes'
     };
 
@@ -104,7 +106,9 @@ export function SimCardImportPage() {
         rowData.operator = 'TURKCELL';
       }
 
-      rowData.status = 'available';
+      const VALID_STATUSES = ['available', 'active', 'subscription', 'cancelled'];
+      const rawStatus = String(rowData.status || '').trim().toLowerCase();
+      rowData.status = VALID_STATUSES.includes(rawStatus) ? rawStatus : 'available';
       rowData.currency = 'TRY';
 
       if (rowErrors.length > 0) {
@@ -133,6 +137,18 @@ export function SimCardImportPage() {
     setData([]);
     setErrors([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const downloadTemplate = () => {
+    const headers = ['HAT NO', 'IMSI', 'GPRS SERI NO', 'OPERATOR', 'KAPASITE', 'ACCOUNT NO', 'AYLIK MALIYET', 'AYLIK SATIS FIYAT', 'STATUS', 'NOTLAR'];
+    const sampleRows = [
+      ['+90 555 123 4567', '123456789012345', '', 'TURKCELL', '100MB', '', '50', '70', 'available', ''],
+      ['+90 532 987 6543', '', '', 'VODAFONE', '1GB', '585D', '45', '65', 'active', ''],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'SIM Kartlar');
+    XLSX.writeFile(wb, 'sim-kart-sablonu.xlsx');
   };
 
   return (
@@ -164,9 +180,36 @@ export function SimCardImportPage() {
               ref={fileInputRef}
               onChange={handleFileUpload}
             />
-            <Button onClick={() => fileInputRef.current?.click()}>
-              Dosya Seç
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={() => fileInputRef.current?.click()}>
+                Dosya Seç
+              </Button>
+              <Button variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
+                Şablon İndir
+              </Button>
+            </div>
+
+            <Card className="mt-6 p-4 bg-neutral-50 dark:bg-neutral-800/30 border-neutral-200 dark:border-neutral-700">
+              <h4 className="font-medium text-neutral-900 dark:text-neutral-50 mb-3 flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-neutral-500" />
+                Excel formatı
+              </h4>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+                İlk satırda sütun başlıkları olmalı. <strong>HAT NO</strong> zorunludur; diğerleri isteğe bağlı.
+              </p>
+              <div className="text-xs text-neutral-500 dark:text-neutral-500 space-y-1">
+                <p><strong>HAT NO</strong> — Telefon numarası (örn: +90 555 123 4567)</p>
+                <p><strong>IMSI</strong> — IMSI numarası</p>
+                <p><strong>GPRS SERI NO</strong> — GPRS/EBS seri no</p>
+                <p><strong>OPERATOR</strong> — Turkcell, Vodafone veya Türk Telekom</p>
+                <p><strong>KAPASITE</strong> — Örn: 100MB, 1GB</p>
+                <p><strong>ACCOUNT NO</strong> — AİM abone no</p>
+                <p><strong>AYLIK MALIYET</strong> — Aylık maliyet (₺)</p>
+                <p><strong>AYLIK SATIS FIYAT</strong> — Aylık satış fiyatı (₺)</p>
+                <p><strong>STATUS</strong> — available, active, subscription, cancelled (boşsa: available)</p>
+                <p><strong>NOTLAR</strong> — Notlar</p>
+              </div>
+            </Card>
           </Card>
         ) : (
           <div className="space-y-6">

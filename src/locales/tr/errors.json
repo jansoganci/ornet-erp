@@ -5,7 +5,8 @@
     "phone": "Geçerli bir telefon numarası girin",
     "email": "Geçerli bir e-posta girin",
     "accountNoRequired": "Bu iş tipi için hesap numarası gereklidir",
-    "invalidNumber": "Geçerli bir sayı girin"
+    "invalidNumber": "Geçerli bir sayı girin",
+    "invalidForTransactionType": "Bu alan bu işlem tipi için geçersizdir"
   },
   "workOrder": {
     "notFound": "İş emri bulunamadı."

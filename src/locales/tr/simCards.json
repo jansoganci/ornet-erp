@@ -24,15 +24,16 @@
       "all": "Tümü",
       "available": "Boşta",
       "active": "Aktif",
-      "inactive": "İnaktif",
-      "sold": "Satıldı"
-    }
+      "subscription": "Abonelik",
+      "cancelled": "İptal Edildi"
+    },
+    "quickEdit": "Hızlı Düzenleme"
   },
   "status": {
     "available": "Boşta",
     "active": "Aktif",
-    "inactive": "İnaktif",
-    "sold": "Satıldı"
+    "subscription": "Abonelik",
+    "cancelled": "İptal Edildi"
   },
   "operators": {
     "TURKCELL": "Turkcell",
@@ -78,6 +79,7 @@
     "total": "Toplam Hat",
     "available": "Boştaki Hatlar",
     "active": "Aktif Hatlar",
+    "subscription": "Abonelik Hatları",
     "monthlyProfit": "Tahmini Aylık Kar"
   }
 }

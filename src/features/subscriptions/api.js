@@ -9,6 +9,7 @@ function cleanSubscriptionPayload(payload) {
   const stringFields = [
     'payment_method_id', 'sold_by', 'managed_by', 'notes', 'setup_notes',
     'service_type', 'cash_collector_id', 'card_bank_name', 'card_last4',
+    'sim_card_id',
   ];
   stringFields.forEach((key) => {
     if (key in cleaned && (cleaned[key] === '' || cleaned[key] === undefined)) {
@@ -66,6 +67,10 @@ export async function fetchSubscriptions(filters = {}) {
 
   if (filters.billing_frequency && filters.billing_frequency !== 'all') {
     query = query.eq('billing_frequency', filters.billing_frequency);
+  }
+
+  if (filters.site_id) {
+    query = query.eq('site_id', filters.site_id);
   }
 
   const { data, error } = await query
@@ -221,12 +226,18 @@ export async function updateSubscription({ id, ...updateData }) {
     const vatAmount = Math.round(subtotal * Number(data.vat_rate) / 100 * 100) / 100;
     const totalAmount = subtotal + vatAmount;
 
+    // Multiply by billing frequency (base_price etc. are always monthly)
+    const freq = data.billing_frequency || current.billing_frequency;
+    const multiplier = freq === 'yearly' || data.subscription_type === 'annual' ? 12
+      : freq === '6_month' ? 6
+      : 1;
+
     const { error: updatePaymentsErr } = await supabase
       .from('subscription_payments')
       .update({
-        amount: subtotal,
-        vat_amount: vatAmount,
-        total_amount: totalAmount,
+        amount: subtotal * multiplier,
+        vat_amount: vatAmount * multiplier,
+        total_amount: totalAmount * multiplier,
       })
       .eq('subscription_id', id)
       .eq('status', 'pending');

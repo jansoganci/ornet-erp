@@ -99,8 +99,8 @@ export function SimCardFormPage() {
   const statusOptions = [
     { value: 'available', label: t('status.available') },
     { value: 'active', label: t('status.active') },
-    { value: 'inactive', label: t('status.inactive') },
-    { value: 'sold', label: t('status.sold') },
+    { value: 'subscription', label: t('status.subscription') },
+    { value: 'cancelled', label: t('status.cancelled') },
   ];
 
   return (

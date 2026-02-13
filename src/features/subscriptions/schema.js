@@ -3,8 +3,8 @@ import i18n from '../../lib/i18n';
 
 // Constants
 export const SUBSCRIPTION_TYPES = ['recurring_card', 'manual_cash', 'manual_bank'];
-export const SERVICE_TYPES = ['alarm_only', 'camera_only', 'internet_only', 'alarm_camera', 'alarm_camera_internet'];
-export const BILLING_FREQUENCIES = ['monthly', 'yearly'];
+export const SERVICE_TYPES = ['alarm_only', 'camera_only', 'internet_only'];
+export const BILLING_FREQUENCIES = ['monthly', '6_month', 'yearly'];
 export const SUBSCRIPTION_STATUSES = ['active', 'paused', 'cancelled'];
 export const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'skipped', 'write_off'];
 export const PAYMENT_METHODS = ['card', 'cash', 'bank_transfer'];
@@ -35,6 +35,7 @@ export const subscriptionSchema = z.object({
   official_invoice: z.boolean().default(true),
   card_bank_name: z.string().optional().or(z.literal('')),
   card_last4: z.string().max(4).optional().or(z.literal('')),
+  sim_card_id: z.string().uuid().nullable().optional().or(z.literal('')),
 }).refine((data) => {
   if (data.subscription_type === 'recurring_card') {
     const hasPaymentMethod = data.payment_method_id && String(data.payment_method_id).trim();
@@ -77,6 +78,7 @@ export const subscriptionDefaultValues = {
   official_invoice: true,
   card_bank_name: '',
   card_last4: '',
+  sim_card_id: '',
 };
 
 // Payment record schema

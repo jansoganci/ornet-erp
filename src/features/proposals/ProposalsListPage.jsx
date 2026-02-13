@@ -138,7 +138,7 @@ export function ProposalsListPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-1">
                     <DollarSign className="w-3.5 h-3.5 text-neutral-400" />
-                    {formatCurrency(proposal.total_amount_usd, 'USD')}
+                    {formatCurrency(proposal.total_amount ?? proposal.total_amount_usd, proposal.currency ?? 'USD')}
                   </span>
                 </div>
                 <ProposalStatusBadge status={proposal.status} size="sm" />

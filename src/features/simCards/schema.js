@@ -10,7 +10,7 @@ export const simCardSchema = z.object({
   }),
   capacity: z.string().optional().or(z.literal('')),
   account_no: z.string().optional().or(z.literal('')),
-  status: z.enum(['available', 'active', 'inactive', 'sold']),
+  status: z.enum(['available', 'active', 'subscription', 'cancelled']),
   customer_id: z.string().uuid().nullable().optional(),
   site_id: z.string().uuid().nullable().optional(),
   cost_price: z.number().min(0).default(0),
