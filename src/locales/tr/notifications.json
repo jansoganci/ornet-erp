@@ -29,7 +29,9 @@
     "renewal_due_soon": "Yenileme Tarihi Yaklaşıyor",
     "work_order_assigned": "İş Emri Atandı",
     "task_due_soon": "Görev Vadesi Yaklaşıyor",
-    "user_reminder": "Hatırlatma"
+    "user_reminder": "Hatırlatma",
+    "sim_card_cancelled": "SIM Kart İptal Edildi",
+    "recurring_expense_pending": "Bekleyen Tekrarlı Ödeme"
   },
   "reminder": {
     "addButton": "Hatırlatma Ekle",

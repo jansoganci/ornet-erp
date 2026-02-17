@@ -6,6 +6,7 @@
 -- 1. V_ACTIVE_NOTIFICATIONS VIEW
 -- ============================================================================
 
+DROP VIEW IF EXISTS v_active_notifications;
 CREATE VIEW v_active_notifications AS
 SELECT * FROM (
   -- Section 1: Open Work Orders
@@ -22,6 +23,7 @@ SELECT * FROM (
   JOIN customer_sites cs ON wo.site_id = cs.id
   JOIN customers c ON cs.customer_id = c.id
   WHERE wo.status NOT IN ('completed', 'cancelled')
+    AND (wo.scheduled_date > CURRENT_DATE OR wo.scheduled_date IS NULL)
 
   UNION ALL
 
@@ -162,6 +164,7 @@ DECLARE
   v_role TEXT;
   v_open_work_orders BIGINT;
   v_overdue_work_orders BIGINT;
+  v_today_not_started BIGINT;
   v_proposals_sent BIGINT;
   v_proposals_approved_no_wo BIGINT;
   v_proposals_waiting BIGINT;
@@ -176,20 +179,30 @@ BEGIN
       'total', 0,
       'open_work_orders', 0,
       'overdue_work_orders', 0,
+      'today_not_started', 0,
       'proposals_waiting', 0,
       'stored_notifications', 0,
       'reminders', 0
     );
   END IF;
 
+  -- Open = future or unscheduled (excludes overdue and today)
   SELECT COUNT(*) INTO v_open_work_orders
   FROM work_orders
-  WHERE status NOT IN ('completed', 'cancelled');
+  WHERE status NOT IN ('completed', 'cancelled')
+    AND (scheduled_date > CURRENT_DATE OR scheduled_date IS NULL);
 
+  -- Overdue = past due date
   SELECT COUNT(*) INTO v_overdue_work_orders
   FROM work_orders
   WHERE status NOT IN ('completed', 'cancelled')
     AND scheduled_date < CURRENT_DATE;
+
+  -- Today = scheduled for today but not done
+  SELECT COUNT(*) INTO v_today_not_started
+  FROM work_orders
+  WHERE status NOT IN ('completed', 'cancelled')
+    AND scheduled_date = CURRENT_DATE;
 
   SELECT COUNT(*) INTO v_proposals_sent
   FROM proposals
@@ -211,12 +224,13 @@ BEGIN
   WHERE notified = true
     AND completed_at IS NULL;
 
-  v_total := v_open_work_orders + v_overdue_work_orders + v_proposals_waiting + v_stored_notifications + v_reminders;
+  v_total := v_open_work_orders + v_overdue_work_orders + v_today_not_started + v_proposals_waiting + v_stored_notifications + v_reminders;
 
   RETURN json_build_object(
     'total', v_total,
     'open_work_orders', v_open_work_orders,
     'overdue_work_orders', v_overdue_work_orders,
+    'today_not_started', v_today_not_started,
     'proposals_waiting', v_proposals_waiting,
     'stored_notifications', v_stored_notifications,
     'reminders', v_reminders

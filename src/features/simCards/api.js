@@ -1,13 +1,16 @@
 import { supabase } from '../../lib/supabase';
 
+const SIM_CARD_SELECT = `
+  *,
+  buyer:buyer_id (company_name),
+  customers:customer_id (company_name),
+  customer_sites:site_id (site_name)
+`;
+
 export async function fetchSimCards() {
   const { data, error } = await supabase
     .from('sim_cards')
-    .select(`
-      *,
-      customers:customer_id (company_name),
-      customer_sites:site_id (site_name)
-    `)
+    .select(SIM_CARD_SELECT)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -17,11 +20,7 @@ export async function fetchSimCards() {
 export async function fetchSimCardById(id) {
   const { data, error } = await supabase
     .from('sim_cards')
-    .select(`
-      *,
-      customers:customer_id (company_name),
-      customer_sites:site_id (site_name)
-    `)
+    .select(SIM_CARD_SELECT)
     .eq('id', id)
     .single();
 
@@ -90,6 +89,7 @@ export async function fetchSimCardsByCustomer(customerId) {
     .from('sim_cards')
     .select(`
       *,
+      buyer:buyer_id (company_name),
       customer_sites:site_id (site_name)
     `)
     .eq('customer_id', customerId)
@@ -107,6 +107,7 @@ export async function fetchSimCardsBySite(siteId) {
     .from('sim_cards')
     .select(`
       *,
+      buyer:buyer_id (company_name),
       customer_sites:site_id (site_name)
     `)
     .or(`site_id.eq.${siteId},status.eq.available`)
@@ -117,14 +118,14 @@ export async function fetchSimCardsBySite(siteId) {
 }
 
 /**
- * Fetch SIMs for subscription with search (phone_number, imsi, account_no)
- * Uses site filter server-side; search filter applied client-side for reliable behavior with 2500+ rows
+ * Fetch SIMs for subscription with search (phone_number, buyer name, customer name)
  */
 export async function fetchSimCardsForSubscription(siteId, search = '') {
   const { data, error } = await supabase
     .from('sim_cards')
     .select(`
       *,
+      buyer:buyer_id (company_name),
       customer_sites:site_id (site_name)
     `)
     .or(`site_id.eq.${siteId},status.eq.available`)
@@ -138,8 +139,7 @@ export async function fetchSimCardsForSubscription(siteId, search = '') {
   return (data || []).filter(
     (s) =>
       (s.phone_number || '').toLowerCase().includes(term) ||
-      (s.imsi || '').toLowerCase().includes(term) ||
-      (s.account_no || '').toLowerCase().includes(term)
+      (s.buyer?.company_name || '').toLowerCase().includes(term)
   );
 }
 

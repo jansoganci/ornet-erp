@@ -19,8 +19,8 @@ BEGIN
     'payment_due_soon',
     'Ödeme vadesi yaklaşıyor — ' || COALESCE(c.company_name, ''),
     to_char(sp.payment_month, 'DD.MM.YYYY') || ' — ' || COALESCE(sp.total_amount::TEXT, '') || ' TL',
-    'subscription_payment',
-    sp.id,
+    'subscription',
+    s.id,
     'payment_due_soon::' || sp.id
   FROM subscription_payments sp
   JOIN subscriptions s ON s.id = sp.subscription_id
@@ -66,11 +66,11 @@ BEGIN
   UPDATE notifications
   SET resolved_at = now()
   WHERE type = 'payment_due_soon'
-    AND related_entity_id IN (
-      SELECT id FROM subscription_payments
+    AND resolved_at IS NULL
+    AND dedup_key IN (
+      SELECT 'payment_due_soon::' || id FROM subscription_payments
       WHERE status != 'pending'
-    )
-    AND resolved_at IS NULL;
+    );
 
   UPDATE notifications
   SET resolved_at = now()

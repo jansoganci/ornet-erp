@@ -51,8 +51,8 @@ BEGIN
 
     IF v_phone IS NOT NULL THEN
       v_body := v_phone || ' — ' || CASE WHEN NEW.status = 'cancelled'
-        THEN 'Cancel this number from ' || COALESCE(v_operator_display, 'carrier')
-        ELSE 'Set this number to inactive at ' || COALESCE(v_operator_display, 'carrier')
+        THEN 'Bu hat ' || COALESCE(v_operator_display, 'operatör') || ' üzerinden iptal edilmeli'
+        ELSE 'Bu hat ' || COALESCE(v_operator_display, 'operatör') || ' üzerinde pasife alınmalı'
       END;
     END IF;
   END IF;
@@ -146,7 +146,7 @@ BEGIN
     BEGIN
       UPDATE notifications
       SET resolved_at = now()
-      WHERE related_entity_type = 'subscription_payment' AND related_entity_id = OLD.id AND resolved_at IS NULL;
+      WHERE dedup_key = 'payment_due_soon::' || OLD.id AND resolved_at IS NULL;
     EXCEPTION WHEN OTHERS THEN
       RAISE WARNING 'fn_resolve_notification subscription_payment failed for %: %', OLD.id, SQLERRM;
     END;

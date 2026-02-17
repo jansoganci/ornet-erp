@@ -159,6 +159,7 @@
       "expenses": "Giderler",
       "vat": "KDV Raporu",
       "exchange": "Döviz Kurları",
+      "recurring": "Tekrarlanan Ödemeler",
       "reports": "Raporlar"
     }
   },

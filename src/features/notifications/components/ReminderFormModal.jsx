@@ -92,20 +92,22 @@ export function ReminderFormModal({ open, onClose }) {
           error={errors.content?.message}
           {...register('content')}
         />
-        <Input
-          label={t('reminder.fields.date')}
-          type="date"
-          min={todayIso}
-          error={errors.remind_date?.message}
-          {...register('remind_date')}
-        />
-        <Input
-          label={t('reminder.fields.time')}
-          type="time"
-          placeholder={t('reminder.placeholders.time')}
-          error={errors.remind_time?.message}
-          {...register('remind_time')}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label={t('reminder.fields.date')}
+            type="date"
+            min={todayIso}
+            error={errors.remind_date?.message}
+            {...register('remind_date')}
+          />
+          <Input
+            label={t('reminder.fields.time')}
+            type="time"
+            placeholder={t('reminder.placeholders.time')}
+            error={errors.remind_time?.message}
+            {...register('remind_time')}
+          />
+        </div>
       </form>
     </Modal>
   );

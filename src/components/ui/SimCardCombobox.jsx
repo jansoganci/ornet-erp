@@ -195,7 +195,7 @@ export function SimCardCombobox({
                         </Badge>
                       </div>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">
-                        {sim.imsi || sim.account_no || '-'}
+                        {sim.buyer?.company_name || '-'}
                       </p>
                     </div>
                     {isSelected(sim) && (

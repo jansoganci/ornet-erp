@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 import { Upload, AlertCircle, CheckCircle2, X, Save, HelpCircle, Download } from 'lucide-react';
 import { useBulkCreateSimCards } from './hooks';
+import { useCustomers } from '../customers/hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Card, Badge, Spinner } from '../../components/ui';
 
@@ -15,6 +16,7 @@ export function SimCardImportPage() {
   const [errors, setErrors] = useState([]);
   const [isParsing, setIsParsing] = useState(false);
   const bulkCreateMutation = useBulkCreateSimCards();
+  const { data: customers } = useCustomers();
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -49,17 +51,21 @@ export function SimCardImportPage() {
     // Map Excel headers to database fields (case-insensitive and Turkish character friendly)
     const headerMap = {
       'HAT NO': 'phone_number',
-      'IMSI': 'imsi',
-      'GPRS SERI NO': 'iccid',
       'OPERATOR': 'operator',
       'KAPASITE': 'capacity',
-      'ACCOUNT NO': 'account_no',
+      'ALICI': 'buyer_name',
       'AYLIK MALIYET': 'cost_price',
       'AYLIK SATIS FIYAT': 'sale_price',
       'STATUS': 'status',
       'DURUM': 'status',
       'NOTLAR': 'notes'
     };
+
+    // Build buyer name → UUID lookup
+    const buyerLookup = {};
+    (customers || []).forEach(c => {
+      buyerLookup[c.company_name.toLowerCase().trim()] = c.id;
+    });
 
     rawRows.forEach((row, index) => {
       const rowData = {};
@@ -106,6 +112,16 @@ export function SimCardImportPage() {
         rowData.operator = 'TURKCELL';
       }
 
+      // Resolve buyer name to UUID
+      if (rowData.buyer_name) {
+        const buyerKey = String(rowData.buyer_name).toLowerCase().trim();
+        rowData.buyer_id = buyerLookup[buyerKey] || null;
+        if (!rowData.buyer_id) {
+          rowErrors.push(`Satır ${index + 1}: Alıcı "${rowData.buyer_name}" bulunamadı.`);
+        }
+      }
+      delete rowData.buyer_name;
+
       const VALID_STATUSES = ['available', 'active', 'subscription', 'cancelled'];
       const rawStatus = String(rowData.status || '').trim().toLowerCase();
       rowData.status = VALID_STATUSES.includes(rawStatus) ? rawStatus : 'available';
@@ -140,10 +156,10 @@ export function SimCardImportPage() {
   };
 
   const downloadTemplate = () => {
-    const headers = ['HAT NO', 'IMSI', 'GPRS SERI NO', 'OPERATOR', 'KAPASITE', 'ACCOUNT NO', 'AYLIK MALIYET', 'AYLIK SATIS FIYAT', 'STATUS', 'NOTLAR'];
+    const headers = ['HAT NO', 'OPERATOR', 'KAPASITE', 'ALICI', 'AYLIK MALIYET', 'AYLIK SATIS FIYAT', 'STATUS', 'NOTLAR'];
     const sampleRows = [
-      ['+90 555 123 4567', '123456789012345', '', 'TURKCELL', '100MB', '', '50', '70', 'available', ''],
-      ['+90 532 987 6543', '', '', 'VODAFONE', '1GB', '585D', '45', '65', 'active', ''],
+      ['+90 555 123 4567', 'TURKCELL', '100MB', 'Metbel', '50', '70', 'available', ''],
+      ['+90 532 987 6543', 'VODAFONE', '1GB', '', '45', '65', 'active', ''],
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
     const wb = XLSX.utils.book_new();
@@ -199,11 +215,9 @@ export function SimCardImportPage() {
               </p>
               <div className="text-xs text-neutral-500 dark:text-neutral-500 space-y-1">
                 <p><strong>HAT NO</strong> — Telefon numarası (örn: +90 555 123 4567)</p>
-                <p><strong>IMSI</strong> — IMSI numarası</p>
-                <p><strong>GPRS SERI NO</strong> — GPRS/EBS seri no</p>
                 <p><strong>OPERATOR</strong> — Turkcell, Vodafone veya Türk Telekom</p>
                 <p><strong>KAPASITE</strong> — Örn: 100MB, 1GB</p>
-                <p><strong>ACCOUNT NO</strong> — AİM abone no</p>
+                <p><strong>ALICI</strong> — Alıcı firma adı (sistemde kayıtlı müşteri adıyla eşleşmeli)</p>
                 <p><strong>AYLIK MALIYET</strong> — Aylık maliyet (₺)</p>
                 <p><strong>AYLIK SATIS FIYAT</strong> — Aylık satış fiyatı (₺)</p>
                 <p><strong>STATUS</strong> — available, active, subscription, cancelled (boşsa: available)</p>
@@ -262,24 +276,29 @@ export function SimCardImportPage() {
                   <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
                     <tr>
                       <th className="px-4 py-3 font-medium">Hat No</th>
-                      <th className="px-4 py-3 font-medium">IMSI</th>
                       <th className="px-4 py-3 font-medium">Operatör</th>
+                      <th className="px-4 py-3 font-medium">Alıcı</th>
                       <th className="px-4 py-3 font-medium">Maliyet</th>
                       <th className="px-4 py-3 font-medium">Satış</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                    {data.slice(0, 10).map((row, i) => (
-                      <tr key={i}>
-                        <td className="px-4 py-3 font-medium">{row.phone_number}</td>
-                        <td className="px-4 py-3">{row.imsi || '-'}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="default">{row.operator}</Badge>
-                        </td>
-                        <td className="px-4 py-3">{row.cost_price} ₺</td>
-                        <td className="px-4 py-3">{row.sale_price} ₺</td>
-                      </tr>
-                    ))}
+                    {data.slice(0, 10).map((row, i) => {
+                      const buyerName = row.buyer_id
+                        ? customers?.find(c => c.id === row.buyer_id)?.company_name || '-'
+                        : '-';
+                      return (
+                        <tr key={i}>
+                          <td className="px-4 py-3 font-medium">{row.phone_number}</td>
+                          <td className="px-4 py-3">
+                            <Badge variant="default">{row.operator}</Badge>
+                          </td>
+                          <td className="px-4 py-3">{buyerName}</td>
+                          <td className="px-4 py-3">{row.cost_price} ₺</td>
+                          <td className="px-4 py-3">{row.sale_price} ₺</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 {data.length > 10 && (

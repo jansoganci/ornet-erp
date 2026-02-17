@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit2, Trash2, Repeat } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -34,6 +35,7 @@ function getLast12Months() {
 
 export function ExpensesPage() {
   const { t } = useTranslation(['finance', 'common']);
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [transactionToDelete, setTransactionToDelete] = useState(null);
@@ -46,6 +48,7 @@ export function ExpensesPage() {
   const [viewMode, setViewMode] = useState('total');
   const [categoryId, setCategoryId] = useState('all');
   const [customerId, setCustomerId] = useState('all');
+  const [recurringFilter, setRecurringFilter] = useState('all');
 
   const { data: transactions = [], isLoading, error, refetch } = useTransactions({
     direction: 'expense',
@@ -59,6 +62,12 @@ export function ExpensesPage() {
   const { data: categories = [] } = useCategories({ is_active: true });
   const { data: customers = [] } = useCustomers();
   const deleteMutation = useDeleteTransaction();
+
+  const filteredTransactions = useMemo(() => {
+    if (recurringFilter === 'all') return transactions;
+    if (recurringFilter === 'recurring_only') return transactions.filter((tx) => tx.recurring_template_id);
+    return transactions;
+  }, [transactions, recurringFilter]);
 
   const categoryOptions = [
     { value: 'all', label: t('finance:filters.all') },
@@ -84,7 +93,16 @@ export function ExpensesPage() {
     })),
   ];
 
+  const recurringFilterOptions = [
+    { value: 'all', label: t('finance:filters.recurringAll') },
+    { value: 'recurring_only', label: t('finance:filters.recurringOnly') },
+  ];
+
   const monthOptions = getLast12Months();
+
+  const handleGoToRecurringTemplate = (templateId) => {
+    navigate('/finance/recurring', { state: { highlightTemplateId: templateId } });
+  };
 
   const handleAdd = () => {
     setEditingTransaction(null);
@@ -141,9 +159,27 @@ export function ExpensesPage() {
     },
     {
       header: '',
+      accessor: 'recurring_template_id',
+      render: (_, row) =>
+        row.recurring_template_id ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleGoToRecurringTemplate(row.recurring_template_id);
+            }}
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-[#171717] dark:text-neutral-300 dark:hover:bg-[#262626] transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <Repeat className="w-3 h-3" />
+            {t('finance:expenseRecurring.badge')}
+          </button>
+        ) : null,
+    },
+    {
+      header: '',
       id: 'actions',
       render: (_, row) => (
-        <div className="flex justify-end space-x-1">
+        <div className="flex justify-end items-center gap-0.5">
           <IconButton
             icon={Edit2}
             size="sm"
@@ -235,13 +271,21 @@ export function ExpensesPage() {
               onChange={(e) => setCustomerId(e.target.value)}
             />
           </div>
+          <div className="w-full md:w-44">
+            <Select
+              label={t('finance:filters.recurringFilterLabel')}
+              options={recurringFilterOptions}
+              value={recurringFilter}
+              onChange={(e) => setRecurringFilter(e.target.value)}
+            />
+          </div>
           <div className="flex items-end">
             <ViewModeToggle value={viewMode} onChange={setViewMode} size="md" />
           </div>
         </div>
       </Card>
 
-      {transactions.length === 0 ? (
+      {filteredTransactions.length === 0 ? (
         <EmptyState
           title={t('finance:list.empty')}
           description={t('finance:list.addFirst')}
@@ -253,7 +297,7 @@ export function ExpensesPage() {
         />
       ) : (
         <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
-          <Table columns={columns} data={transactions} />
+          <Table columns={columns} data={filteredTransactions} />
         </div>
       )}
 

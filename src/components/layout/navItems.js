@@ -18,6 +18,7 @@ import {
   TrendingDown,
   Percent,
   DollarSign,
+  RefreshCw,
 } from 'lucide-react';
 
 /**
@@ -68,6 +69,7 @@ export const navItems = [
       { to: '/finance/expenses', icon: TrendingDown, labelKey: 'nav.finance.expenses' },
       { to: '/finance/vat', icon: Percent, labelKey: 'nav.finance.vat' },
       { to: '/finance/exchange', icon: DollarSign, labelKey: 'nav.finance.exchange' },
+      { to: '/finance/recurring', icon: RefreshCw, labelKey: 'nav.finance.recurring' },
       { to: '/finance/reports', icon: FileText, labelKey: 'nav.finance.reports' },
     ],
   },

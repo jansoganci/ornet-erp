@@ -49,7 +49,7 @@ import {
   ProposalFormPage,
 } from './features/proposals';
 import { ProfilePage } from './features/profile';
-import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, ReportsPage } from './features/finance';
+import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, ReportsPage, RecurringExpensesPage } from './features/finance';
 
 function App() {
   return (
@@ -122,6 +122,7 @@ function App() {
             <Route path="finance/income" element={<IncomePage />} />
             <Route path="finance/vat" element={<VatReportPage />} />
             <Route path="finance/exchange" element={<ExchangeRatePage />} />
+            <Route path="finance/recurring" element={<RecurringExpensesPage />} />
             <Route path="finance/reports" element={<ReportsPage />} />
 
             {/* SIM Card routes */}

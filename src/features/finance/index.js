@@ -8,3 +8,4 @@ export { VatReportPage } from './VatReportPage';
 export { ExchangeRatePage } from './ExchangeRatePage';
 export { ReportsPage } from './ReportsPage';
 export { QuickEntryModal } from './components/QuickEntryModal';
+export { RecurringExpensesPage } from './RecurringExpensesPage';

@@ -1,0 +1,58 @@
+{
+  "title": "Tekrarlanan Ödemeler",
+  "pending": {
+    "variable": "Değişken"
+  },
+  "templates": {
+    "title": "Aktif Şablonlar",
+    "titleWithCount": "Aktif Şablonlar ({{count}})",
+    "inactive": "Pasif Şablonlar",
+    "addButton": "Şablon Ekle",
+    "empty": {
+      "title": "Şablon Yok",
+      "description": "Tekrarlanan ödeme şablonu oluşturun ve her ay otomatik olarak gider kaydı oluşturulsun."
+    },
+    "dayPrefix": "Her ayın",
+    "daySuffix": ".'si"
+  },
+  "form": {
+    "createTitle": "Şablon Oluştur",
+    "editTitle": "Şablon Düzenle",
+    "fields": {
+      "name": "Şablon Adı",
+      "category": "Gider Kategorisi",
+      "amount": "Tutar (₺)",
+      "dayOfMonth": "Ödeme Günü",
+      "paymentMethod": "Ödeme Yöntemi",
+      "hasInvoice": "Faturalı",
+      "vatRate": "KDV Oranı (%)",
+      "isVariable": "Değişken Tutar",
+      "isActive": "Aktif",
+      "description": "Açıklama Şablonu"
+    },
+    "placeholders": {
+      "name": "Ör: Kira, SGK, Internet",
+      "amount": "0.00",
+      "dayOfMonth": "1-31",
+      "description": "Her ay tekrarlanan açıklama..."
+    },
+    "hints": {
+      "isVariable": "Değişken tutarlı ödemeler düzenlenebilir",
+      "dayOfMonth": "31. gün kısa aylarda ayın son günü olarak kullanılır"
+    }
+  },
+  "paymentMethods": {
+    "card": "Kart",
+    "cash": "Nakit",
+    "bank_transfer": "Banka Transferi"
+  },
+  "actions": {
+    "activate": "Aktifleştir",
+    "deactivate": "Pasifleştir",
+    "generate": "Oluştur"
+  },
+  "status": {
+    "active": "Aktif",
+    "paused": "Durduruldu"
+  }
+}

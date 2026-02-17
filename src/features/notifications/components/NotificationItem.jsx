@@ -7,7 +7,7 @@ import {
   AlertTriangle,
   Clock,
   FileText,
-  FileExclamationPoint,
+  FileWarning,
   FileCheck,
   XCircle,
   PauseCircle,
@@ -17,9 +17,9 @@ import {
   CheckSquare,
   BellRing,
   Check,
+  CardSim,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { fetchSubscriptionIdByPaymentId } from '../api';
 
 /**
  * NotificationItem - Single notification row
@@ -35,7 +35,7 @@ const ICON_MAP = {
   overdue_work_order: { Icon: AlertTriangle, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
   today_not_started: { Icon: Clock, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
   proposal_awaiting_response: { Icon: FileText, bg: 'bg-info-100 dark:bg-info-900/40', text: 'text-info-600 dark:text-info-400' },
-  proposal_no_response_2d: { Icon: FileExclamationPoint, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
+  proposal_no_response_2d: { Icon: FileWarning, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
   proposal_approved_no_wo: { Icon: FileCheck, bg: 'bg-success-100 dark:bg-success-900/40', text: 'text-success-600 dark:text-success-400' },
   subscription_cancelled: { Icon: XCircle, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
   subscription_paused: { Icon: PauseCircle, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
@@ -44,6 +44,8 @@ const ICON_MAP = {
   work_order_assigned: { Icon: UserPlus, bg: 'bg-primary-100 dark:bg-primary-900/40', text: 'text-primary-600 dark:text-primary-400' },
   task_due_soon: { Icon: CheckSquare, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
   user_reminder: { Icon: BellRing, bg: 'bg-primary-100 dark:bg-primary-900/40', text: 'text-primary-600 dark:text-primary-400' },
+  sim_card_cancelled: { Icon: CardSim, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
+  recurring_expense_pending: { Icon: RefreshCw, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
 };
 
 function getRoute(entityType, entityId) {
@@ -54,10 +56,12 @@ function getRoute(entityType, entityId) {
       return `/proposals/${entityId}`;
     case 'subscription':
       return `/subscriptions/${entityId}`;
-    case 'subscription_payment':
-      return null;
     case 'task':
       return '/tasks';
+    case 'sim_card':
+      return `/sim-cards/${entityId}/edit`;
+    case 'recurring_template':
+      return '/finance/recurring';
     case 'reminder':
       return null;
     default:
@@ -87,18 +91,9 @@ export function NotificationItem({
     ? formatDistanceToNow(new Date(created_at), { addSuffix: true, locale: tr })
     : '';
 
-  const handleClick = async () => {
-    if (entity_type === 'subscription_payment' && entity_id) {
-      const subscriptionId = await fetchSubscriptionIdByPaymentId(entity_id);
-      if (subscriptionId) {
-        navigate(`/subscriptions/${subscriptionId}`);
-      } else {
-        navigate('/subscriptions');
-      }
-    } else {
-      const route = getRoute(entity_type, entity_id);
-      if (route) navigate(route);
-    }
+  const handleClick = () => {
+    const route = getRoute(entity_type, entity_id);
+    if (route) navigate(route);
     onNavigate?.();
   };
 

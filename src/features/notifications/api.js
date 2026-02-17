@@ -66,14 +66,3 @@ export async function completeReminder(id) {
 
   if (error) throw error;
 }
-
-export async function fetchSubscriptionIdByPaymentId(paymentId) {
-  const { data, error } = await supabase
-    .from('subscription_payments')
-    .select('subscription_id')
-    .eq('id', paymentId)
-    .single();
-
-  if (error) return null;
-  return data?.subscription_id;
-}

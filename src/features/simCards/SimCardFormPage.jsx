@@ -48,12 +48,10 @@ export function SimCardFormPage() {
     if (isEdit && simCard) {
       reset({
         phone_number: simCard.phone_number || '',
-        imsi: simCard.imsi || '',
-        iccid: simCard.iccid || '',
         operator: simCard.operator || 'TURKCELL',
         capacity: simCard.capacity || '',
-        account_no: simCard.account_no || '',
         status: simCard.status || 'available',
+        buyer_id: simCard.buyer_id || null,
         customer_id: simCard.customer_id || null,
         site_id: simCard.site_id || null,
         cost_price: simCard.cost_price || 0,
@@ -121,18 +119,6 @@ export function SimCardFormPage() {
               error={errors.phone_number?.message}
               {...register('phone_number')}
             />
-            
-            <Input
-              label={t('form.imsi')}
-              error={errors.imsi?.message}
-              {...register('imsi')}
-            />
-
-            <Input
-              label={t('form.iccid')}
-              error={errors.iccid?.message}
-              {...register('iccid')}
-            />
 
             <Select
               label={t('form.operator')}
@@ -147,17 +133,26 @@ export function SimCardFormPage() {
               {...register('capacity')}
             />
 
-            <Input
-              label={t('form.accountNo')}
-              error={errors.account_no?.message}
-              {...register('account_no')}
-            />
-
             <Select
               label={t('list.columns.status')}
               options={statusOptions}
               error={errors.status?.message}
               {...register('status')}
+            />
+
+            <Controller
+              name="buyer_id"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  label={t('form.buyer')}
+                  options={customerOptions}
+                  placeholder={tCommon('placeholders.select')}
+                  error={errors.buyer_id?.message}
+                  value={field.value || ''}
+                  onChange={(e) => field.onChange(e.target.value || null)}
+                />
+              )}
             />
 
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">

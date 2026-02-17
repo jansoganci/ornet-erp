@@ -34,13 +34,14 @@ export function SimCardsListPage() {
   const updateSimCardMutation = useUpdateSimCard();
 
   const filteredSimCards = simCards?.filter(sim => {
-    const matchesSearch = 
-      sim.phone_number?.toLowerCase().includes(search.toLowerCase()) ||
-      sim.imsi?.toLowerCase().includes(search.toLowerCase()) ||
-      sim.account_no?.toLowerCase().includes(search.toLowerCase());
-    
+    const term = search.toLowerCase();
+    const matchesSearch = !term ||
+      sim.phone_number?.toLowerCase().includes(term) ||
+      sim.buyer?.company_name?.toLowerCase().includes(term) ||
+      sim.customers?.company_name?.toLowerCase().includes(term);
+
     const matchesStatus = statusFilter === 'all' || sim.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -53,10 +54,9 @@ export function SimCardsListPage() {
 
     const exportData = filteredSimCards.map(sim => ({
       [t('list.columns.phoneNumber')]: sim.phone_number,
-      [t('list.columns.imsi')]: sim.imsi,
-      [t('list.columns.iccid')]: sim.iccid,
       [t('list.columns.operator')]: t(`operators.${sim.operator}`),
       [t('list.columns.status')]: t(`status.${sim.status}`),
+      [t('list.columns.buyer')]: sim.buyer?.company_name || '-',
       [t('list.columns.customer')]: sim.customers?.company_name || '-',
       [t('list.columns.site')]: sim.customer_sites?.site_name || '-',
       [t('list.columns.costPrice')]: sim.cost_price,
@@ -151,7 +151,7 @@ export function SimCardsListPage() {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder={t('list.columns.phoneNumber') + ', ' + t('list.columns.imsi') + '...'}
+              placeholder={t('list.columns.phoneNumber') + ', ' + t('list.columns.buyer') + '...'}
               className="w-full"
             />
           </div>
@@ -195,6 +195,7 @@ export function SimCardsListPage() {
                   <th className="px-4 py-3 font-medium">{t('list.columns.phoneNumber')}</th>
                   <th className="px-4 py-3 font-medium">{t('list.columns.status')}</th>
                   <th className="px-4 py-3 font-medium">{t('list.columns.operator')}</th>
+                  <th className="px-4 py-3 font-medium">{t('list.columns.buyer')}</th>
                   <th className="px-4 py-3 font-medium">{t('list.columns.customer')}</th>
                   <th className="px-4 py-3 font-medium">{t('list.columns.costPrice')}</th>
                   <th className="px-4 py-3 font-medium">{t('list.columns.salePrice')}</th>
@@ -212,7 +213,6 @@ export function SimCardsListPage() {
                       <div className="font-medium text-neutral-900 dark:text-neutral-50">
                         {sim.phone_number}
                       </div>
-                      <div className="text-xs text-neutral-500">{sim.imsi}</div>
                     </td>
                     <td className="px-4 py-3" onClick={quickEditMode ? (e) => e.stopPropagation() : undefined}>
                       {quickEditMode && sim.status !== 'subscription' ? (
@@ -229,6 +229,9 @@ export function SimCardsListPage() {
                     </td>
                     <td className="px-4 py-3">
                       {t(`operators.${sim.operator}`)}
+                    </td>
+                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                      {sim.buyer?.company_name || '-'}
                     </td>
                     <td className="px-4 py-3">
                       {sim.customers?.company_name || '-'}

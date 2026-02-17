@@ -127,7 +127,7 @@ export function NotificationDropdown({ isOpen, onClose, total }) {
       <div
         ref={bodyRef}
         tabIndex={(!notifications?.length && !error) ? -1 : undefined}
-        className="max-h-[320px] overflow-y-auto overscroll-contain"
+        className="max-h-[min(600px,70vh)] overflow-y-auto overscroll-contain"
       >
         {isLoading && (
           <div className="p-4 space-y-3">

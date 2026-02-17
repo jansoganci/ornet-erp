@@ -10,7 +10,6 @@ import {
   Package,
   ChevronRight,
   CardSim,
-  Repeat,
 } from 'lucide-react';
 import {
   BarChart,

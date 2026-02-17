@@ -104,11 +104,17 @@
     "category": "Kategori",
     "paymentMethod": "Ödeme Yöntemi",
     "all": "Tümü",
+    "recurringFilterLabel": "Tip",
+    "recurringAll": "Tümü",
+    "recurringOnly": "Sadece Tekrarlayan",
     "viewMode": {
       "total": "Toplam",
       "official": "Resmi",
       "unofficial": "Gayri Resmi"
     }
+  },
+  "expenseRecurring": {
+    "badge": "Tekrarlayan"
   },
   "expenseCategories": {
     "material": "Malzeme / Ekipman",
