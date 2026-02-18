@@ -11,6 +11,7 @@ import {
   EmptyState,
   Spinner,
   ErrorState,
+  TableSkeleton,
 } from '../../components/ui';
 import { useCurrentProfile } from '../subscriptions/hooks';
 import { useExchangeRates, useCreateRate, useFetchTcmbRates } from './hooks';
@@ -105,19 +106,37 @@ export function ExchangeRatePage() {
     },
   ];
 
+  const breadcrumbs = [
+    { label: t('common:nav.dashboard'), to: '/' },
+    { label: t('finance:dashboard.title'), to: '/finance' },
+    { label: t('finance:exchangeRates.title') },
+  ];
+
+  if (isLoading) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('finance:exchangeRates.title')} />
+        <div className="mt-6">
+          <TableSkeleton cols={6} />
+        </div>
+      </PageContainer>
+    );
+  }
+
   if (error) {
     return (
-      <PageContainer>
-        <PageHeader title={t('finance:exchangeRates.title')} />
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('finance:exchangeRates.title')} breadcrumbs={breadcrumbs} />
         <ErrorState message={error.message} onRetry={refetch} />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
+    <PageContainer maxWidth="xl" padding="default" className="space-y-6">
       <PageHeader
         title={t('finance:exchangeRates.title')}
+        breadcrumbs={breadcrumbs}
         actions={
           hasFinanceAccess && (
             <Button
@@ -132,7 +151,7 @@ export function ExchangeRatePage() {
         }
       />
 
-      <Card className="p-6 shadow-sm border-neutral-200/60 dark:border-neutral-800/60 mb-6">
+      <Card className="p-6 border-neutral-200/60 dark:border-neutral-800/60">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">
             {t('finance:exchangeRates.addRate')}

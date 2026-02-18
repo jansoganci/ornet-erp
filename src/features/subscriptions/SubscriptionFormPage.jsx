@@ -3,9 +3,9 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, X, DollarSign, FileText, Users, StickyNote } from 'lucide-react';
-import { cn, formatCurrency } from '../../lib/utils';
-import { PageContainer, PageHeader } from '../../components/layout';
+import { Save, X, DollarSign, FileText, Users, StickyNote, CreditCard, Wallet, Banknote, RefreshCw } from 'lucide-react';
+import { cn, formatCurrency, getCurrencySymbol } from '../../lib/utils';
+import { PageContainer } from '../../components/layout';
 import {
   Button,
   Input,
@@ -14,6 +14,7 @@ import {
   Spinner,
   Textarea,
   SimCardCombobox,
+  FormSkeleton,
 } from '../../components/ui';
 import { subscriptionSchema, subscriptionDefaultValues, SUBSCRIPTION_TYPES, SERVICE_TYPES, BILLING_FREQUENCIES } from './schema';
 import {
@@ -26,6 +27,7 @@ import { useProfiles } from '../tasks/hooks';
 import { useSite } from '../customerSites/hooks';
 import { useSimCard } from '../simCards/hooks';
 import { CustomerSiteSelector } from '../workOrders/CustomerSiteSelector';
+import { SubscriptionFormHero } from './components/SubscriptionFormHero';
 import { toast } from 'sonner';
 
 const BILLING_DAY_OPTIONS = Array.from({ length: 28 }, (_, i) => ({
@@ -37,7 +39,7 @@ export function SubscriptionFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { t } = useTranslation(['subscriptions', 'common', 'errors']);
+  const { t } = useTranslation(['subscriptions', 'common', 'errors', 'customers']);
   const { t: tCommon } = useTranslation('common');
   const isEdit = !!id;
 
@@ -71,6 +73,7 @@ export function SubscriptionFormPage() {
   const smsFee = watch('sms_fee');
   const lineFee = watch('line_fee');
   const vatRate = watch('vat_rate');
+  const selectedCurrency = watch('currency') || 'TRY';
 
   const { data: siteData } = useSite(selectedSiteId);
   const { data: selectedSim } = useSimCard(simCardId);
@@ -198,31 +201,33 @@ export function SubscriptionFormPage() {
   };
 
   if (isEdit && isSubLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
+  const getSubIcon = (type) => {
+    switch (type) {
+      case 'recurring_card': return <CreditCard className="w-5 h-5" />;
+      case 'manual_cash': return <Wallet className="w-5 h-5" />;
+      case 'manual_bank': return <Banknote className="w-5 h-5" />;
+      default: return <RefreshCw className="w-5 h-5" />;
+    }
+  };
+
   return (
-    <PageContainer maxWidth="lg" padding="default" className="space-y-6 pb-24">
-      <PageHeader
-        title={isEdit ? t('subscriptions:form.editTitle') : t('subscriptions:form.addTitle')}
-        breadcrumbs={[
-          { label: t('subscriptions:list.title'), to: '/subscriptions' },
-          ...(isEdit && subscription
-            ? [{ label: `#${id?.slice(0, 8)}`, to: `/subscriptions/${id}` }]
-            : []),
-          { label: isEdit ? t('subscriptions:form.editTitle') : t('subscriptions:form.addTitle') },
-        ]}
+    <PageContainer maxWidth="4xl" padding="default" className="space-y-8 pb-24 mx-auto">
+      <SubscriptionFormHero
+        isEdit={isEdit}
+        onCancel={() => navigate(-1)}
+        onSave={handleSubmit(onSubmit)}
+        isSaving={isSubmitting || createMutation.isPending || updateMutation.isPending}
+        selectedSite={siteData}
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 mt-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <input type="hidden" {...register('site_id')} />
 
         {/* 1. Customer & Site Selection */}
-        <Card className="p-1 overflow-visible">
+        <Card className="rounded-[2rem] p-8 overflow-visible border-neutral-200/60 dark:border-[#262626] shadow-sm">
           <CustomerSiteSelector
             selectedCustomerId={selectedCustomerId}
             selectedSiteId={selectedSiteId}
@@ -239,30 +244,32 @@ export function SubscriptionFormPage() {
             {/* 2. Subscription Details */}
             <Card
               header={
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-5 h-5 text-primary-600" />
-                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
+                <div className="flex items-center space-x-3 px-2">
+                  <div className="p-2 bg-primary-50 dark:bg-primary-950/30 rounded-lg">
+                    <FileText className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
                     {t('subscriptions:form.sections.details')}
                   </h3>
                 </div>
               }
-              className="p-6"
+              className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm"
             >
-              <div className="space-y-6">
-                {/* Subscription type radio */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <div className="space-y-10 pt-4">
+                {/* Subscription type grid */}
+                <div className="space-y-6">
+                  <label className="block text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest ml-1">
                     {t('subscriptions:form.fields.subscriptionType')}
                   </label>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {SUBSCRIPTION_TYPES.map((tp) => (
                       <label
                         key={tp}
                         className={cn(
-                          'relative flex items-center px-4 py-2 rounded-xl border-2 cursor-pointer transition-all duration-200',
+                          'relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 group',
                           subscriptionType === tp
-                            ? 'bg-primary-50 border-primary-600 dark:bg-primary-950/30 dark:border-primary-500'
-                            : 'bg-white border-neutral-200 hover:border-neutral-300 dark:bg-[#171717] dark:border-[#262626]'
+                            ? 'bg-primary-50/50 border-primary-600 dark:bg-primary-950/20 dark:border-primary-500 shadow-md scale-[1.02]'
+                            : 'bg-white border-neutral-100 hover:border-neutral-300 dark:bg-[#171717] dark:border-[#262626] hover:shadow-sm'
                         )}
                       >
                         <input
@@ -271,12 +278,18 @@ export function SubscriptionFormPage() {
                           value={tp}
                           {...register('subscription_type')}
                         />
+                        <div className={cn(
+                          "mb-3 p-2 rounded-xl transition-colors",
+                          subscriptionType === tp ? "bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400" : "bg-neutral-50 dark:bg-neutral-900 text-neutral-400 group-hover:text-neutral-600"
+                        )}>
+                          {getSubIcon(tp)}
+                        </div>
                         <span
                           className={cn(
-                            'text-sm font-bold',
+                            'text-sm font-bold tracking-tight text-center',
                             subscriptionType === tp
                               ? 'text-primary-700 dark:text-primary-400'
-                              : 'text-neutral-600 dark:text-neutral-400'
+                              : 'text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900'
                           )}
                         >
                           {t(`subscriptions:types.${tp}`)}
@@ -285,16 +298,17 @@ export function SubscriptionFormPage() {
                     ))}
                   </div>
                   {errors.subscription_type && (
-                    <p className="text-sm text-error-600 mt-1">{errors.subscription_type.message}</p>
+                    <p className="text-sm text-red-600 mt-2 ml-1">{errors.subscription_type.message}</p>
                   )}
                 </div>
 
                 {/* Inline payment fields by type */}
                 {subscriptionType === 'recurring_card' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 bg-neutral-50/50 dark:bg-neutral-900/30 rounded-2xl border border-neutral-100 dark:border-[#262626]">
                     <Input
                       label={t('subscriptions:form.fields.cardBankName')}
                       error={errors.card_bank_name?.message}
+                      className="rounded-xl"
                       {...register('card_bank_name')}
                     />
                     <Input
@@ -302,77 +316,97 @@ export function SubscriptionFormPage() {
                       maxLength={4}
                       placeholder="1234"
                       error={errors.card_last4?.message || errors.payment_method_id?.message}
+                      className="rounded-xl"
                       {...register('card_last4')}
                     />
                   </div>
                 )}
                 {subscriptionType === 'manual_cash' && (
-                  <Select
-                    label={t('subscriptions:form.fields.cashCollector')}
-                    options={profileOptions}
-                    error={errors.cash_collector_id?.message}
-                    {...register('cash_collector_id')}
-                  />
+                  <div className="p-6 bg-neutral-50/50 dark:bg-neutral-900/30 rounded-2xl border border-neutral-100 dark:border-[#262626]">
+                    <Select
+                      label={t('subscriptions:form.fields.cashCollector')}
+                      options={profileOptions}
+                      error={errors.cash_collector_id?.message}
+                      className="rounded-xl"
+                      {...register('cash_collector_id')}
+                    />
+                  </div>
                 )}
 
-                <Select
-                  label={t('subscriptions:form.fields.serviceType')}
-                  options={serviceTypeOptions}
-                  error={errors.service_type?.message}
-                  {...register('service_type')}
-                />
-                <Controller
-                  name="sim_card_id"
-                  control={control}
-                  render={({ field }) => (
-                    <SimCardCombobox
-                      label={t('subscriptions:form.fields.simCard')}
-                      value={field.value || ''}
-                      selectedSim={selectedSim}
-                      onChange={field.onChange}
-                      siteId={selectedSiteId}
-                      error={errors.sim_card_id?.message}
-                      disabled={!selectedSiteId}
-                    />
-                  )}
-                />
-                <Select
-                  label={t('subscriptions:form.fields.billingFrequency')}
-                  options={billingFrequencyOptions}
-                  error={errors.billing_frequency?.message}
-                  {...register('billing_frequency')}
-                />
-                <div className="flex items-center gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <Select
+                    label={t('subscriptions:form.fields.serviceType')}
+                    options={serviceTypeOptions}
+                    error={errors.service_type?.message}
+                    className="rounded-xl"
+                    {...register('service_type')}
+                  />
                   <Controller
-                    name="official_invoice"
+                    name="sim_card_id"
                     control={control}
                     render={({ field }) => (
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={(e) => field.onChange(e.target.checked)}
-                          className="rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                        />
-                        <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                          {t('subscriptions:form.fields.officialInvoice')}
-                        </span>
-                      </label>
+                      <SimCardCombobox
+                        label={t('subscriptions:form.fields.simCard')}
+                        value={field.value || ''}
+                        selectedSim={selectedSim}
+                        onChange={field.onChange}
+                        siteId={selectedSiteId}
+                        error={errors.sim_card_id?.message}
+                        disabled={!selectedSiteId}
+                        className="rounded-xl"
+                      />
                     )}
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <Select
+                    label={t('subscriptions:form.fields.billingFrequency')}
+                    options={billingFrequencyOptions}
+                    error={errors.billing_frequency?.message}
+                    className="rounded-xl"
+                    {...register('billing_frequency')}
+                  />
+                  <div className="flex items-end pb-3">
+                    <Controller
+                      name="official_invoice"
+                      control={control}
+                      render={({ field }) => (
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <div className={cn(
+                            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                            field.value ? "bg-primary-600 border-primary-600" : "border-neutral-300 dark:border-neutral-700 group-hover:border-primary-500"
+                          )}>
+                            {field.value && <div className="w-2 h-2 bg-white rounded-full" />}
+                          </div>
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                          />
+                          <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300">
+                            {t('subscriptions:form.fields.officialInvoice')}
+                          </span>
+                        </label>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <Input
                     label={t('subscriptions:form.fields.startDate')}
                     type="date"
                     error={errors.start_date?.message}
+                    className="rounded-xl"
                     {...register('start_date')}
                   />
                   <Select
                     label={t('subscriptions:form.fields.billingDay')}
                     options={BILLING_DAY_OPTIONS}
                     error={errors.billing_day?.message}
+                    className="rounded-xl"
                     {...register('billing_day')}
                   />
                 </div>
@@ -382,89 +416,103 @@ export function SubscriptionFormPage() {
             {/* 3. Pricing */}
             <Card
               header={
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="w-5 h-5 text-primary-600" />
-                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
+                <div className="flex items-center space-x-3 px-2">
+                  <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+                    <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
                     {t('subscriptions:form.sections.pricing')}
                   </h3>
                 </div>
               }
-              className="p-6"
+              className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm"
             >
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-10 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Input
                     label={t('subscriptions:form.fields.basePrice')}
                     type="number"
                     step="0.01"
-                    rightIcon={<span className="text-neutral-400">₺</span>}
+                    rightIcon={<span className="text-neutral-400 font-bold">₺</span>}
                     error={errors.base_price?.message}
+                    className="rounded-xl"
                     {...register('base_price')}
                   />
                   <Input
                     label={t('subscriptions:form.fields.smsFee')}
                     type="number"
                     step="0.01"
-                    rightIcon={<span className="text-neutral-400">₺</span>}
+                    rightIcon={<span className="text-neutral-400 font-bold">₺</span>}
                     error={errors.sms_fee?.message}
+                    className="rounded-xl"
                     {...register('sms_fee')}
                   />
                   <Input
                     label={t('subscriptions:form.fields.lineFee')}
                     type="number"
                     step="0.01"
-                    rightIcon={<span className="text-neutral-400">₺</span>}
+                    rightIcon={<span className="text-neutral-400 font-bold">₺</span>}
                     error={errors.line_fee?.message}
+                    className="rounded-xl"
                     {...register('line_fee')}
                   />
                 </div>
 
-                <Input
-                  label={t('subscriptions:form.fields.vatRate')}
-                  type="number"
-                  step="1"
-                  rightIcon={<span className="text-neutral-400">%</span>}
-                  error={errors.vat_rate?.message}
-                  {...register('vat_rate')}
-                />
-
-                {isAdmin && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <Input
-                    label={t('subscriptions:form.fields.cost')}
+                    label={t('subscriptions:form.fields.vatRate')}
                     type="number"
-                    step="0.01"
-                    rightIcon={<span className="text-neutral-400">₺</span>}
-                    error={errors.cost?.message}
-                    {...register('cost')}
+                    step="1"
+                    rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                    error={errors.vat_rate?.message}
+                    className="rounded-xl"
+                    {...register('vat_rate')}
                   />
-                )}
+                  {isAdmin && (
+                    <Input
+                      label={t('subscriptions:form.fields.cost')}
+                      type="number"
+                      step="0.01"
+                      rightIcon={<span className="text-neutral-400 font-bold">₺</span>}
+                      error={errors.cost?.message}
+                      className="rounded-xl"
+                      {...register('cost')}
+                    />
+                  )}
+                </div>
 
-                {/* Computed pricing */}
-                <div className="p-4 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-500">{t('subscriptions:detail.fields.subtotal')}</span>
-                    <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                {/* Computed pricing - Digital Receipt Style */}
+                <div className="p-8 rounded-[2rem] bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-100 dark:border-[#262626] space-y-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-neutral-500 font-medium">{t('subscriptions:detail.fields.subtotal')}</span>
+                    <span className="font-bold text-neutral-900 dark:text-neutral-100">
                       {formatCurrency(computedPricing.subtotal)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-neutral-500">{t('subscriptions:detail.fields.vatAmount')}</span>
-                    <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-neutral-500 font-medium">{t('subscriptions:detail.fields.vatAmount')}</span>
+                    <span className="font-bold text-neutral-900 dark:text-neutral-100">
                       {formatCurrency(computedPricing.vatAmount)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm border-t border-neutral-200 dark:border-neutral-700 pt-2">
-                    <span className="font-bold text-neutral-700 dark:text-neutral-200">
+                  <div className="flex justify-between items-center pt-6 border-t border-neutral-200 dark:border-neutral-800">
+                    <span className="text-lg font-black text-neutral-900 dark:text-neutral-100 tracking-tight">
                       {t('subscriptions:detail.fields.totalAmount')}
                     </span>
-                    <span className="font-black text-primary-700 dark:text-primary-300">
-                      {formatCurrency(computedPricing.total)}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-2xl font-black text-primary-600 dark:text-primary-400 tracking-tighter">
+                        {formatCurrency(computedPricing.total)}
+                      </span>
+                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                        {t(`common:currencies.${selectedCurrency}`)} / {t(`subscriptions:form.fields.${watch('billing_frequency')}`)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </Card>
-
           </div>
 
           {/* Right sidebar */}
@@ -472,26 +520,30 @@ export function SubscriptionFormPage() {
             {/* 5. Assignment */}
             <Card
               header={
-                <div className="flex items-center space-x-2">
-                  <Users className="w-5 h-5 text-primary-600" />
-                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
+                <div className="flex items-center space-x-3 px-2">
+                  <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                    <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
                     {t('subscriptions:form.sections.assignment')}
                   </h3>
                 </div>
               }
-              className="p-6"
+              className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm"
             >
-              <div className="space-y-4">
+              <div className="space-y-6 pt-4">
                 <Select
                   label={t('subscriptions:form.fields.soldBy')}
                   options={profileOptions}
                   error={errors.sold_by?.message}
+                  className="rounded-xl"
                   {...register('sold_by')}
                 />
                 <Select
                   label={t('subscriptions:form.fields.managedBy')}
                   options={profileOptions}
                   error={errors.managed_by?.message}
+                  className="rounded-xl"
                   {...register('managed_by')}
                 />
               </div>
@@ -500,26 +552,30 @@ export function SubscriptionFormPage() {
             {/* 6. Notes */}
             <Card
               header={
-                <div className="flex items-center space-x-2">
-                  <StickyNote className="w-5 h-5 text-primary-600" />
-                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
+                <div className="flex items-center space-x-3 px-2">
+                  <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+                    <StickyNote className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
                     {t('subscriptions:form.sections.notes')}
                   </h3>
                 </div>
               }
-              className="p-6"
+              className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm"
             >
-              <div className="space-y-4">
+              <div className="space-y-6 pt-4">
                 <Textarea
                   label={t('subscriptions:form.fields.setupNotes')}
                   placeholder={t('subscriptions:form.placeholders.setupNotes')}
                   error={errors.setup_notes?.message}
+                  className="rounded-xl min-h-[100px]"
                   {...register('setup_notes')}
                 />
                 <Textarea
                   label={t('subscriptions:form.fields.notes')}
                   placeholder={t('subscriptions:form.placeholders.notes')}
                   error={errors.notes?.message}
+                  className="rounded-xl min-h-[100px]"
                   {...register('notes')}
                 />
               </div>

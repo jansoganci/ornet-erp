@@ -88,6 +88,9 @@
 
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  
+  --font-heading: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                  "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 
   /* Font sizes */
   --font-size-xs: 0.75rem;     /* 12px */
@@ -225,6 +228,16 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Heading font utility */
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+/* Apply Space Grotesk to all headings automatically */
+h1, h2 {
+  font-family: var(--font-heading);
 }
 
 body {

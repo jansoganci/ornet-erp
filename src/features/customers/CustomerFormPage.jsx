@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCustomer, useCreateCustomer, useUpdateCustomer } from './hooks';
 import { customerSchema, customerDefaultValues } from './schema';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, Card, Input, Spinner, Textarea } from '../../components/ui';
+import { Button, Card, Input, Spinner, Textarea, FormSkeleton } from '../../components/ui';
 import { useEffect } from 'react';
 import { maskPhone } from '../../lib/utils';
 
@@ -17,6 +17,11 @@ export function CustomerFormPage() {
 
   const isEdit = Boolean(id);
   const { data: customer, isLoading: customerLoading } = useCustomer(id);
+
+  if (isEdit && customerLoading) {
+    return <FormSkeleton />;
+  }
+
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
 
@@ -76,7 +81,7 @@ export function CustomerFormPage() {
 
   if (isEdit && customerLoading) {
     return (
-      <PageContainer maxWidth="md" padding="default">
+      <PageContainer maxWidth="full" padding="default">
         <div className="flex items-center justify-center py-12">
           <Spinner size="lg" />
         </div>
@@ -85,7 +90,7 @@ export function CustomerFormPage() {
   }
 
   return (
-    <PageContainer maxWidth="md" padding="default">
+    <PageContainer maxWidth="full" padding="default">
       <PageHeader
         title={isEdit ? t('customers:form.editTitle') : t('customers:form.addTitle')}
         breadcrumbs={[

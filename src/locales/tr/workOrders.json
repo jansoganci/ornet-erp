@@ -8,7 +8,9 @@
       "title": "Başlık",
       "type": "Tip",
       "status": "Durum",
+      "city": "Şehir",
       "priority": "Öncelik",
+      "amount": "Tutar",
       "scheduledDate": "Planlanan Tarih"
     },
     "empty": {
@@ -23,17 +25,11 @@
       "allTypes": "Tüm Tipler",
       "status": "Durum",
       "allStatuses": "Tüm Durumlar",
+      "priority": "Öncelik",
+      "allPriorities": "Tüm Öncelikler",
       "dateRange": "Tarih Aralığı",
       "statusPlaceholder": "Durum Filtresi",
       "typePlaceholder": "Tip Filtresi"
-    },
-    "columns": {
-      "customer": "Müşteri",
-      "title": "Başlık",
-      "type": "Tip",
-      "status": "Durum",
-      "priority": "Öncelik",
-      "scheduledDate": "Planlanan Tarih"
     }
   },
   "detail": {
@@ -75,11 +71,14 @@
     "proposalLink": "Teklif",
     "viewProposal": "Teklifi Görüntüle",
     "notAssignedYet": "Henüz atanmadı",
+    "assignedCount": "{{count}} Kişi",
     "amountNotEntered": "Tutar girilmedi"
   },
   "form": {
     "addTitle": "Yeni İş Emri",
     "editTitle": "İş Emri Düzenle",
+    "addSubtitle": "Müşteri ve lokasyon seçerek başlayın.",
+    "editSubtitle": "İş emri bilgilerini güncelleyin.",
     "customerNotFound": "Müşteri bulunamadı.",
     "sections": {
       "customerSelection": "Müşteri Seçimi",

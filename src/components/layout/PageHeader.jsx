@@ -81,7 +81,7 @@ export function PageHeader({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         {/* Title Section */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 dark:text-neutral-50">
+          <h1 className="text-2xl sm:text-3xl font-semibold font-heading text-neutral-900 dark:text-neutral-50">
             {title}
           </h1>
           {description && (

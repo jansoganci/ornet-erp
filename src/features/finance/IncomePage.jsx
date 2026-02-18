@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Plus, Edit2, Trash2, TrendingUp } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -12,6 +13,7 @@ import {
   ErrorState,
   IconButton,
   Modal,
+  TableSkeleton,
 } from '../../components/ui';
 import { useTransactions, useDeleteTransaction } from './hooks';
 import { useCustomers } from '../customers/hooks';
@@ -38,13 +40,28 @@ export function IncomePage() {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [transactionToDelete, setTransactionToDelete] = useState(null);
 
-  const [period, setPeriod] = useState(() => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const defaultPeriod = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [paymentMethod, setPaymentMethod] = useState('all');
-  const [viewMode, setViewMode] = useState('total');
-  const [customerId, setCustomerId] = useState('all');
+  }, []);
+  const period = searchParams.get('period') || defaultPeriod;
+  const paymentMethod = searchParams.get('paymentMethod') || 'all';
+  const viewMode = searchParams.get('viewMode') || 'total';
+  const customerId = searchParams.get('customer') || 'all';
+
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      const isDefault = (k, v) =>
+        (k === 'period' && v === defaultPeriod) ||
+        (k === 'paymentMethod' && v === 'all') ||
+        (k === 'viewMode' && v === 'total') ||
+        (k === 'customer' && v === 'all');
+      if (value && !isDefault(key, value)) prev.set(key, value);
+      else prev.delete(key);
+      return prev;
+    });
+  };
 
   const { data: transactions = [], isLoading, error, refetch } = useTransactions({
     direction: 'income',
@@ -127,10 +144,12 @@ export function IncomePage() {
       render: (val) => (val ? val : '-'),
     },
     {
-      header: '',
+      header: t('common:actions.actionsColumn'),
       id: 'actions',
+      align: 'right',
+      stickyRight: true,
       render: (_, row) => (
-        <div className="flex justify-end space-x-1">
+        <div className="flex justify-end space-x-1" onClick={(e) => e.stopPropagation()}>
           <IconButton
             icon={Edit2}
             size="sm"
@@ -159,10 +178,10 @@ export function IncomePage() {
 
   if (isLoading) {
     return (
-      <PageContainer>
+      <PageContainer maxWidth="xl" padding="default">
         <PageHeader title={t('finance:list.titleIncome')} />
-        <div className="flex justify-center py-12">
-          <Spinner size="lg" />
+        <div className="mt-6">
+          <TableSkeleton cols={6} />
         </div>
       </PageContainer>
     );
@@ -170,17 +189,29 @@ export function IncomePage() {
 
   if (error) {
     return (
-      <PageContainer>
-        <PageHeader title={t('finance:list.titleIncome')} />
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader
+          title={t('finance:list.titleIncome')}
+          breadcrumbs={[
+            { label: t('common:nav.dashboard'), to: '/' },
+            { label: t('finance:dashboard.title'), to: '/finance' },
+            { label: t('finance:list.titleIncome') },
+          ]}
+        />
         <ErrorState message={error.message} onRetry={refetch} />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
+    <PageContainer maxWidth="xl" padding="default" className="space-y-6">
       <PageHeader
         title={t('finance:list.titleIncome')}
+        breadcrumbs={[
+          { label: t('common:nav.dashboard'), to: '/' },
+          { label: t('finance:dashboard.title'), to: '/finance' },
+          { label: t('finance:list.titleIncome') },
+        ]}
         actions={
           <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={handleAdd}>
             {t('finance:income.addButton')}
@@ -188,14 +219,14 @@ export function IncomePage() {
         }
       />
 
-      <Card className="p-4 shadow-sm border-neutral-200/60 dark:border-neutral-800/60 mb-6">
+      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
         <div className="flex flex-col md:flex-row gap-4 flex-wrap">
           <div className="w-full md:w-40">
             <Select
               label={t('finance:filters.period')}
               options={monthOptions}
               value={period}
-              onChange={(e) => setPeriod(e.target.value)}
+              onChange={(e) => handleFilterChange('period', e.target.value)}
             />
           </div>
           <div className="w-full md:w-48">
@@ -203,7 +234,7 @@ export function IncomePage() {
               label={t('finance:filters.paymentMethod')}
               options={paymentMethodOptions}
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
             />
           </div>
           <div className="w-full md:w-56">
@@ -211,28 +242,26 @@ export function IncomePage() {
               label={t('finance:filters.customer')}
               options={customerOptions}
               value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
+              onChange={(e) => handleFilterChange('customer', e.target.value)}
             />
           </div>
           <div className="flex items-end">
-            <ViewModeToggle value={viewMode} onChange={setViewMode} size="md" />
+            <ViewModeToggle value={viewMode} onChange={(v) => handleFilterChange('viewMode', v)} size="md" />
           </div>
         </div>
       </Card>
 
       {transactions.length === 0 ? (
         <EmptyState
+          icon={TrendingUp}
           title={t('finance:list.emptyIncome')}
           description={t('finance:list.addFirstIncome')}
-          action={
-            <Button variant="primary" onClick={handleAdd}>
-              {t('finance:income.addButton')}
-            </Button>
-          }
+          actionLabel={t('finance:income.addButton')}
+          onAction={handleAdd}
         />
       ) : (
         <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
-          <Table columns={columns} data={transactions} />
+          <Table columns={columns} data={transactions} onRowClick={(row) => handleEdit(row)} />
         </div>
       )}
 

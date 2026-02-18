@@ -18,7 +18,7 @@ import {
   Cpu as SimIcon
 } from 'lucide-react';
 import { PageContainer } from '../components/layout';
-import { Button, Card, Skeleton, ErrorState } from '../components/ui';
+import { Button, Card, Skeleton, ErrorState, CardSkeleton } from '../components/ui';
 import { formatDate, cn } from '../lib/utils';
 import {
   useDashboardStats,
@@ -74,6 +74,33 @@ export function DashboardPage() {
   const { data: schedule, isLoading: isScheduleLoading, error: scheduleError, refetch: refetchSchedule } = useTodaySchedule();
   const { data: tasks, isLoading: isTasksLoading, error: tasksError, refetch: refetchTasks } = usePendingTasks();
   const updateTaskMutation = useUpdateTask();
+
+  const isInitialLoading = isStatsLoading || isSubStatsLoading || isSimStatsLoading;
+
+  if (isInitialLoading) {
+    return (
+      <PageContainer maxWidth="full" padding="compact" className="space-y-5">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <Skeleton className="h-6 w-48" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <CardSkeleton count={4} />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-4 w-32" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-32" />
+          <CardSkeleton count={3} />
+        </div>
+      </PageContainer>
+    );
+  }
 
   const handleToggleTask = (e, task) => {
     e.stopPropagation();
@@ -168,157 +195,161 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-              {t('todoSection.title')}
-            </h2>
-            <div className="flex items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => navigate('/work-orders')}
-                className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50 transition-colors"
-              >
-                {t('todoSection.viewWorkOrders')}
-              </button>
-              <span className="text-neutral-300 dark:text-[#404040]">|</span>
-              <button
-                type="button"
-                onClick={() => navigate('/tasks')}
-                className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50 transition-colors"
-              >
-                {t('todoSection.viewTasks')}
-              </button>
-            </div>
-          </div>
-
-          {isTodoLoading ? (
-            <TodoListSkeleton />
-          ) : todoError ? (
-            <ErrorState message={todoError.message} onRetry={refetchTodo} />
-          ) : isEmpty ? (
-            <Card className="p-5 text-center border border-dashed border-neutral-200 dark:border-[#262626]">
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('todoSection.empty')}</p>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {scheduleList.map((item) => (
-                <Card
-                  key={`wo-${item.id}`}
-                  className="p-3 hover:border-neutral-300 dark:hover:border-[#404040] transition-colors cursor-pointer group"
-                  onClick={() => navigate(`/work-orders/${item.id}`)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex-shrink-0 text-sm font-medium text-neutral-900 dark:text-neutral-50 tabular-nums">
-                      {item.scheduled_time?.slice(0, 5) ?? '–'}
-                    </span>
-                    <span className="text-neutral-400 dark:text-neutral-500">·</span>
-                    <span className="flex-1 min-w-0 text-sm text-neutral-900 dark:text-neutral-50 truncate">
-                      {item.customer_name} · {item.title}
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                  </div>
-                </Card>
-              ))}
-              {hasSchedule && hasTasks && (
-                <div className="pt-1 pb-0.5">
-                  <p className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wide">
-                    {t('todoSection.openTasksLabel')}
-                  </p>
-                </div>
-              )}
-              {tasksList.map((task) => (
-                <Card
-                  key={`task-${task.id}`}
-                  className="p-3 hover:border-neutral-300 dark:hover:border-[#404040] transition-colors cursor-pointer group"
-                  onClick={() => navigate('/tasks')}
-                >
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleTask(e, task)}
-                      className="flex-shrink-0 text-neutral-300 dark:text-neutral-600 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                    >
-                      {task.status === 'completed' ? (
-                        <CheckCircle2 className="w-4 h-4 text-success-600 dark:text-success-400" />
-                      ) : (
-                        <Circle className="w-4 h-4" />
-                      )}
-                    </button>
-                    <span
-                      className={cn(
-                        'flex-1 min-w-0 text-sm font-medium truncate text-neutral-900 dark:text-neutral-50',
-                        task.status === 'completed' && 'line-through text-neutral-400 dark:text-neutral-500'
-                      )}
-                    >
-                      {task.title}
-                    </span>
-                    <span
-                      className={cn(
-                        'flex-shrink-0 text-xs tabular-nums',
-                        task.is_overdue ? 'text-error-600 dark:text-error-400' : 'text-neutral-500 dark:text-neutral-400'
-                      )}
-                    >
-                      {task.due_date ? formatDate(task.due_date) : ''}
-                    </span>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+      {/* Quick Actions Section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+          {t('quickActions.title')}
+        </h2>
+        
+        {/* Actions Grid - All buttons same size */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Button
+            variant="outline"
+            size="md"
+            className="w-full flex-col sm:flex-row h-auto py-3 sm:py-2 gap-2 sm:gap-3 justify-center"
+            leftIcon={<FilePlus className="w-4 h-4" />}
+            onClick={() => navigate('/work-orders/new')}
+          >
+            <span className="text-xs sm:text-sm">{t('quickActions.addWorkOrder')}</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="md"
+            className="w-full flex-col sm:flex-row h-auto py-3 sm:py-2 gap-2 sm:gap-3 justify-center"
+            leftIcon={<UserPlus className="w-4 h-4" />}
+            onClick={() => navigate('/customers/new')}
+          >
+            <span className="text-xs sm:text-sm">{t('quickActions.addCustomer')}</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="md"
+            className="w-full flex-col sm:flex-row h-auto py-3 sm:py-2 gap-2 sm:gap-3 justify-center"
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => setIsTaskModalOpen(true)}
+          >
+            <span className="text-xs sm:text-sm">{t('quickActions.addTask')}</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="md"
+            className="w-full flex-col sm:flex-row h-auto py-3 sm:py-2 gap-2 sm:gap-3 justify-center"
+            leftIcon={<CalendarCheck className="w-4 h-4" />}
+            onClick={() => navigate('/daily-work')}
+          >
+            <span className="text-xs sm:text-sm">{t('quickActions.dailyWork')}</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="md"
+            className="w-full flex-col sm:flex-row h-auto py-3 sm:py-2 gap-2 sm:gap-3 justify-center"
+            leftIcon={<Search className="w-4 h-4" />}
+            onClick={() => navigate('/work-history')}
+          >
+            <span className="text-xs sm:text-sm">{t('quickActions.workHistory')}</span>
+          </Button>
         </div>
+      </section>
 
-        <div className="space-y-4">
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-              {t('quickActions.title')}
-            </h2>
-            <Button
-              variant="primary"
-              size="md"
-              className="w-full justify-start"
-              leftIcon={<FilePlus className="w-4 h-4" />}
-              onClick={() => navigate('/work-orders/new')}
+      {/* Todo Section - Full Width */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+            {t('todoSection.title')}
+          </h2>
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => navigate('/work-orders')}
+              className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50 transition-colors"
             >
-              {t('quickActions.addWorkOrder')}
-            </Button>
-            <div className="space-y-0 border border-neutral-200 dark:border-[#262626] rounded-lg overflow-hidden">
-              <button
-                type="button"
-                onClick={() => navigate('/customers/new')}
-                className="w-full p-3 flex items-center gap-3 text-left text-sm text-neutral-900 dark:text-neutral-50 hover:bg-neutral-50 dark:hover:bg-[#262626] transition-colors border-b border-neutral-200 dark:border-[#262626] last:border-b-0"
-              >
-                <UserPlus className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-                {t('quickActions.addCustomer')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsTaskModalOpen(true)}
-                className="w-full p-3 flex items-center gap-3 text-left text-sm text-neutral-900 dark:text-neutral-50 hover:bg-neutral-50 dark:hover:bg-[#262626] transition-colors border-b border-neutral-200 dark:border-[#262626] last:border-b-0"
-              >
-                <Plus className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-                {t('quickActions.addTask')}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/daily-work')}
-                className="w-full p-3 flex items-center gap-3 text-left text-sm text-neutral-900 dark:text-neutral-50 hover:bg-neutral-50 dark:hover:bg-[#262626] transition-colors border-b border-neutral-200 dark:border-[#262626] last:border-b-0"
-              >
-                <CalendarCheck className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-                {t('quickActions.dailyWork')}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/work-history')}
-                className="w-full p-3 flex items-center gap-3 text-left text-sm text-neutral-900 dark:text-neutral-50 hover:bg-neutral-50 dark:hover:bg-[#262626] transition-colors"
-              >
-                <Search className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-                {t('quickActions.workHistory')}
-              </button>
-            </div>
-          </section>
+              {t('todoSection.viewWorkOrders')}
+            </button>
+            <span className="text-neutral-300 dark:text-[#404040]">|</span>
+            <button
+              type="button"
+              onClick={() => navigate('/tasks')}
+              className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50 transition-colors"
+            >
+              {t('todoSection.viewTasks')}
+            </button>
+          </div>
         </div>
+
+        {isTodoLoading ? (
+          <TodoListSkeleton />
+        ) : todoError ? (
+          <ErrorState message={todoError.message} onRetry={refetchTodo} />
+        ) : isEmpty ? (
+          <Card className="p-5 text-center border border-dashed border-neutral-200 dark:border-[#262626]">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('todoSection.empty')}</p>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {scheduleList.map((item) => (
+              <Card
+                key={`wo-${item.id}`}
+                className="p-3 hover:border-neutral-300 dark:hover:border-[#404040] transition-colors cursor-pointer group"
+                onClick={() => navigate(`/work-orders/${item.id}`)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 text-sm font-medium text-neutral-900 dark:text-neutral-50 tabular-nums">
+                    {item.scheduled_time?.slice(0, 5) ?? '–'}
+                  </span>
+                  <span className="text-neutral-400 dark:text-neutral-500">·</span>
+                  <span className="flex-1 min-w-0 text-sm text-neutral-900 dark:text-neutral-50 truncate">
+                    {item.customer_name} · {item.title}
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+                </div>
+              </Card>
+            ))}
+            {hasSchedule && hasTasks && (
+              <div className="pt-1 pb-0.5">
+                <p className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 uppercase tracking-wide">
+                  {t('todoSection.openTasksLabel')}
+                </p>
+              </div>
+            )}
+            {tasksList.map((task) => (
+              <Card
+                key={`task-${task.id}`}
+                className="p-3 hover:border-neutral-300 dark:hover:border-[#404040] transition-colors cursor-pointer group"
+                onClick={() => navigate('/tasks')}
+              >
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => handleToggleTask(e, task)}
+                    className="flex-shrink-0 text-neutral-300 dark:text-neutral-600 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                  >
+                    {task.status === 'completed' ? (
+                      <CheckCircle2 className="w-4 h-4 text-success-600 dark:text-success-400" />
+                    ) : (
+                      <Circle className="w-4 h-4" />
+                    )}
+                  </button>
+                  <span
+                    className={cn(
+                      'flex-1 min-w-0 text-sm font-medium truncate text-neutral-900 dark:text-neutral-50',
+                      task.status === 'completed' && 'line-through text-neutral-400 dark:text-neutral-500'
+                    )}
+                  >
+                    {task.title}
+                  </span>
+                  <span
+                    className={cn(
+                      'flex-shrink-0 text-xs tabular-nums',
+                      task.is_overdue ? 'text-error-600 dark:text-error-400' : 'text-neutral-500 dark:text-neutral-400'
+                    )}
+                  >
+                    {task.due_date ? formatDate(task.due_date) : ''}
+                  </span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <TaskModal open={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />

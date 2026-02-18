@@ -4,6 +4,17 @@
     "title": "Teklifler",
     "addButton": "Yeni Teklif",
     "searchPlaceholder": "Teklif veya müşteri ara...",
+    "columns": {
+      "proposalNo": "Teklif No",
+      "customer": "Müşteri",
+      "city": "Şehir",
+      "title": "Başlık",
+      "amount": "Tutar",
+      "status": "Durum",
+      "workOrders": "İş Emirleri",
+      "dates": "Tarihler",
+      "createdAt": "Oluşturulma"
+    },
     "empty": {
       "title": "Henüz teklif yok",
       "description": "İlk teklifinizi oluşturun."
@@ -40,8 +51,10 @@
       "accept": "Onayla",
       "reject": "Reddet",
       "cancel": "İptal Et",
-      "markComplete": "Montajı Tamamla"
+      "markComplete": "Montaj Tamamlandı",
+      "faturalandir": "Faturalandır"
     },
+    "comingSoon": "Bu özellik yakında aktif edilecektir.",
     "confirmAccept": "Bu teklifi onaylamak istediğinize emin misiniz?",
     "confirmReject": "Bu teklifi reddetmek istediğinize emin misiniz?",
     "confirmSent": "Bu teklifi gönderildi olarak işaretlemek istediğinize emin misiniz?",
@@ -49,7 +62,14 @@
     "netProfit": "Net Kar",
     "subtotal": "Ara Toplam",
     "discountPercent": "İskonto %{{percent}}",
-    "discountAmount": "İskonto Tutarı"
+    "discountAmount": "İskonto Tutarı",
+    "summaryTitle": "Özet Bilgiler",
+    "summary": {
+      "createdAt": "Oluşturulma",
+      "sentAt": "Gönderim",
+      "acceptedOrRejectedAt": "Onay / Red",
+      "contacts": "İletişim"
+    }
   },
   "form": {
     "addTitle": "Yeni Teklif",
@@ -117,8 +137,14 @@
     "cancelled": "İptal Edildi",
     "completed": "Tamamlandı"
   },
+  "dateLabels": {
+    "sent": "Gönderildi",
+    "accepted": "Onaylandı",
+    "rejected": "Reddedildi"
+  },
   "filters": {
-    "allStatuses": "Tüm Durumlar"
+    "allStatuses": "Tüm Durumlar",
+    "statusLabel": "Durum Filtresi"
   },
   "pdf": {
     "date": "Tarih",

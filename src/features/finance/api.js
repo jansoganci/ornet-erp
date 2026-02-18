@@ -66,7 +66,7 @@ function quarterToMonths(q) {
 }
 
 // financial_transactions
-const TRANSACTION_SELECT = '*, customers(company_name), customer_sites(site_name, account_no), expense_categories(name_tr, code)';
+const TRANSACTION_SELECT = '*, customers(company_name), customer_sites(site_name, account_no), expense_categories(name_tr, code), recurring_expense_templates(id, name, is_variable)';
 
 export async function fetchTransactions(filters = {}) {
   let query = supabase
@@ -91,6 +91,9 @@ export async function fetchTransactions(filters = {}) {
   }
   if (filters.payment_method) {
     query = query.eq('payment_method', filters.payment_method);
+  }
+  if (filters.recurring_only) {
+    query = query.not('recurring_template_id', 'is', null);
   }
 
   if (filters.viewMode === 'official' || filters.viewMode === 'unofficial') {

@@ -31,18 +31,3 @@ export const templateDefaultValues = {
   description_template: '',
 };
 
-export const confirmSchema = z.object({
-  amount_try: z.preprocess(toNumber, z.number({ invalid_type_error: i18n.t('errors:validation.invalidNumber') }).min(0)),
-  vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),
-  has_invoice: z.boolean().default(true),
-  description: z.string().optional().or(z.literal('')),
-  payment_method: z.enum(PAYMENT_METHODS),
-});
-
-export const confirmDefaultValues = {
-  amount_try: 0,
-  vat_rate: 20,
-  has_invoice: true,
-  description: '',
-  payment_method: 'bank_transfer',
-};

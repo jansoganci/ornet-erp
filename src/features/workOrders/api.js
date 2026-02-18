@@ -17,6 +17,10 @@ export async function fetchWorkOrders(filters = {}) {
     query = query.eq('work_type', filters.work_type);
   }
 
+  if (filters.priority && filters.priority !== 'all') {
+    query = query.eq('priority', filters.priority);
+  }
+
   if (filters.dateFrom) {
     query = query.gte('scheduled_date', filters.dateFrom);
   }

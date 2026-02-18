@@ -10,6 +10,13 @@ export function useSearchWorkHistory(filters) {
   return useQuery({
     queryKey: workHistoryKeys.search(filters),
     queryFn: () => api.searchWorkHistory(filters),
-    enabled: !!(filters.search || filters.dateFrom || filters.dateTo || filters.workType || filters.workerId || filters.siteId),
+    enabled: !!(
+      filters.search ||
+      filters.dateFrom ||
+      filters.dateTo ||
+      (filters.workType && filters.workType !== 'all') ||
+      (filters.workerId && filters.workerId !== 'all') ||
+      filters.siteId
+    ),
   });
 }

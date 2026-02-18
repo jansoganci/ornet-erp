@@ -8,7 +8,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, IconButton, Spinner, ErrorState, Select } from '../../components/ui';
+import { Button, IconButton, Spinner, ErrorState, Select, Card } from '../../components/ui';
 import { calendarLocalizer, getCalendarCulture } from './calendarLocalizer';
 import { getWeekRange, getMonthRange, dateToQueryParams, getEventClassName, formatDateRangeLabel } from './utils';
 import { useCalendarWorkOrders, useCalendarTasks, useCalendarRealtime, calendarKeys } from './hooks';
@@ -218,117 +218,117 @@ export function CalendarPage() {
 
   return (
     <PageContainer maxWidth="full" padding="default">
-      <PageHeader title={t('nav.calendar')} />
+      <PageHeader
+        title={t('nav.calendar')}
+        actions={
+          <Button
+            variant="primary"
+            leftIcon={<Plus className="w-5 h-5" />}
+            onClick={() => navigate('/work-orders/new')}
+          >
+            {tWorkOrders('list.addButton')}
+          </Button>
+        }
+      />
 
-      {/* Toolbar */}
-      <div className="space-y-3 mb-4 mt-2">
-        {/* Row 1: View toggle + Source filter + Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* View toggle */}
-            <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 p-0.5 bg-neutral-50 dark:bg-[#1a1a1a]">
-              <button
-                type="button"
-                onClick={() => setView(VIEW_WEEK)}
-                className={cn(
-                  'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                  view === VIEW_WEEK
-                    ? 'bg-white dark:bg-[#262626] text-neutral-900 dark:text-neutral-100 shadow-sm'
-                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                )}
-              >
-                {t('view.weekly')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setView(VIEW_MONTH)}
-                className={cn(
-                  'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                  view === VIEW_MONTH
-                    ? 'bg-white dark:bg-[#262626] text-neutral-900 dark:text-neutral-100 shadow-sm'
-                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                )}
-              >
-                {t('view.monthly')}
-              </button>
+      {/* Toolbar & Filters */}
+      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60 mb-4 mt-6">
+        <div className="space-y-4">
+          {/* Row 1: View toggle + Source filter + Today button */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* View toggle */}
+              <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 p-0.5 bg-neutral-50 dark:bg-[#1a1a1a]">
+                <button
+                  type="button"
+                  onClick={() => setView(VIEW_WEEK)}
+                  className={cn(
+                    'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                    view === VIEW_WEEK
+                      ? 'bg-white dark:bg-[#262626] text-neutral-900 dark:text-neutral-100 shadow-sm'
+                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                  )}
+                >
+                  {t('view.weekly')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView(VIEW_MONTH)}
+                  className={cn(
+                    'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                    view === VIEW_MONTH
+                      ? 'bg-white dark:bg-[#262626] text-neutral-900 dark:text-neutral-100 shadow-sm'
+                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                  )}
+                >
+                  {t('view.monthly')}
+                </button>
+              </div>
+
+              {/* Source filter */}
+              <CalendarFilterBar value={sourceFilter} onChange={setSourceFilter} />
             </div>
 
-            {/* Source filter */}
-            <CalendarFilterBar value={sourceFilter} onChange={setSourceFilter} />
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+            {/* Today button */}
+            <Button variant="outline" onClick={() => setCurrentDate(new Date())}>
               {tCommon('time.today')}
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Plus className="w-4 h-4" />}
-              onClick={() => navigate('/work-orders/new')}
-            >
-              {tWorkOrders('list.addButton')}
-            </Button>
-          </div>
-        </div>
-
-        {/* Row 2: Date navigation + Filters */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Date navigation */}
-          <div className="flex items-center gap-1">
-            <IconButton
-              icon={ChevronLeft}
-              variant="ghost"
-              size="sm"
-              onClick={goPrev}
-              aria-label={tCommon('pagination.previous')}
-            />
-            <h2
-              className="text-base lg:text-lg font-bold text-neutral-900 dark:text-neutral-50 min-w-[180px] lg:min-w-[220px] text-center select-none"
-              aria-live="polite"
-            >
-              {dateRangeLabel}
-            </h2>
-            <IconButton
-              icon={ChevronRight}
-              variant="ghost"
-              size="sm"
-              onClick={goNext}
-              aria-label={tCommon('pagination.next')}
-            />
           </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {showWoFilters && (
-              <>
-                <Select
-                  options={statusOptions}
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  size="sm"
-                  wrapperClassName="w-36"
-                />
-                <Select
-                  options={typeOptions}
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  size="sm"
-                  wrapperClassName="w-36"
-                />
-              </>
-            )}
-            <Select
-              options={assigneeOptions}
-              value={assigneeFilter}
-              onChange={(e) => setAssigneeFilter(e.target.value)}
-              size="sm"
-              wrapperClassName="w-40"
-            />
+          {/* Row 2: Date navigation + Filters */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Date navigation */}
+            <div className="flex items-center gap-1">
+              <IconButton
+                icon={ChevronLeft}
+                variant="ghost"
+                size="sm"
+                onClick={goPrev}
+                aria-label={tCommon('pagination.previous')}
+              />
+              <h2
+                className="text-base lg:text-lg font-bold text-neutral-900 dark:text-neutral-50 min-w-[180px] lg:min-w-[220px] text-center select-none"
+                aria-live="polite"
+              >
+                {dateRangeLabel}
+              </h2>
+              <IconButton
+                icon={ChevronRight}
+                variant="ghost"
+                size="sm"
+                onClick={goNext}
+                aria-label={tCommon('pagination.next')}
+              />
+            </div>
+
+            {/* Filters */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {showWoFilters && (
+                <>
+                  <Select
+                    options={statusOptions}
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    wrapperClassName="w-36"
+                  />
+                  <Select
+                    options={typeOptions}
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    wrapperClassName="w-36"
+                  />
+                </>
+              )}
+              <Select
+                options={assigneeOptions}
+                value={assigneeFilter}
+                onChange={(e) => setAssigneeFilter(e.target.value)}
+                wrapperClassName="w-40"
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Calendar grid — always rendered unless error */}
       {isError ? (

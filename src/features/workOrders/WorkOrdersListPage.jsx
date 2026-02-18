@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, ClipboardList, Search, Filter, Calendar } from 'lucide-react';
+import { Plus, ClipboardList, Search, Filter, Calendar, Building2, AlertCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { 
   Button, 
@@ -11,33 +11,17 @@ import {
   Card, 
   EmptyState, 
   Skeleton, 
-  ErrorState 
+  ErrorState,
+  TableSkeleton
 } from '../../components/ui';
 import { 
   formatDate, 
-  workOrderStatusVariant, 
+  formatCurrency,
+  workOrderStatusVariant,
+  priorityVariant,
 } from '../../lib/utils';
 import { useWorkOrders } from './hooks';
 import { WORK_TYPES } from './schema';
-
-function WorkOrdersSkeleton() {
-  return (
-    <div className="space-y-4">
-      {[...Array(5)].map((_, i) => (
-        <Card key={i} className="p-4">
-          <div className="flex items-center space-x-4">
-            <Skeleton className="h-12 w-12 rounded-lg" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-5 w-1/3" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-            <Skeleton className="h-6 w-20 rounded-full" />
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}
 
 export function WorkOrdersListPage() {
   const { t } = useTranslation(['workOrders', 'common']);
@@ -48,12 +32,25 @@ export function WorkOrdersListPage() {
   const search = searchParams.get('search') || '';
   const status = searchParams.get('status') || 'all';
   const work_type = searchParams.get('work_type') || 'all';
+  const priority = searchParams.get('priority') || 'all';
 
   const { data: workOrders = [], isLoading, error, refetch } = useWorkOrders({
     search,
     status,
-    work_type
+    work_type,
+    priority
   });
+
+  if (isLoading) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('workOrders:list.title')} />
+        <div className="mt-6">
+          <TableSkeleton cols={8} />
+        </div>
+      </PageContainer>
+    );
+  }
 
   const handleSearch = (value) => {
     setSearchParams(prev => {
@@ -88,6 +85,14 @@ export function WorkOrdersListPage() {
     }))
   ];
 
+  const priorityOptions = [
+    { value: 'all', label: t('workOrders:list.filters.allPriorities') },
+    { value: 'low', label: tCommon('priority.low') },
+    { value: 'normal', label: tCommon('priority.normal') },
+    { value: 'high', label: tCommon('priority.high') },
+    { value: 'urgent', label: tCommon('priority.urgent') },
+  ];
+
   const columns = [
     {
       header: t('workOrders:list.columns.customer'),
@@ -101,6 +106,18 @@ export function WorkOrdersListPage() {
           {row.account_no && (
             <p className="text-[10px] font-mono text-neutral-400 mt-0.5">{row.account_no}</p>
           )}
+        </div>
+      ),
+    },
+    {
+      header: t('workOrders:list.columns.city'),
+      accessor: 'city',
+      render: (value) => (
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-muted-foreground" />
+          <span className="text-neutral-900 dark:text-neutral-50">
+            {value || '-'}
+          </span>
         </div>
       ),
     },
@@ -128,6 +145,26 @@ export function WorkOrdersListPage() {
       ),
     },
     {
+      header: t('workOrders:list.columns.priority'),
+      accessor: 'priority',
+      render: (value) => (
+        <Badge variant={priorityVariant[value] || 'default'}>
+          {tCommon(`priority.${value}`)}
+        </Badge>
+      ),
+    },
+    {
+      header: t('workOrders:list.columns.amount'),
+      accessor: 'amount',
+      render: (value, row) => (
+        <div className="text-right">
+          <span className="text-neutral-900 dark:text-neutral-50 font-medium">
+            {value ? formatCurrency(value, row.currency || 'TRY') : '-'}
+          </span>
+        </div>
+      ),
+    },
+    {
       header: t('workOrders:form.fields.scheduledDate'),
       accessor: 'scheduled_date',
       render: (value, row) => (
@@ -150,10 +187,10 @@ export function WorkOrdersListPage() {
           {workers?.map((worker) => (
             <div 
               key={worker.id}
-              className="inline-block h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#171717] bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center"
+              className="inline-flex h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#171717] bg-primary-100 dark:bg-primary-900/40 items-center justify-center shrink-0"
               title={worker.name}
             >
-              <span className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase">
+              <span className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase leading-none tracking-normal">
                 {worker.name.charAt(0)}
               </span>
             </div>
@@ -189,12 +226,12 @@ export function WorkOrdersListPage() {
               className="w-full"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3 w-full md:w-auto md:min-w-[400px]">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full md:w-auto md:min-w-[600px]">
             <Select
               options={statusOptions}
               value={status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
-              placeholder={t('workOrders:list.filters.workType')}
+              placeholder={t('workOrders:list.filters.statusPlaceholder')}
               leftIcon={<Filter className="w-4 h-4" />}
             />
             <Select
@@ -203,6 +240,13 @@ export function WorkOrdersListPage() {
               onChange={(e) => handleFilterChange('work_type', e.target.value)}
               placeholder={t('workOrders:list.filters.allTypes')}
               leftIcon={<ClipboardList className="w-4 h-4" />}
+            />
+            <Select
+              options={priorityOptions}
+              value={priority}
+              onChange={(e) => handleFilterChange('priority', e.target.value)}
+              placeholder={t('workOrders:list.filters.priority')}
+              leftIcon={<AlertCircle className="w-4 h-4" />}
             />
           </div>
         </div>

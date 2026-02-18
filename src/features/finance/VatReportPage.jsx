@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { Percent } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Card, Select, Table, EmptyState, Spinner, ErrorState } from '../../components/ui';
@@ -41,19 +42,43 @@ function getLast4Quarters() {
 
 export function VatReportPage() {
   const { t } = useTranslation(['finance', 'common']);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [periodType, setPeriodType] = useState('month');
-  const [period, setPeriod] = useState(() => {
+  const defaultMonth = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [viewMode, setViewMode] = useState('total');
+  }, []);
+  const defaultQuarter = useMemo(() => getLast4Quarters()[0]?.value, []);
+
+  const periodType = searchParams.get('periodType') || 'month';
+  const period = searchParams.get('period') || (periodType === 'month' ? defaultMonth : defaultQuarter);
+  const viewMode = searchParams.get('viewMode') || 'total';
 
   const monthOptions = useMemo(() => getLast12Months(), []);
   const quarterOptions = useMemo(() => getLast4Quarters(), []);
 
   const periodOptions = periodType === 'month' ? monthOptions : quarterOptions;
   const effectivePeriod = periodType === 'month' ? period : (periodOptions.some((o) => o.value === period) ? period : periodOptions[0]?.value);
+
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      if (value) prev.set(key, value);
+      else prev.delete(key);
+      return prev;
+    });
+  };
+
+  const handlePeriodTypeChange = (value) => {
+    setSearchParams((prev) => {
+      prev.set('periodType', value);
+      if (value === 'month') {
+        prev.set('period', defaultMonth);
+      } else {
+        prev.set('period', quarterOptions[0]?.value || '');
+      }
+      return prev;
+    });
+  };
 
   const { data: rows = [], isLoading, error, refetch } = useVatReport({
     period: effectivePeriod,
@@ -108,10 +133,16 @@ export function VatReportPage() {
     },
   ];
 
+  const breadcrumbs = [
+    { label: t('common:nav.dashboard'), to: '/' },
+    { label: t('finance:dashboard.title'), to: '/finance' },
+    { label: t('finance:vatReport.title') },
+  ];
+
   if (isLoading) {
     return (
-      <PageContainer>
-        <PageHeader title={t('finance:vatReport.title')} />
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('finance:vatReport.title')} breadcrumbs={breadcrumbs} />
         <div className="flex justify-center py-12">
           <Spinner size="lg" />
         </div>
@@ -121,34 +152,25 @@ export function VatReportPage() {
 
   if (error) {
     return (
-      <PageContainer>
-        <PageHeader title={t('finance:vatReport.title')} />
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('finance:vatReport.title')} breadcrumbs={breadcrumbs} />
         <ErrorState message={error.message} onRetry={refetch} />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
-      <PageHeader title={t('finance:vatReport.title')} />
+    <PageContainer maxWidth="xl" padding="default" className="space-y-6">
+      <PageHeader title={t('finance:vatReport.title')} breadcrumbs={breadcrumbs} />
 
-      <Card className="p-4 shadow-sm border-neutral-200/60 dark:border-neutral-800/60 mb-6">
+      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
         <div className="flex flex-col md:flex-row gap-4 flex-wrap">
           <div className="w-full md:w-40">
             <Select
               label={t('finance:vatReport.periodType')}
               options={periodTypeOptions}
               value={periodType}
-              onChange={(e) => {
-                setPeriodType(e.target.value);
-                if (e.target.value === 'month') {
-                  const d = new Date();
-                  setPeriod(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-                } else {
-                  const opts = getLast4Quarters();
-                  setPeriod(opts[0]?.value || '');
-                }
-              }}
+              onChange={(e) => handlePeriodTypeChange(e.target.value)}
             />
           </div>
           <div className="w-full md:w-40">
@@ -156,11 +178,11 @@ export function VatReportPage() {
               label={t('finance:filters.period')}
               options={periodOptions}
               value={effectivePeriod || periodOptions[0]?.value}
-              onChange={(e) => setPeriod(e.target.value)}
+              onChange={(e) => handleFilterChange('period', e.target.value)}
             />
           </div>
           <div className="flex items-end">
-            <ViewModeToggle value={viewMode} onChange={setViewMode} size="md" />
+            <ViewModeToggle value={viewMode} onChange={(v) => handleFilterChange('viewMode', v)} size="md" />
           </div>
         </div>
       </Card>

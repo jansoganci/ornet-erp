@@ -50,6 +50,7 @@ import {
 } from './features/proposals';
 import { ProfilePage } from './features/profile';
 import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, ReportsPage, RecurringExpensesPage } from './features/finance';
+import { SiteAssetsListPage } from './features/siteAssets';
 
 function App() {
   return (
@@ -124,6 +125,9 @@ function App() {
             <Route path="finance/exchange" element={<ExchangeRatePage />} />
             <Route path="finance/recurring" element={<RecurringExpensesPage />} />
             <Route path="finance/reports" element={<ReportsPage />} />
+
+            {/* Equipment / Site Assets routes */}
+            <Route path="equipment" element={<SiteAssetsListPage />} />
 
             {/* SIM Card routes */}
             <Route path="sim-cards" element={<SimCardsListPage />} />

@@ -5,7 +5,8 @@ import * as XLSX from 'xlsx';
 import { Upload, AlertCircle, CheckCircle2, X, Save, Download } from 'lucide-react';
 import { useBulkUpsertMaterials } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, Card, Badge, Spinner } from '../../components/ui';
+import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 const HEADERS = ['Kod', 'Ad', 'Kategori', 'Birim', 'Açıklama'];
 
@@ -104,6 +105,17 @@ export function MaterialImportPage() {
       console.error('Import failed:', err);
     }
   };
+
+  if (bulkUpsertMutation.isError) {
+    return (
+      <PageContainer maxWidth="xl">
+        <ErrorState 
+          message={getErrorMessage(bulkUpsertMutation.error)} 
+          onRetry={() => bulkUpsertMutation.reset()} 
+        />
+      </PageContainer>
+    );
+  }
 
   const handleReset = () => {
     setData([]);

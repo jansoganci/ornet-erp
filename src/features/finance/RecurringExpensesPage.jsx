@@ -1,11 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Repeat } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, Spinner, EmptyState, ErrorState, Modal } from '../../components/ui';
+import { Button, Spinner, EmptyState, ErrorState, Modal, TableSkeleton } from '../../components/ui';
 import {
   useRecurringTemplates,
+  useTemplateLastGenerated,
   useUpdateRecurringTemplate,
   useDeleteRecurringTemplate,
 } from './recurringHooks';
@@ -13,13 +14,14 @@ import { RecurringTemplateRow } from './recurring/RecurringTemplateRow';
 import { RecurringTemplateFormModal } from './recurring/RecurringTemplateFormModal';
 
 export function RecurringExpensesPage() {
-  const { t } = useTranslation(['recurring', 'common']);
+  const { t } = useTranslation(['recurring', 'common', 'finance']);
   const location = useLocation();
   const navigate = useNavigate();
   const templateRowRefs = useRef({});
 
   // Data
-  const { data: templates = [], isLoading, error } = useRecurringTemplates();
+  const { data: templates = [], isLoading, error, refetch } = useRecurringTemplates();
+  const { data: lastGeneratedMap = {} } = useTemplateLastGenerated();
 
   // Mutations
   const updateTemplateMutation = useUpdateRecurringTemplate();
@@ -30,6 +32,8 @@ export function RecurringExpensesPage() {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingTemplate, setDeletingTemplate] = useState(null);
+  const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
+  const [togglingTemplate, setTogglingTemplate] = useState(null);
 
   const activeTemplates = templates.filter((t) => t.is_active);
   const inactiveTemplates = templates.filter((t) => !t.is_active);
@@ -63,10 +67,26 @@ export function RecurringExpensesPage() {
   };
 
   const handleToggleActive = (template) => {
-    updateTemplateMutation.mutate({
-      id: template.id,
-      data: { is_active: !template.is_active },
-    });
+    if (template.is_active) {
+      setTogglingTemplate(template);
+      setToggleConfirmOpen(true);
+    } else {
+      updateTemplateMutation.mutate({
+        id: template.id,
+        data: { is_active: true },
+      });
+    }
+  };
+
+  const confirmPauseTemplate = async () => {
+    if (togglingTemplate) {
+      await updateTemplateMutation.mutateAsync({
+        id: togglingTemplate.id,
+        data: { is_active: false },
+      });
+    }
+    setToggleConfirmOpen(false);
+    setTogglingTemplate(null);
   };
 
   const handleDeleteTemplate = (template) => {
@@ -82,9 +102,16 @@ export function RecurringExpensesPage() {
     setDeletingTemplate(null);
   };
 
+  const breadcrumbs = [
+    { label: t('common:nav.dashboard'), to: '/' },
+    { label: t('finance:dashboard.title'), to: '/finance' },
+    { label: t('recurring:title') },
+  ];
+
   if (isLoading) {
     return (
-      <PageContainer>
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('recurring:title')} breadcrumbs={breadcrumbs} />
         <div className="flex justify-center py-12">
           <Spinner size="lg" />
         </div>
@@ -94,16 +121,18 @@ export function RecurringExpensesPage() {
 
   if (error) {
     return (
-      <PageContainer>
-        <ErrorState message={t('common:error.title')} />
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('recurring:title')} breadcrumbs={breadcrumbs} />
+        <ErrorState message={error.message} onRetry={refetch} />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
+    <PageContainer maxWidth="xl" padding="default" className="space-y-6">
       <PageHeader
         title={t('recurring:title')}
+        breadcrumbs={breadcrumbs}
         actions={
           <Button variant="primary" onClick={handleNewTemplate} className="gap-1.5">
             <Plus className="w-4 h-4" />
@@ -120,8 +149,11 @@ export function RecurringExpensesPage() {
 
         {activeTemplates.length === 0 ? (
           <EmptyState
+            icon={Repeat}
             title={t('recurring:templates.empty.title')}
             description={t('recurring:templates.empty.description')}
+            actionLabel={t('recurring:templates.addButton')}
+            onAction={handleNewTemplate}
           />
         ) : (
           <div className="rounded-xl border border-neutral-200 dark:border-[#262626] overflow-hidden bg-white dark:bg-[#171717]">
@@ -131,7 +163,7 @@ export function RecurringExpensesPage() {
               <span>{t('recurring:form.fields.category')}</span>
               <span className="text-right">{t('recurring:form.fields.amount')}</span>
               <span className="text-center">{t('recurring:form.fields.dayOfMonth')}</span>
-              <span className="text-center">{t('recurring:status.active')}</span>
+              <span className="text-center">{t('recurring:form.fields.hasInvoice')}</span>
               <span />
             </div>
             {activeTemplates.map((tpl) => (
@@ -143,6 +175,7 @@ export function RecurringExpensesPage() {
               >
                 <RecurringTemplateRow
                   template={tpl}
+                  lastGenerated={lastGeneratedMap[tpl.id]}
                   onEdit={handleEditTemplate}
                   onToggleActive={handleToggleActive}
                   onDelete={handleDeleteTemplate}
@@ -165,7 +198,7 @@ export function RecurringExpensesPage() {
               <span>{t('recurring:form.fields.category')}</span>
               <span className="text-right">{t('recurring:form.fields.amount')}</span>
               <span className="text-center">{t('recurring:form.fields.dayOfMonth')}</span>
-              <span className="text-center">{t('recurring:status.active')}</span>
+              <span className="text-center">{t('recurring:form.fields.hasInvoice')}</span>
               <span />
             </div>
             {inactiveTemplates.map((tpl) => (
@@ -177,6 +210,7 @@ export function RecurringExpensesPage() {
               >
                 <RecurringTemplateRow
                   template={tpl}
+                  lastGenerated={lastGeneratedMap[tpl.id]}
                   onEdit={handleEditTemplate}
                   onToggleActive={handleToggleActive}
                   onDelete={handleDeleteTemplate}
@@ -224,6 +258,42 @@ export function RecurringExpensesPage() {
       >
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           {deletingTemplate?.name} {t('common:deleteConfirm')}
+        </p>
+      </Modal>
+
+      {/* Pause Confirm Modal */}
+      <Modal
+        open={toggleConfirmOpen}
+        onClose={() => {
+          setToggleConfirmOpen(false);
+          setTogglingTemplate(null);
+        }}
+        title={t('recurring:confirm.pauseTitle')}
+        size="sm"
+        footer={
+          <div className="flex flex-col-reverse sm:flex-row gap-3 w-full sm:w-auto">
+            <Button variant="ghost" onClick={() => setToggleConfirmOpen(false)} className="flex-1 sm:flex-none">
+              {t('common:actions.cancel')}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={confirmPauseTemplate}
+              loading={updateTemplateMutation.isPending}
+              className="flex-1 sm:flex-none"
+            >
+              {t('common:actions.confirm')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          {togglingTemplate?.name && (
+            <>
+              <span className="font-medium text-neutral-900 dark:text-neutral-50">{togglingTemplate.name}</span>
+              {' — '}
+            </>
+          )}
+          {t('recurring:confirm.pauseMessage')}
         </p>
       </Modal>
     </PageContainer>

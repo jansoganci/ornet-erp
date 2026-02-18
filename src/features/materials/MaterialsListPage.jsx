@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Package, Search, Edit2, Trash2, Filter, Upload } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
@@ -14,7 +14,8 @@ import {
   Spinner, 
   ErrorState,
   IconButton,
-  Modal
+  Modal,
+  TableSkeleton
 } from '../../components/ui';
 import { useMaterials, useDeleteMaterial, useMaterialCategories } from './hooks';
 import { MaterialFormModal } from './MaterialFormModal';
@@ -23,18 +24,39 @@ export function MaterialsListPage() {
   const { t } = useTranslation(['materials', 'common']);
   const { t: tCommon } = useTranslation('common');
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get('search') || '';
+  const category = searchParams.get('category') || 'all';
+
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      if (value && (key !== 'category' || value !== 'all')) prev.set(key, value);
+      else prev.delete(key);
+      return prev;
+    });
+  };
+
   // State
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [materialToDelete, setMaterialToDelete] = useState(null);
 
   // Hooks
+  const navigate = useNavigate();
   const { data: materials = [], isLoading, error, refetch } = useMaterials({ search, category: category === 'all' ? undefined : category });
   const { data: categories = [] } = useMaterialCategories();
   const deleteMutation = useDeleteMaterial();
-  const navigate = useNavigate();
+
+  if (isLoading) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('materials:title')} />
+        <div className="mt-6">
+          <TableSkeleton cols={5} />
+        </div>
+      </PageContainer>
+    );
+  }
 
   const handleEdit = (material) => {
     setSelectedMaterial(material);
@@ -88,7 +110,7 @@ export function MaterialsListPage() {
       )
     },
     {
-      header: '',
+      header: tCommon('actions.actionsColumn'),
       id: 'actions',
       render: (_, row) => (
         <div className="flex justify-end space-x-1">
@@ -141,23 +163,23 @@ export function MaterialsListPage() {
       />
 
       {/* Filters */}
-      <Card className="p-4 shadow-sm border-neutral-200/60 dark:border-neutral-800/60">
+      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <SearchInput
               placeholder={t('materials:list.searchPlaceholder')}
               value={search}
-              onChange={setSearch}
+              onChange={(v) => handleFilterChange('search', v)}
             />
           </div>
           <div className="w-full md:w-64">
             <Select
               options={[
-                { value: 'all', label: t('workOrders:list.filters.allTypes') },
+                { value: 'all', label: tCommon('filters.all') },
                 ...categories.map(cat => ({ value: cat, label: t(`materials:categories.${cat}`) || cat }))
               ]}
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => handleFilterChange('category', e.target.value)}
               leftIcon={<Filter className="w-4 h-4" />}
             />
           </div>

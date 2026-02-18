@@ -20,32 +20,32 @@ export function AccountNoWarning({
 
   return (
     <div className={cn(
-      "flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300",
+      "flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 shadow-sm",
       isRequired 
-        ? "bg-error-50 dark:bg-error-950/20 border-error-200 dark:border-error-900/30" 
-        : "bg-warning-50 dark:bg-warning-950/20 border-warning-200 dark:border-warning-900/30"
+        ? "bg-red-50/50 dark:bg-red-950/10 border-red-100 dark:border-red-900/20" 
+        : "bg-amber-50/50 dark:bg-amber-950/10 border-amber-100 dark:border-amber-900/20"
     )}>
-      <div className="flex items-start space-x-3 mb-3 sm:mb-0">
+      <div className="flex items-center space-x-4">
         <div className={cn(
-          "mt-0.5 p-1.5 rounded-lg",
+          "p-2.5 rounded-xl shadow-sm",
           isRequired 
-            ? "bg-error-100 dark:bg-error-900/40 text-error-600 dark:text-error-400" 
-            : "bg-warning-100 dark:bg-warning-900/40 text-warning-600 dark:text-warning-400"
+            ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" 
+            : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
         )}>
           {isRequired ? <AlertCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
         </div>
         <div>
           <p className={cn(
-            "text-sm font-bold",
-            isRequired ? "text-error-900 dark:text-error-100" : "text-warning-900 dark:text-warning-100"
+            "text-sm font-bold tracking-tight",
+            isRequired ? "text-red-900 dark:text-red-100" : "text-amber-900 dark:text-amber-100"
           )}>
             {isRequired 
               ? t('workOrders:validation.accountNoRequired') 
               : t('workOrders:warnings.installationNoAccountNo')}
           </p>
           <p className={cn(
-            "text-xs mt-0.5",
-            isRequired ? "text-error-700 dark:text-error-400" : "text-warning-700 dark:text-warning-400"
+            "text-xs font-medium opacity-80 mt-0.5",
+            isRequired ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"
           )}>
             {isRequired 
               ? t('workOrders:validation.accountNoRequiredHint') 
@@ -56,9 +56,13 @@ export function AccountNoWarning({
 
       <Button
         size="sm"
-        variant={isRequired ? "danger" : "secondary"}
         onClick={onAddAccountNo}
-        className="whitespace-nowrap ml-0 sm:ml-4"
+        className={cn(
+          "font-bold px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm",
+          isRequired 
+            ? "bg-red-600 hover:bg-red-700 text-white border-none" 
+            : "bg-amber-600 hover:bg-amber-700 text-white border-none"
+        )}
       >
         {t('workOrders:form.buttons.addAccountNo')}
       </Button>

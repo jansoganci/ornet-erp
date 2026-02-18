@@ -25,7 +25,7 @@ export function Header({
         <div className="flex items-center gap-4">
           {leftContent}
           {title && (
-            <h1 className="text-lg md:text-xl font-semibold text-neutral-900">
+            <h1 className="text-lg md:text-xl font-semibold font-heading text-neutral-900">
               {title}
             </h1>
           )}

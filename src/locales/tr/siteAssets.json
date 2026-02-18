@@ -1,0 +1,92 @@
+{
+  "title": "Ekipman Envanteri",
+  "addButton": "Ekipman Ekle",
+  "empty": {
+    "title": "Ekipman Kaydı Yok",
+    "description": "Bu lokasyonda kayıtlı ekipman bulunmuyor."
+  },
+  "detail": {
+    "info": "Ekipman Bilgileri",
+    "serviceHistory": "Servis Geçmişi",
+    "serviceCount": "Toplam {{count}} servis kaydı",
+    "noHistory": "Henüz servis kaydı yok.",
+    "location": "Lokasyon",
+    "status": "Durum",
+    "actions": "İşlemler"
+  },
+  "fields": {
+    "assetType": "Ekipman Tipi",
+    "brand": "Marka",
+    "model": "Model",
+    "serialNumber": "Seri Numarası",
+    "locationNote": "Konum Notu",
+    "installedAt": "Kurulum Tarihi",
+    "installedBy": "Kurulan İş Emri",
+    "warrantyExpires": "Garanti Bitiş",
+    "material": "Malzeme",
+    "site": "Lokasyon",
+    "notes": "Notlar"
+  },
+  "placeholders": {
+    "serialNumber": "Ör: SN-12345",
+    "locationNote": "Ör: 2. kat koridor, ana giriş",
+    "brand": "Ör: DSC, Hikvision, Paradox",
+    "model": "Ör: LC-100-PI"
+  },
+  "types": {
+    "alarm_panel": "Alarm Paneli",
+    "keypad": "Tuş Takımı",
+    "motion_detector": "Hareket Dedektörü",
+    "door_contact": "Manyetik Kontak",
+    "smoke_detector": "Duman Dedektörü",
+    "siren_indoor": "İç Siren",
+    "siren_outdoor": "Dış Siren",
+    "camera_indoor": "İç Kamera",
+    "camera_outdoor": "Dış Kamera",
+    "dvr_nvr": "DVR / NVR",
+    "monitor": "Monitör",
+    "power_supply": "Güç Kaynağı",
+    "cable_run": "Kablo Hattı",
+    "access_reader": "Geçiş Okuyucu",
+    "other": "Diğer"
+  },
+  "statuses": {
+    "active": "Aktif",
+    "removed": "Kaldırıldı",
+    "replaced": "Değiştirildi",
+    "faulty": "Arızalı"
+  },
+  "actions": {
+    "edit": "Düzenle",
+    "markFaulty": "Arızalı İşaretle",
+    "remove": "Kaldır",
+    "replace": "Değiştir",
+    "viewHistory": "Geçmişi Gör",
+    "linkAsset": "Ekipman Bağla"
+  },
+  "woActions": {
+    "installed": "Kurulum",
+    "serviced": "Servis",
+    "removed": "Kaldırma",
+    "replaced": "Değişim",
+    "inspected": "Muayene"
+  },
+  "bulkRegister": {
+    "title": "Ekipman Kayıt",
+    "cta": "Bu iş emrindeki malzemeleri ekipman olarak kaydedin",
+    "ctaButton": "Ekipman Kaydet",
+    "hint": "Her satır ayrı ekipman kaydı oluşturur. Seri numarası zorunlu değildir.",
+    "submitButton": "{{count}} Ekipman Kaydet",
+    "registered": "Kayıtlı Ekipman"
+  },
+  "filters": {
+    "allSites": "Tüm Lokasyonlar",
+    "allStatuses": "Tüm Durumlar",
+    "allTypes": "Tüm Tipler",
+    "search": "Seri no, marka veya model ara..."
+  },
+  "section": {
+    "title": "Ekipman",
+    "siteCount": "{{count}} ekipman"
+  }
+}

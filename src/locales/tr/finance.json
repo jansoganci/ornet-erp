@@ -84,6 +84,10 @@
     "addFirst": "İlk gideri ekleyerek başlayın.",
     "addFirstIncome": "İlk geliri ekleyerek başlayın."
   },
+  "quickActions": {
+    "addIncome": "Gelir Ekle",
+    "addExpense": "Gider Ekle"
+  },
   "dashboard": {
     "title": "Finans Özeti",
     "mrr": "MRR",
@@ -114,7 +118,8 @@
     }
   },
   "expenseRecurring": {
-    "badge": "Tekrarlayan"
+    "badge": "Tekrarlayan",
+    "variableBadge": "Değişken"
   },
   "expenseCategories": {
     "material": "Malzeme / Ekipman",
@@ -126,7 +131,15 @@
     "communication": "Haberleşme",
     "vehicle": "Araç Giderleri",
     "fixed_assets": "Demirbaş",
-    "other": "Diğer"
+    "other": "Diğer",
+    "sgk": "SGK Primi",
+    "tax_withholding": "Stopaj",
+    "accounting": "Muhasebe Hizmeti",
+    "insurance": "Sigorta",
+    "software": "Yazılım Abonelikleri",
+    "food_transport": "Yemek / Ulaşım",
+    "office_supplies": "Kırtasiye / Ofis",
+    "subscription_cogs": "Abonelik Maliyeti"
   },
   "actions": {
     "edit": "Düzenle",
@@ -169,6 +182,7 @@
     "grossProfit": "Brüt Kar",
     "operatingExpenses": "İşletme Giderleri",
     "netProfit": "Net Kar",
-    "empty": "Seçilen dönemde veri yok"
+    "empty": "Seçilen dönemde veri yok",
+    "emptyDescription": "Farklı bir dönem seçerek tekrar deneyin."
   }
 }

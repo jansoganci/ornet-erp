@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
-import { LogOut, User, Sun, Moon, X } from 'lucide-react';
+import { LogOut, User, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
-import { useTheme } from '../../hooks/themeContext';
 import { useCurrentProfile } from '../../features/subscriptions/hooks';
 import { navItems } from './navItems';
 import { NavGroup } from './NavGroup';
@@ -30,11 +29,10 @@ function loadGroupState() {
   return DEFAULT_GROUP_STATE;
 }
 
-export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
+export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) {
   const { t: tCommon } = useTranslation('common');
   const { t: tAuth } = useTranslation('auth');
   const { user, signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
@@ -69,7 +67,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 bg-white dark:bg-[#171717] border-r border-neutral-200 dark:border-[#262626] flex flex-col transition-all duration-300 ease-in-out',
+          'fixed inset-y-0 left-0 z-50 bg-white dark:bg-[#171717] border-r border-neutral-200 dark:border-[#262626] flex flex-col transition-all duration-300 ease-in-out shadow-sm overflow-hidden',
           // Mobile/Tablet: Drawer behavior
           'lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
@@ -85,7 +83,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
           isCollapsed ? 'px-4 lg:px-2 lg:justify-center' : 'px-6'
         )}>
           {!isCollapsed && (
-            <h1 className="text-xl font-bold text-primary-600 dark:text-primary-400">
+            <h1 className="text-xl font-bold font-heading text-primary-600 dark:text-primary-400">
               {tCommon('appName')}
             </h1>
           )}
@@ -104,7 +102,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
 
         {/* Navigation */}
         <nav className={cn(
-          'flex-1 py-6 space-y-1 overflow-y-auto',
+          'flex-1 py-6 space-y-1 overflow-y-auto overflow-x-hidden',
           isCollapsed ? 'px-2' : 'px-4'
         )}>
           {visibleNavItems.map((item) =>
@@ -116,10 +114,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
                 onClick={handleNavClick}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center rounded-lg text-sm font-medium transition-colors min-h-[44px] min-w-[44px]',
+                    'relative flex items-center rounded-lg text-sm font-medium transition-all duration-200 min-h-[44px] min-w-[44px]',
                     isCollapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2',
                     isActive
-                      ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400'
+                      ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400 shadow-sm border-l-2 border-primary-600 dark:border-primary-500'
                       : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-200'
                   )
                 }
@@ -127,7 +125,15 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
               >
                 <item.icon className="w-5 h-5 flex-shrink-0" />
                 {!isCollapsed && (
-                  <span className="truncate">{tCommon(item.labelKey)}</span>
+                  <span className="flex-1 truncate">{tCommon(item.labelKey)}</span>
+                )}
+                {item.badge && item.badge > 0 && (
+                  <span className={cn(
+                    'flex items-center justify-center rounded-full bg-primary-600 dark:bg-primary-500 text-white text-xs font-semibold min-w-[20px] h-5 px-1.5',
+                    isCollapsed ? 'absolute -top-1 -right-1' : ''
+                  )}>
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
                 )}
               </NavLink>
             ) : (
@@ -151,22 +157,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
           'border-t border-neutral-200 dark:border-[#262626] space-y-4 pb-[calc(1rem+env(safe-area-inset-bottom))]',
           isCollapsed ? 'p-2' : 'p-4'
         )}>
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className={cn(
-              'flex items-center w-full rounded-lg transition-colors text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800',
-              isCollapsed ? 'justify-center px-2 py-2' : 'justify-between px-3 py-2'
-            )}
-            title={isCollapsed ? (theme === 'light' ? tCommon('theme.darkMode') : tCommon('theme.lightMode')) : undefined}
-          >
-            <div className={cn('flex items-center', isCollapsed ? 'justify-center' : 'gap-3')}>
-              {theme === 'light' ? <Moon className="w-5 h-5 text-primary-600" /> : <Sun className="w-5 h-5 text-warning-500" />}
-              {!isCollapsed && (
-                <span>{theme === 'light' ? tCommon('theme.darkMode') : tCommon('theme.lightMode')}</span>
-              )}
-            </div>
-          </button>
 
           {/* User Info - Clickable link to profile */}
           <Link
@@ -196,7 +186,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
             <button
               onClick={handleLogout}
               className={cn(
-                'flex items-center justify-center w-full text-sm font-medium text-error-600 border border-error-200 dark:border-error-900/30 hover:bg-error-50 dark:hover:bg-error-950/30 rounded-md transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-0',
+                'flex items-center justify-center w-full text-sm font-medium text-error-600 border border-error-200 dark:border-error-900/30 hover:bg-error-50 dark:hover:bg-error-950/30 rounded-md transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-0',
                 isCollapsed ? 'px-2 py-2' : 'gap-2 px-4 py-2'
               )}
               title={isCollapsed ? tAuth('logout') : undefined}

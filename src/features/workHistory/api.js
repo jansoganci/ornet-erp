@@ -1,7 +1,7 @@
 import { supabase } from '../../lib/supabase';
 
 export async function searchWorkHistory(filters = {}) {
-  const { search, type = 'account_no', dateFrom, dateTo, workType, workerId, siteId } = filters;
+  const { search, type = 'both', dateFrom, dateTo, workType, workerId, siteId } = filters;
   
   if (!search && !dateFrom && !dateTo && (workType === 'all' || !workType) && (workerId === 'all' || !workerId) && !siteId) {
     return [];

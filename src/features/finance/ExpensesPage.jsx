@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Repeat } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, Edit2, Trash2, Repeat, TrendingDown } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -13,6 +13,8 @@ import {
   ErrorState,
   IconButton,
   Modal,
+  Badge,
+  TableSkeleton,
 } from '../../components/ui';
 import { useTransactions, useDeleteTransaction, useCategories } from './hooks';
 import { useCustomers } from '../customers/hooks';
@@ -40,15 +42,32 @@ export function ExpensesPage() {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [transactionToDelete, setTransactionToDelete] = useState(null);
 
-  const [period, setPeriod] = useState(() => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const defaultPeriod = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [paymentMethod, setPaymentMethod] = useState('all');
-  const [viewMode, setViewMode] = useState('total');
-  const [categoryId, setCategoryId] = useState('all');
-  const [customerId, setCustomerId] = useState('all');
-  const [recurringFilter, setRecurringFilter] = useState('all');
+  }, []);
+  const period = searchParams.get('period') || defaultPeriod;
+  const paymentMethod = searchParams.get('paymentMethod') || 'all';
+  const viewMode = searchParams.get('viewMode') || 'total';
+  const categoryId = searchParams.get('category') || 'all';
+  const customerId = searchParams.get('customer') || 'all';
+  const recurringFilter = searchParams.get('recurring') || 'all';
+
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      const isDefault = (k, v) =>
+        (k === 'period' && v === defaultPeriod) ||
+        (k === 'paymentMethod' && v === 'all') ||
+        (k === 'viewMode' && v === 'total') ||
+        (k === 'category' && v === 'all') ||
+        (k === 'customer' && v === 'all') ||
+        (k === 'recurring' && v === 'all');
+      if (value && !isDefault(key, value)) prev.set(key, value);
+      else prev.delete(key);
+      return prev;
+    });
+  };
 
   const { data: transactions = [], isLoading, error, refetch } = useTransactions({
     direction: 'expense',
@@ -57,17 +76,12 @@ export function ExpensesPage() {
     viewMode: viewMode === 'total' ? undefined : viewMode,
     expense_category_id: categoryId === 'all' ? undefined : categoryId,
     customer_id: customerId === 'all' ? undefined : customerId,
+    recurring_only: recurringFilter === 'recurring_only' ? true : undefined,
   });
 
   const { data: categories = [] } = useCategories({ is_active: true });
   const { data: customers = [] } = useCustomers();
   const deleteMutation = useDeleteTransaction();
-
-  const filteredTransactions = useMemo(() => {
-    if (recurringFilter === 'all') return transactions;
-    if (recurringFilter === 'recurring_only') return transactions.filter((tx) => tx.recurring_template_id);
-    return transactions;
-  }, [transactions, recurringFilter]);
 
   const categoryOptions = [
     { value: 'all', label: t('finance:filters.all') },
@@ -98,7 +112,7 @@ export function ExpensesPage() {
     { value: 'recurring_only', label: t('finance:filters.recurringOnly') },
   ];
 
-  const monthOptions = getLast12Months();
+  const monthOptions = useMemo(() => getLast12Months(), []);
 
   const handleGoToRecurringTemplate = (templateId) => {
     navigate('/finance/recurring', { state: { highlightTemplateId: templateId } });
@@ -158,28 +172,36 @@ export function ExpensesPage() {
       render: (val) => (val ? val : '-'),
     },
     {
-      header: '',
+      header: t('finance:filters.recurringFilterLabel'),
       accessor: 'recurring_template_id',
       render: (_, row) =>
         row.recurring_template_id ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleGoToRecurringTemplate(row.recurring_template_id);
-            }}
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-[#171717] dark:text-neutral-300 dark:hover:bg-[#262626] transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <Repeat className="w-3 h-3" />
-            {t('finance:expenseRecurring.badge')}
-          </button>
-        ) : null,
+          <div className="flex items-center gap-1.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => handleGoToRecurringTemplate(row.recurring_template_id)}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium bg-info-50 dark:bg-info-900/30 text-info-700 dark:text-info-300 hover:bg-info-100 dark:hover:bg-info-900/50 transition-colors"
+            >
+              <Repeat className="w-3 h-3 shrink-0" />
+              {t('finance:expenseRecurring.badge')}
+            </button>
+            {row.recurring_expense_templates?.is_variable && (
+              <Badge variant="warning" size="sm">
+                {t('finance:expenseRecurring.variableBadge')}
+              </Badge>
+            )}
+          </div>
+        ) : (
+          <span className="text-neutral-400 dark:text-neutral-500">—</span>
+        ),
     },
     {
-      header: '',
+      header: t('common:actions.actionsColumn'),
       id: 'actions',
+      align: 'right',
+      stickyRight: true,
       render: (_, row) => (
-        <div className="flex justify-end items-center gap-0.5">
+        <div className="flex justify-end items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
           <IconButton
             icon={Edit2}
             size="sm"
@@ -208,10 +230,10 @@ export function ExpensesPage() {
 
   if (isLoading) {
     return (
-      <PageContainer>
+      <PageContainer maxWidth="xl" padding="default">
         <PageHeader title={t('finance:list.title')} />
-        <div className="flex justify-center py-12">
-          <Spinner size="lg" />
+        <div className="mt-6">
+          <TableSkeleton cols={8} />
         </div>
       </PageContainer>
     );
@@ -219,17 +241,29 @@ export function ExpensesPage() {
 
   if (error) {
     return (
-      <PageContainer>
-        <PageHeader title={t('finance:list.title')} />
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader
+          title={t('finance:list.title')}
+          breadcrumbs={[
+            { label: t('common:nav.dashboard'), to: '/' },
+            { label: t('finance:dashboard.title'), to: '/finance' },
+            { label: t('finance:list.title') },
+          ]}
+        />
         <ErrorState message={error.message} onRetry={refetch} />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
+    <PageContainer maxWidth="xl" padding="default" className="space-y-6">
       <PageHeader
         title={t('finance:list.title')}
+        breadcrumbs={[
+          { label: t('common:nav.dashboard'), to: '/' },
+          { label: t('finance:dashboard.title'), to: '/finance' },
+          { label: t('finance:list.title') },
+        ]}
         actions={
           <Button variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={handleAdd}>
             {t('finance:expense.addButton')}
@@ -237,14 +271,14 @@ export function ExpensesPage() {
         }
       />
 
-      <Card className="p-4 shadow-sm border-neutral-200/60 dark:border-neutral-800/60 mb-6">
+      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
         <div className="flex flex-col md:flex-row gap-4 flex-wrap">
           <div className="w-full md:w-40">
             <Select
               label={t('finance:filters.period')}
               options={monthOptions}
               value={period}
-              onChange={(e) => setPeriod(e.target.value)}
+              onChange={(e) => handleFilterChange('period', e.target.value)}
             />
           </div>
           <div className="w-full md:w-48">
@@ -252,7 +286,7 @@ export function ExpensesPage() {
               label={t('finance:filters.paymentMethod')}
               options={paymentMethodOptions}
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
             />
           </div>
           <div className="w-full md:w-56">
@@ -260,7 +294,7 @@ export function ExpensesPage() {
               label={t('finance:filters.category')}
               options={categoryOptions}
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              onChange={(e) => handleFilterChange('category', e.target.value)}
             />
           </div>
           <div className="w-full md:w-56">
@@ -268,7 +302,7 @@ export function ExpensesPage() {
               label={t('finance:filters.customer')}
               options={customerOptions}
               value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
+              onChange={(e) => handleFilterChange('customer', e.target.value)}
             />
           </div>
           <div className="w-full md:w-44">
@@ -276,28 +310,26 @@ export function ExpensesPage() {
               label={t('finance:filters.recurringFilterLabel')}
               options={recurringFilterOptions}
               value={recurringFilter}
-              onChange={(e) => setRecurringFilter(e.target.value)}
+              onChange={(e) => handleFilterChange('recurring', e.target.value)}
             />
           </div>
           <div className="flex items-end">
-            <ViewModeToggle value={viewMode} onChange={setViewMode} size="md" />
+            <ViewModeToggle value={viewMode} onChange={(v) => handleFilterChange('viewMode', v)} size="md" />
           </div>
         </div>
       </Card>
 
-      {filteredTransactions.length === 0 ? (
+      {transactions.length === 0 ? (
         <EmptyState
+          icon={TrendingDown}
           title={t('finance:list.empty')}
           description={t('finance:list.addFirst')}
-          action={
-            <Button variant="primary" onClick={handleAdd}>
-              {t('finance:expense.addButton')}
-            </Button>
-          }
+          actionLabel={t('finance:expense.addButton')}
+          onAction={handleAdd}
         />
       ) : (
         <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
-          <Table columns={columns} data={filteredTransactions} />
+          <Table columns={columns} data={transactions} onRowClick={(row) => handleEdit(row)} />
         </div>
       )}
 

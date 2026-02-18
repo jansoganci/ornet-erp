@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, CreditCard, Filter, Tag, TrendingUp, Users, Pause, AlertTriangle, FileSpreadsheet, Receipt } from 'lucide-react';
+import { Plus, CreditCard, Filter, Tag, TrendingUp, TrendingDown, Minus, Users, Pause, AlertTriangle, FileSpreadsheet, Receipt, Wallet, Building2, Calendar } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -13,48 +13,15 @@ import {
   EmptyState,
   Skeleton,
   ErrorState,
+  TableSkeleton,
 } from '../../components/ui';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, formatDate } from '../../lib/utils';
 import { useSubscriptions, useSubscriptionStats, useCurrentProfile } from './hooks';
 import { SUBSCRIPTION_TYPES } from './schema';
+import { StatCard } from './components/StatCard';
 import { SubscriptionStatusBadge } from './components/SubscriptionStatusBadge';
 import { ComplianceAlert } from './components/ComplianceAlert';
 import { SubscriptionImportModal } from './components/SubscriptionImportModal';
-
-function SubscriptionsSkeleton() {
-  return (
-    <div className="space-y-4">
-      {[...Array(5)].map((_, i) => (
-        <Card key={i} className="p-4">
-          <div className="flex items-center space-x-4">
-            <Skeleton className="h-12 w-12 rounded-lg" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-5 w-1/3" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-            <Skeleton className="h-6 w-20 rounded-full" />
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, color = 'text-neutral-900 dark:text-neutral-100' }) {
-  return (
-    <Card className="p-4">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary-50 dark:bg-primary-950/20">
-          <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-        </div>
-        <div>
-          <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">{label}</p>
-          <p className={`text-lg font-black ${color}`}>{value}</p>
-        </div>
-      </div>
-    </Card>
-  );
-}
 
 export function SubscriptionsListPage() {
   const { t } = useTranslation(['subscriptions', 'common']);
@@ -70,6 +37,27 @@ export function SubscriptionsListPage() {
   const { data: stats } = useSubscriptionStats();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
+
+  const getTrend = (current, previous) => {
+    if (!previous || previous === 0) return null;
+    const diff = current - previous;
+    const percent = (diff / previous) * 100;
+    return {
+      value: Math.abs(Math.round(percent)),
+      isPositive: diff > 0,
+    };
+  };
+
+  if (isLoading) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('subscriptions:list.title')} />
+        <div className="mt-6">
+          <TableSkeleton cols={8} />
+        </div>
+      </PageContainer>
+    );
+  }
 
   const handleSearch = (value) => {
     setSearchParams((prev) => {
@@ -88,14 +76,14 @@ export function SubscriptionsListPage() {
   };
 
   const statusOptions = [
-    { value: 'all', label: t('common:filters.all') },
+    { value: 'all', label: t('subscriptions:list.filters.allStatuses') },
     { value: 'active', label: t('subscriptions:statuses.active') },
     { value: 'paused', label: t('subscriptions:statuses.paused') },
     { value: 'cancelled', label: t('subscriptions:statuses.cancelled') },
   ];
 
   const typeOptions = [
-    { value: 'all', label: t('common:filters.all') },
+    { value: 'all', label: t('subscriptions:list.filters.allTypes') },
     ...SUBSCRIPTION_TYPES.map((tp) => ({
       value: tp,
       label: t(`subscriptions:types.${tp}`),
@@ -117,10 +105,22 @@ export function SubscriptionsListPage() {
       ),
     },
     {
+      header: t('subscriptions:list.columns.city'),
+      accessor: 'city',
+      render: (value) => (
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-neutral-400 shrink-0" />
+          <span className="text-neutral-900 dark:text-neutral-50">
+            {value || '-'}
+          </span>
+        </div>
+      ),
+    },
+    {
       header: t('subscriptions:list.columns.type'),
       accessor: 'subscription_type',
       render: (value) => (
-        <Badge variant="outline" size="sm">
+        <Badge variant="default" size="sm">
           {t(`subscriptions:types.${value}`)}
         </Badge>
       ),
@@ -133,6 +133,29 @@ export function SubscriptionsListPage() {
           {value ? t(`subscriptions:serviceTypes.${value}`) : '—'}
         </span>
       ),
+    },
+    {
+      header: t('subscriptions:list.columns.startDate'),
+      accessor: 'start_date',
+      render: (value) => (
+        <div className="flex items-center gap-1.5 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+          <Calendar className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+          {value ? formatDate(value) : '-'}
+        </div>
+      ),
+    },
+    {
+      header: t('subscriptions:list.columns.billingFrequency'),
+      accessor: 'billing_frequency',
+      render: (value) => {
+        if (!value) return <span className="text-neutral-400">—</span>;
+        const key = value === '6_month' ? '6_month' : value;
+        return (
+          <Badge variant="info" size="sm">
+            {t(`subscriptions:form.fields.${key}`)}
+          </Badge>
+        );
+      },
     },
     {
       header: t('subscriptions:list.columns.monthly'),
@@ -173,9 +196,9 @@ export function SubscriptionsListPage() {
               {t('subscriptions:import.title')}
             </Button>
             <Button
+              variant="primary"
               onClick={() => navigate('/subscriptions/new')}
               leftIcon={<Plus className="w-4 h-4" />}
-              className="shadow-lg shadow-primary-600/20"
             >
               {t('subscriptions:list.addButton')}
             </Button>
@@ -187,30 +210,59 @@ export function SubscriptionsListPage() {
 
       {/* KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <StatCard
             icon={TrendingUp}
             label={t('subscriptions:stats.mrr')}
             value={formatCurrency(stats.mrr || 0)}
             color="text-primary-700 dark:text-primary-300"
+            subtitle={t('subscriptions:stats.fromCustomers', {
+              count: stats.distinct_customer_count ?? 0,
+            })}
+            trend={getTrend(
+              Number(stats.mrr) || 0,
+              Number(stats.mrr_previous_month) || 0
+            )}
+            hint={t('subscriptions:stats.mrrHint')}
           />
           <StatCard
             icon={Users}
             label={t('subscriptions:stats.activeCount')}
             value={stats.active_count || 0}
             color="text-success-600 dark:text-success-400"
+            subtitle={t('subscriptions:stats.customers', {
+              count: stats.distinct_customer_count ?? 0,
+            })}
+            trend={getTrend(
+              stats.active_count ?? 0,
+              stats.active_count_previous_month ?? 0
+            )}
+            onClick={() => navigate('/subscriptions?status=active')}
           />
           <StatCard
             icon={Pause}
             label={t('subscriptions:stats.pausedCount')}
             value={stats.paused_count || 0}
             color="text-warning-600 dark:text-warning-400"
+            onClick={() => navigate('/subscriptions?status=paused')}
           />
           <StatCard
             icon={AlertTriangle}
             label={t('subscriptions:stats.overdueCount')}
-            value={stats.overdue_count || 0}
+            value={stats.overdue_invoice_count ?? 0}
             color="text-error-600 dark:text-error-400"
+            subtitle={t('subscriptions:stats.overdueHint')}
+            onClick={() =>
+              document.getElementById('compliance-alert')?.scrollIntoView?.({ behavior: 'smooth' })
+            }
+          />
+          <StatCard
+            icon={Wallet}
+            label={t('subscriptions:stats.unpaidCount')}
+            value={stats.unpaid_count ?? 0}
+            color="text-error-600 dark:text-error-400"
+            subtitle={t('subscriptions:stats.unpaidHint')}
+            onClick={() => navigate('/subscriptions')}
           />
         </div>
       )}

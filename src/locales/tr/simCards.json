@@ -2,6 +2,7 @@
   "title": "SIM Kart Yönetimi",
   "list": {
     "title": "SIM Kart Listesi",
+    "searchPlaceholder": "Hat no, alıcı veya müşteri ara...",
     "empty": {
       "title": "SIM Kart Bulunamadı",
       "description": "Henüz sisteme kayıtlı bir SIM kart bulunmuyor."
@@ -57,6 +58,14 @@
     "costPrice": "Aylık Maliyet",
     "salePrice": "Aylık Satış Fiyatı",
     "notes": "Notlar",
+    "placeholders": {
+      "selectBuyer": "Alıcı firma seçin...",
+      "selectCustomer": "Müşteri seçin...",
+      "selectSite": "Lokasyon seçin...",
+      "selectOperator": "Operatör seçin...",
+      "selectStatus": "Durum seçin...",
+      "selectCustomerFirst": "Önce müşteri seçin..."
+    },
     "validation": {
       "phoneNumberRequired": "Hat numarası zorunludur",
       "operatorRequired": "Operatör seçimi zorunludur"

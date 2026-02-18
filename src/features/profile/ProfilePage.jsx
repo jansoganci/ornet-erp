@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, Card, Input, Spinner, Badge } from '../../components/ui';
+import { Button, Card, Input, Spinner, Badge, ErrorState, FormSkeleton } from '../../components/ui';
 import { PasswordInput } from '../auth/components/PasswordInput';
 import { PasswordStrength } from '../auth/components/PasswordStrength';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,14 +21,13 @@ import {
 import { getAuthErrorKey } from '../auth/utils/errorMapper';
 
 function getRoleLabel(role) {
-  const keys = { admin: 'admin', field_worker: 'fieldWorker', accountant: 'accountant' };
-  return keys[role] ? `roles.${keys[role]}` : role;
+  return role ? `common:roles.${role}` : null;
 }
 
 export function ProfilePage() {
-  const { t } = useTranslation(['profile', 'auth']);
+  const { t } = useTranslation(['profile', 'auth', 'common']);
   const { user, updatePassword } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useCurrentProfile();
+  const { data: profile, isLoading: profileLoading, error: profileError, refetch: refetchProfile } = useCurrentProfile();
   const updateProfileMutation = useUpdateProfile();
 
   const profileForm = useForm({
@@ -78,19 +77,27 @@ export function ProfilePage() {
     }
   };
 
-  if (profileLoading && !profile) {
+  const breadcrumbs = [
+    { label: t('common:nav.dashboard'), to: '/' },
+    { label: t('profile:title') },
+  ];
+
+  if (profileLoading && !profile && !profileError) {
+    return <FormSkeleton />;
+  }
+
+  if (profileError) {
     return (
-      <PageContainer maxWidth="xl" padding="default">
-        <div className="flex justify-center py-12">
-          <Spinner size="lg" />
-        </div>
+      <PageContainer maxWidth="xl" padding="default" className="space-y-6">
+        <PageHeader title={t('profile:title')} breadcrumbs={breadcrumbs} />
+        <ErrorState message={profileError.message} onRetry={refetchProfile} />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer maxWidth="xl" padding="default">
-      <PageHeader title={t('profile:title')} />
+    <PageContainer maxWidth="xl" padding="default" className="space-y-6">
+      <PageHeader title={t('profile:title')} breadcrumbs={breadcrumbs} />
 
       <div className="mt-6 space-y-6">
         {/* Personal Info Card */}
@@ -126,7 +133,7 @@ export function ProfilePage() {
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
                   {t('profile:fields.role')}
                 </label>
-                <Badge variant="secondary">{t(getRoleLabel(profile.role))}</Badge>
+                <Badge variant="secondary">{t(getRoleLabel(profile.role)) || profile.role}</Badge>
               </div>
             )}
             <div className="pt-2">

@@ -6,7 +6,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 export async function fetchCustomers({ search = '' } = {}) {
   let query = supabase
     .from('customers')
-    .select('*, customer_sites(count)')
+    .select('*, customer_sites(city)')
     .order('created_at', { ascending: false });
 
   if (search) {
@@ -16,11 +16,22 @@ export async function fetchCustomers({ search = '' } = {}) {
   const { data, error } = await query;
   if (error) throw error;
   
-  // Map site count for UI
-  return data.map(customer => ({
-    ...customer,
-    sites_count: customer.customer_sites?.[0]?.count || 0
-  }));
+  // Map site count and city for UI
+  return data.map(customer => {
+    const sites = customer.customer_sites || [];
+    const sitesCount = sites.length;
+    
+    // Get first non-null city from sites, or null if no city
+    const city = sites
+      .map(site => site.city)
+      .find(c => c) || null;
+    
+    return {
+      ...customer,
+      sites_count: sitesCount,
+      city: city
+    };
+  });
 }
 
 /**

@@ -45,10 +45,11 @@ const ICON_MAP = {
   task_due_soon: { Icon: CheckSquare, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
   user_reminder: { Icon: BellRing, bg: 'bg-primary-100 dark:bg-primary-900/40', text: 'text-primary-600 dark:text-primary-400' },
   sim_card_cancelled: { Icon: CardSim, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
-  recurring_expense_pending: { Icon: RefreshCw, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
 };
 
 function getRoute(entityType, entityId) {
+  if (!entityId) return null;
+  
   switch (entityType) {
     case 'work_order':
       return `/work-orders/${entityId}`;
@@ -60,8 +61,6 @@ function getRoute(entityType, entityId) {
       return '/tasks';
     case 'sim_card':
       return `/sim-cards/${entityId}/edit`;
-    case 'recurring_template':
-      return '/finance/recurring';
     case 'reminder':
       return null;
     default:

@@ -1,23 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, Calendar, Building2, User, Hash, ChevronRight } from 'lucide-react';
+import { Search, ClipboardList, User, Calendar } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { 
-  Button, 
-  Select, 
-  Input, 
-  Spinner, 
-  EmptyState, 
+import {
+  Button,
+  Select,
+  Input,
+  SearchInput,
+  Spinner,
+  EmptyState,
   Card,
   Badge,
   Table,
-  ErrorState
+  ErrorState,
+  TableSkeleton,
 } from '../../components/ui';
 import { useSearchWorkHistory } from './hooks';
 import { useProfiles } from '../tasks/hooks';
-import { formatDate, workOrderStatusVariant } from '../../lib/utils';
+import { formatDate } from '../../lib/utils';
 import { WORK_TYPES } from '../workOrders/schema';
+import { subDays, format } from 'date-fns';
+
+const DATE_PRESETS = ['all', '7', '30', '90', 'custom'];
+
+function getDateRangeFromPreset(preset) {
+  if (!preset || preset === 'all') return { dateFrom: '', dateTo: '' };
+  if (preset === 'custom') return { dateFrom: '', dateTo: '' };
+  const days = parseInt(preset, 10);
+  if (isNaN(days)) return { dateFrom: '', dateTo: '' };
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const from = format(subDays(new Date(), days), 'yyyy-MM-dd');
+  return { dateFrom: from, dateTo: today };
+}
 
 export function WorkHistoryPage() {
   const { t } = useTranslation(['workHistory', 'common', 'workOrders']);
@@ -25,32 +40,80 @@ export function WorkHistoryPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Filters State
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
-    type: searchParams.get('type') || 'account_no',
+    datePreset: searchParams.get('datePreset') || 'all',
     dateFrom: searchParams.get('dateFrom') || '',
     dateTo: searchParams.get('dateTo') || '',
     workType: searchParams.get('workType') || 'all',
     workerId: searchParams.get('workerId') || 'all',
-    siteId: searchParams.get('siteId') || ''
+    siteId: searchParams.get('siteId') || '',
   });
 
-  // Update filters if URL params change
   useEffect(() => {
     const siteId = searchParams.get('siteId');
     if (siteId) {
-      setFilters(prev => ({ ...prev, siteId }));
+      setFilters((prev) => ({ ...prev, siteId }));
     }
   }, [searchParams]);
 
-  // Hooks
-  const { data: results = [], isLoading, error, refetch } = useSearchWorkHistory(filters);
+  const { data: results = [], isLoading, error, refetch } = useSearchWorkHistory({
+    ...filters,
+    ...(filters.datePreset && filters.datePreset !== 'all' && filters.datePreset !== 'custom'
+      ? getDateRangeFromPreset(filters.datePreset)
+      : { dateFrom: filters.dateFrom, dateTo: filters.dateTo }),
+  });
   const { data: profiles = [] } = useProfiles();
 
+  if (isLoading) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('workHistory:title')} />
+        <div className="mt-6">
+          <TableSkeleton cols={5} />
+        </div>
+      </PageContainer>
+    );
+  }
+
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === 'datePreset' && value !== 'custom' && value !== 'all') {
+        const range = getDateRangeFromPreset(value);
+        next.dateFrom = range.dateFrom;
+        next.dateTo = range.dateTo;
+      }
+      return next;
+    });
   };
+
+  const handleReset = () => {
+    setFilters((prev) => ({
+      search: '',
+      datePreset: 'all',
+      dateFrom: '',
+      dateTo: '',
+      workType: 'all',
+      workerId: 'all',
+      siteId: prev.siteId,
+    }));
+  };
+
+  const workTypeOptions = [
+    { value: 'all', label: t('workHistory:filters.allTypes') },
+    ...WORK_TYPES.map((type) => ({ value: type, label: tCommon(`workType.${type}`) })),
+  ];
+
+  const workerOptions = [
+    { value: 'all', label: t('workHistory:filters.allWorkers') },
+    ...profiles.map((p) => ({ value: p.id, label: p.full_name })),
+  ];
+
+  const datePresetOptions = DATE_PRESETS.map((p) => ({
+    value: p,
+    label: t(`workHistory:filters.datePresets.${p}`),
+  }));
 
   const columns = [
     {
@@ -63,41 +126,47 @@ export function WorkHistoryPage() {
             {row.site_name || row.site_address}
           </p>
         </div>
-      )
+      ),
     },
     {
       header: t('workHistory:results.columns.accountNo'),
       accessor: 'account_no',
-      render: (val) => <Badge variant="info" className="font-mono">{val || '---'}</Badge>
+      render: (val) => <Badge variant="info" className="font-mono">{val || '---'}</Badge>,
     },
     {
       header: t('workHistory:results.columns.workType'),
       accessor: 'work_type',
       render: (val, row) => (
         <div className="space-y-1">
-          <Badge variant="outline" size="sm">{tCommon(`workType.${val}`)}</Badge>
+          <Badge variant="default" size="sm">{tCommon(`workType.${val}`)}</Badge>
           {row.form_no && <p className="text-[10px] font-mono text-neutral-400">#{row.form_no}</p>}
         </div>
-      )
+      ),
     },
     {
       header: t('workHistory:results.columns.date'),
       accessor: 'scheduled_date',
-      render: (val) => val ? formatDate(val) : '---'
+      render: (val) => (val ? formatDate(val) : '---'),
     },
     {
       header: t('workHistory:results.columns.workers'),
       accessor: 'assigned_workers',
       render: (workers) => (
         <div className="flex -space-x-2 overflow-hidden">
-          {workers?.map(w => (
-            <div key={w.id} className="h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#171717] bg-primary-100 flex items-center justify-center" title={w.name}>
-              <span className="text-[10px] font-bold text-primary-700 uppercase">{w.name.charAt(0)}</span>
+          {workers?.map((w) => (
+            <div
+              key={w.id}
+              className="inline-flex h-7 w-7 rounded-full ring-2 ring-white dark:ring-[#171717] bg-primary-100 dark:bg-primary-900/40 items-center justify-center shrink-0"
+              title={w.name}
+            >
+              <span className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase leading-none tracking-normal">
+                {w.name.charAt(0)}
+              </span>
             </div>
           ))}
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -107,107 +176,77 @@ export function WorkHistoryPage() {
         description={t('workHistory:subtitle')}
         breadcrumbs={[
           { label: t('common:nav.dashboard'), to: '/' },
-          { label: t('workHistory:title') }
+          { label: t('workHistory:title') },
         ]}
       />
 
-      {/* Advanced Search Card */}
-      <Card className="p-6 shadow-sm">
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div className="md:col-span-4">
-              <label className="block text-xs font-black text-neutral-400 uppercase tracking-widest mb-2">
-                {t('workHistory:search.label')}
-              </label>
-              <div className="flex bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl">
-                <button
-                  onClick={() => handleFilterChange('type', 'account_no')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${filters.type === 'account_no' ? 'bg-white dark:bg-[#262626] text-primary-600 shadow-sm' : 'text-neutral-500'}`}
-                >
-                  {t('workHistory:search.byAccountNo')}
-                </button>
-                <button
-                  onClick={() => handleFilterChange('type', 'company')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${filters.type === 'company' ? 'bg-white dark:bg-[#262626] text-primary-600 shadow-sm' : 'text-neutral-500'}`}
-                >
-                  {t('workHistory:search.byCompanyName')}
-                </button>
-              </div>
-            </div>
-            
-            <div className="md:col-span-8 flex items-end">
-              <Input
-                placeholder={filters.type === 'account_no' ? t('workHistory:search.placeholder.accountNo') : t('workHistory:search.placeholder.companyName')}
+      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <SearchInput
+                placeholder={t('workHistory:search.placeholder')}
                 value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                leftIcon={filters.type === 'account_no' ? Hash : Building2}
-                className="h-12"
+                onChange={(v) => handleFilterChange('search', v)}
+                className="w-full"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-            <Input
-              label={t('workHistory:search.filters.from')}
-              type="date"
-              value={filters.dateFrom}
-              onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-              leftIcon={Calendar}
-            />
-            <Input
-              label={t('workHistory:search.filters.to')}
-              type="date"
-              value={filters.dateTo}
-              onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-              leftIcon={Calendar}
-            />
-            <Select
-              label={t('workHistory:search.filters.workType')}
-              options={[
-                { value: 'all', label: t('workOrders:list.filters.allTypes') },
-                ...WORK_TYPES.map(type => ({ value: type, label: tCommon(`workType.${type}`) }))
-              ]}
-              value={filters.workType}
-              onChange={(e) => handleFilterChange('workType', e.target.value)}
-              leftIcon={Filter}
-            />
-            <Select
-              label={t('workHistory:search.filters.worker')}
-              options={[
-                { value: 'all', label: t('dailyWork:filters.allWorkers') },
-                ...profiles.map(p => ({ value: p.id, label: p.full_name }))
-              ]}
-              value={filters.workerId}
-              onChange={(e) => handleFilterChange('workerId', e.target.value)}
-              leftIcon={User}
-            />
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <Button 
-              variant="ghost" 
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full md:w-auto md:min-w-[500px]">
+              <Select
+                options={datePresetOptions}
+                value={filters.datePreset}
+                onChange={(e) => handleFilterChange('datePreset', e.target.value)}
+                placeholder={t('workHistory:filters.dateRange')}
+                leftIcon={<Calendar className="w-4 h-4" />}
+              />
+              <Select
+                options={workTypeOptions}
+                value={filters.workType}
+                onChange={(e) => handleFilterChange('workType', e.target.value)}
+                placeholder={t('workHistory:filters.workType')}
+                leftIcon={<ClipboardList className="w-4 h-4" />}
+              />
+              <Select
+                options={workerOptions}
+                value={filters.workerId}
+                onChange={(e) => handleFilterChange('workerId', e.target.value)}
+                placeholder={t('workHistory:filters.worker')}
+                leftIcon={<User className="w-4 h-4" />}
+              />
+            </div>
+            <Button
+              variant="ghost"
               size="sm"
-              onClick={() => setFilters({
-                search: '',
-                type: 'account_no',
-                dateFrom: '',
-                dateTo: '',
-                workType: 'all',
-                workerId: 'all',
-                siteId: ''
-              })}
-              className="text-neutral-400 hover:text-primary-600"
+              onClick={handleReset}
+              className="text-neutral-400 hover:text-primary-600 shrink-0 self-center"
             >
               {t('common:actions.reset')}
             </Button>
           </div>
+          {filters.datePreset === 'custom' && (
+            <div className="flex flex-wrap gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+              <Input
+                type="date"
+                label={t('workHistory:filters.from')}
+                value={filters.dateFrom}
+                onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                className="max-w-[180px]"
+              />
+              <Input
+                type="date"
+                label={t('workHistory:filters.to')}
+                value={filters.dateTo}
+                onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                className="max-w-[180px]"
+              />
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Results */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-sm font-black text-neutral-500 uppercase tracking-widest">
+          <h3 className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">
             {t('workHistory:results.title')}
           </h3>
           {results.length > 0 && (
@@ -229,14 +268,11 @@ export function WorkHistoryPage() {
             description={filters.search ? t('common:noResults') : t('workHistory:subtitle')}
           />
         ) : (
-          <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
-            <Table
-              columns={columns}
-              data={results}
-              onRowClick={(row) => navigate(`/work-orders/${row.id}`)}
-              className="border-none"
-            />
-          </div>
+          <Table
+            columns={columns}
+            data={results}
+            onRowClick={(row) => navigate(`/work-orders/${row.id}`)}
+          />
         )}
       </div>
     </PageContainer>

@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Circle } from 'lucide-react';
 import { PageContainer } from '../../components/layout';
-import { Spinner, EmptyState, ErrorState, Button } from '../../components/ui';
+import { Spinner, EmptyState, ErrorState, Button, CardSkeleton } from '../../components/ui';
 import { useDailyWorkList } from './hooks';
 import { useProfiles } from '../tasks/hooks';
 import { DailyWorkCard } from './DailyWorkCard';
@@ -101,6 +101,16 @@ export function DailyWorkListPage() {
       clearTimeout(clear);
     };
   }, [completingReminder]);
+
+  if (isLoading) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <div className="mt-12">
+          <CardSkeleton count={4} />
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer maxWidth="xl" padding="default" className="space-y-5">

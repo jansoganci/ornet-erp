@@ -9,6 +9,10 @@
     "title": "Abonelikler",
     "searchPlaceholder": "Müşteri, lokasyon veya hesap no ara...",
     "addButton": "Yeni Abonelik",
+    "filters": {
+      "allStatuses": "Tüm Durumlar",
+      "allTypes": "Tüm Tipler"
+    },
     "empty": {
       "title": "Henüz abonelik yok",
       "description": "Yeni bir abonelik oluşturarak başlayın."
@@ -17,8 +21,11 @@
       "customer": "Müşteri",
       "site": "Lokasyon",
       "accountNo": "Hesap No",
+      "city": "Şehir",
       "type": "Tip",
       "serviceType": "Hizmet Türü",
+      "startDate": "Başlangıç",
+      "billingFrequency": "Ödeme Sıklığı",
       "monthly": "Aylık",
       "status": "Durum"
     }
@@ -202,9 +209,18 @@
   },
   "stats": {
     "mrr": "Aylık Gelir (MRR)",
+    "mrrHint": "Aylık tekrarlayan gelir",
+    "fromCustomers": "{{count}} müşteriden",
     "activeCount": "Aktif Abonelik",
+    "customers": "{{count}} müşteri",
     "pausedCount": "Duraklatılan",
-    "overdueCount": "Geciken Fatura"
+    "overdueCount": "Geciken Fatura",
+    "overdueHint": "7 günden fazla",
+    "unpaidCount": "Vadesi Geçmiş Ödeme",
+    "unpaidHint": "Bu ay öncesi bekleyen",
+    "trendUp": "+{{value}}% geçen aya göre",
+    "trendDown": "{{value}}% geçen aya göre",
+    "trendSame": "Geçen ay ile aynı"
   },
   "import": {
     "title": "Toplu İçe Aktar",

@@ -1,13 +1,20 @@
+import * as Sentry from "@sentry/react";
 import i18n from './i18n';
 
 /**
  * Parses various error formats (Supabase, Network, etc.) and returns a localized message.
+ * Also logs the error to Sentry in production.
  * @param {any} error - The error object to parse
  * @param {string} fallbackKey - The i18n key to use if no specific error is identified
  * @returns {string} - The localized error message
  */
 export function getErrorMessage(error, fallbackKey = 'common.unexpected') {
   if (!error) return i18n.t(`errors:${fallbackKey}`);
+
+  // Log to Sentry in production
+  if (import.meta.env.PROD) {
+    Sentry.captureException(error);
+  }
 
   // Supabase error object
   if (error.status === 401) {

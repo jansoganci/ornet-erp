@@ -5,8 +5,7 @@ export const recurringKeys = {
   all: ['recurring_templates'],
   lists: () => [...recurringKeys.all, 'list'],
   list: (filters) => [...recurringKeys.lists(), filters],
-  details: () => [...recurringKeys.all, 'detail'],
-  detail: (id) => [...recurringKeys.details(), id],
+  lastGenerated: () => [...recurringKeys.all, 'last_generated'],
 };
 
 const TEMPLATE_SELECT = '*, expense_categories(id, code, name_tr)';
@@ -16,6 +15,7 @@ export async function fetchRecurringTemplates(filters = {}) {
   let query = supabase
     .from('recurring_expense_templates')
     .select(TEMPLATE_SELECT)
+    .is('deleted_at', null)
     .order('day_of_month', { ascending: true })
     .order('name', { ascending: true });
 
@@ -24,17 +24,6 @@ export async function fetchRecurringTemplates(filters = {}) {
   }
 
   const { data, error } = await query;
-  if (error) throw error;
-  return data;
-}
-
-export async function fetchRecurringTemplate(id) {
-  const { data, error } = await supabase
-    .from('recurring_expense_templates')
-    .select(TEMPLATE_SELECT)
-    .eq('id', id)
-    .single();
-
   if (error) throw error;
   return data;
 }
@@ -62,18 +51,31 @@ export async function updateRecurringTemplate(id, data) {
   return result;
 }
 
+// Fetch last generated transaction date per template (for "last generated" indicator)
+export async function fetchTemplateLastGenerated() {
+  const { data, error } = await supabase
+    .from('financial_transactions')
+    .select('recurring_template_id, transaction_date')
+    .not('recurring_template_id', 'is', null)
+    .order('transaction_date', { ascending: false });
+
+  if (error) throw error;
+
+  // Build a map: templateId -> latest transaction_date
+  const map = {};
+  for (const row of data) {
+    if (!map[row.recurring_template_id]) {
+      map[row.recurring_template_id] = row.transaction_date;
+    }
+  }
+  return map;
+}
+
 export async function deleteRecurringTemplate(id) {
   const { error } = await supabase
     .from('recurring_expense_templates')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw error;
-}
-
-// Trigger cron manually (for testing)
-export async function generateRecurringExpenses() {
-  const { data, error } = await supabase.rpc('fn_generate_recurring_expenses');
-  if (error) throw error;
-  return data;
 }

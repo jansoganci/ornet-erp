@@ -1,6 +1,6 @@
 {
   "title": "Tekrarlanan Ödemeler",
-  "pending": {
+  "badges": {
     "variable": "Değişken"
   },
   "templates": {
@@ -13,7 +13,9 @@
       "description": "Tekrarlanan ödeme şablonu oluşturun ve her ay otomatik olarak gider kaydı oluşturulsun."
     },
     "dayPrefix": "Her ayın",
-    "daySuffix": ".'si"
+    "daySuffix": ".'si",
+    "lastGenerated": "Son: {{date}}",
+    "neverGenerated": "Henüz oluşturulmadı"
   },
   "form": {
     "createTitle": "Şablon Oluştur",
@@ -54,5 +56,9 @@
   "status": {
     "active": "Aktif",
     "paused": "Durduruldu"
+  },
+  "confirm": {
+    "pauseTitle": "Şablonu Duraklat",
+    "pauseMessage": "Bu şablonu duraklatmak istediğinize emin misiniz? Duraklatıldığında otomatik gider oluşturma durur."
   }
 }

@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
+import { FileText } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Card, Select, Spinner, ErrorState } from '../../components/ui';
+import { Card, Select, Spinner, ErrorState, EmptyState, TableSkeleton } from '../../components/ui';
 import { useProfitAndLoss } from './hooks';
 import { ViewModeToggle } from './components/ViewModeToggle';
 import { formatCurrency } from '../../lib/utils';
@@ -44,14 +46,28 @@ function aggregatePL(plData) {
 
 export function ReportsPage() {
   const { t } = useTranslation(['finance', 'common']);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [period, setPeriod] = useState(() => {
+  const defaultPeriod = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [viewMode, setViewMode] = useState('total');
+  }, []);
+
+  const period = searchParams.get('period') || defaultPeriod;
+  const viewMode = searchParams.get('viewMode') || 'total';
 
   const monthOptions = useMemo(() => getLast6Months(), []);
+
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      const isDefault = (k, v) =>
+        (k === 'period' && v === defaultPeriod) ||
+        (k === 'viewMode' && v === 'total');
+      if (value && !isDefault(key, value)) prev.set(key, value);
+      else prev.delete(key);
+      return prev;
+    });
+  };
 
   const { data: plData, isLoading, error, refetch } = useProfitAndLoss(period, viewMode);
 
@@ -59,31 +75,48 @@ export function ReportsPage() {
 
   const hasData = pl.revenue > 0 || pl.expenses > 0;
 
+  const breadcrumbs = [
+    { label: t('common:nav.dashboard'), to: '/' },
+    { label: t('finance:dashboard.title'), to: '/finance' },
+    { label: t('finance:reports.title') },
+  ];
+
+  if (isLoading) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('finance:reports.title')} />
+        <div className="mt-6">
+          <TableSkeleton cols={2} rows={5} />
+        </div>
+      </PageContainer>
+    );
+  }
+
   if (error) {
     return (
-      <PageContainer>
-        <PageHeader title={t('finance:reports.title')} />
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('finance:reports.title')} breadcrumbs={breadcrumbs} />
         <ErrorState message={error.message} onRetry={refetch} />
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
-      <PageHeader title={t('finance:reports.title')} />
+    <PageContainer maxWidth="xl" padding="default" className="space-y-6">
+      <PageHeader title={t('finance:reports.title')} breadcrumbs={breadcrumbs} />
 
-      <Card className="p-4 shadow-sm border-neutral-200/60 dark:border-neutral-800/60 mb-6">
+      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
         <div className="flex flex-col md:flex-row gap-4 flex-wrap">
           <div className="w-full md:w-40">
             <Select
               label={t('finance:filters.period')}
               options={monthOptions}
               value={period}
-              onChange={(e) => setPeriod(e.target.value)}
+              onChange={(e) => handleFilterChange('period', e.target.value)}
             />
           </div>
           <div className="flex items-end">
-            <ViewModeToggle value={viewMode} onChange={setViewMode} size="md" />
+            <ViewModeToggle value={viewMode} onChange={(v) => handleFilterChange('viewMode', v)} size="md" />
           </div>
         </div>
       </Card>
@@ -93,11 +126,11 @@ export function ReportsPage() {
           <Spinner size="lg" />
         </div>
       ) : !hasData ? (
-        <Card className="p-8 text-center">
-          <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-            {t('finance:reports.empty')}
-          </p>
-        </Card>
+        <EmptyState
+          icon={FileText}
+          title={t('finance:reports.empty')}
+          description={t('finance:reports.emptyDescription')}
+        />
       ) : (
         <Card className="p-6 overflow-hidden">
           <div className="space-y-4 max-w-md">

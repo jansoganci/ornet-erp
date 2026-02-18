@@ -2,6 +2,8 @@ export { Stack } from './Stack';
 export { Container } from './Container';
 export { Header } from './Header';
 export { Sidebar } from './Sidebar';
+export { UserProfileDropdown } from './UserProfileDropdown';
+export { Footer } from './Footer';
 export { NavGroup } from './NavGroup';
 export { MobileNavDrawer } from './MobileNavDrawer';
 export { PageHeader } from './PageHeader';

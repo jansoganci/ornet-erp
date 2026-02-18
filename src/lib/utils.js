@@ -209,7 +209,7 @@ export const taskStatusVariant = {
  */
 export const priorityVariant = {
   low: 'default',
-  normal: 'primary',
+  normal: 'default',
   high: 'warning',
   urgent: 'error',
 };

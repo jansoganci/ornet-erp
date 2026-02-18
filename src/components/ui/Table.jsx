@@ -72,7 +72,7 @@ export function Table({
       {/* Desktop View: Standard Table */}
       <div
         className={cn(
-          'hidden lg:block overflow-x-auto rounded-md border border-neutral-200 dark:border-[#262626]'
+          'hidden lg:block overflow-x-auto rounded-lg border border-neutral-200 dark:border-[#262626] shadow-sm bg-white dark:bg-[#171717]'
         )}
       >
         <table className="min-w-full divide-y divide-neutral-200 dark:divide-[#262626]">
@@ -85,8 +85,9 @@ export function Table({
                     key={fieldKey}
                     scope="col"
                     className={cn(
-                      'px-6 py-3 text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider',
-                      alignClasses[column.align || 'left']
+                      'px-6 py-3.5 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider',
+                      alignClasses[column.align || 'left'],
+                      column.stickyRight && 'sticky right-0 bg-neutral-50 dark:bg-[#1a1a1a] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.3)] z-10'
                     )}
                     style={column.width ? { width: column.width } : undefined}
                   >
@@ -122,7 +123,7 @@ export function Table({
                   key={getKey(item, rowIndex)}
                   onClick={onRowClick ? () => onRowClick(item) : undefined}
                   className={cn(
-                    'transition-colors',
+                    'transition-all duration-200',
                     onRowClick && 'cursor-pointer hover:bg-neutral-50 dark:hover:bg-[#262626]',
                     striped && rowIndex % 2 === 1 && 'bg-neutral-50/50 dark:bg-[#1a1a1a]/30'
                   )}
@@ -133,8 +134,9 @@ export function Table({
                       <td
                         key={fieldKey}
                         className={cn(
-                          'px-6 py-4 text-sm text-neutral-900 dark:text-neutral-50 whitespace-nowrap',
-                          alignClasses[column.align || 'left']
+                          'px-6 py-4 text-sm text-neutral-900 dark:text-neutral-50 whitespace-nowrap transition-colors duration-200',
+                          alignClasses[column.align || 'left'],
+                          column.stickyRight && 'sticky right-0 bg-white dark:bg-[#171717] shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-[-4px_0_8px_-2px_rgba(0,0,0,0.3)] z-10'
                         )}
                       >
                         {column.render

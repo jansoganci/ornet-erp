@@ -3,6 +3,14 @@
     "title": "Müşteriler",
     "searchPlaceholder": "Müşteri ara...",
     "addButton": "Müşteri Ekle",
+    "columns": {
+      "name": "Müşteri Adı",
+      "contact": "İletişim",
+      "city": "Şehir",
+      "siteCount": "Lokasyon Sayısı",
+      "activeSubscriptions": "Aktif Abonelikler",
+      "openWorkOrders": "Açık İş Emirleri"
+    },
     "empty": {
       "title": "Henüz müşteri yok",
       "description": "İlk müşterinizi ekleyerek başlayın",
@@ -18,9 +26,11 @@
     "notFound": "Müşteri bulunamadı.",
     "accountNumber": "Müşteri Kodu",
     "contactInfo": "İletişim Bilgileri",
+    "noContactInfo": "İletişim bilgisi eklenmemiş",
     "address": "Adres",
     "notes": "Notlar",
     "noNotes": "Not yok",
+    "monthlyRevenue": "Aylık Gelir",
     "workHistory": {
       "title": "Geçmiş İşler",
       "empty": "Bu müşteri için iş kaydı yok",
@@ -31,6 +41,49 @@
       "edit": "Düzenle",
       "delete": "Sil",
       "newWorkOrder": "Yeni İş Emri"
+    },
+    "tabs": {
+      "overview": "Genel",
+      "locations": "Lokasyonlar",
+      "workOrders": "İş Emirleri",
+      "simCards": "SIM Kartlar",
+      "equipment": "Ekipman"
+    },
+    "overview": {
+      "metrics": {
+        "activeSubscriptions": "Aktif Abonelik",
+        "openWorkOrders": "Açık İş Emri",
+        "activeSimCards": "Aktif SIM Kart",
+        "faultyEquipment": "Arızalı Ekipman"
+      },
+      "alerts": {
+        "faultyEquipment": "{{count}} arızalı ekipman mevcut",
+        "faultyEquipmentDesc": "Teknik servis ekibi ile koordinasyon sağlanmalıdır."
+      },
+      "recentWorkOrders": {
+        "title": "Son İş Emirleri",
+        "viewAll": "Tüm İş Emirleri",
+        "empty": "Henüz iş emri yok"
+      },
+      "locationSummary": {
+        "title": "Lokasyon Özeti",
+        "viewAll": "Tüm Lokasyonlar",
+        "empty": "Henüz lokasyon yok"
+      },
+      "customerInfo": {
+        "title": "Müşteri Bilgileri",
+        "customerNo": "Müşteri No",
+        "registrationDate": "Kayıt Tarihi",
+        "totalLocations": "Toplam Lokasyon",
+        "totalEquipment": "Toplam Ekipman"
+      },
+      "contact": {
+        "title": "İletişim",
+        "phone1": "Telefon 1",
+        "phone2": "İkinci Telefon",
+        "email": "E-posta",
+        "address": "Adres"
+      }
     }
   },
   "sites": {

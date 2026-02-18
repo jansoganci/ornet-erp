@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, ChevronDown, CheckCircle2, Circle, Clock, User, Edit, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, CheckCircle2, Clock, User, Edit, Trash2 } from 'lucide-react';
 import { Badge, Card, IconButton } from '../../../components/ui';
 import { formatDate, priorityVariant, cn } from '../../../lib/utils';
 
@@ -27,7 +27,7 @@ export function PlanGroupSection({
       <button
         type="button"
         onClick={() => setIsOpen((v) => !v)}
-        className="flex items-center gap-2 w-full py-2 px-1 group text-left"
+        className="flex items-center gap-2.5 w-full py-2.5 px-3 group text-left rounded-lg hover:bg-neutral-50 dark:hover:bg-[#1a1a1a] transition-colors"
       >
         {isOpen ? (
           <ChevronDown className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
@@ -45,17 +45,21 @@ export function PlanGroupSection({
 
       {/* Plan cards */}
       {isOpen && (
-        <div className="space-y-2 ml-6">
+        <div className="space-y-3 ml-7">
           {tasks.map((task) => (
             <Card
               key={task.id}
               className={cn(
-                'p-3 sm:p-4 hover:border-primary-300 dark:hover:border-primary-700 transition-colors group/card',
+                'p-4 hover:border-primary-300 dark:hover:border-primary-700 transition-colors group/card',
+                // Priority border
+                task.priority === 'urgent' && 'border-l-4 border-l-error-500',
+                task.priority === 'high' && 'border-l-4 border-l-warning-500',
+                task.priority === 'low' && 'border-l-4 border-l-info-500',
                 highlightDate && task.due_date === highlightDate &&
                   'ring-2 ring-primary-400 dark:ring-primary-500 border-primary-300 dark:border-primary-600'
               )}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-4">
                 <button
                   onClick={() => onToggleStatus(task)}
                   className="mt-0.5 text-neutral-400 dark:text-neutral-600 hover:text-primary-600 dark:hover:text-primary-400 transition-colors flex-shrink-0"
@@ -63,12 +67,12 @@ export function PlanGroupSection({
                   {task.status === 'completed' ? (
                     <CheckCircle2 className="w-5 h-5 text-success-600 dark:text-success-400" />
                   ) : (
-                    <Circle className="w-5 h-5" />
+                    <div className="w-5 h-5 border-2 border-neutral-300 dark:border-neutral-600 rounded flex-shrink-0" />
                   )}
                 </button>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <h3
                       className={cn(
                         'font-medium text-sm truncate text-neutral-900 dark:text-neutral-50',
@@ -89,7 +93,7 @@ export function PlanGroupSection({
                     </p>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 dark:text-neutral-500">
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-400 dark:text-neutral-500">
                     {task.due_date && (
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
@@ -106,20 +110,20 @@ export function PlanGroupSection({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity flex-shrink-0">
+                <div className="flex items-center gap-1 opacity-50 lg:opacity-0 lg:group-hover/card:opacity-100 transition-opacity flex-shrink-0">
                   <IconButton
-                    icon={<Edit className="w-3.5 h-3.5" />}
+                    icon={<Edit className="w-4 h-4" />}
                     onClick={() => onEdit(task)}
                     aria-label={t('actions.edit')}
                     variant="ghost"
-                    size="sm"
+                    size="md"
                   />
                   <IconButton
-                    icon={<Trash2 className="w-3.5 h-3.5" />}
+                    icon={<Trash2 className="w-4 h-4" />}
                     onClick={() => onDelete(task.id)}
                     aria-label={t('actions.delete')}
                     variant="ghost"
-                    size="sm"
+                    size="md"
                     className="text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/30"
                   />
                 </div>

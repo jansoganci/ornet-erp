@@ -19,6 +19,7 @@ import {
   Percent,
   DollarSign,
   RefreshCw,
+  HardDrive,
 } from 'lucide-react';
 
 /**
@@ -34,6 +35,7 @@ export const navItems = [
   { to: '/customers', icon: Users, labelKey: 'nav.customers' },
   { to: '/work-orders', icon: ClipboardList, labelKey: 'nav.workOrders' },
   { to: '/proposals', icon: FileText, labelKey: 'nav.proposals' },
+  // badge: number - optional notification badge count
   // Planlama group
   {
     type: 'group',
@@ -55,6 +57,7 @@ export const navItems = [
     children: [
       { to: '/subscriptions', icon: CreditCard, labelKey: 'nav.subscriptions' },
       { to: '/sim-cards', icon: Cpu, labelKey: 'simCards:title' },
+      { to: '/equipment', icon: HardDrive, labelKey: 'nav.equipment' },
     ],
   },
   // Finance group

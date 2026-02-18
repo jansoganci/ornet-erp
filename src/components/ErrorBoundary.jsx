@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Sentry from "@sentry/react";
 import { withTranslation } from 'react-i18next';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button, Card } from './ui';
@@ -15,6 +16,17 @@ class ErrorBoundaryInner extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    // Send to Sentry
+    if (import.meta.env.PROD) {
+      Sentry.captureException(error, {
+        contexts: {
+          react: {
+            componentStack: errorInfo.componentStack,
+          },
+        },
+      });
+    }
   }
 
   handleReset = () => {

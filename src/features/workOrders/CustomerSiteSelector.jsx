@@ -138,28 +138,28 @@ export function CustomerSiteSelector({
           )}
         </div>
       ) : (
-        <Card className="relative overflow-hidden border-primary-100 dark:border-primary-900/30">
+        <Card className="relative overflow-hidden border-primary-100 dark:border-primary-900/30 bg-white dark:bg-[#171717]">
           <div className="absolute top-0 left-0 w-1 h-full bg-primary-600" />
-          <div className="flex items-start justify-between p-1">
-            <div className="flex items-start space-x-3">
-              <div className="mt-1 p-2 bg-primary-50 dark:bg-primary-950/30 rounded-lg">
-                <User className="w-5 h-5 text-primary-600 dark:text-primary-500" />
+          <div className="flex items-start justify-between p-2">
+            <div className="flex items-start space-x-4">
+              <div className="mt-1 p-3 bg-primary-50 dark:bg-primary-950/30 rounded-xl">
+                <User className="w-6 h-6 text-primary-600 dark:text-primary-500" />
               </div>
               <div>
-                <p className="text-xs font-medium text-primary-600 dark:text-primary-400 uppercase tracking-tighter mb-0.5">
+                <p className="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-1">
                   {t('workOrders:form.fields.selectCustomer')}
                 </p>
-                <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg">
+                <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-xl">
                   {selectedCustomer?.company_name}
                 </h4>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center">
-                    <Phone className="w-3.5 h-3.5 mr-1.5 text-neutral-400" />
+                <div className="flex flex-wrap gap-x-6 gap-y-2 mt-2">
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center bg-neutral-50 dark:bg-[#1a1a1a] px-2 py-1 rounded-lg border border-neutral-100 dark:border-[#262626]">
+                    <Phone className="w-3.5 h-3.5 mr-2 text-neutral-400" />
                     {selectedCustomer?.phone}
                   </span>
                   {selectedCustomer?.tax_number && (
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center">
-                      <Info className="w-3.5 h-3.5 mr-1.5 text-neutral-400" />
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400 flex items-center bg-neutral-50 dark:bg-[#1a1a1a] px-2 py-1 rounded-lg border border-neutral-100 dark:border-[#262626]">
+                      <Info className="w-3.5 h-3.5 mr-2 text-neutral-400" />
                       {selectedCustomer.tax_number}
                     </span>
                   )}
@@ -170,20 +170,20 @@ export function CustomerSiteSelector({
               variant="ghost" 
               size="sm" 
               onClick={() => setIsSearching(true)}
-              className="text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/30"
+              className="text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/30 font-bold"
             >
               {t('workOrders:form.buttons.changeCustomer')}
             </Button>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-neutral-100 dark:border-[#262626]">
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 flex items-center">
+          <div className="mt-8 pt-8 border-t border-neutral-100 dark:border-[#262626]">
+            <div className="flex items-center justify-between mb-4">
+              <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest flex items-center">
                 <MapPin className="w-4 h-4 mr-2 text-primary-600" />
                 {t('workOrders:form.fields.selectSite')}
                 {siteOptional && (
-                  <span className="ml-1.5 text-xs font-normal text-neutral-500 dark:text-neutral-400">
-                    {t('proposals:form.siteOptional')}
+                  <span className="ml-2 text-[10px] font-normal lowercase tracking-normal text-neutral-400">
+                    ({t('proposals:form.siteOptional')})
                   </span>
                 )}
               </label>
@@ -192,7 +192,7 @@ export function CustomerSiteSelector({
                 size="sm" 
                 leftIcon={<Plus className="w-4 h-4" />}
                 onClick={onAddNewSite}
-                className="h-8 px-2 text-primary-600"
+                className="h-8 px-3 text-primary-600 font-bold"
               >
                 {t('workOrders:form.buttons.addSite')}
               </Button>

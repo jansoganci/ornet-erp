@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save, X, Calendar, Clock, FileText, Package, AlertTriangle } from 'lucide-react';
+import { Save, X, Calendar, Clock, FileText, AlertTriangle } from 'lucide-react';
 import { cn, getCurrencySymbol } from '../../lib/utils';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { 
@@ -13,12 +13,13 @@ import {
   Card, 
   Spinner,
   Textarea,
-  Badge
+  FormSkeleton
 } from '../../components/ui';
 import { workOrderSchema, workOrderDefaultValues, WORK_TYPES, CURRENCIES } from './schema';
 import { useWorkOrder, useCreateWorkOrder, useUpdateWorkOrder } from './hooks';
 import { CustomerSiteSelector } from './CustomerSiteSelector';
 import { WorkerSelector } from './WorkerSelector';
+import { WorkOrderFormHero } from './components/WorkOrderFormHero';
 import { WorkOrderItemsEditor } from './components/WorkOrderItemsEditor';
 import { AccountNoWarning } from './AccountNoWarning';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
@@ -37,6 +38,11 @@ export function WorkOrderFormPage() {
   const [showSiteModal, setShowSiteModal] = useState(false);
   
   const { data: workOrder, isLoading: isWorkOrderLoading } = useWorkOrder(id);
+
+  if (isEdit && isWorkOrderLoading) {
+    return <FormSkeleton />;
+  }
+
   const createMutation = useCreateWorkOrder();
   const updateMutation = useUpdateWorkOrder();
   const linkWorkOrderMutation = useLinkWorkOrder();
@@ -226,25 +232,25 @@ export function WorkOrderFormPage() {
   ];
 
   return (
-    <PageContainer maxWidth="lg" padding="default" className="space-y-6 pb-24">
-      <PageHeader
-        title={isEdit ? t('workOrders:form.editTitle') : t('workOrders:form.addTitle')}
-        breadcrumbs={[
-          { label: tCommon('nav.workOrders'), to: '/work-orders' },
-          ...(isEdit && workOrder ? [{ label: `#${workOrder.id.slice(0, 8)}`, to: `/work-orders/${id}` }] : []),
-          { label: isEdit ? t('workOrders:form.editTitle') : t('workOrders:form.addTitle') }
-        ]}
+    <PageContainer maxWidth="4xl" padding="default" className="space-y-8 pb-24 mx-auto">
+      <WorkOrderFormHero
+        isEdit={isEdit}
+        onCancel={() => navigate(-1)}
+        onSave={handleSubmit(onSubmit, onInvalid)}
+        isSaving={isSubmitting || createMutation.isPending || updateMutation.isPending}
+        selectedSite={siteData}
       />
 
       <form
         onSubmit={handleSubmit(onSubmit, onInvalid)}
-        className="space-y-8 mt-6"
+        className="space-y-8"
+        id="work-order-form"
       >
         {/* Hidden input to register site_id with react-hook-form */}
         <input type="hidden" {...register('site_id')} />
 
         {/* 1. Customer & Site Selection */}
-        <Card className="p-1 overflow-visible">
+        <Card className="rounded-[2rem] p-8 overflow-visible border-neutral-200/60 dark:border-[#262626] shadow-sm">
           <CustomerSiteSelector
             selectedCustomerId={selectedCustomerId}
             selectedSiteId={selectedSiteId}
@@ -257,187 +263,202 @@ export function WorkOrderFormPage() {
         </Card>
 
         {/* 2. Work Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            <Card header={
-              <div className="flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-primary-600" />
-                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
-                  {t('workOrders:form.sections.workInfo')}
-                </h3>
-              </div>
-            } className="p-6">
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input
-                    label={t('workOrders:form.fields.formNo')}
-                    placeholder={t('workOrders:form.placeholders.formNo')}
-                    error={errors.form_no?.message}
-                    {...register('form_no')}
-                  />
-                  <Select
-                    label={t('workOrders:form.fields.priority')}
-                    options={priorityOptions}
-                    error={errors.priority?.message}
-                    {...register('priority')}
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('workOrders:form.fields.workType')}
-                  </label>
-                  <div className="flex flex-wrap gap-3">
-                    {WORK_TYPES.map((type) => (
-                      <label 
-                        key={type}
-                        className={cn(
-                          "relative flex items-center px-4 py-2 rounded-xl border-2 cursor-pointer transition-all duration-200",
-                          workType === type 
-                            ? "bg-primary-50 border-primary-600 dark:bg-primary-950/30 dark:border-primary-500" 
-                            : "bg-white border-neutral-200 hover:border-neutral-300 dark:bg-[#171717] dark:border-[#262626]"
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          className="sr-only"
-                          value={type}
-                          {...register('work_type')}
-                        />
-                        <span className={cn(
-                          "text-sm font-bold",
-                          workType === type ? "text-primary-700 dark:text-primary-400" : "text-neutral-600 dark:text-neutral-400"
-                        )}>
-                          {tCommon(`workType.${type}`)}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  {errors.work_type && (
-                    <p className="text-sm text-error-600 mt-1">{errors.work_type.message}</p>
-                  )}
-                </div>
-
-                {workType === 'other' && (
-                  <Input
-                    label={t('workOrders:form.fields.workTypeOther')}
-                    placeholder={t('workOrders:form.placeholders.workTypeOther')}
-                    error={errors.work_type_other?.message}
-                    {...register('work_type_other')}
-                  />
-                )}
-
-                <AccountNoWarning 
-                  workType={workType} 
-                  accountNo={siteData?.account_no}
-                  onAddAccountNo={() => setShowSiteModal(true)}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input
-                    label={t('workOrders:form.fields.scheduledDate')}
-                    type="date"
-                    leftIcon={Calendar}
-                    error={errors.scheduled_date?.message}
-                    {...register('scheduled_date')}
-                  />
-                  <Input
-                    label={t('workOrders:form.fields.scheduledTime')}
-                    type="time"
-                    leftIcon={Clock}
-                    error={errors.scheduled_time?.message}
-                    {...register('scheduled_time')}
-                  />
-                </div>
-
-                <Textarea
-                  label={t('workOrders:form.fields.description')}
-                  placeholder={t('workOrders:form.placeholders.description')}
-                  error={errors.description?.message}
-                  {...register('description')}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Select
-                    label={t('common:fields.currency')}
-                    options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
-                    error={errors.currency?.message}
-                    {...register('currency')}
-                  />
-                  <Input
-                    label={t('common:fields.amount')}
-                    type="number"
-                    step="0.01"
-                    rightIcon={<span className="text-neutral-400">{getCurrencySymbol(selectedCurrency)}</span>}
-                    error={errors.amount?.message}
-                    {...register('amount')}
-                  />
-                </div>
-              </div>
-            </Card>
-
-            {/* 3. Materials */}
-            <Card className="p-6">
-              <WorkOrderItemsEditor
-                control={control}
-                register={register}
-                errors={errors}
-                watch={watch}
-                setValue={setValue}
-                currency={selectedCurrency}
-              />
-            </Card>
+        <Card header={
+          <div className="flex items-center space-x-3 px-2">
+            <div className="p-2 bg-primary-50 dark:bg-primary-950/30 rounded-lg">
+              <FileText className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+            </div>
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
+              {t('workOrders:form.sections.workInfo')}
+            </h3>
           </div>
-
-          <div className="space-y-8">
-            {/* 4. Workers */}
-            <Card className="p-6">
-              <Controller
-                name="assigned_to"
-                control={control}
-                render={({ field }) => (
-                  <WorkerSelector
-                    value={field.value}
-                    onChange={field.onChange}
-                    error={errors.assigned_to?.message}
-                  />
-                )}
+        } className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
+          <div className="space-y-10 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Input
+                label={t('workOrders:form.fields.formNo')}
+                placeholder={t('workOrders:form.placeholders.formNo')}
+                error={errors.form_no?.message}
+                className="rounded-2xl"
+                {...register('form_no')}
               />
-            </Card>
+              <Select
+                label={t('workOrders:form.fields.priority')}
+                options={priorityOptions}
+                error={errors.priority?.message}
+                className="rounded-2xl"
+                {...register('priority')}
+              />
+            </div>
 
-            {/* 5. Internal Notes */}
-            <Card header={
-              <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5 text-warning-600" />
-                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
-                  {t('workOrders:form.sections.notes')}
-                </h3>
+            <div className="space-y-4">
+              <label className="block text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest ml-1">
+                {t('workOrders:form.fields.workType')}
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {WORK_TYPES.map((type) => (
+                  <label 
+                    key={type}
+                    className={cn(
+                      "relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 group",
+                      workType === type 
+                        ? "bg-primary-50/50 border-primary-600 dark:bg-primary-950/20 dark:border-primary-500 shadow-md scale-[1.02]" 
+                        : "bg-white border-neutral-100 hover:border-neutral-300 dark:bg-[#171717] dark:border-[#262626] hover:shadow-sm"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value={type}
+                      {...register('work_type')}
+                    />
+                    <span className={cn(
+                      "text-sm font-bold tracking-tight text-center",
+                      workType === type ? "text-primary-700 dark:text-primary-400" : "text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-neutral-200"
+                    )}>
+                      {tCommon(`workType.${type}`)}
+                    </span>
+                    {workType === type && (
+                      <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary-600 animate-pulse" />
+                    )}
+                  </label>
+                ))}
               </div>
-            } className="p-6">
+              {errors.work_type && (
+                <p className="text-sm text-red-600 mt-2 ml-1">{errors.work_type.message}</p>
+              )}
+            </div>
+
+            {workType === 'other' && (
+              <Input
+                label={t('workOrders:form.fields.workTypeOther')}
+                placeholder={t('workOrders:form.placeholders.workTypeOther')}
+                error={errors.work_type_other?.message}
+                className="rounded-2xl"
+                {...register('work_type_other')}
+              />
+            )}
+
+            <AccountNoWarning 
+              workType={workType} 
+              accountNo={siteData?.account_no}
+              onAddAccountNo={() => setShowSiteModal(true)}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Input
+                label={t('workOrders:form.fields.scheduledDate')}
+                type="date"
+                leftIcon={Calendar}
+                error={errors.scheduled_date?.message}
+                className="rounded-2xl"
+                {...register('scheduled_date')}
+              />
+              <Input
+                label={t('workOrders:form.fields.scheduledTime')}
+                type="time"
+                leftIcon={Clock}
+                error={errors.scheduled_time?.message}
+                className="rounded-2xl"
+                {...register('scheduled_time')}
+              />
+            </div>
+
+            <Textarea
+              label={t('workOrders:form.fields.description')}
+              placeholder={t('workOrders:form.placeholders.description')}
+              error={errors.description?.message}
+              className="rounded-2xl min-h-[120px]"
+              {...register('description')}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-neutral-100 dark:border-[#262626]">
+              <Select
+                label={t('common:fields.currency')}
+                options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
+                error={errors.currency?.message}
+                className="rounded-2xl"
+                {...register('currency')}
+              />
+              <Input
+                label={t('common:fields.amount')}
+                type="number"
+                step="0.01"
+                rightIcon={<span className="text-neutral-400 font-bold">{getCurrencySymbol(selectedCurrency)}</span>}
+                error={errors.amount?.message}
+                className="rounded-2xl"
+                {...register('amount')}
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* 3. Materials */}
+        <Card className="rounded-[2rem] p-8 overflow-hidden border-neutral-200/60 dark:border-[#262626] shadow-sm">
+          <WorkOrderItemsEditor
+            control={control}
+            register={register}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+            currency={selectedCurrency}
+          />
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* 4. Workers */}
+          <Card className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
+            <Controller
+              name="assigned_to"
+              control={control}
+              render={({ field }) => (
+                <WorkerSelector
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={errors.assigned_to?.message}
+                />
+              )}
+            />
+          </Card>
+
+          {/* 5. Internal Notes */}
+          <Card header={
+            <div className="flex items-center space-x-3 px-2">
+              <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
+                {t('workOrders:form.sections.notes')}
+              </h3>
+            </div>
+          } className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
+            <div className="pt-4">
               <Textarea
                 placeholder={t('workOrders:form.placeholders.notes')}
                 error={errors.notes?.message}
+                className="rounded-2xl min-h-[100px]"
                 {...register('notes')}
               />
-            </Card>
-          </div>
+            </div>
+          </Card>
         </div>
 
-        {/* Floating Action Bar for Mobile */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-[#171717]/80 backdrop-blur-md border-t border-neutral-200 dark:border-[#262626] z-50 flex gap-3 lg:static lg:bg-transparent lg:border-none lg:p-0 lg:justify-end">
-          <Button 
-            type="button" 
-            variant="outline" 
+        {/* Floating Action Bar — Mobile only (hero buttons on desktop) */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-[#171717]/80 backdrop-blur-md border-t border-neutral-200 dark:border-[#262626] z-50 flex gap-3 lg:hidden">
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => navigate(-1)}
-            className="flex-1 lg:flex-none"
+            className="flex-1"
             leftIcon={<X className="w-4 h-4" />}
           >
             {tCommon('actions.cancel')}
           </Button>
-          <Button 
-            type="submit" 
+          <Button
+            type="button"
+            onClick={handleSubmit(onSubmit, onInvalid)}
             loading={isSubmitting || createMutation.isPending || updateMutation.isPending}
-            className="flex-1 lg:flex-none"
+            className="flex-1"
             leftIcon={<Save className="w-4 h-4" />}
           >
             {isEdit ? tCommon('actions.save') : tCommon('actions.create')}

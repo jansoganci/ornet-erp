@@ -1,7 +1,13 @@
 {
   "appName": "Ornet ERP",
+  "footer": {
+    "copyright": "Ornet ERP",
+    "support": "Destek",
+    "privacy": "Gizlilik"
+  },
   "actions": {
     "menu": "Menü",
+    "actionsColumn": "İşlemler",
     "add": "Ekle",
     "edit": "Düzenle",
     "delete": "Sil",
@@ -27,7 +33,8 @@
     "refresh": "Yenile",
     "retry": "Tekrar Dene",
     "export": "Dışarı Aktar",
-    "clear": "Temizle"
+    "collapse": "Daralt",
+    "expand": "Genişlet"
   },
   "status": {
     "pending": "Bekliyor",
@@ -131,6 +138,13 @@
     "showing": "Gösterilen",
     "total": "Toplam"
   },
+  "breadcrumb": {
+    "new": "Yeni",
+    "detail": "Detay",
+    "edit": "Düzenle",
+    "import": "İçe Aktar",
+    "priceRevision": "Fiyat Revizyonu"
+  },
   "nav": {
     "dashboard": "Ana Sayfa",
     "dailyWork": "Günlük İşler",
@@ -143,6 +157,7 @@
     "subscriptions": "Abonelikler",
     "priceRevision": "Fiyat Revizyonu",
     "proposals": "Teklifler",
+    "equipment": "Ekipman Envanteri",
     "profile": "Profil",
     "settings": "Ayarlar",
     "logout": "Çıkış Yap",
@@ -161,7 +176,8 @@
       "exchange": "Döviz Kurları",
       "recurring": "Tekrarlanan Ödemeler",
       "reports": "Raporlar"
-    }
+    },
+    "account": "Hesap"
   },
   "workType": {
     "survey": "Keşif",
@@ -192,6 +208,8 @@
     "areYouSure": "Emin misiniz?"
   },
   "roles": {
-    "field_worker": "Saha Personeli"
+    "admin": "Yönetici",
+    "field_worker": "Saha Personeli",
+    "accountant": "Muhasebe"
   }
 }

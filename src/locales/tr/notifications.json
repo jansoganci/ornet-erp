@@ -30,8 +30,7 @@
     "work_order_assigned": "İş Emri Atandı",
     "task_due_soon": "Görev Vadesi Yaklaşıyor",
     "user_reminder": "Hatırlatma",
-    "sim_card_cancelled": "SIM Kart İptal Edildi",
-    "recurring_expense_pending": "Bekleyen Tekrarlı Ödeme"
+    "sim_card_cancelled": "SIM Kart İptal Edildi"
   },
   "reminder": {
     "addButton": "Hatırlatma Ekle",

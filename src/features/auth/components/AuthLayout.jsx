@@ -11,7 +11,7 @@ export function AuthLayout({ children, title, subtitle }) {
         {/* Logo / Brand */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+            <h1 className="text-2xl font-bold font-heading text-neutral-900 dark:text-neutral-50">
               Ornet ERP
             </h1>
           </Link>
@@ -23,7 +23,7 @@ export function AuthLayout({ children, title, subtitle }) {
           {(title || subtitle) && (
             <div className="text-center mb-6">
               {title && (
-                <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+                <h2 className="text-xl font-semibold font-heading text-neutral-900 dark:text-neutral-50">
                   {title}
                 </h2>
               )}

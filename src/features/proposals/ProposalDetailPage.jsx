@@ -2,26 +2,17 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Edit,
-  Download,
-  Send,
-  CheckCircle2,
-  XCircle,
-  Building2,
-  MapPin,
-  DollarSign,
   FileText,
   StickyNote,
-  Trash2,
-  ChevronRight,
   ClipboardList,
   Plus,
   Unlink,
-  ArrowRight,
-  TrendingUp,
+  CheckCircle2,
+  Download,
+  Receipt,
 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
-import { PageContainer, PageHeader } from '../../components/layout';
+import { PageContainer } from '../../components/layout';
 import {
   Button,
   Card,
@@ -30,7 +21,7 @@ import {
   ErrorState,
   Modal,
 } from '../../components/ui';
-import { formatDate, formatCurrency, proposalStatusVariant, workOrderStatusVariant } from '../../lib/utils';
+import { formatDate, formatCurrency, workOrderStatusVariant } from '../../lib/utils';
 import {
   useProposal,
   useProposalItems,
@@ -39,22 +30,29 @@ import {
   useProposalWorkOrders,
   useUnlinkWorkOrder,
 } from './hooks';
-import { ProposalStatusBadge } from './components/ProposalStatusBadge';
 import { ProposalPdf } from './components/ProposalPdf';
+import { ProposalHero } from './components/ProposalHero';
+import { ProposalSiteCard } from './components/ProposalSiteCard';
+import { ProposalSummaryCard } from './components/ProposalSummaryCard';
 
 function DetailSkeleton() {
   return (
-    <PageContainer maxWidth="lg" padding="default" className="space-y-6">
-      <div className="space-y-2 mb-6">
-        <Skeleton className="h-8 w-1/3" />
-        <Skeleton className="h-4 w-48" />
+    <PageContainer maxWidth="full" padding="default" className="space-y-6">
+      <div className="space-y-4 mb-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-24" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-8 w-12" />
+          </div>
+        </div>
+        <Skeleton className="h-36 w-full rounded-xl" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="h-24" />
-        <Card className="h-24" />
-        <Card className="h-24" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
       </div>
-      <Card className="h-64" />
+      <Skeleton className="h-64 rounded-xl" />
     </PageContainer>
   );
 }
@@ -67,6 +65,7 @@ export function ProposalDetailPage() {
 
   const [confirmAction, setConfirmAction] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFaturalandirModal, setShowFaturalandirModal] = useState(false);
   const [unlinkWoId, setUnlinkWoId] = useState(null);
 
   const { data: proposal, isLoading, error, refetch } = useProposal(id);
@@ -80,7 +79,7 @@ export function ProposalDetailPage() {
 
   if (error || !proposal) {
     return (
-      <PageContainer maxWidth="lg" padding="default">
+      <PageContainer maxWidth="full" padding="default">
         <ErrorState
           message={error?.message || t('common:error.title')}
           onRetry={() => refetch()}
@@ -94,7 +93,14 @@ export function ProposalDetailPage() {
 
   const currency = proposal.currency ?? 'USD';
   const subtotal = items.reduce(
-    (sum, item) => sum + Number(item.line_total ?? item.total_usd ?? item.quantity * (item.unit_price ?? item.unit_price_usd) ?? 0),
+    (sum, item) =>
+      sum +
+      Number(
+        item.line_total ??
+          item.total_usd ??
+          item.quantity * (item.unit_price ?? item.unit_price_usd) ??
+          0
+      ),
     0
   );
   const discountPercent = Number(proposal.discount_percent) || 0;
@@ -103,7 +109,10 @@ export function ProposalDetailPage() {
 
   const totalCosts = items.reduce((sum, item) => {
     const qty = Number(item.quantity) || 0;
-    const single = (item.cost ?? item.cost_usd) != null && (item.cost ?? item.cost_usd) !== '' ? Number(item.cost ?? item.cost_usd) : NaN;
+    const single =
+      (item.cost ?? item.cost_usd) != null && (item.cost ?? item.cost_usd) !== ''
+        ? Number(item.cost ?? item.cost_usd)
+        : NaN;
     if (Number.isFinite(single)) {
       return sum + single * qty;
     }
@@ -117,9 +126,10 @@ export function ProposalDetailPage() {
   const netProfit = grandTotal - totalCosts;
 
   const handleStatusChange = (newStatus) => {
-    statusMutation.mutate({ id, status: newStatus }, {
-      onSuccess: () => setConfirmAction(null),
-    });
+    statusMutation.mutate(
+      { id, status: newStatus },
+      { onSuccess: () => setConfirmAction(null) }
+    );
   };
 
   const handleDelete = () => {
@@ -129,9 +139,7 @@ export function ProposalDetailPage() {
   };
 
   const handleDownloadPdf = async () => {
-    const blob = await pdf(
-      <ProposalPdf proposal={proposal} items={items} />
-    ).toBlob();
+    const blob = await pdf(<ProposalPdf proposal={proposal} items={items} />).toBlob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -142,516 +150,241 @@ export function ProposalDetailPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleEdit = () => navigate(`/proposals/${id}/edit`);
+
   return (
-    <PageContainer maxWidth="lg" padding="default" className="space-y-6 pb-24">
-      {/* Header */}
-      <PageHeader
-        title={proposal.title}
-        description={
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <ProposalStatusBadge status={proposal.status} />
-            <span className="text-neutral-300 dark:text-neutral-700">|</span>
-            <Badge variant="default" size="sm" className="font-mono">
-              {proposal.proposal_no}
-            </Badge>
-          </div>
-        }
-        breadcrumbs={[
-          { label: t('proposals:list.title'), to: '/proposals' },
-          ...(proposal.customer_id
-            ? [{ label: proposal.customer_company_name || proposal.company_name, to: `/customers/${proposal.customer_id}` }]
-            : [{ label: '—', to: null }]),
-          { label: proposal.title },
-        ]}
-        actions={
-          <div className="hidden lg:flex items-center gap-2">
-            <Button
-              variant="outline"
-              leftIcon={<Edit className="w-4 h-4" />}
-              onClick={() => navigate(`/proposals/${id}/edit`)}
-            >
-              {t('proposals:detail.actions.edit')}
-            </Button>
-            <Button
-              variant="outline"
-              leftIcon={<Download className="w-4 h-4" />}
-              onClick={handleDownloadPdf}
-            >
-              {t('proposals:detail.actions.downloadPdf')}
-            </Button>
-          </div>
-        }
+    <PageContainer maxWidth="full" padding="default" className="space-y-5 pb-24">
+      {/* Hero */}
+      <ProposalHero
+        proposal={proposal}
+        grandTotal={grandTotal}
+        netProfit={netProfit}
+        linkedWorkOrders={linkedWorkOrders}
+        onEdit={handleEdit}
+        onDelete={() => setShowDeleteConfirm(true)}
+        onDownloadPdf={handleDownloadPdf}
+        onFlowAction={setConfirmAction}
+        onFaturalandir={() => setShowFaturalandirModal(true)}
+        flowLoading={statusMutation.isPending}
       />
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-3 bg-primary-50 dark:bg-primary-950/30 rounded-lg">
-            <DollarSign className="w-6 h-6 text-primary-600" />
-          </div>
-          <div>
-            <p className="text-xs text-neutral-500 uppercase font-bold tracking-wider">
-              {t('proposals:detail.total')}
-            </p>
-            <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(grandTotal, currency)}
-            </p>
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-3 bg-success-50 dark:bg-success-950/30 rounded-lg">
-            <TrendingUp className="w-6 h-6 text-success-600" />
-          </div>
-          <div>
-            <p className="text-xs text-neutral-500 uppercase font-bold tracking-wider">
-              {t('proposals:detail.netProfit')}
-            </p>
-            <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(netProfit, currency)}
-            </p>
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-3 bg-neutral-100 dark:bg-[#262626] rounded-lg">
-            <FileText className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
-          </div>
-          <div>
-            <p className="text-xs text-neutral-500 uppercase font-bold tracking-wider">
-              {t('common:status.active', 'Durum')}
-            </p>
-            <div className="mt-1">
-              <ProposalStatusBadge status={proposal.status} />
-            </div>
-            {proposal.sent_at && (
-              <p className="text-xs text-neutral-400 mt-1">
-                {formatDate(proposal.sent_at)}
-              </p>
-            )}
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center gap-4">
-          <div className="p-3 bg-neutral-100 dark:bg-[#262626] rounded-lg">
-            <ClipboardList className="w-6 h-6 text-neutral-600 dark:text-neutral-400" />
-          </div>
-          <div>
-            <p className="text-xs text-neutral-500 uppercase font-bold tracking-wider">
-              {t('proposals:detail.workOrders')}
-            </p>
-            {linkedWorkOrders.length > 0 ? (
-              <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-                {linkedWorkOrders.filter((wo) => wo.status === 'completed').length}/{linkedWorkOrders.length}
-                <span className="text-sm font-normal text-neutral-500 ml-1">{t('common:status.completed').toLowerCase()}</span>
-              </p>
-            ) : (
-              <p className="text-sm text-neutral-500 mt-1">-</p>
-            )}
-          </div>
-        </Card>
+      {/* Lokasyon + Özet kartları — desktop: 1x2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ProposalSiteCard proposal={proposal} />
+        <ProposalSummaryCard proposal={proposal} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Items */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Items Table */}
-          <Card className="overflow-hidden">
-            <div className="bg-neutral-50 dark:bg-[#1a1a1a] px-6 py-4 border-b border-neutral-200 dark:border-[#262626]">
-              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
-                {t('proposals:detail.items')}
-              </h3>
-            </div>
-            <div className="p-6">
-              {items.length === 0 ? (
-                <p className="text-sm text-neutral-500">{t('common:empty.noItems')}</p>
-              ) : (
-                <div className="space-y-3">
-                  {items.map((item, index) => {
-                    const lineTotal = Number(item.line_total ?? item.total_usd ?? item.quantity * (item.unit_price ?? item.unit_price_usd) ?? 0);
-                    return (
-                      <div
-                        key={item.id || index}
-                        className="flex items-start justify-between py-2 border-b border-neutral-100 dark:border-[#1a1a1a] last:border-0"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-neutral-900 dark:text-neutral-100">
-                            {item.quantity > 1 && (
-                              <span className="font-mono text-neutral-500 mr-1">
-                                {item.quantity}x
-                              </span>
-                            )}
-                            {item.description}
-                          </p>
-                          {item.quantity > 1 && (
-                            <p className="text-xs text-neutral-400 mt-0.5">
-                              @ {formatCurrency(item.unit_price ?? item.unit_price_usd, currency)}
-                            </p>
-                          )}
-                        </div>
-                        <span className="font-semibold text-neutral-900 dark:text-neutral-100 ml-4 whitespace-nowrap">
-                          {formatCurrency(lineTotal, currency)}
-                        </span>
-                      </div>
-                    );
-                  })}
-
-                  {/* Totals */}
-                  {discountPercent > 0 && (
-                    <>
-                      <div className="flex items-center justify-between py-1 text-sm">
-                        <span className="text-neutral-600 dark:text-neutral-400">{t('proposals:detail.subtotal')}</span>
-                        <span>{formatCurrency(subtotal, currency)}</span>
-                      </div>
-                      <div className="flex items-center justify-between py-1 text-sm">
-                        <span className="text-neutral-600 dark:text-neutral-400">{t('proposals:detail.discountAmount')}</span>
-                        <span>-{formatCurrency(discountAmount, currency)}</span>
-                      </div>
-                    </>
-                  )}
-                  <div className="flex items-center justify-between pt-4 border-t-2 border-neutral-900 dark:border-neutral-100">
-                    <span className="font-bold text-neutral-900 dark:text-neutral-100 uppercase text-sm">
-                      {t('proposals:detail.total')}
-                    </span>
-                    <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-                      {formatCurrency(grandTotal, currency)}
+      {/* Malzemeler */}
+      <Card className="overflow-hidden">
+        <div className="bg-neutral-50 dark:bg-[#1a1a1a] px-6 py-4 border-b border-neutral-200 dark:border-[#262626]">
+          <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+            {t('proposals:detail.items')}
+          </h3>
+        </div>
+        <div className="p-6">
+          {items.length === 0 ? (
+            <p className="text-sm text-neutral-500">{t('common:empty.noItems')}</p>
+          ) : (
+            <div className="space-y-3">
+              {items.map((item, index) => {
+                const lineTotal = Number(
+                  item.line_total ??
+                    item.total_usd ??
+                    item.quantity * (item.unit_price ?? item.unit_price_usd) ??
+                    0
+                );
+                return (
+                  <div
+                    key={item.id || index}
+                    className="flex items-start justify-between py-2 border-b border-neutral-100 dark:border-[#1a1a1a] last:border-0"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-neutral-900 dark:text-neutral-100">
+                        {item.quantity > 1 && (
+                          <span className="font-mono text-neutral-500 mr-1">{item.quantity}x</span>
+                        )}
+                        {item.description}
+                      </p>
+                      {item.quantity > 1 && (
+                        <p className="text-xs text-neutral-400 mt-0.5">
+                          @ {formatCurrency(item.unit_price ?? item.unit_price_usd, currency)}
+                        </p>
+                      )}
+                    </div>
+                    <span className="font-semibold text-neutral-900 dark:text-neutral-100 ml-4 whitespace-nowrap">
+                      {formatCurrency(lineTotal, currency)}
                     </span>
                   </div>
-                </div>
+                );
+              })}
+
+              {discountPercent > 0 && (
+                <>
+                  <div className="flex items-center justify-between py-1 text-sm">
+                    <span className="text-neutral-600 dark:text-neutral-400">
+                      {t('proposals:detail.subtotal')}
+                    </span>
+                    <span>{formatCurrency(subtotal, currency)}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1 text-sm">
+                    <span className="text-neutral-600 dark:text-neutral-400">
+                      {t('proposals:detail.discountAmount')}
+                    </span>
+                    <span>-{formatCurrency(discountAmount, currency)}</span>
+                  </div>
+                </>
               )}
+              <div className="flex items-center justify-between pt-4 border-t-2 border-neutral-900 dark:border-neutral-100">
+                <span className="font-bold text-neutral-900 dark:text-neutral-100 uppercase text-sm">
+                  {t('proposals:detail.total')}
+                </span>
+                <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
+                  {formatCurrency(grandTotal, currency)}
+                </span>
+              </div>
             </div>
-          </Card>
-
-          {/* Scope of Work */}
-          {proposal.scope_of_work && (
-            <Card className="p-6">
-              <div className="flex items-center space-x-2 mb-4">
-                <FileText className="w-4 h-4 text-primary-600" />
-                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
-                  {t('proposals:detail.scopeOfWork')}
-                </h3>
-              </div>
-              <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">
-                {proposal.scope_of_work}
-              </p>
-            </Card>
-          )}
-
-          {/* Completion Banner */}
-          {proposal.status === 'completed' && (
-            <Card className="p-6 bg-success-50 dark:bg-success-950/20 border-success-200 dark:border-success-900/30">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="p-3 bg-success-100 dark:bg-success-900/30 rounded-lg shrink-0">
-                  <CheckCircle2 className="w-6 h-6 text-success-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-success-900 dark:text-success-100">
-                    {t('proposals:detail.completionBanner.title')}
-                  </p>
-                  <p className="text-sm text-success-700 dark:text-success-300 mt-0.5">
-                    {t('proposals:detail.completionBanner.description')}
-                  </p>
-                </div>
-                <Button
-                  variant="primary"
-                  className="shrink-0"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
-                  onClick={() => navigate(`/proposals/${id}/finalize`)}
-                >
-                  {t('proposals:detail.completionBanner.action')}
-                </Button>
-              </div>
-            </Card>
-          )}
-
-          {/* Linked Work Orders */}
-          {(proposal.status === 'accepted' || proposal.status === 'completed') && (
-            <Card className="overflow-hidden">
-              <div className="bg-neutral-50 dark:bg-[#1a1a1a] px-6 py-4 border-b border-neutral-200 dark:border-[#262626] flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <ClipboardList className="w-4 h-4 text-primary-600" />
-                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
-                    {t('proposals:detail.workOrders')}
-                  </h3>
-                  {linkedWorkOrders.length > 0 && (
-                    <Badge variant="default" size="sm">
-                      {t('proposals:detail.workOrderCount', {
-                        completed: linkedWorkOrders.filter((wo) => wo.status === 'completed').length,
-                        total: linkedWorkOrders.length,
-                      })}
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  leftIcon={<Plus className="w-3.5 h-3.5" />}
-                  disabled={!proposal.site_id}
-                  title={!proposal.site_id ? t('proposals:detail.addWorkOrderNoSiteHint') : undefined}
-                  onClick={() => {
-                    if (!proposal.site_id) return;
-                    const params = new URLSearchParams({
-                      proposalId: id,
-                      customerId: proposal.customer_id || '',
-                      siteId: proposal.site_id,
-                    });
-                    navigate(`/work-orders/new?${params.toString()}`);
-                  }}
-                >
-                  {!proposal.site_id ? t('proposals:detail.addWorkOrderNoSite') : t('proposals:detail.addWorkOrder')}
-                </Button>
-              </div>
-              <div className="p-6">
-                {linkedWorkOrders.length === 0 ? (
-                  <p className="text-sm text-neutral-500 text-center py-4">
-                    {t('proposals:detail.noWorkOrders')}
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {linkedWorkOrders.map((wo) => (
-                      <div
-                        key={wo.id}
-                        className="flex items-center justify-between py-3 px-4 rounded-xl border border-neutral-100 dark:border-[#262626] hover:bg-neutral-50 dark:hover:bg-[#1a1a1a] transition-colors group"
-                      >
-                        <Link
-                          to={`/work-orders/${wo.id}`}
-                          className="flex-1 min-w-0 flex items-center gap-3"
-                        >
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate">
-                                {t(`common:workType.${wo.work_type}`)}
-                              </span>
-                              {wo.form_no && (
-                                <span className="text-xs font-mono text-neutral-400">
-                                  #{wo.form_no}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {wo.scheduled_date && (
-                                <span className="text-xs text-neutral-500">
-                                  {formatDate(wo.scheduled_date)}
-                                </span>
-                              )}
-                              {wo.description && (
-                                <span className="text-xs text-neutral-400 truncate max-w-[200px]">
-                                  {wo.description}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </Link>
-                        <div className="flex items-center gap-2 shrink-0 ml-3">
-                          <Badge variant={workOrderStatusVariant[wo.status]} dot size="sm">
-                            {t(`common:status.${wo.status}`)}
-                          </Badge>
-                          <button
-                            type="button"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                            title={t('proposals:detail.unlinkWorkOrder')}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setUnlinkWoId(wo.id);
-                            }}
-                          >
-                            <Unlink className="w-3.5 h-3.5 text-neutral-400" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Card>
           )}
         </div>
+      </Card>
 
-        {/* Right Column - Info & Actions */}
-        <div className="space-y-6">
-          {/* Site Info */}
-          <Card className="p-5">
-            <div className="flex items-center space-x-2 mb-4">
-              <Building2 className="w-4 h-4 text-primary-600" />
+      {/* İş Kapsamı */}
+      {proposal.scope_of_work && (
+        <Card className="p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <FileText className="w-4 h-4 text-primary-600" />
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+              {t('proposals:detail.scopeOfWork')}
+            </h3>
+          </div>
+          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">
+            {proposal.scope_of_work}
+          </p>
+        </Card>
+      )}
+
+      {/* Bağlı İş Emirleri */}
+      {(proposal.status === 'accepted' || proposal.status === 'completed') && (
+        <Card className="overflow-hidden">
+          <div className="bg-neutral-50 dark:bg-[#1a1a1a] px-6 py-4 border-b border-neutral-200 dark:border-[#262626] flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <ClipboardList className="w-4 h-4 text-primary-600" />
               <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
-                {t('customers:sites.fields.siteName', 'Lokasyon')}
+                {t('proposals:detail.workOrders')}
               </h3>
-            </div>
-            <div className="space-y-3 text-sm">
-              {proposal.site_id ? (
-                <>
-                  {proposal.site_name && (
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-1">
-                        {t('customers:sites.fields.siteName', 'Lokasyon')}
-                      </p>
-                      <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                        {proposal.site_name}
-                      </p>
-                    </div>
-                  )}
-                  {proposal.site_address && (
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-1">
-                        {t('customers:sites.fields.address', 'Adres')}
-                      </p>
-                      <div className="flex items-start">
-                        <MapPin className="w-3.5 h-3.5 mr-1.5 mt-0.5 text-neutral-400 shrink-0" />
-                        <p className="text-neutral-700 dark:text-neutral-300">{proposal.site_address}</p>
-                      </div>
-                    </div>
-                  )}
-                  {proposal.account_no && (
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-1">
-                        {t('customers:sites.fields.accountNo', 'Hesap No')}
-                      </p>
-                      <Badge variant="info" className="font-mono">{proposal.account_no}</Badge>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-                  {t('proposals:form.noSite')}
-                </p>
+              {linkedWorkOrders.length > 0 && (
+                <Badge variant="default" size="sm">
+                  {t('proposals:detail.workOrderCount', {
+                    completed: linkedWorkOrders.filter((wo) => wo.status === 'completed').length,
+                    total: linkedWorkOrders.length,
+                  })}
+                </Badge>
               )}
             </div>
-          </Card>
-
-          {/* Internal Notes */}
-          {proposal.notes && (
-            <Card className="p-5">
-              <div className="flex items-center space-x-2 mb-4">
-                <StickyNote className="w-4 h-4 text-primary-600" />
-                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
-                  {t('proposals:detail.notes')}
-                </h3>
-              </div>
-              <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
-                {proposal.notes}
-              </p>
-            </Card>
-          )}
-
-          {/* Actions */}
-          <div className="space-y-3">
-            {proposal.status === 'draft' && (
-              <>
-                <Button
-                  className="w-full"
-                  leftIcon={<Send className="w-4 h-4" />}
-                  onClick={() => setConfirmAction('sent')}
-                  loading={statusMutation.isPending}
-                >
-                  {t('proposals:detail.actions.markSent')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  leftIcon={<Edit className="w-4 h-4" />}
-                  onClick={() => navigate(`/proposals/${id}/edit`)}
-                >
-                  {t('proposals:detail.actions.edit')}
-                </Button>
-              </>
-            )}
-
-            {proposal.status === 'sent' && (
-              <>
-                <Button
-                  variant="primary"
-                  className="w-full"
-                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                  onClick={() => setConfirmAction('accepted')}
-                  loading={statusMutation.isPending}
-                >
-                  {t('proposals:detail.actions.accept')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  leftIcon={<XCircle className="w-4 h-4" />}
-                  onClick={() => setConfirmAction('rejected')}
-                >
-                  {t('proposals:detail.actions.reject')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  leftIcon={<Edit className="w-4 h-4" />}
-                  onClick={() => navigate(`/proposals/${id}/edit`)}
-                >
-                  {t('proposals:detail.actions.edit')}
-                </Button>
-              </>
-            )}
-
-            {proposal.status === 'accepted' && (
-              <>
-                <Button
-                  variant="primary"
-                  className="w-full"
-                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                  onClick={() => setConfirmAction('completed')}
-                  loading={statusMutation.isPending}
-                >
-                  {t('proposals:detail.actions.markComplete')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  leftIcon={<Edit className="w-4 h-4" />}
-                  onClick={() => navigate(`/proposals/${id}/edit`)}
-                >
-                  {t('proposals:detail.actions.edit')}
-                </Button>
-              </>
-            )}
-
-            {(proposal.status === 'completed' || proposal.status === 'rejected' || proposal.status === 'cancelled') && (
-              <Button
-                variant="outline"
-                className="w-full"
-                leftIcon={<Edit className="w-4 h-4" />}
-                onClick={() => navigate(`/proposals/${id}/edit`)}
-              >
-                {t('proposals:detail.actions.edit')}
-              </Button>
-            )}
-
             <Button
               variant="outline"
-              className="w-full"
-              leftIcon={<Download className="w-4 h-4" />}
-              onClick={handleDownloadPdf}
+              size="sm"
+              leftIcon={<Plus className="w-3.5 h-3.5" />}
+              disabled={!proposal.site_id}
+              title={!proposal.site_id ? t('proposals:detail.addWorkOrderNoSiteHint') : undefined}
+              onClick={() => {
+                if (!proposal.site_id) return;
+                const params = new URLSearchParams({
+                  proposalId: id,
+                  customerId: proposal.customer_id || '',
+                  siteId: proposal.site_id,
+                });
+                navigate(`/work-orders/new?${params.toString()}`);
+              }}
             >
-              {t('proposals:detail.actions.downloadPdf')}
+              {!proposal.site_id
+                ? t('proposals:detail.addWorkOrderNoSite')
+                : t('proposals:detail.addWorkOrder')}
             </Button>
-
-            {proposal.status === 'draft' && (
-              <Button
-                variant="ghost"
-                className="w-full text-error-600 hover:text-error-700"
-                leftIcon={<Trash2 className="w-4 h-4" />}
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                {tCommon('actions.delete')}
-              </Button>
+          </div>
+          <div className="p-6">
+            {linkedWorkOrders.length === 0 ? (
+              <p className="text-sm text-neutral-500 text-center py-4">
+                {t('proposals:detail.noWorkOrders')}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {linkedWorkOrders.map((wo) => (
+                  <div
+                    key={wo.id}
+                    className="flex items-center justify-between py-3 px-4 rounded-xl border border-neutral-100 dark:border-[#262626] hover:bg-neutral-50 dark:hover:bg-[#1a1a1a] transition-colors group"
+                  >
+                    <Link
+                      to={`/work-orders/${wo.id}`}
+                      className="flex-1 min-w-0 flex items-center gap-3"
+                    >
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate">
+                            {t(`common:workType.${wo.work_type}`)}
+                          </span>
+                          {wo.form_no && (
+                            <span className="text-xs font-mono text-neutral-400">#{wo.form_no}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {wo.scheduled_date && (
+                            <span className="text-xs text-neutral-500">
+                              {formatDate(wo.scheduled_date)}
+                            </span>
+                          )}
+                          {wo.description && (
+                            <span className="text-xs text-neutral-400 truncate max-w-[200px]">
+                              {wo.description}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <Badge variant={workOrderStatusVariant[wo.status]} dot size="sm">
+                        {t(`common:status.${wo.status}`)}
+                      </Badge>
+                      <button
+                        type="button"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                        title={t('proposals:detail.unlinkWorkOrder')}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setUnlinkWoId(wo.id);
+                        }}
+                      >
+                        <Unlink className="w-3.5 h-3.5 text-neutral-400" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        </div>
-      </div>
+        </Card>
+      )}
 
-      {/* Floating Action Bar for Mobile */}
+      {/* Dahili Notlar */}
+      {proposal.notes && (
+        <Card className="p-5">
+          <div className="flex items-center space-x-2 mb-4">
+            <StickyNote className="w-4 h-4 text-primary-600" />
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+              {t('proposals:detail.notes')}
+            </h3>
+          </div>
+          <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
+            {proposal.notes}
+          </p>
+        </Card>
+      )}
+
+      {/* Mobil FAB */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-[#171717]/80 backdrop-blur-md border-t border-neutral-200 dark:border-[#262626] z-50 flex gap-3 lg:hidden">
         {proposal.status === 'draft' && (
           <>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => navigate(`/proposals/${id}/edit`)}
-            >
+            <Button variant="outline" className="flex-1" onClick={handleEdit}>
               {t('proposals:detail.actions.edit')}
             </Button>
             <Button
@@ -665,11 +398,7 @@ export function ProposalDetailPage() {
         )}
         {proposal.status === 'sent' && (
           <>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => navigate(`/proposals/${id}/edit`)}
-            >
+            <Button variant="outline" className="flex-1" onClick={handleEdit}>
               {t('proposals:detail.actions.edit')}
             </Button>
             <Button
@@ -680,22 +409,14 @@ export function ProposalDetailPage() {
             >
               {t('proposals:detail.actions.accept')}
             </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setConfirmAction('rejected')}
-            >
+            <Button variant="outline" className="flex-1" onClick={() => setConfirmAction('rejected')}>
               {t('proposals:detail.actions.reject')}
             </Button>
           </>
         )}
         {proposal.status === 'accepted' && (
           <>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => navigate(`/proposals/${id}/edit`)}
-            >
+            <Button variant="outline" className="flex-1" onClick={handleEdit}>
               {t('proposals:detail.actions.edit')}
             </Button>
             <Button
@@ -717,13 +438,32 @@ export function ProposalDetailPage() {
             </Button>
           </>
         )}
-        {(proposal.status === 'completed' || proposal.status === 'rejected' || proposal.status === 'cancelled') && (
+        {proposal.status === 'completed' && (
           <>
+            <Button
+              variant="success"
+              className="flex-1"
+              leftIcon={<Receipt className="w-4 h-4" />}
+              onClick={() => setShowFaturalandirModal(true)}
+            >
+              {t('proposals:detail.actions.faturalandir')}
+            </Button>
+            <Button variant="outline" className="flex-1" onClick={handleEdit}>
+              {t('proposals:detail.actions.edit')}
+            </Button>
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => navigate(`/proposals/${id}/edit`)}
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={handleDownloadPdf}
             >
+              {t('proposals:detail.actions.downloadPdf')}
+            </Button>
+          </>
+        )}
+        {(proposal.status === 'rejected' || proposal.status === 'cancelled') && (
+          <>
+            <Button variant="outline" className="flex-1" onClick={handleEdit}>
               {t('proposals:detail.actions.edit')}
             </Button>
             <Button
@@ -788,6 +528,22 @@ export function ProposalDetailPage() {
       >
         <p className="text-sm text-neutral-700 dark:text-neutral-300">
           {tCommon('confirm.deleteMessage')}
+        </p>
+      </Modal>
+
+      {/* Faturalandır — Yakında Modal */}
+      <Modal
+        open={showFaturalandirModal}
+        onClose={() => setShowFaturalandirModal(false)}
+        title={t('proposals:detail.actions.faturalandir')}
+        footer={
+          <Button variant="primary" onClick={() => setShowFaturalandirModal(false)}>
+            {tCommon('actions.close')}
+          </Button>
+        }
+      >
+        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+          {t('proposals:detail.comingSoon')}
         </p>
       </Modal>
 

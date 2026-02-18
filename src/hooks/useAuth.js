@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import * as Sentry from "@sentry/react";
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import * as authApi from '../features/auth/api';
 
@@ -35,15 +36,37 @@ export function useAuth() {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        Sentry.setUser({
+          id: currentUser.id,
+          email: currentUser.email,
+          username: currentUser.user_metadata?.full_name,
+        });
+      }
+
       setLoading(false);
     });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        
+        if (currentUser) {
+          Sentry.setUser({
+            id: currentUser.id,
+            email: currentUser.email,
+            username: currentUser.user_metadata?.full_name,
+          });
+        } else if (event === 'SIGNED_OUT') {
+          Sentry.setUser(null);
+        }
+
         setLoading(false);
       }
     );

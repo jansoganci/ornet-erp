@@ -13,6 +13,7 @@ import {
   Textarea,
   Card,
   Spinner,
+  FormSkeleton,
 } from '../../components/ui';
 import { proposalSchema, proposalDefaultValues, CURRENCIES } from './schema';
 import {
@@ -128,13 +129,7 @@ export function ProposalFormPage() {
   };
 
   if (isEdit && (isProposalLoading || isItemsLoading)) {
-    return (
-      <PageContainer maxWidth="xl" padding="default">
-        <div className="flex justify-center py-12">
-          <Spinner size="lg" />
-        </div>
-      </PageContainer>
-    );
+    return <FormSkeleton />;
   }
 
   return (

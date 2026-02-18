@@ -6,18 +6,17 @@ import * as recurringApi from './recurringApi';
 import { recurringKeys } from './recurringApi';
 
 // Templates
+export function useTemplateLastGenerated() {
+  return useQuery({
+    queryKey: recurringKeys.lastGenerated(),
+    queryFn: () => recurringApi.fetchTemplateLastGenerated(),
+  });
+}
+
 export function useRecurringTemplates(filters) {
   return useQuery({
     queryKey: recurringKeys.list(filters),
     queryFn: () => recurringApi.fetchRecurringTemplates(filters),
-  });
-}
-
-export function useRecurringTemplate(id) {
-  return useQuery({
-    queryKey: recurringKeys.detail(id),
-    queryFn: () => recurringApi.fetchRecurringTemplate(id),
-    enabled: !!id,
   });
 }
 
@@ -43,12 +42,24 @@ export function useUpdateRecurringTemplate() {
 
   return useMutation({
     mutationFn: ({ id, data }) => recurringApi.updateRecurringTemplate(id, data),
-    onSuccess: (data) => {
-      // Invalidate all recurring template queries to ensure UI updates
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: recurringKeys.lists() });
+      const previous = queryClient.getQueryData(recurringKeys.list(undefined));
+      if (previous) {
+        queryClient.setQueryData(recurringKeys.list(undefined), (old) =>
+          old?.map((tpl) => (tpl.id === id ? { ...tpl, ...data } : tpl))
+        );
+      }
+      return { previous };
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: recurringKeys.all });
       toast.success(t('success.updated'));
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(recurringKeys.list(undefined), context.previous);
+      }
       toast.error(getErrorMessage(error, 'common.updateFailed'));
     },
   });

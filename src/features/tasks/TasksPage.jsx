@@ -141,8 +141,9 @@ export function TasksPage() {
         title={t('list.title')}
         actions={
           <Button
+            variant="primary"
             onClick={openNewTaskModal}
-            leftIcon={<Plus className="w-4 h-4" />}
+            leftIcon={<Plus className="w-5 h-5" />}
           >
             {t('list.addButton')}
           </Button>
@@ -152,16 +153,19 @@ export function TasksPage() {
       {/* Quick-add bar */}
       <QuickPlanInput />
 
-      {/* Assignee filter */}
+      {/* Filters */}
       {profiles?.length > 1 && (
-        <div className="max-w-xs">
-          <Select
-            label={t('form.fields.assignedTo')}
-            options={assigneeOptions}
-            value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-          />
-        </div>
+        <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
+          <div className="max-w-xs">
+            <Select
+              options={assigneeOptions}
+              value={assigneeFilter}
+              onChange={(e) => setAssigneeFilter(e.target.value)}
+              placeholder={t('list.filters.all')}
+              className="w-full"
+            />
+          </div>
+        </Card>
       )}
 
       {/* Content: 2-column layout on desktop, single on mobile */}

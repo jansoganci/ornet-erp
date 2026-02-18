@@ -14,6 +14,7 @@ import {
   ErrorState,
   Spinner,
   IconButton,
+  TableSkeleton,
 } from '../../components/ui';
 import { formatDate } from '../../lib/utils';
 import { useSubscriptions, useCurrentProfile, useBulkUpdateSubscriptionPrices } from './hooks';
@@ -85,6 +86,26 @@ export function PriceRevisionPage() {
   };
 
   const hasEdits = Object.keys(editsById).length > 0;
+
+  if (isLoading) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('subscriptions:priceRevision.title')} />
+        <div className="mt-6">
+          <TableSkeleton cols={8} />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer maxWidth="xl" padding="default">
+        <PageHeader title={t('subscriptions:priceRevision.title')} />
+        <ErrorState message={error.message} onRetry={refetch} />
+      </PageContainer>
+    );
+  }
 
   if (!isAdmin) {
     return (

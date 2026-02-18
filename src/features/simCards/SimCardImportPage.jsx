@@ -6,7 +6,8 @@ import { Upload, AlertCircle, CheckCircle2, X, Save, HelpCircle, Download } from
 import { useBulkCreateSimCards } from './hooks';
 import { useCustomers } from '../customers/hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, Card, Badge, Spinner } from '../../components/ui';
+import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 export function SimCardImportPage() {
   const { t } = useTranslation(['simCards', 'common']);
@@ -148,6 +149,17 @@ export function SimCardImportPage() {
       console.error('Import failed:', err);
     }
   };
+
+  if (bulkCreateMutation.isError) {
+    return (
+      <PageContainer maxWidth="xl">
+        <ErrorState 
+          message={getErrorMessage(bulkCreateMutation.error)} 
+          onRetry={() => bulkCreateMutation.reset()} 
+        />
+      </PageContainer>
+    );
+  }
 
   const handleReset = () => {
     setData([]);

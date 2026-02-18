@@ -69,7 +69,7 @@ export function NavGroup({
       <div
         id={`nav-group-${id}`}
         className={cn(
-          'overflow-hidden transition-[grid-template-rows] duration-200 ease-in-out grid',
+          'overflow-hidden transition-[grid-template-rows] duration-300 ease-in-out grid',
           isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         )}
       >
@@ -91,17 +91,26 @@ export function NavGroup({
                   className={({ isActive }) =>
                     cn(
                       navLinkBaseClass,
+                      'relative transition-all duration-200',
                       isCollapsed && !compact && 'justify-center',
                       isActive
-                        ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400'
+                        ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400 shadow-sm border-l-2 border-primary-600 dark:border-primary-500'
                         : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-200'
                     )
                   }
                 >
                   <ChildIcon className="w-5 h-5 flex-shrink-0" />
                   {(!isCollapsed || compact) && (
-                    <span className="truncate">
+                    <span className="flex-1 truncate">
                       {t(child.labelKey?.includes(':') ? child.labelKey : `common:${child.labelKey}`)}
+                    </span>
+                  )}
+                  {child.badge && child.badge > 0 && (
+                    <span className={cn(
+                      'flex items-center justify-center rounded-full bg-primary-600 dark:bg-primary-500 text-white text-xs font-semibold min-w-[20px] h-5 px-1.5',
+                      (isCollapsed && !compact) ? 'absolute -top-1 -right-1' : ''
+                    )}>
+                      {child.badge > 99 ? '99+' : child.badge}
                     </span>
                   )}
                 </NavLink>
