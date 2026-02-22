@@ -20,7 +20,7 @@ export function getBreadcrumbFromPath(pathname) {
 
     // Root segment
     if (i === 0) {
-      const { labelKey, to } = getRootLabel(seg, accumulatedPath);
+      const { labelKey, to } = getRootLabel(seg);
       result.push({ labelKey, to });
       continue;
     }
@@ -40,7 +40,7 @@ export function getBreadcrumbFromPath(pathname) {
     } else if (UUID_REGEX.test(seg)) {
       result.push({ labelKey: 'common:breadcrumb.detail', to: null });
     } else {
-      const { labelKey, to } = getFinanceLabel(prev, seg, accumulatedPath);
+      const { labelKey } = getFinanceLabel(prev, seg);
       if (labelKey) result.push({ labelKey, to: isLast ? null : `/${accumulatedPath}` });
     }
   }
@@ -48,7 +48,7 @@ export function getBreadcrumbFromPath(pathname) {
   return result;
 }
 
-function getRootLabel(seg, path) {
+function getRootLabel(seg) {
   const map = {
     profile: { labelKey: 'common:nav.profile', to: '/profile' },
     customers: { labelKey: 'common:nav.customers', to: '/customers' },
@@ -67,7 +67,7 @@ function getRootLabel(seg, path) {
   return map[seg] ?? { labelKey: 'common:nav.dashboard', to: '/' };
 }
 
-function getFinanceLabel(prev, seg, path) {
+function getFinanceLabel(prev, seg) {
   if (prev !== 'finance') return { labelKey: null };
   const map = {
     income: { labelKey: 'common:nav.finance.income', to: '/finance/income' },

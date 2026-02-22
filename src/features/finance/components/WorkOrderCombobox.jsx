@@ -5,7 +5,7 @@ import { Spinner } from '../../../components/ui/Spinner';
 import { useWorkOrders } from '../../workOrders/hooks';
 import { cn } from '../../../lib/utils';
 
-export function WorkOrderCombobox({ value, selectedWorkOrder: selectedWoProp, onSelect, placeholder, error, proposalId }) {
+export function WorkOrderCombobox({ value, selectedWorkOrder: selectedWoProp, onSelect, placeholder, error }) {
   const { t } = useTranslation(['finance', 'common']);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');

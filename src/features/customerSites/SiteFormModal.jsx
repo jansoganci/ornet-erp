@@ -12,11 +12,12 @@ import { siteSchema, siteDefaultValues } from './schema';
 import { useCreateSite, useUpdateSite } from './hooks';
 import { toast } from 'sonner';
 
-export function SiteFormModal({ 
-  open, 
-  onClose, 
-  customerId, 
-  site = null 
+export function SiteFormModal({
+  open,
+  onClose,
+  customerId,
+  site = null,
+  onSuccess,
 }) {
   const { t } = useTranslation(['customers', 'common']);
   const isEditing = !!site;
@@ -48,14 +49,14 @@ export function SiteFormModal({
         await updateMutation.mutateAsync({ id: site.id, data });
         toast.success(t('common:success.updated'));
       } else {
-        await createMutation.mutateAsync(data);
+        const newSite = await createMutation.mutateAsync(data);
         toast.success(t('common:success.created'));
+        onSuccess?.(newSite);
       }
       reset();
       onClose();
-    } catch (error) {
-      console.error(error);
-      // Error handling is usually handled in the hook via toast
+    } catch {
+      // error handled by mutation onError
     }
   };
 

@@ -168,7 +168,7 @@ export async function deleteTask(id) {
 
   const { error } = await supabase
     .from('tasks')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw error;

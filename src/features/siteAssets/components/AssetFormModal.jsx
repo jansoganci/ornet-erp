@@ -20,7 +20,6 @@ export function AssetFormModal({
     register,
     handleSubmit,
     reset,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(assetSchema),
@@ -50,8 +49,8 @@ export function AssetFormModal({
       }
       reset();
       onClose();
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // error handled by mutation onError
     }
   };
 

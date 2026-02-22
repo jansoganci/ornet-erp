@@ -49,8 +49,8 @@ export function MaterialFormModal({
       if (onSuccess && result) {
         onSuccess(result);
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // error handled by mutation onError
     }
   };
 

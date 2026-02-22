@@ -33,8 +33,8 @@ export function SiteAssetsCard({ customerId, sites = [] }) {
     if (!deleteTarget) return;
     try {
       await deleteAsset.mutateAsync(deleteTarget.id);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // error handled by mutation onError
     }
     setDeleteTarget(null);
   };
@@ -45,8 +45,8 @@ export function SiteAssetsCard({ customerId, sites = [] }) {
         id: asset.id,
         data: { status: asset.status === 'faulty' ? 'active' : 'faulty' },
       });
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // error handled by mutation onError
     }
   };
 

@@ -9,8 +9,6 @@ import {
   updateCustomer,
   deleteCustomer,
 } from './api';
-import { siteKeys } from '../customerSites/api';
-
 // Query keys
 export const customerKeys = {
   all: ['customers'],

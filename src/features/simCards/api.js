@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 const SIM_CARD_SELECT = `
   *,
@@ -11,6 +12,7 @@ export async function fetchSimCards() {
   const { data, error } = await supabase
     .from('sim_cards')
     .select(SIM_CARD_SELECT)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -21,6 +23,7 @@ export async function fetchSimCardById(id) {
   const { data, error } = await supabase
     .from('sim_cards')
     .select(SIM_CARD_SELECT)
+    .is('deleted_at', null)
     .eq('id', id)
     .single();
 
@@ -54,7 +57,7 @@ export async function updateSimCard({ id, ...updates }) {
 export async function deleteSimCard(id) {
   const { error } = await supabase
     .from('sim_cards')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw error;
@@ -92,6 +95,7 @@ export async function fetchSimCardsByCustomer(customerId) {
       buyer:buyer_id (company_name),
       customer_sites:site_id (site_name)
     `)
+    .is('deleted_at', null)
     .eq('customer_id', customerId)
     .order('created_at', { ascending: false });
 
@@ -110,6 +114,7 @@ export async function fetchSimCardsBySite(siteId) {
       buyer:buyer_id (company_name),
       customer_sites:site_id (site_name)
     `)
+    .is('deleted_at', null)
     .or(`site_id.eq.${siteId},status.eq.available`)
     .order('phone_number', { ascending: true });
 
@@ -128,6 +133,7 @@ export async function fetchSimCardsForSubscription(siteId, search = '') {
       buyer:buyer_id (company_name),
       customer_sites:site_id (site_name)
     `)
+    .is('deleted_at', null)
     .or(`site_id.eq.${siteId},status.eq.available`)
     .order('phone_number', { ascending: true });
 
@@ -135,11 +141,11 @@ export async function fetchSimCardsForSubscription(siteId, search = '') {
 
   if (!search.trim()) return data;
 
-  const term = search.trim().toLowerCase();
+  const normalizedTerm = normalizeForSearch(search.trim());
   return (data || []).filter(
     (s) =>
-      (s.phone_number || '').toLowerCase().includes(term) ||
-      (s.buyer?.company_name || '').toLowerCase().includes(term)
+      normalizeForSearch(s.phone_number).includes(normalizedTerm) ||
+      normalizeForSearch(s.buyer?.company_name).includes(normalizedTerm)
   );
 }
 

@@ -10,7 +10,7 @@ import { cn } from '../../lib/utils';
 export function NavGroup({
   id,
   labelKey,
-  icon: IconComponent,
+  icon: Icon,
   children,
   isCollapsed,
   expanded,
@@ -40,7 +40,7 @@ export function NavGroup({
     <div className="space-y-1">
       {isStatic ? (
         <div className={headerClass} role="group" aria-labelledby={`nav-group-${id}-label`}>
-          <IconComponent className="w-5 h-5 flex-shrink-0" />
+          <Icon className="w-5 h-5 flex-shrink-0" />
           <span id={`nav-group-${id}-label`} className="flex-1 truncate text-left font-medium text-neutral-700 dark:text-neutral-300">
             {label}
           </span>
@@ -53,7 +53,7 @@ export function NavGroup({
           aria-expanded={isExpanded}
           aria-controls={`nav-group-${id}`}
         >
-          <IconComponent className="w-5 h-5 flex-shrink-0" />
+          <Icon className="w-5 h-5 flex-shrink-0" />
           {!isCollapsed && (
             <>
               <span className="flex-1 truncate text-left">{label}</span>
@@ -87,7 +87,7 @@ export function NavGroup({
                   key={child.to}
                   to={child.to}
                   end={child.exact}
-                  onClick={onItemClick}
+                  onClick={(e) => onItemClick(e, child.to)}
                   className={({ isActive }) =>
                     cn(
                       navLinkBaseClass,

@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 // Query keys
 export const assetKeys = {
@@ -38,8 +39,9 @@ export async function fetchAssets(filters = {}) {
     query = query.eq('asset_type', filters.asset_type);
   }
   if (filters.search) {
+    const normalized = normalizeForSearch(filters.search);
     query = query.or(
-      `serial_number.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,model.ilike.%${filters.search}%`
+      `serial_number_search.ilike.%${normalized}%,brand_search.ilike.%${normalized}%,model_search.ilike.%${normalized}%`
     );
   }
 
@@ -155,7 +157,7 @@ export async function removeAsset(id, { removed_at, removed_by_work_order_id, re
 export async function deleteAsset(id) {
   const { error } = await supabase
     .from('site_assets')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw error;

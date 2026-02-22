@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
@@ -36,13 +36,8 @@ export function WorkOrderFormPage() {
   const isEdit = !!id;
 
   const [showSiteModal, setShowSiteModal] = useState(false);
-  
+
   const { data: workOrder, isLoading: isWorkOrderLoading } = useWorkOrder(id);
-
-  if (isEdit && isWorkOrderLoading) {
-    return <FormSkeleton />;
-  }
-
   const createMutation = useCreateWorkOrder();
   const updateMutation = useUpdateWorkOrder();
   const linkWorkOrderMutation = useLinkWorkOrder();
@@ -71,6 +66,27 @@ export function WorkOrderFormPage() {
   const workType = watch('work_type');
   const selectedCurrency = watch('currency') ?? 'TRY';
   const { data: siteData } = useSite(selectedSiteId);
+
+  // When switching TO survey: clear the blank default row (if it's the only item and still empty).
+  // When switching FROM survey: restore the blank default row if the user left items empty.
+  const prevWorkTypeRef = useRef(null);
+  useEffect(() => {
+    const prev = prevWorkTypeRef.current;
+    prevWorkTypeRef.current = workType;
+    if (prev === null || prev === workType) return;
+
+    const currentItems = watch('items') || [];
+
+    if (workType === 'survey') {
+      const isOnlyBlankRow =
+        currentItems.length === 1 &&
+        !currentItems[0]?.description &&
+        !currentItems[0]?.unit_price;
+      if (isOnlyBlankRow) setValue('items', []);
+    } else if (prev === 'survey' && currentItems.length === 0) {
+      setValue('items', [{ description: '', quantity: 1, unit: 'adet', unit_price: 0, material_id: null, cost: null }]);
+    }
+  }, [workType, setValue, watch]);
 
   // Prefill from URL params
   useEffect(() => {
@@ -125,11 +141,8 @@ export function WorkOrderFormPage() {
   }, [prefilledCustomerId]);
 
   const onSubmit = async (data) => {
-    console.log('[EDIT_SAVE] onSubmit çağrıldı. data.site_id:', data.site_id, 'selectedSiteId:', selectedSiteId, 'workOrder?.site_id:', workOrder?.site_id);
-
     const hasAccountNo = siteData?.account_no != null && String(siteData.account_no).trim() !== '';
     if (['service', 'maintenance'].includes(data.work_type) && !hasAccountNo) {
-      console.error('[EDIT_SAVE] Hesap no yok');
       setError('site_id', { type: 'manual', message: t('workOrders:validation.accountNoRequired') });
       toast.error(t('workOrders:validation.accountNoRequired'));
       return;
@@ -144,7 +157,6 @@ export function WorkOrderFormPage() {
 
       const finalSiteId = data.site_id || selectedSiteId || (isEdit && workOrder?.site_id) || '';
       if (!finalSiteId) {
-        console.error('[EDIT_SAVE] site_id yok. data.site_id:', data.site_id, 'selectedSiteId:', selectedSiteId);
         setError('site_id', { type: 'manual', message: t('workOrders:validation.siteRequired') });
         toast.error(t('workOrders:validation.siteRequired'));
         return;
@@ -172,12 +184,8 @@ export function WorkOrderFormPage() {
         materials_discount_percent: data.materials_discount_percent ?? 0,
       };
 
-      console.log('[EDIT_SAVE] formattedData hazır, API çağrılıyor:', formattedData);
-
       if (isEdit) {
-        console.log('[EDIT_SAVE] updateMutation.mutateAsync çağrılıyor, id:', id);
         await updateMutation.mutateAsync({ id, ...formattedData });
-        console.log('[EDIT_SAVE] Güncelleme başarılı, yönlendiriliyor');
         navigate(`/work-orders/${id}`);
       } else {
         const newWo = await createMutation.mutateAsync(formattedData);
@@ -193,35 +201,17 @@ export function WorkOrderFormPage() {
         }
       }
     } catch (err) {
-      console.error('[EDIT_SAVE] Save failed:', err);
-      console.error('[EDIT_SAVE] Error details:', {
-        message: err?.message,
-        details: err?.details,
-        hint: err?.hint,
-        code: err?.code,
-        statusCode: err?.status,
-        fullError: err
-      });
       const errorMessage = err?.message || err?.details || err?.hint || t('common:errors.saveFailed');
       toast.error(`${errorMessage}${err?.code ? ` (${err.code})` : ''}`);
     }
   };
 
-  const onInvalid = (errors) => {
-    console.error('[EDIT_SAVE] Validation hatası - form gönderilmedi.');
-    console.error('[EDIT_SAVE] Hatalı alanlar:', Object.keys(errors));
-    Object.entries(errors).forEach(([field, err]) => {
-      console.error(`  - ${field}:`, err?.message || err);
-    });
+  const onInvalid = () => {
     toast.error(t('workOrders:validation.fillRequired'));
   };
 
   if (isEdit && isWorkOrderLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
-    );
+    return <FormSkeleton />;
   }
 
   const priorityOptions = [
@@ -274,22 +264,13 @@ export function WorkOrderFormPage() {
           </div>
         } className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
           <div className="space-y-10 pt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Input
-                label={t('workOrders:form.fields.formNo')}
-                placeholder={t('workOrders:form.placeholders.formNo')}
-                error={errors.form_no?.message}
-                className="rounded-2xl"
-                {...register('form_no')}
-              />
-              <Select
-                label={t('workOrders:form.fields.priority')}
-                options={priorityOptions}
-                error={errors.priority?.message}
-                className="rounded-2xl"
-                {...register('priority')}
-              />
-            </div>
+            <Select
+              label={t('workOrders:form.fields.priority')}
+              options={priorityOptions}
+              error={errors.priority?.message}
+              className="rounded-2xl"
+              {...register('priority')}
+            />
 
             <div className="space-y-4">
               <label className="block text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest ml-1">
@@ -366,6 +347,7 @@ export function WorkOrderFormPage() {
 
             <Textarea
               label={t('workOrders:form.fields.description')}
+              hint={t('workOrders:form.hints.description')}
               placeholder={t('workOrders:form.placeholders.description')}
               error={errors.description?.message}
               className="rounded-2xl min-h-[120px]"
@@ -402,6 +384,7 @@ export function WorkOrderFormPage() {
             watch={watch}
             setValue={setValue}
             currency={selectedCurrency}
+            workType={workType}
           />
         </Card>
 
@@ -435,6 +418,7 @@ export function WorkOrderFormPage() {
             <div className="pt-4">
               <Textarea
                 placeholder={t('workOrders:form.placeholders.notes')}
+                hint={t('workOrders:form.hints.notes')}
                 error={errors.notes?.message}
                 className="rounded-2xl min-h-[100px]"
                 {...register('notes')}

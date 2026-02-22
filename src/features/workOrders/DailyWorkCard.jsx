@@ -5,7 +5,6 @@ import {
   Badge, 
   IconButton 
 } from '../../components/ui';
-import { cn } from '../../lib/utils';
 
 export function DailyWorkCard({ 
   workOrder, 
@@ -80,7 +79,7 @@ export function DailyWorkCard({
 
           <div className="flex items-center justify-between pt-1">
             <div className="flex -space-x-2 overflow-hidden">
-              {workOrder.assigned_workers?.map((worker, i) => (
+              {workOrder.assigned_workers?.map((worker) => (
                 <div 
                   key={worker.id}
                   className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-[#171717] bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center"

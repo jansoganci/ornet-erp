@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, ClipboardList, Search, Filter, Calendar, Building2, AlertCircle } from 'lucide-react';
@@ -20,6 +21,7 @@ import {
   workOrderStatusVariant,
   priorityVariant,
 } from '../../lib/utils';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useWorkOrders } from './hooks';
 import { WORK_TYPES } from './schema';
 
@@ -28,37 +30,37 @@ export function WorkOrdersListPage() {
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  
-  const search = searchParams.get('search') || '';
+  const searchFromUrl = searchParams.get('search') || '';
+  const [localSearch, setLocalSearch] = useState(searchFromUrl);
+  const debouncedSearch = useDebouncedValue(localSearch, 300);
+
+  // Sync local search from URL
+  useEffect(() => {
+    setLocalSearch(searchFromUrl);
+  }, [searchFromUrl]);
+  // Sync debounced search to URL — setState in effect is intentional
+  useEffect(() => {
+    if (searchFromUrl === debouncedSearch) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (debouncedSearch) next.set('search', debouncedSearch);
+      else next.delete('search');
+      return next;
+    });
+  }, [debouncedSearch, searchFromUrl, setSearchParams]);
+
   const status = searchParams.get('status') || 'all';
   const work_type = searchParams.get('work_type') || 'all';
   const priority = searchParams.get('priority') || 'all';
 
   const { data: workOrders = [], isLoading, error, refetch } = useWorkOrders({
-    search,
+    search: debouncedSearch,
     status,
     work_type,
     priority
   });
 
-  if (isLoading) {
-    return (
-      <PageContainer maxWidth="xl" padding="default">
-        <PageHeader title={t('workOrders:list.title')} />
-        <div className="mt-6">
-          <TableSkeleton cols={8} />
-        </div>
-      </PageContainer>
-    );
-  }
-
-  const handleSearch = (value) => {
-    setSearchParams(prev => {
-      if (value) prev.set('search', value);
-      else prev.delete('search');
-      return prev;
-    });
-  };
+  const handleSearch = (value) => setLocalSearch(value);
 
   const handleFilterChange = (key, value) => {
     setSearchParams(prev => {
@@ -221,7 +223,7 @@ export function WorkOrdersListPage() {
           <div className="flex-1">
             <SearchInput
               placeholder={t('workOrders:list.searchPlaceholder')}
-              value={search}
+              value={localSearch}
               onChange={handleSearch}
               className="w-full"
             />
@@ -253,7 +255,9 @@ export function WorkOrdersListPage() {
       </Card>
 
       {isLoading ? (
-        <WorkOrdersSkeleton />
+        <div className="mt-6">
+          <TableSkeleton cols={8} />
+        </div>
       ) : error ? (
         <ErrorState message={error.message} onRetry={() => refetch()} />
       ) : workOrders.length === 0 ? (

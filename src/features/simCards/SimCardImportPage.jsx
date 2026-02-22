@@ -34,8 +34,7 @@ export function SimCardImportPage() {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         validateAndFormatData(jsonData);
-      } catch (error) {
-        console.error('Excel parsing error:', error);
+      } catch {
         setErrors(['Dosya okunamadı. Lütfen geçerli bir Excel dosyası yükleyin.']);
       } finally {
         setIsParsing(false);
@@ -145,8 +144,8 @@ export function SimCardImportPage() {
     try {
       await bulkCreateMutation.mutateAsync(data);
       navigate('/sim-cards');
-    } catch (err) {
-      console.error('Import failed:', err);
+    } catch {
+      // error handled by mutation onError
     }
   };
 

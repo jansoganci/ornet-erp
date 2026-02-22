@@ -211,5 +211,12 @@
     "admin": "Yönetici",
     "field_worker": "Saha Personeli",
     "accountant": "Muhasebe"
+  },
+  "unsavedChanges": {
+    "title": "Kaydedilmemiş Değişiklikler",
+    "description": "Sayfada kaydedilmemiş değişiklikleriniz var. Ayrılmadan önce kaydetmek ister misiniz?",
+    "save": "Kaydet ve Ayrıl",
+    "cancel": "İptal (Sayfada Kal)",
+    "leave": "Kaydetmeden Ayrıl"
   }
 }

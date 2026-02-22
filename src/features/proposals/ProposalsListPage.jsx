@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Building2, Calendar } from 'lucide-react';
+import { useSearchInput } from '../../hooks/useSearchInput';
 import { useProposals } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
@@ -50,10 +51,10 @@ function ListSkeleton() {
 export function ProposalsListPage() {
   const { t } = useTranslation('proposals');
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
+  const { search, setSearch, debouncedSearch } = useSearchInput({ debounceMs: 300 });
   const [status, setStatus] = useState('');
 
-  const { data: proposals, isLoading, error, refetch } = useProposals({ search, status });
+  const { data: proposals, isLoading, error, refetch } = useProposals({ search: debouncedSearch, status });
 
   const statusOptions = STATUS_OPTIONS.map((opt) => ({
     value: opt.value,
@@ -212,10 +213,10 @@ export function ProposalsListPage() {
 
       {!isLoading && !error && proposals?.length === 0 && (
         <EmptyState
-          title={search || status ? t('list.noResults.title') : t('list.empty.title')}
-          description={search || status ? t('list.noResults.description') : t('list.empty.description')}
-          actionLabel={!search && !status ? t('list.addButton') : null}
-          onAction={!search && !status ? () => navigate('/proposals/new') : null}
+          title={debouncedSearch || status ? t('list.noResults.title') : t('list.empty.title')}
+          description={debouncedSearch || status ? t('list.noResults.description') : t('list.empty.description')}
+          actionLabel={!debouncedSearch && !status ? t('list.addButton') : null}
+          onAction={!debouncedSearch && !status ? () => navigate('/proposals/new') : null}
         />
       )}
 

@@ -10,6 +10,7 @@ export function Table({
   onRowClick,
   loading = false,
   emptyMessage,
+  emptyState,
   striped = false,
   className,
   ...props
@@ -38,9 +39,11 @@ export function Table({
           </div>
         )}
         {!loading && data.length === 0 && (
-          <Card className="p-8 text-center text-neutral-500 border-dashed">
-            {displayEmptyMessage}
-          </Card>
+          emptyState || (
+            <Card className="p-8 text-center text-neutral-500 border-dashed">
+              {displayEmptyMessage}
+            </Card>
+          )
         )}
         {!loading &&
           data.map((item, rowIndex) => (
@@ -109,11 +112,10 @@ export function Table({
             )}
             {!loading && data.length === 0 && (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-6 py-12 text-center text-neutral-500"
-                >
-                  {displayEmptyMessage}
+                <td colSpan={columns.length} className="px-6 py-12">
+                  {emptyState || (
+                    <span className="text-neutral-500">{displayEmptyMessage}</span>
+                  )}
                 </td>
               </tr>
             )}

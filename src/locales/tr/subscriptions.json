@@ -40,13 +40,16 @@
       "actions": "Aksiyonlar",
       "assignment": "Atama",
       "notes": "Notlar",
-      "statusHistory": "Durum Geçmişi"
+      "statusHistory": "Durum Geçmişi",
+      "staticIp": "Statik IP"
     },
     "fields": {
       "subtotal": "Ara Toplam",
       "vatAmount": "KDV",
       "totalAmount": "Toplam",
       "cost": "Maliyet",
+      "staticIpFee": "Statik IP Geliri",
+      "staticIpCost": "Statik IP Maliyeti",
       "profit": "Kâr",
       "startDate": "Başlangıç Tarihi",
       "endDate": "Bitiş Tarihi",
@@ -91,6 +94,8 @@
       "lineFee": "Hat Ücreti",
       "vatRate": "KDV Oranı (%)",
       "cost": "Maliyet",
+      "staticIpFee": "Statik IP Geliri",
+      "staticIpCost": "Statik IP Maliyeti",
       "currency": "Para Birimi",
       "paymentMethod": "Ödeme Yöntemi",
       "soldBy": "Satan Kişi",

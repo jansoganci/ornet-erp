@@ -1,14 +1,11 @@
 import { supabase } from '../../lib/supabase';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 export async function searchWorkHistory(filters = {}) {
   const { search, type = 'both', dateFrom, dateTo, workType, workerId, siteId } = filters;
-  
-  if (!search && !dateFrom && !dateTo && (workType === 'all' || !workType) && (workerId === 'all' || !workerId) && !siteId) {
-    return [];
-  }
 
   const { data, error } = await supabase.rpc('search_work_history', {
-    search_query: search || '',
+    search_query: normalizeForSearch(search || ''),
     search_type: type
   });
 

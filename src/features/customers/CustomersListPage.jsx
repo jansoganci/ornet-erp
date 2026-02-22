@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Users as UsersIcon, MapPin, Briefcase, FileText, Building2 } from 'lucide-react';
+import { useSearchInput } from '../../hooks/useSearchInput';
 import { useCustomers } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, SearchInput, Table, Badge, EmptyState, ErrorState, TableSkeleton } from '../../components/ui';
@@ -10,20 +10,9 @@ import { formatPhone } from '../../lib/utils';
 export function CustomersListPage() {
   const { t } = useTranslation('customers');
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
+  const { search, setSearch, debouncedSearch } = useSearchInput({ debounceMs: 300 });
 
-  const { data: customers, isLoading, error, refetch } = useCustomers({ search });
-
-  if (isLoading) {
-    return (
-      <PageContainer maxWidth="full" padding="default">
-        <PageHeader title={t('list.title')} />
-        <div className="mt-6">
-          <TableSkeleton cols={6} />
-        </div>
-      </PageContainer>
-    );
-  }
+  const { data: customers, isLoading, error, refetch } = useCustomers({ search: debouncedSearch });
 
   const handleCustomerClick = (customer) => {
     navigate(`/customers/${customer.id}`);
@@ -136,7 +125,7 @@ export function CustomersListPage() {
         />
       )}
 
-      {/* Customer Table */}
+      {/* Customer Table — always mounted so SearchInput keeps focus */}
       {!error && (
         <Table
           columns={columns}
@@ -145,11 +134,11 @@ export function CustomersListPage() {
           onRowClick={handleCustomerClick}
           emptyState={
             <EmptyState
-              icon={search ? null : UsersIcon}
-              title={search ? t('list.noResults.title') : t('list.empty.title')}
-              description={search ? t('list.noResults.description') : t('list.empty.description')}
-              actionLabel={search ? null : t('list.empty.action')}
-              onAction={search ? null : handleAddCustomer}
+              icon={debouncedSearch ? null : UsersIcon}
+              title={debouncedSearch ? t('list.noResults.title') : t('list.empty.title')}
+              description={debouncedSearch ? t('list.noResults.description') : t('list.empty.description')}
+              actionLabel={debouncedSearch ? null : t('list.empty.action')}
+              onAction={debouncedSearch ? null : handleAddCustomer}
             />
           }
         />

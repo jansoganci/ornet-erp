@@ -6,7 +6,7 @@ import { formatDate, priorityVariant, cn } from '../../../lib/utils';
 
 export function PlanGroupSection({
   title,
-  icon: Icon,
+  icon: IconComponent,
   count,
   variant = 'default',
   tasks = [],
@@ -34,7 +34,7 @@ export function PlanGroupSection({
         ) : (
           <ChevronRight className="w-4 h-4 text-neutral-400 dark:text-neutral-500" />
         )}
-        <Icon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+        <IconComponent className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
         <span className="font-semibold text-sm text-neutral-700 dark:text-neutral-200">
           {title}
         </span>

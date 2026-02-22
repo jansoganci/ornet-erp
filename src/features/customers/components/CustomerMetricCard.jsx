@@ -9,11 +9,11 @@ const variantStyles = {
   default: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400',
 };
 
-export function CustomerMetricCard({ icon: Icon, label, value, variant = 'default' }) {
+export function CustomerMetricCard({ icon: IconComponent, label, value, variant = 'default' }) {
   return (
     <Card padding="compact" className="flex items-center gap-4">
       <div className={cn('p-2.5 rounded-xl flex-shrink-0', variantStyles[variant])}>
-        <Icon className="w-5 h-5" />
+        <IconComponent className="w-5 h-5" />
       </div>
       <div className="min-w-0">
         <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 tabular-nums leading-none">

@@ -11,7 +11,7 @@ import { useSitesByCustomer } from '../customerSites/hooks';
 import { PageContainer } from '../../components/layout';
 import { Button, Card, Input, Spinner, Textarea, Select, FormSkeleton } from '../../components/ui';
 import { SimCardFormHero } from './components/SimCardFormHero';
-import { cn, getCurrencySymbol } from '../../lib/utils';
+import { getCurrencySymbol } from '../../lib/utils';
 
 export function SimCardFormPage() {
   const { id } = useParams();
@@ -81,8 +81,8 @@ export function SimCardFormPage() {
         await createSimCard.mutateAsync(data);
       }
       navigate('/sim-cards');
-    } catch (err) {
-      console.error('Save failed:', err);
+    } catch {
+      // error handled by mutation onError
     }
   };
 

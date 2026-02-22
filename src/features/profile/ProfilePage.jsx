@@ -61,7 +61,7 @@ export function ProfilePage() {
           phone: data.phone || null,
         },
       });
-    } catch (err) {
+    } catch {
       // Error handled by mutation onError (toast)
     }
   };

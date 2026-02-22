@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Package, Search, Edit2, Trash2, Filter, Upload } from 'lucide-react';
+import { Plus, Package, Search, Edit2, Trash2, Filter, Upload, ClipboardList } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { 
   Button, 
@@ -17,18 +17,41 @@ import {
   Modal,
   TableSkeleton
 } from '../../components/ui';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useMaterials, useDeleteMaterial, useMaterialCategories } from './hooks';
 import { MaterialFormModal } from './MaterialFormModal';
+import { MaterialUsageModal } from './components/MaterialUsageModal';
 
 export function MaterialsListPage() {
   const { t } = useTranslation(['materials', 'common']);
   const { t: tCommon } = useTranslation('common');
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const search = searchParams.get('search') || '';
+  const searchFromUrl = searchParams.get('search') || '';
+  const [localSearch, setLocalSearch] = useState(searchFromUrl);
+  const debouncedSearch = useDebouncedValue(localSearch, 300);
   const category = searchParams.get('category') || 'all';
 
+  // Sync local search from URL
+  useEffect(() => {
+    setLocalSearch(searchFromUrl);
+  }, [searchFromUrl]);
+  // Sync debounced search to URL — setState in effect is intentional
+  useEffect(() => {
+    if (searchFromUrl === debouncedSearch) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (debouncedSearch) next.set('search', debouncedSearch);
+      else next.delete('search');
+      return next;
+    });
+  }, [debouncedSearch, searchFromUrl, setSearchParams]);
+
   const handleFilterChange = (key, value) => {
+    if (key === 'search') {
+      setLocalSearch(value ?? '');
+      return;
+    }
     setSearchParams((prev) => {
       if (value && (key !== 'category' || value !== 'all')) prev.set(key, value);
       else prev.delete(key);
@@ -40,23 +63,13 @@ export function MaterialsListPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [materialToDelete, setMaterialToDelete] = useState(null);
+  const [usageModalMaterial, setUsageModalMaterial] = useState(null);
 
   // Hooks
   const navigate = useNavigate();
-  const { data: materials = [], isLoading, error, refetch } = useMaterials({ search, category: category === 'all' ? undefined : category });
+  const { data: materials = [], isLoading, error, refetch } = useMaterials({ search: debouncedSearch, category: category === 'all' ? undefined : category });
   const { data: categories = [] } = useMaterialCategories();
   const deleteMutation = useDeleteMaterial();
-
-  if (isLoading) {
-    return (
-      <PageContainer maxWidth="xl" padding="default">
-        <PageHeader title={t('materials:title')} />
-        <div className="mt-6">
-          <TableSkeleton cols={5} />
-        </div>
-      </PageContainer>
-    );
-  }
 
   const handleEdit = (material) => {
     setSelectedMaterial(material);
@@ -80,6 +93,23 @@ export function MaterialsListPage() {
       header: t('materials:list.columns.code'),
       accessor: 'code',
       render: (val) => <span className="font-mono font-bold text-primary-600">{val}</span>
+    },
+    {
+      header: t('materials:usage.columnHeader'),
+      id: 'usage',
+      width: 48,
+      render: (_, row) => (
+        <IconButton
+          icon={ClipboardList}
+          size="sm"
+          variant="ghost"
+          aria-label={t('materials:usage.title')}
+          onClick={(e) => {
+            e.stopPropagation();
+            setUsageModalMaterial(row);
+          }}
+        />
+      )
     },
     {
       header: t('materials:list.columns.name'),
@@ -112,6 +142,7 @@ export function MaterialsListPage() {
     {
       header: tCommon('actions.actionsColumn'),
       id: 'actions',
+      stickyRight: true,
       render: (_, row) => (
         <div className="flex justify-end space-x-1">
           <IconButton
@@ -168,7 +199,7 @@ export function MaterialsListPage() {
           <div className="flex-1">
             <SearchInput
               placeholder={t('materials:list.searchPlaceholder')}
-              value={search}
+              value={localSearch}
               onChange={(v) => handleFilterChange('search', v)}
             />
           </div>
@@ -197,7 +228,7 @@ export function MaterialsListPage() {
         <EmptyState
           icon={Package}
           title={t('materials:list.noMaterials')}
-          description={search ? tCommon('noResults') : t('materials:list.noMaterials')}
+          description={debouncedSearch ? tCommon('noResults') : t('materials:list.noMaterials')}
           actionLabel={t('materials:list.addButton')}
           onAction={handleAdd}
         />
@@ -211,6 +242,13 @@ export function MaterialsListPage() {
           />
         </div>
       )}
+
+      {/* Usage History Modal */}
+      <MaterialUsageModal
+        open={!!usageModalMaterial}
+        onClose={() => setUsageModalMaterial(null)}
+        material={usageModalMaterial}
+      />
 
       {/* Form Modal */}
       <MaterialFormModal

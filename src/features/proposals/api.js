@@ -1,4 +1,17 @@
 import { supabase } from '../../lib/supabase';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
+
+const DATE_FIELDS = ['proposal_date', 'survey_date', 'installation_date', 'completion_date'];
+
+function sanitizeDates(data) {
+  const result = { ...data };
+  for (const field of DATE_FIELDS) {
+    if (result[field] === '' || result[field] === undefined) {
+      result[field] = null;
+    }
+  }
+  return result;
+}
 
 /**
  * Fetch all proposals with optional filters
@@ -10,8 +23,9 @@ export async function fetchProposals({ search = '', status = '' } = {}) {
     .order('created_at', { ascending: false });
 
   if (search) {
+    const normalized = normalizeForSearch(search);
     query = query.or(
-      `title.ilike.%${search}%,customer_company_name.ilike.%${search}%,proposal_no.ilike.%${search}%`
+      `title_search.ilike.%${normalized}%,customer_company_name_search.ilike.%${normalized}%,proposal_no_search.ilike.%${normalized}%`
     );
   }
 
@@ -63,14 +77,14 @@ export async function createProposal({ items, ...proposalData }) {
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
 
-  const payload = {
+  const payload = sanitizeDates({
     ...proposalData,
     proposal_no: noResult,
     created_by: user?.id,
     currency: proposalData.currency || 'USD',
     total_amount: 0,
     total_amount_usd: 0,
-  };
+  });
   if (payload.site_id === '' || payload.site_id == null) {
     payload.site_id = null;
   }
@@ -139,7 +153,7 @@ export async function createProposal({ items, ...proposalData }) {
  * Update a proposal
  */
 export async function updateProposal({ id, ...proposalData }) {
-  const updates = { ...proposalData };
+  const updates = sanitizeDates({ ...proposalData });
   if (updates.site_id === '' || updates.site_id == null) {
     updates.site_id = null;
   }
@@ -247,7 +261,7 @@ export async function updateProposalStatus({ id, status }) {
 export async function deleteProposal(id) {
   const { error } = await supabase
     .from('proposals')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw error;

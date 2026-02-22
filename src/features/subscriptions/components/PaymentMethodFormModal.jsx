@@ -20,7 +20,6 @@ export function PaymentMethodFormModal({ open, onClose, customerId }) {
     handleSubmit,
     watch,
     reset,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(paymentMethodSchema),

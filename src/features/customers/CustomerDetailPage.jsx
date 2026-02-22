@@ -105,8 +105,8 @@ export function CustomerDetailPage() {
     try {
       await deleteCustomer.mutateAsync(id);
       navigate('/customers', { replace: true });
-    } catch (err) {
-      console.error('Delete failed:', err);
+    } catch {
+      // error handled by mutation onError
     }
   };
 

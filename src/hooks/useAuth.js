@@ -26,8 +26,9 @@ export function useAuth() {
   const [loading, setLoading] = useState(!!isSupabaseConfigured && !!supabase);
   const [error, setError] = useState(null);
 
-  // Initialize session and listen for auth changes
+  // Initialize session and listen for auth changes — setState in effect is intentional
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!isSupabaseConfigured || !supabase) {
       setLoading(false);
       return;

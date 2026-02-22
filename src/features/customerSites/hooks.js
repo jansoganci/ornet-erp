@@ -69,7 +69,7 @@ export function useDeleteSite() {
 
   return useMutation({
     mutationFn: api.deleteSite,
-    onSuccess: (_, id) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       toast.success(t('success.deleted'));
     },

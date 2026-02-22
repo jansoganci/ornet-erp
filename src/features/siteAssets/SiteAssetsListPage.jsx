@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HardDrive } from 'lucide-react';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Card, Table, Spinner, ErrorState, EmptyState, Badge, SearchInput, Select, TableSkeleton } from '../../components/ui';
 import { AssetStatusBadge } from './components/AssetStatusBadge';
@@ -11,22 +12,18 @@ import { formatDate } from '../../lib/utils';
 export function SiteAssetsListPage() {
   const { t } = useTranslation(['siteAssets', 'common']);
   const [filters, setFilters] = useState({});
+  const [localSearch, setLocalSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(localSearch, 300);
 
-  const { data: assets, isLoading, error } = useAssets(filters);
+  const effectiveFilters = useMemo(
+    () => ({ ...filters, search: debouncedSearch || undefined }),
+    [filters, debouncedSearch]
+  );
 
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <PageHeader title={t('siteAssets:title')} />
-        <div className="mt-6">
-          <TableSkeleton cols={6} />
-        </div>
-      </PageContainer>
-    );
-  }
+  const { data: assets, isLoading, error } = useAssets(effectiveFilters);
 
   const handleSearchChange = (value) => {
-    setFilters((prev) => ({ ...prev, search: value || undefined }));
+    setLocalSearch(value ?? '');
   };
 
   const handleStatusChange = (e) => {
@@ -142,7 +139,7 @@ export function SiteAssetsListPage() {
             <div className="flex-1">
               <SearchInput
                 placeholder={t('siteAssets:filters.search')}
-                value={filters.search || ''}
+                value={localSearch}
                 onChange={handleSearchChange}
               />
             </div>

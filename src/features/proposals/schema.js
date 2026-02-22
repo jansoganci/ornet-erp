@@ -31,6 +31,7 @@ export const proposalSchema = z.object({
   items: z.array(proposalItemSchema).min(1, i18n.t('errors:validation.required')),
   // Header fields
   company_name: optionalStr(),
+  proposal_date: optionalStr(),
   survey_date: optionalStr(),
   authorized_person: optionalStr(),
   installation_date: optionalStr(),
@@ -86,6 +87,7 @@ export const proposalDefaultValues = {
   notes: '',
   currency: 'USD',
   company_name: '',
+  proposal_date: '',
   survey_date: '',
   authorized_person: '',
   installation_date: '',

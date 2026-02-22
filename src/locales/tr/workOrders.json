@@ -100,7 +100,7 @@
       "scheduledTime": "Planlanan Saat",
       "assignedTo": "Atanan Personel",
       "formNo": "Form No",
-      "description": "Açıklama",
+      "description": "İş Tanımı",
       "amount": "Tutar",
       "quantity": "Miktar",
       "title": "Başlık",
@@ -114,6 +114,11 @@
       "formNo": "Örn: 12345",
       "description": "Yapılacak işin detayları",
       "notes": "Sadece personelin göreceği notlar"
+    },
+    "hints": {
+      "description": "Müşteriye iletilecek iş detayı",
+      "notes": "Sadece ekibiniz görebilir, müşteriye iletilmez",
+      "materialsOptional": "Keşif iş emirleri için malzeme eklenmesi zorunlu değildir"
     },
     "success": {
       "created": "İş emri başarıyla oluşturuldu",

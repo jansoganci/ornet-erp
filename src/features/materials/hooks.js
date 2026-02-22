@@ -83,6 +83,14 @@ export function useMaterialCategories() {
   });
 }
 
+export function useMaterialUsageHistory(materialId) {
+  return useQuery({
+    queryKey: materialKeys.usage(materialId),
+    queryFn: () => api.fetchMaterialUsageHistory(materialId),
+    enabled: !!materialId,
+  });
+}
+
 export function useBulkUpsertMaterials() {
   const queryClient = useQueryClient();
   const { t } = useTranslation('common');

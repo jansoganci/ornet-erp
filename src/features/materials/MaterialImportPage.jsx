@@ -48,8 +48,7 @@ export function MaterialImportPage() {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         validateAndFormatData(jsonData);
-      } catch (error) {
-        console.error('Excel parsing error:', error);
+      } catch {
         setErrors([t('materials:import.parse')]);
       } finally {
         setIsParsing(false);
@@ -101,8 +100,8 @@ export function MaterialImportPage() {
     try {
       await bulkUpsertMutation.mutateAsync(data);
       navigate('/materials');
-    } catch (err) {
-      console.error('Import failed:', err);
+    } catch {
+      // error handled by mutation onError
     }
   };
 

@@ -15,7 +15,9 @@ export function VerifyEmailPage() {
   const [status, setStatus] = useState('verifying'); // verifying | success | error
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Sync verification status from async check — setState in effect is intentional
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!isSupabaseConfigured || !supabase) {
       setStatus('error');
       setErrorMessage(t('auth:errors.supabaseNotConfigured'));

@@ -72,6 +72,7 @@ export async function fetchTransactions(filters = {}) {
   let query = supabase
     .from('financial_transactions')
     .select(TRANSACTION_SELECT)
+    .is('deleted_at', null)
     .order('transaction_date', { ascending: false });
 
   if (filters.direction) {
@@ -118,6 +119,7 @@ export async function fetchTransaction(id) {
   const { data, error } = await supabase
     .from('financial_transactions')
     .select(TRANSACTION_SELECT)
+    .is('deleted_at', null)
     .eq('id', id)
     .single();
 
@@ -169,7 +171,7 @@ export async function updateTransaction(id, data) {
 export async function deleteTransaction(id) {
   const { error } = await supabase
     .from('financial_transactions')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw error;

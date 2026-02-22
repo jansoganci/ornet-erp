@@ -1,30 +1,50 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 import { Modal, Button, Input, Textarea, Spinner } from '../../../components/ui';
 import { useRevisionNotes, useCreateRevisionNote } from '../hooks';
 import { formatDate } from '../../../lib/utils';
 
-const defaultRevisionDate = () => `${new Date().getFullYear()}-01-01`;
+const defaultRevisionDate = () => format(new Date(), 'yyyy-MM-dd');
 
 export function RevisionNotesModal({ open, onClose, subscription }) {
   const { t } = useTranslation(['subscriptions', 'common']);
   const subscriptionId = subscription?.id;
   const { data: notes = [], isLoading } = useRevisionNotes(subscriptionId);
   const createMutation = useCreateRevisionNote();
+  const textareaRef = useRef(null);
 
   const [noteText, setNoteText] = useState('');
   const [revisionDate, setRevisionDate] = useState(defaultRevisionDate());
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Auto-focus textarea when modal opens
+  useEffect(() => {
+    if (open && textareaRef.current) {
+      setTimeout(() => textareaRef.current?.focus(), 100);
+    }
+  }, [open]);
+
+  const saveNote = async () => {
     if (!subscriptionId || !noteText.trim()) return;
-    await createMutation.mutateAsync({
-      subscription_id: subscriptionId,
-      note: noteText.trim(),
-      revision_date: revisionDate,
-    });
+    const text = noteText.trim();
     setNoteText('');
     setRevisionDate(defaultRevisionDate());
+    await createMutation.mutateAsync({
+      subscription_id: subscriptionId,
+      note: text,
+      revision_date: revisionDate,
+    });
+  };
+
+  const handleBlur = (e) => {
+    if (!noteText.trim()) return;
+    if (e.relatedTarget?.getAttribute('type') === 'submit') return;
+    saveNote();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await saveNote();
   };
 
   const title = subscription
@@ -90,9 +110,11 @@ export function RevisionNotesModal({ open, onClose, subscription }) {
             onChange={(e) => setRevisionDate(e.target.value)}
           />
           <Textarea
+            ref={textareaRef}
             label={t('subscriptions:priceRevision.notes.noteLabel')}
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
+            onBlur={handleBlur}
             placeholder={t('subscriptions:priceRevision.notes.noteLabel')}
             rows={3}
           />

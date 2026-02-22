@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 export async function fetchWorkOrders(filters = {}) {
   let query = supabase
@@ -6,7 +7,8 @@ export async function fetchWorkOrders(filters = {}) {
     .select('*');
 
   if (filters.search) {
-    query = query.or(`company_name.ilike.%${filters.search}%,account_no.ilike.%${filters.search}%,form_no.ilike.%${filters.search}%`);
+    const normalized = normalizeForSearch(filters.search);
+    query = query.or(`company_name_search.ilike.%${normalized}%,account_no_search.ilike.%${normalized}%,form_no_search.ilike.%${normalized}%`);
   }
 
   if (filters.status && filters.status !== 'all') {
@@ -69,10 +71,7 @@ export async function createWorkOrder(data) {
     .select()
     .single();
 
-  if (error) {
-    console.error('Supabase insert error:', error);
-    throw error;
-  }
+  if (error) throw error;
 
   if (items && items.length > 0) {
     const materialRows = items.map((item, index) => ({
@@ -129,46 +128,15 @@ export async function updateWorkOrder({ id, items, materials_discount_percent, .
 }
 
 export async function deleteWorkOrder(id) {
-  console.log('[WORK_ORDER_DELETE_API] 1. Başladı, id:', id, 'tip:', typeof id);
-  if (!id) {
-    console.error('[WORK_ORDER_DELETE_API] id yok, çıkıyorum');
-    throw new Error('Work order id is required');
-  }
+  if (!id) throw new Error('Work order id is required');
 
-  // Delete materials first (some setups may not CASCADE)
-  const { error: materialsError } = await supabase
-    .from('work_order_materials')
-    .delete()
-    .eq('work_order_id', id);
-
-  console.log('[WORK_ORDER_DELETE_API] 2. work_order_materials silindi, hata:', materialsError?.message || 'yok');
-
-  if (materialsError) {
-    console.error('[WORK_ORDER_DELETE_API] materialsError:', materialsError);
-    throw materialsError;
-  }
-
-  const { data: deletedRows, error } = await supabase
+  const { error } = await supabase
     .from('work_orders')
-    .delete()
-    .eq('id', id)
-    .select('id');
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
 
-  console.log('[WORK_ORDER_DELETE_API] 3. work_orders delete sonucu, hata:', error?.message || 'yok', 'silinen satır sayısı:', deletedRows?.length ?? 0);
+  if (error) throw error;
 
-  if (error) {
-    console.error('[WORK_ORDER_DELETE_API] work_orders error (tam obje):', JSON.stringify(error, null, 2));
-    throw error;
-  }
-
-  // RLS izin vermezse Supabase hata fırlatmayabilir, 0 satır silinir
-  if (!deletedRows || deletedRows.length === 0) {
-    const permissionError = new Error('DELETE_PERMISSION_DENIED');
-    permissionError.code = 'DELETE_PERMISSION_DENIED';
-    throw permissionError;
-  }
-
-  console.log('[WORK_ORDER_DELETE_API] 4. Silme tamamlandı, id:', id);
   return { id };
 }
 

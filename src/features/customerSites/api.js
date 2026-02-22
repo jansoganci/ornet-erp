@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 export const siteKeys = {
   all: ['customerSites'],
@@ -13,6 +14,7 @@ export async function fetchSitesByCustomer(customerId) {
   const { data, error } = await supabase
     .from('customer_sites')
     .select('*')
+    .is('deleted_at', null)
     .eq('customer_id', customerId)
     .order('site_name', { ascending: true });
 
@@ -25,6 +27,7 @@ export async function fetchSiteByAccountNo(accountNo) {
   const { data, error } = await supabase
     .from('customer_sites')
     .select('*, customers(*)')
+    .is('deleted_at', null)
     .eq('account_no', accountNo)
     .maybeSingle();
 
@@ -36,6 +39,7 @@ export async function fetchSite(id) {
   const { data, error } = await supabase
     .from('customer_sites')
     .select('*, customers(*)')
+    .is('deleted_at', null)
     .eq('id', id)
     .single();
 
@@ -69,17 +73,19 @@ export async function updateSite(id, data) {
 export async function deleteSite(id) {
   const { error } = await supabase
     .from('customer_sites')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw error;
 }
 
 export async function searchSites(query) {
+  const normalized = normalizeForSearch(query);
   const { data, error } = await supabase
     .from('customer_sites')
     .select('*, customers(*)')
-    .or(`account_no.ilike.%${query}%,site_name.ilike.%${query}%,address.ilike.%${query}%`)
+    .is('deleted_at', null)
+    .or(`account_no_search.ilike.%${normalized}%,site_name_search.ilike.%${normalized}%,address_search.ilike.%${normalized}%`)
     .limit(10);
 
   if (error) throw error;

@@ -80,11 +80,33 @@
     "assignment": "Müşteri Ataması",
     "import": "Sisteme Giriş"
   },
+  "delete": {
+    "title": "SIM Kart Sil",
+    "message": "\"{{phoneNumber}}\" numaralı SIM kartı silmek istediğinizden emin misiniz?",
+    "warning": "Bu işlem geri alınamaz."
+  },
   "stats": {
     "total": "Toplam Hat",
     "available": "Boştaki Hatlar",
     "active": "Aktif Hatlar",
     "subscription": "Abonelik Hatları",
     "monthlyProfit": "Tahmini Aylık Kar"
+  },
+  "staticIp": {
+    "title": "Statik IP",
+    "noIp": "Statik IP atanmamış",
+    "assign": "IP Ata",
+    "cancel": "IP'yi İptal Et",
+    "history": "IP Geçmişi",
+    "fields": {
+      "ipAddress": "IP Adresi",
+      "notes": "Notlar",
+      "activatedAt": "Atanma Tarihi",
+      "cancelledAt": "İptal Tarihi"
+    },
+    "success": {
+      "assigned": "Statik IP atandı",
+      "cancelled": "Statik IP iptal edildi"
+    }
   }
 }

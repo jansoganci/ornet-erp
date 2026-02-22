@@ -39,6 +39,7 @@ import { SubscriptionPricingCard } from './components/SubscriptionPricingCard';
 import { MonthlyPaymentGrid } from './components/MonthlyPaymentGrid';
 import { PauseSubscriptionModal } from './components/PauseSubscriptionModal';
 import { CancelSubscriptionModal } from './components/CancelSubscriptionModal';
+import { StaticIpCard } from './components/StaticIpCard';
 
 function DetailSkeleton() {
   return (
@@ -247,6 +248,11 @@ export function SubscriptionDetailPage() {
         <div className="space-y-8">
           {/* Pricing Card */}
           <SubscriptionPricingCard subscription={subscription} isAdmin={isAdmin} />
+
+          {/* Static IP Card */}
+          {subscription.sim_card_id && (
+            <StaticIpCard simCardId={subscription.sim_card_id} isAdmin={isAdmin} />
+          )}
 
           {/* Payment Method & subscription details */}
           <Card className="p-5">

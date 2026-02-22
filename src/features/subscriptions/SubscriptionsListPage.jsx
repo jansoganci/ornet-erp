@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, CreditCard, Filter, Tag, TrendingUp, TrendingDown, Minus, Users, Pause, AlertTriangle, FileSpreadsheet, Receipt, Wallet, Building2, Calendar } from 'lucide-react';
@@ -15,6 +15,7 @@ import {
   ErrorState,
   TableSkeleton,
 } from '../../components/ui';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { useSubscriptions, useSubscriptionStats, useCurrentProfile } from './hooks';
 import { SUBSCRIPTION_TYPES } from './schema';
@@ -29,11 +30,28 @@ export function SubscriptionsListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [importModalOpen, setImportModalOpen] = useState(false);
 
-  const search = searchParams.get('search') || '';
+  const searchFromUrl = searchParams.get('search') || '';
+  const [localSearch, setLocalSearch] = useState(searchFromUrl);
+  const debouncedSearch = useDebouncedValue(localSearch, 300);
   const status = searchParams.get('status') || 'all';
   const type = searchParams.get('type') || 'all';
 
-  const { data: subscriptions = [], isLoading, error, refetch } = useSubscriptions({ search, status, type });
+  // Sync local search from URL
+  useEffect(() => {
+    setLocalSearch(searchFromUrl);
+  }, [searchFromUrl]);
+  // Sync debounced search to URL — setState in effect is intentional
+  useEffect(() => {
+    if (searchFromUrl === debouncedSearch) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (debouncedSearch) next.set('search', debouncedSearch);
+      else next.delete('search');
+      return next;
+    });
+  }, [debouncedSearch, searchFromUrl, setSearchParams]);
+
+  const { data: subscriptions = [], isLoading, error, refetch } = useSubscriptions({ search: debouncedSearch, status, type });
   const { data: stats } = useSubscriptionStats();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
@@ -48,24 +66,7 @@ export function SubscriptionsListPage() {
     };
   };
 
-  if (isLoading) {
-    return (
-      <PageContainer maxWidth="xl" padding="default">
-        <PageHeader title={t('subscriptions:list.title')} />
-        <div className="mt-6">
-          <TableSkeleton cols={8} />
-        </div>
-      </PageContainer>
-    );
-  }
-
-  const handleSearch = (value) => {
-    setSearchParams((prev) => {
-      if (value) prev.set('search', value);
-      else prev.delete('search');
-      return prev;
-    });
-  };
+  const handleSearch = (value) => setLocalSearch(value);
 
   const handleFilterChange = (key, value) => {
     setSearchParams((prev) => {
@@ -273,7 +274,7 @@ export function SubscriptionsListPage() {
           <div className="flex-1">
             <SearchInput
               placeholder={t('subscriptions:list.searchPlaceholder')}
-              value={search}
+              value={localSearch}
               onChange={handleSearch}
               className="w-full"
             />
@@ -296,7 +297,9 @@ export function SubscriptionsListPage() {
       </Card>
 
       {isLoading ? (
-        <SubscriptionsSkeleton />
+        <div className="mt-6">
+          <TableSkeleton cols={8} />
+        </div>
       ) : error ? (
         <ErrorState message={error.message} onRetry={() => refetch()} />
       ) : subscriptions.length === 0 ? (

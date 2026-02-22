@@ -50,7 +50,7 @@ function getMonthIndex(paymentMonth) {
   return new Date(paymentMonth).getMonth();
 }
 
-export function MonthlyPaymentGrid({ payments = [], subscriptionStatus }) {
+export function MonthlyPaymentGrid({ payments = [] }) {
   const { t } = useTranslation('subscriptions');
   const [selectedPayment, setSelectedPayment] = useState(null);
 

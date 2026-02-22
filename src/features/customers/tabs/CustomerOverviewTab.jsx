@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Clock, Wifi, AlertTriangle, Phone, Mail, MapPin, FileText } from 'lucide-react';
 import { Card, Button } from '../../../components/ui';
-import { formatPhone, formatDate } from '../../../lib/utils';
+import { formatPhone } from '../../../lib/utils';
 import { CustomerMetricCard } from '../components/CustomerMetricCard';
 import { CustomerAlertItem } from '../components/CustomerAlertItem';
 import { RecentWorkOrderRow } from '../components/RecentWorkOrderRow';
@@ -20,7 +20,6 @@ export function CustomerOverviewTab({
   subscriptionsBySite = {},
   onTabSwitch,
   navigate,
-  customerId,
 }) {
   const { t } = useTranslation('customers');
 

@@ -34,6 +34,7 @@
     "workOrderCount": "{{completed}}/{{total}} Tamamlandı",
     "noWorkOrders": "Henüz iş emri eklenmedi.",
     "addWorkOrder": "İş Emri Ekle",
+    "addSiteAndWorkOrder": "Lokasyon Ekle ve İş Emri Oluştur",
     "addWorkOrderNoSite": "Lokasyon gerekli",
     "addWorkOrderNoSiteHint": "İş emri eklemek için önce teklife lokasyon ekleyin (Düzenle).",
     "unlinkWorkOrder": "Bağlantıyı Kaldır",
@@ -81,6 +82,7 @@
       "scopeOfWork": "Kapsam",
       "notes": "Dahili Notlar",
       "companyName": "Firma Adı (PDF)",
+      "proposalDate": "Teklif Tarihi",
       "surveyDate": "Keşif Tarihi",
       "authorizedPerson": "Yetkili Kişi",
       "installationDate": "Montaj Tarihi",
@@ -103,6 +105,7 @@
       "items": "Malzemeler",
       "notes": "Notlar",
       "logoAndHeader": "Logo ve PDF Başlık Bilgileri",
+      "postAcceptanceDates": "Müşteri onayı sonrası doldurulacak tarihler",
       "terms": "Şartlar ve Koşullar"
     }
   },

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Download,
   Receipt,
+  MapPin,
 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { PageContainer } from '../../components/layout';
@@ -34,6 +35,8 @@ import { ProposalPdf } from './components/ProposalPdf';
 import { ProposalHero } from './components/ProposalHero';
 import { ProposalSiteCard } from './components/ProposalSiteCard';
 import { ProposalSummaryCard } from './components/ProposalSummaryCard';
+import { SiteFormModal } from '../customerSites/SiteFormModal';
+import { useUpdateProposal } from './hooks';
 
 function DetailSkeleton() {
   return (
@@ -67,6 +70,7 @@ export function ProposalDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showFaturalandirModal, setShowFaturalandirModal] = useState(false);
   const [unlinkWoId, setUnlinkWoId] = useState(null);
+  const [showAddSiteModal, setShowAddSiteModal] = useState(false);
 
   const { data: proposal, isLoading, error, refetch } = useProposal(id);
   const { data: items = [] } = useProposalItems(id);
@@ -74,6 +78,7 @@ export function ProposalDetailPage() {
   const statusMutation = useUpdateProposalStatus();
   const deleteMutation = useDeleteProposal();
   const unlinkMutation = useUnlinkWorkOrder();
+  const updateProposalMutation = useUpdateProposal();
 
   if (isLoading) return <DetailSkeleton />;
 
@@ -98,8 +103,7 @@ export function ProposalDetailPage() {
       Number(
         item.line_total ??
           item.total_usd ??
-          item.quantity * (item.unit_price ?? item.unit_price_usd) ??
-          0
+          ((Number(item.quantity) * Number(item.unit_price ?? item.unit_price_usd)) || 0)
       ),
     0
   );
@@ -152,6 +156,17 @@ export function ProposalDetailPage() {
 
   const handleEdit = () => navigate(`/proposals/${id}/edit`);
 
+  const handleSiteCreated = async (newSite) => {
+    // Attach the new site to this proposal, then open work order creation
+    await updateProposalMutation.mutateAsync({ id, site_id: newSite.id });
+    const params = new URLSearchParams({
+      proposalId: id,
+      customerId: proposal.customer_id || '',
+      siteId: newSite.id,
+    });
+    navigate(`/work-orders/new?${params.toString()}`);
+  };
+
   return (
     <PageContainer maxWidth="full" padding="default" className="space-y-5 pb-24">
       {/* Hero */}
@@ -190,8 +205,7 @@ export function ProposalDetailPage() {
                 const lineTotal = Number(
                   item.line_total ??
                     item.total_usd ??
-                    item.quantity * (item.unit_price ?? item.unit_price_usd) ??
-                    0
+                    ((Number(item.quantity) * Number(item.unit_price ?? item.unit_price_usd)) || 0)
                 );
                 return (
                   <div
@@ -280,26 +294,33 @@ export function ProposalDetailPage() {
                 </Badge>
               )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<Plus className="w-3.5 h-3.5" />}
-              disabled={!proposal.site_id}
-              title={!proposal.site_id ? t('proposals:detail.addWorkOrderNoSiteHint') : undefined}
-              onClick={() => {
-                if (!proposal.site_id) return;
-                const params = new URLSearchParams({
-                  proposalId: id,
-                  customerId: proposal.customer_id || '',
-                  siteId: proposal.site_id,
-                });
-                navigate(`/work-orders/new?${params.toString()}`);
-              }}
-            >
-              {!proposal.site_id
-                ? t('proposals:detail.addWorkOrderNoSite')
-                : t('proposals:detail.addWorkOrder')}
-            </Button>
+            {proposal.site_id ? (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<Plus className="w-3.5 h-3.5" />}
+                onClick={() => {
+                  const params = new URLSearchParams({
+                    proposalId: id,
+                    customerId: proposal.customer_id || '',
+                    siteId: proposal.site_id,
+                  });
+                  navigate(`/work-orders/new?${params.toString()}`);
+                }}
+              >
+                {t('proposals:detail.addWorkOrder')}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<MapPin className="w-3.5 h-3.5" />}
+                disabled={!proposal.customer_id}
+                onClick={() => setShowAddSiteModal(true)}
+              >
+                {t('proposals:detail.addSiteAndWorkOrder')}
+              </Button>
+            )}
           </div>
           <div className="p-6">
             {linkedWorkOrders.length === 0 ? (
@@ -576,6 +597,15 @@ export function ProposalDetailPage() {
           {t('proposals:detail.confirmUnlink')}
         </p>
       </Modal>
+
+      {/* Add Site → Work Order flow */}
+      <SiteFormModal
+        open={showAddSiteModal}
+        onClose={() => setShowAddSiteModal(false)}
+        customerId={proposal?.customer_id}
+        site={null}
+        onSuccess={handleSiteCreated}
+      />
     </PageContainer>
   );
 }

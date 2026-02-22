@@ -16,6 +16,7 @@ import {
   ErrorState,
   TableSkeleton,
 } from '../../components/ui';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useSearchWorkHistory } from './hooks';
 import { useProfiles } from '../tasks/hooks';
 import { formatDate } from '../../lib/utils';
@@ -40,6 +41,8 @@ export function WorkHistoryPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  const [localSearch, setLocalSearch] = useState(searchParams.get('search') || '');
+  const debouncedSearch = useDebouncedValue(localSearch, 300);
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
     datePreset: searchParams.get('datePreset') || 'all',
@@ -50,7 +53,9 @@ export function WorkHistoryPage() {
     siteId: searchParams.get('siteId') || '',
   });
 
+  // Sync filters from URL — setState in effect is intentional
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     const siteId = searchParams.get('siteId');
     if (siteId) {
       setFilters((prev) => ({ ...prev, siteId }));
@@ -59,24 +64,18 @@ export function WorkHistoryPage() {
 
   const { data: results = [], isLoading, error, refetch } = useSearchWorkHistory({
     ...filters,
+    search: debouncedSearch,
     ...(filters.datePreset && filters.datePreset !== 'all' && filters.datePreset !== 'custom'
       ? getDateRangeFromPreset(filters.datePreset)
       : { dateFrom: filters.dateFrom, dateTo: filters.dateTo }),
   });
   const { data: profiles = [] } = useProfiles();
 
-  if (isLoading) {
-    return (
-      <PageContainer maxWidth="xl" padding="default">
-        <PageHeader title={t('workHistory:title')} />
-        <div className="mt-6">
-          <TableSkeleton cols={5} />
-        </div>
-      </PageContainer>
-    );
-  }
-
   const handleFilterChange = (key, value) => {
+    if (key === 'search') {
+      setLocalSearch(value ?? '');
+      return;
+    }
     setFilters((prev) => {
       const next = { ...prev, [key]: value };
       if (key === 'datePreset' && value !== 'custom' && value !== 'all') {
@@ -89,6 +88,7 @@ export function WorkHistoryPage() {
   };
 
   const handleReset = () => {
+    setLocalSearch('');
     setFilters((prev) => ({
       search: '',
       datePreset: 'all',
@@ -186,7 +186,7 @@ export function WorkHistoryPage() {
             <div className="flex-1">
               <SearchInput
                 placeholder={t('workHistory:search.placeholder')}
-                value={filters.search}
+                value={localSearch}
                 onChange={(v) => handleFilterChange('search', v)}
                 className="w-full"
               />
@@ -265,7 +265,7 @@ export function WorkHistoryPage() {
           <EmptyState
             icon={Search}
             title={t('workHistory:results.noResults')}
-            description={filters.search ? t('common:noResults') : t('workHistory:subtitle')}
+            description={debouncedSearch ? t('common:noResults') : t('workHistory:subtitle')}
           />
         ) : (
           <Table

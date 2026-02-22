@@ -66,5 +66,20 @@
     "parse": "Dosya okunamadı. Lütfen geçerli bir Excel dosyası yükleyin.",
     "missingCode": "Satır {{row}}: Kod eksik.",
     "missingName": "Satır {{row}}: Ad eksik."
+  },
+  "usage": {
+    "title": "Kullanım Geçmişi",
+    "columnHeader": "Kullanım",
+    "empty": "Bu malzeme henüz hiçbir iş emrinde kullanılmamış.",
+    "columns": {
+      "customer": "Müşteri",
+      "site": "Lokasyon",
+      "workOrder": "İş Emri",
+      "workType": "İş Tipi",
+      "date": "Tarih",
+      "status": "Durum",
+      "quantity": "Miktar"
+    },
+    "workOrderLink": "İş emrine git"
   }
 }

@@ -89,7 +89,7 @@ export function useCreateWorkOrder() {
   
   return useMutation({
     mutationFn: api.createWorkOrder,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
@@ -107,7 +107,7 @@ export function useUpdateWorkOrder() {
   
   return useMutation({
     mutationFn: api.updateWorkOrder,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
@@ -124,17 +124,12 @@ export function useDeleteWorkOrder() {
   const { t } = useTranslation(['common', 'workOrders']);
   
   return useMutation({
-    mutationFn: (id) => {
-      console.log('[WORK_ORDER_DELETE_HOOK] mutationFn çağrıldı, id:', id);
-      return api.deleteWorkOrder(id);
-    },
-    onSuccess: (data) => {
-      console.log('[WORK_ORDER_DELETE_HOOK] onSuccess, data:', data);
+    mutationFn: (id) => api.deleteWorkOrder(id),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
       toast.success(t('success.deleted'));
     },
     onError: (error) => {
-      console.error('[WORK_ORDER_DELETE_HOOK] onError - tam hata:', error);
       const isPermissionDenied =
         error?.code === 'DELETE_PERMISSION_DENIED' ||
         error?.message === 'DELETE_PERMISSION_DENIED' ||

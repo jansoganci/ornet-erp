@@ -15,7 +15,7 @@ export function CustomerTabBar({ activeTab, onTabChange, counts = {} }) {
 
   return (
     <div className="flex items-center gap-1 p-1 w-full bg-neutral-100 dark:bg-neutral-800/60 rounded-xl overflow-x-auto no-scrollbar">
-      {TABS.map(({ key, icon: Icon, labelKey, countKey }) => {
+      {TABS.map(({ key, icon: IconComponent, labelKey, countKey }) => {
         const isActive = activeTab === key;
         const count = countKey != null ? (counts[countKey] ?? 0) : null;
 
@@ -31,7 +31,7 @@ export function CustomerTabBar({ activeTab, onTabChange, counts = {} }) {
                 : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-white/60 dark:hover:bg-neutral-700/40'
             )}
           >
-            <Icon className="w-4 h-4" />
+            <IconComponent className="w-4 h-4" />
             <span>{t(labelKey)}</span>
             {count != null && count > 0 && (
               <span className={cn(

@@ -1,4 +1,5 @@
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 /**
  * Fetch all customers with optional search
@@ -7,10 +8,12 @@ export async function fetchCustomers({ search = '' } = {}) {
   let query = supabase
     .from('customers')
     .select('*, customer_sites(city)')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   if (search) {
-    query = query.or(`company_name.ilike.%${search}%,phone.ilike.%${search}%`);
+    const normalized = normalizeForSearch(search);
+    query = query.or(`company_name_search.ilike.%${normalized}%,phone_search.ilike.%${normalized}%`);
   }
 
   const { data, error } = await query;
@@ -41,6 +44,7 @@ export async function fetchCustomer(id) {
   const { data, error } = await supabase
     .from('customers')
     .select('*, customer_sites(*)')
+    .is('deleted_at', null)
     .eq('id', id)
     .single();
 
@@ -83,7 +87,7 @@ export async function updateCustomer({ id, ...customerData }) {
 export async function deleteCustomer(id) {
   const { error } = await supabase
     .from('customers')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) throw error;

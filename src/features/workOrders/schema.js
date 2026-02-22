@@ -25,7 +25,7 @@ export const workOrderSchema = z.object({
     unit_price: z.coerce.number().min(0),
     material_id: z.string().uuid().optional().nullable().or(z.literal('')),
     cost: z.coerce.number().min(0).optional().nullable(),
-  })).min(1, i18n.t('errors:validation.required')),
+  })).min(0),
   materials_discount_percent: z.coerce.number().min(0).max(100).optional().nullable(),
 }).refine((data) => {
   if (data.work_type === 'other') {
@@ -35,6 +35,14 @@ export const workOrderSchema = z.object({
 }, {
   message: i18n.t('workOrders:validation.workTypeOtherRequired'),
   path: ['work_type_other'],
+}).refine((data) => {
+  if (data.work_type !== 'survey' && data.items.length === 0) {
+    return false;
+  }
+  return true;
+}, {
+  message: i18n.t('errors:validation.required'),
+  path: ['items'],
 });
 
 export const workOrderDefaultValues = {

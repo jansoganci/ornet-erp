@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, X, DollarSign, FileText, Users, StickyNote, CreditCard, Wallet, Banknote, RefreshCw } from 'lucide-react';
-import { cn, formatCurrency, getCurrencySymbol } from '../../lib/utils';
+import { cn, formatCurrency } from '../../lib/utils';
 import { PageContainer } from '../../components/layout';
 import {
   Button,
@@ -72,6 +72,7 @@ export function SubscriptionFormPage() {
   const basePrice = watch('base_price');
   const smsFee = watch('sms_fee');
   const lineFee = watch('line_fee');
+  const staticIpFee = watch('static_ip_fee');
   const vatRate = watch('vat_rate');
   const selectedCurrency = watch('currency') || 'TRY';
 
@@ -110,6 +111,8 @@ export function SubscriptionFormPage() {
         line_fee: subscription.line_fee ?? '',
         vat_rate: subscription.vat_rate ?? 20,
         cost: subscription.cost ?? '',
+        static_ip_fee: subscription.static_ip_fee ?? '',
+        static_ip_cost: subscription.static_ip_cost ?? '',
         currency: subscription.currency || 'TRY',
         payment_method_id: subscription.payment_method_id || '',
         sold_by: subscription.sold_by || '',
@@ -133,12 +136,13 @@ export function SubscriptionFormPage() {
     const bp = Number(basePrice) || 0;
     const sf = Number(smsFee) || 0;
     const lf = Number(lineFee) || 0;
+    const sif = Number(staticIpFee) || 0;
     const vr = Number(vatRate) || 0;
-    const subtotal = bp + sf + lf;
+    const subtotal = bp + sf + lf + sif;
     const vatAmount = Math.round(subtotal * vr / 100 * 100) / 100;
     const total = subtotal + vatAmount;
     return { subtotal, vatAmount, total };
-  }, [basePrice, smsFee, lineFee, vatRate]);
+  }, [basePrice, smsFee, lineFee, staticIpFee, vatRate]);
 
   const profileOptions = [
     { value: '', label: t('subscriptions:form.placeholders.selectPerson') },
@@ -173,6 +177,8 @@ export function SubscriptionFormPage() {
         line_fee: Number(data.line_fee) || 0,
         vat_rate: Number(data.vat_rate) || 0,
         cost: Number(data.cost) || 0,
+        static_ip_fee: Number(data.static_ip_fee) || 0,
+        static_ip_cost: Number(data.static_ip_cost) || 0,
         currency: data.currency || 'TRY',
         payment_method_id: cleanValue(data.payment_method_id),
         sold_by: cleanValue(data.sold_by),
@@ -456,6 +462,29 @@ export function SubscriptionFormPage() {
                     className="rounded-xl"
                     {...register('line_fee')}
                   />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <Input
+                    label={t('subscriptions:form.fields.staticIpFee')}
+                    type="number"
+                    step="0.01"
+                    rightIcon={<span className="text-neutral-400 font-bold">₺</span>}
+                    error={errors.static_ip_fee?.message}
+                    className="rounded-xl"
+                    {...register('static_ip_fee')}
+                  />
+                  {isAdmin && (
+                    <Input
+                      label={t('subscriptions:form.fields.staticIpCost')}
+                      type="number"
+                      step="0.01"
+                      rightIcon={<span className="text-neutral-400 font-bold">₺</span>}
+                      error={errors.static_ip_cost?.message}
+                      className="rounded-xl"
+                      {...register('static_ip_cost')}
+                    />
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

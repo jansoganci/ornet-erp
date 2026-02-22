@@ -29,7 +29,7 @@ function loadGroupState() {
   return DEFAULT_GROUP_STATE;
 }
 
-export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) {
+export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
   const { t: tCommon } = useTranslation('common');
   const { t: tAuth } = useTranslation('auth');
   const { user, signOut } = useAuth();
@@ -161,7 +161,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
           {/* User Info - Clickable link to profile */}
           <Link
             to="/profile"
-            onClick={() => window.innerWidth < 1024 && onClose()}
+            onClick={handleNavClick}
             className={cn(
               'flex items-center rounded-lg transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800',
               isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'
@@ -180,7 +180,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
               </div>
             )}
           </Link>
-          
+
           {/* Logout Button */}
           {isSupabaseConfigured && (
             <button

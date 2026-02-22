@@ -1,23 +1,25 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 import { Plus, Download, Filter, Edit2, Trash2, FileSpreadsheet, Pencil, Cpu as SimIcon, Calendar } from 'lucide-react';
 import { useSimCards, useDeleteSimCard, useUpdateSimCard, useSimFinancialStats } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { 
-  Button, 
-  SearchInput, 
+import {
+  Button,
+  SearchInput,
   Select,
-  Card, 
-  Badge, 
-  EmptyState, 
-  Skeleton, 
+  Card,
+  Badge,
+  EmptyState,
+  Skeleton,
   ErrorState,
   Table,
-  IconButton
+  IconButton,
+  Modal,
 } from '../../components/ui';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { SimCardStats } from './components/SimCardStats';
 import { QuickStatusSelect } from './components/QuickStatusSelect';
 
@@ -29,6 +31,7 @@ export function SimCardsListPage() {
   const search = searchParams.get('search') || '';
   const statusFilter = searchParams.get('status') || 'all';
   const [quickEditMode, setQuickEditMode] = useState(false);
+  const [simToDelete, setSimToDelete] = useState(null);
 
   const handleSearch = (value) => {
     setSearchParams((prev) => {
@@ -51,17 +54,20 @@ export function SimCardsListPage() {
   const deleteSimMutation = useDeleteSimCard();
   const updateSimCardMutation = useUpdateSimCard();
 
-  const filteredSimCards = simCards?.filter(sim => {
-    const term = search.toLowerCase();
-    const matchesSearch = !term ||
-      sim.phone_number?.toLowerCase().includes(term) ||
-      sim.buyer?.company_name?.toLowerCase().includes(term) ||
-      sim.customers?.company_name?.toLowerCase().includes(term);
+  const normalizedTerm = useMemo(() => normalizeForSearch(search), [search]);
 
-    const matchesStatus = statusFilter === 'all' || sim.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
+  const filteredSimCards = useMemo(() => {
+    if (!simCards) return [];
+    return simCards.filter((sim) => {
+      const matchesSearch =
+        !normalizedTerm ||
+        normalizeForSearch(sim.phone_number).includes(normalizedTerm) ||
+        normalizeForSearch(sim.buyer?.company_name).includes(normalizedTerm) ||
+        normalizeForSearch(sim.customers?.company_name).includes(normalizedTerm);
+      const matchesStatus = statusFilter === 'all' || sim.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [simCards, normalizedTerm, statusFilter]);
 
   const handleAdd = () => navigate('/sim-cards/new');
   const handleImport = () => navigate('/sim-cards/import');
@@ -88,9 +94,18 @@ export function SimCardsListPage() {
     XLSX.writeFile(wb, `Ornet_SIM_Listesi_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm(tCommon('confirm.deleteMessage'))) {
-      await deleteSimMutation.mutateAsync(id);
+  const handleDelete = (row) => {
+    setSimToDelete(row);
+  };
+
+  const confirmDelete = async () => {
+    if (!simToDelete) return;
+    try {
+      await deleteSimMutation.mutateAsync(simToDelete.id);
+    } catch {
+      // error handled by mutation onError
+    } finally {
+      setSimToDelete(null);
     }
   };
 
@@ -213,7 +228,7 @@ export function SimCardsListPage() {
             icon={Trash2}
             size="sm"
             variant="ghost"
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleDelete(row)}
             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-900/20"
             aria-label={t('actions.delete')}
           />
@@ -314,6 +329,34 @@ export function SimCardsListPage() {
           />
         </div>
       )}
+      <Modal
+        open={!!simToDelete}
+        onClose={() => setSimToDelete(null)}
+        title={t('delete.title')}
+        size="sm"
+        footer={
+          <div className="flex gap-3 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setSimToDelete(null)}
+              className="flex-1"
+            >
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={confirmDelete}
+              loading={deleteSimMutation.isPending}
+              className="flex-1"
+            >
+              {tCommon('actions.delete')}
+            </Button>
+          </div>
+        }
+      >
+        <p>{t('delete.message', { phoneNumber: simToDelete?.phone_number })}</p>
+        <p className="mt-2 text-sm text-error-600 font-bold">{t('delete.warning')}</p>
+      </Modal>
     </PageContainer>
   );
 }

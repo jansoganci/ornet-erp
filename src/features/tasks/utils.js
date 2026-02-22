@@ -1,6 +1,5 @@
 import {
   startOfDay,
-  startOfWeek,
   endOfWeek,
   endOfMonth,
   parseISO,
@@ -17,8 +16,7 @@ import {
 export function groupPlansByHorizon(tasks = []) {
   const now = new Date();
   const todayStart = startOfDay(now);
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Monday
   const monthEnd = endOfMonth(now);
 
   const groups = {

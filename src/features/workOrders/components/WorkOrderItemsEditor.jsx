@@ -1,5 +1,6 @@
 import { useFieldArray, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { PackageOpen } from 'lucide-react';
 import { Plus, Trash2, Package } from 'lucide-react';
 import { Button, Input, MaterialCombobox } from '../../../components/ui';
 import { cn, getCurrencySymbol, formatCurrency } from '../../../lib/utils';
@@ -11,8 +12,9 @@ const UNIT_OPTIONS = [
   { value: 'takim', labelKey: 'items.units.takim' },
 ];
 
-export function WorkOrderItemsEditor({ control, register, errors, watch, setValue, currency = 'TRY' }) {
+export function WorkOrderItemsEditor({ control, register, errors, watch, setValue, currency = 'TRY', workType }) {
   const { t } = useTranslation('proposals');
+  const { t: tWo } = useTranslation('workOrders');
   const symbol = getCurrencySymbol(currency);
   const { fields, append, remove } = useFieldArray({
     control,
@@ -207,7 +209,7 @@ export function WorkOrderItemsEditor({ control, register, errors, watch, setValu
                   </span>
                 </div>
                 <div className="flex items-center justify-center">
-                  {fields.length > 1 && (
+                  {(fields.length > 1 || workType === 'survey') && (
                     <button
                       type="button"
                       onClick={() => remove(index)}
@@ -274,7 +276,7 @@ export function WorkOrderItemsEditor({ control, register, errors, watch, setValu
                 <span className="text-xs font-bold text-neutral-500 uppercase">
                   #{index + 1}
                 </span>
-                {fields.length > 1 && (
+                {(fields.length > 1 || workType === 'survey') && (
                   <button
                     type="button"
                     onClick={() => remove(index)}
@@ -451,6 +453,14 @@ export function WorkOrderItemsEditor({ control, register, errors, watch, setValu
           );
         })}
       </div>
+
+      {/* Empty state — only shown for survey with no items */}
+      {fields.length === 0 && workType === 'survey' && (
+        <div className="flex flex-col items-center justify-center py-8 gap-2 text-neutral-400 dark:text-neutral-500">
+          <PackageOpen className="w-8 h-8" />
+          <p className="text-sm">{tWo('form.hints.materialsOptional')}</p>
+        </div>
+      )}
 
       {/* Totals */}
       <div className="pt-4 border-t-2 border-neutral-300 dark:border-[#333] space-y-2">

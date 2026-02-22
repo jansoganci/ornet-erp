@@ -17,11 +17,6 @@ export function CustomerFormPage() {
 
   const isEdit = Boolean(id);
   const { data: customer, isLoading: customerLoading } = useCustomer(id);
-
-  if (isEdit && customerLoading) {
-    return <FormSkeleton />;
-  }
-
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
 
@@ -74,19 +69,13 @@ export function CustomerFormPage() {
         const newCustomer = await createCustomer.mutateAsync(cleanedData);
         navigate(`/customers/${newCustomer.id}`);
       }
-    } catch (err) {
-      console.error('Save failed:', err);
+    } catch {
+      // error handled by mutation onError
     }
   };
 
   if (isEdit && customerLoading) {
-    return (
-      <PageContainer maxWidth="full" padding="default">
-        <div className="flex items-center justify-center py-12">
-          <Spinner size="lg" />
-        </div>
-      </PageContainer>
-    );
+    return <FormSkeleton />;
   }
 
   return (

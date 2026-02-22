@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useTranslation } from 'react-i18next';
 import { Plus, User, MapPin, Phone, Info, ChevronRight, Search } from 'lucide-react';
 import { useCustomers } from '../customers/hooks';
@@ -12,7 +13,6 @@ import {
   Spinner, 
   EmptyState 
 } from '../../components/ui';
-import { cn } from '../../lib/utils';
 
 export function CustomerSiteSelector({ 
   selectedCustomerId, 
@@ -27,15 +27,16 @@ export function CustomerSiteSelector({
   const { t } = useTranslation(['workOrders', 'customers', 'common', 'proposals']);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
 
-  const { data: customers = [], isLoading: isLoadingCustomers } = useCustomers({ search: searchTerm });
+  const { data: customers = [], isLoading: isLoadingCustomers } = useCustomers({ search: debouncedSearch });
   
   const selectedCustomer = useMemo(() => 
     customers.find(c => c.id === selectedCustomerId), 
     [customers, selectedCustomerId]
   );
 
-  const { data: sites = [], isLoading: isLoadingSites, refetch: refetchSites } = useSitesByCustomer(selectedCustomerId);
+  const { data: sites = [], isLoading: isLoadingSites } = useSitesByCustomer(selectedCustomerId);
 
   const selectedSite = useMemo(() => 
     sites.find(s => s.id === selectedSiteId), 
@@ -85,6 +86,7 @@ export function CustomerSiteSelector({
                   <div className="py-1">
                     {customers.map((customer) => (
                       <button
+                        type="button"
                         key={customer.id}
                         onClick={() => handleCustomerSelect(customer)}
                         className="w-full px-4 py-3 text-left hover:bg-neutral-50 dark:hover:bg-[#262626] flex items-center justify-between group transition-colors"
@@ -113,6 +115,7 @@ export function CustomerSiteSelector({
                       {t('common:noResults')}
                     </p>
                     <Button 
+                      type="button"
                       size="sm" 
                       variant="outline" 
                       leftIcon={<Plus className="w-4 h-4" />}
@@ -128,6 +131,7 @@ export function CustomerSiteSelector({
           
           {!isSearching && !selectedCustomerId && (
             <Button 
+              type="button"
               variant="outline" 
               className="w-full border-dashed" 
               leftIcon={<Plus className="w-4 h-4" />}
@@ -167,6 +171,7 @@ export function CustomerSiteSelector({
               </div>
             </div>
             <Button 
+              type="button"
               variant="ghost" 
               size="sm" 
               onClick={() => setIsSearching(true)}
@@ -188,6 +193,7 @@ export function CustomerSiteSelector({
                 )}
               </label>
               <Button 
+                type="button"
                 variant="ghost" 
                 size="sm" 
                 leftIcon={<Plus className="w-4 h-4" />}

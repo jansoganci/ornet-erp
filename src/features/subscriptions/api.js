@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { createPaymentMethod } from './paymentMethodsApi';
 
 /**
@@ -44,8 +45,9 @@ export async function fetchSubscriptions(filters = {}) {
     .select('*');
 
   if (filters.search) {
+    const normalized = normalizeForSearch(filters.search);
     query = query.or(
-      `company_name.ilike.%${filters.search}%,account_no.ilike.%${filters.search}%,site_name.ilike.%${filters.search}%`
+      `company_name_search.ilike.%${normalized}%,account_no_search.ilike.%${normalized}%,site_name_search.ilike.%${normalized}%`
     );
   }
 
@@ -216,13 +218,13 @@ export async function updateSubscription({ id, ...updateData }) {
   if (error) throw error;
 
   // Check if pricing changed — recalculate pending payment amounts
-  const priceFields = ['base_price', 'sms_fee', 'line_fee', 'vat_rate'];
+  const priceFields = ['base_price', 'sms_fee', 'line_fee', 'static_ip_fee', 'vat_rate'];
   const priceChanged = priceFields.some(
     (field) => updateData[field] !== undefined && Number(updateData[field]) !== Number(current[field])
   );
 
   if (priceChanged) {
-    const subtotal = Number(data.base_price) + Number(data.sms_fee) + Number(data.line_fee);
+    const subtotal = Number(data.base_price) + Number(data.sms_fee) + Number(data.line_fee) + Number(data.static_ip_fee);
     const vatAmount = Math.round(subtotal * Number(data.vat_rate) / 100 * 100) / 100;
     const totalAmount = subtotal + vatAmount;
 
