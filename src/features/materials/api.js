@@ -29,6 +29,12 @@ export async function fetchMaterials(filters = {}) {
     const normalized = normalizeForSearch(filters.search);
     query = query.or(`name_search.ilike.%${normalized}%,code_search.ilike.%${normalized}%`);
   }
+  if (filters.dateFrom) {
+    query = query.gte('created_at', filters.dateFrom);
+  }
+  if (filters.dateTo) {
+    query = query.lte('created_at', filters.dateTo + 'T23:59:59');
+  }
 
   const { data, error } = await query;
   if (error) throw error;

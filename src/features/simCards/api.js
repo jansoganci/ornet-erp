@@ -8,13 +8,34 @@ const SIM_CARD_SELECT = `
   customer_sites:site_id (site_name)
 `;
 
-export async function fetchSimCards() {
-  const { data, error } = await supabase
+export async function fetchSimCards(filters = {}) {
+  let query = supabase
     .from('sim_cards')
     .select(SIM_CARD_SELECT)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+    .is('deleted_at', null);
 
+  if (filters.search) {
+    const term = normalizeForSearch(filters.search);
+    query = query.or(
+      `phone_number.ilike.%${term}%`
+    );
+  }
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+  if (filters.operator && filters.operator !== 'all') {
+    query = query.eq('operator', filters.operator);
+  }
+  if (filters.dateFrom) {
+    query = query.gte('created_at', filters.dateFrom);
+  }
+  if (filters.dateTo) {
+    query = query.lte('created_at', filters.dateTo + 'T23:59:59');
+  }
+
+  query = query.order('created_at', { ascending: false });
+
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }

@@ -24,7 +24,12 @@
       "available": "Boşta",
       "active": "Aktif",
       "subscription": "Abonelik",
-      "cancelled": "İptal Edildi"
+      "cancelled": "İptal Edildi",
+      "allOperators": "Tümü",
+      "status": "Durum",
+      "operator": "Operatör",
+      "selectYear": "Yıl Seç",
+      "selectMonth": "Ay Seç"
     },
     "quickEdit": "Hızlı Düzenleme"
   },

@@ -51,10 +51,10 @@
     },
     "overview": {
       "metrics": {
-        "activeSubscriptions": "Aktif Abonelik",
-        "openWorkOrders": "Açık İş Emri",
-        "activeSimCards": "Aktif SIM Kart",
-        "faultyEquipment": "Arızalı Ekipman"
+        "activeSubscriptions": "Aktif Abonelikler",
+        "openWorkOrders": "Açık İş Emirleri",
+        "activeSimCards": "Aktif SIM Kartlar",
+        "faultyEquipment": "Arızalı Ekipmanlar"
       },
       "alerts": {
         "faultyEquipment": "{{count}} arızalı ekipman mevcut",

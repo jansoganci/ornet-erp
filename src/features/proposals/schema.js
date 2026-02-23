@@ -23,7 +23,7 @@ export const proposalItemSchema = z.object({
 });
 
 export const proposalSchema = z.object({
-  site_id: z.string().optional().nullable().or(z.literal('')),
+  site_id: z.string().min(1, i18n.t('errors:validation.required')),
   title: z.string().min(1, i18n.t('errors:validation.required')),
   scope_of_work: optionalStr(),
   notes: optionalStr(),

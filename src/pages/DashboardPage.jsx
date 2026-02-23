@@ -28,6 +28,7 @@ import {
 import { useSimFinancialStats } from '../features/simCards/hooks';
 import { useSubscriptionStats } from '../features/subscriptions/hooks';
 import { StatCard } from '../features/dashboard/StatCard';
+import { CurrencyWidget } from '../features/dashboard/components/CurrencyWidget';
 import { TaskModal } from '../features/tasks/TaskModal';
 import { useUpdateTask } from '../features/tasks/hooks';
 import { useAuth } from '../hooks/useAuth';
@@ -139,6 +140,8 @@ export function DashboardPage() {
         </h1>
         <span className="text-sm text-neutral-500 dark:text-neutral-400">{formattedToday}</span>
       </div>
+
+      <CurrencyWidget />
 
       {statsError ? (
         <ErrorState message={statsError.message} onRetry={() => refetchStats()} />

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Edit2, Trash2, TrendingUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, TrendingUp, ListOrdered, Receipt, ArrowUpCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -19,8 +19,9 @@ import { useTransactions, useDeleteTransaction } from './hooks';
 import { useCustomers } from '../customers/hooks';
 import { QuickEntryModal } from './components/QuickEntryModal';
 import { ViewModeToggle } from './components/ViewModeToggle';
+import { KpiCard } from './components/KpiCard';
 import { formatDate, formatCurrency } from '../../lib/utils';
-import { PAYMENT_METHODS } from './schema';
+import { PAYMENT_METHODS, INCOME_TYPES } from './schema';
 
 function getLast12Months() {
   const months = [];
@@ -48,7 +49,9 @@ export function IncomePage() {
   const period = searchParams.get('period') || defaultPeriod;
   const paymentMethod = searchParams.get('paymentMethod') || 'all';
   const viewMode = searchParams.get('viewMode') || 'total';
+  const incomeType = searchParams.get('incomeType') || 'all';
   const customerId = searchParams.get('customer') || 'all';
+  const recurringFilter = searchParams.get('recurring') || 'all';
 
   const handleFilterChange = (key, value) => {
     setSearchParams((prev) => {
@@ -56,7 +59,9 @@ export function IncomePage() {
         (k === 'period' && v === defaultPeriod) ||
         (k === 'paymentMethod' && v === 'all') ||
         (k === 'viewMode' && v === 'total') ||
-        (k === 'customer' && v === 'all');
+        (k === 'incomeType' && v === 'all') ||
+        (k === 'customer' && v === 'all') ||
+        (k === 'recurring' && v === 'all');
       if (value && !isDefault(key, value)) prev.set(key, value);
       else prev.delete(key);
       return prev;
@@ -68,8 +73,19 @@ export function IncomePage() {
     period: period || undefined,
     payment_method: paymentMethod === 'all' ? undefined : paymentMethod,
     viewMode: viewMode === 'total' ? undefined : viewMode,
+    income_type: incomeType === 'all' ? undefined : incomeType,
     customer_id: customerId === 'all' ? undefined : customerId,
+    recurring_only: recurringFilter === 'recurring_only' ? true : undefined,
   });
+
+  const kpis = useMemo(() => {
+    if (!transactions?.length) return { total: 0, count: 0, average: 0, largest: 0 };
+    const total = transactions.reduce((sum, t) => sum + (Number(t.amount_try) || 0), 0);
+    const count = transactions.length;
+    const average = total / count;
+    const largest = Math.max(...transactions.map((t) => Number(t.amount_try) || 0));
+    return { total, count, average, largest };
+  }, [transactions]);
 
   const { data: customers = [] } = useCustomers();
   const deleteMutation = useDeleteTransaction();
@@ -84,6 +100,19 @@ export function IncomePage() {
     ],
     [customers, t]
   );
+
+  const recurringFilterOptions = [
+    { value: 'all', label: t('finance:filters.recurringAll') },
+    { value: 'recurring_only', label: t('finance:filters.recurringOnly') },
+  ];
+
+  const incomeTypeOptions = [
+    { value: 'all', label: t('finance:filters.all') },
+    ...INCOME_TYPES.map((type) => ({
+      value: type,
+      label: t(`finance:income.incomeTypes.${type}`),
+    })),
+  ];
 
   const paymentMethodOptions = [
     { value: 'all', label: t('finance:filters.all') },
@@ -178,8 +207,14 @@ export function IncomePage() {
 
   if (isLoading) {
     return (
-      <PageContainer maxWidth="xl" padding="default">
+      <PageContainer maxWidth="xl" padding="default" className="space-y-6">
         <PageHeader title={t('finance:list.titleIncome')} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <KpiCard title={t('finance:income.kpi.total')} value="0" icon={TrendingUp} loading />
+          <KpiCard title={t('finance:income.kpi.count')} value="0" icon={ListOrdered} loading />
+          <KpiCard title={t('finance:income.kpi.average')} value="0" icon={Receipt} loading />
+          <KpiCard title={t('finance:income.kpi.largest')} value="0" icon={ArrowUpCircle} loading />
+        </div>
         <div className="mt-6">
           <TableSkeleton cols={6} />
         </div>
@@ -219,6 +254,33 @@ export function IncomePage() {
         }
       />
 
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <KpiCard
+          title={t('finance:income.kpi.total')}
+          value={formatCurrency(kpis.total)}
+          icon={TrendingUp}
+          loading={isLoading}
+        />
+        <KpiCard
+          title={t('finance:income.kpi.count')}
+          value={String(kpis.count)}
+          icon={ListOrdered}
+          loading={isLoading}
+        />
+        <KpiCard
+          title={t('finance:income.kpi.average')}
+          value={formatCurrency(kpis.average)}
+          icon={Receipt}
+          loading={isLoading}
+        />
+        <KpiCard
+          title={t('finance:income.kpi.largest')}
+          value={formatCurrency(kpis.largest)}
+          icon={ArrowUpCircle}
+          loading={isLoading}
+        />
+      </div>
+
       <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
         <div className="flex flex-col md:flex-row gap-4 flex-wrap">
           <div className="w-full md:w-40">
@@ -237,12 +299,28 @@ export function IncomePage() {
               onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
             />
           </div>
+          <div className="w-full md:w-48">
+            <Select
+              label={t('finance:filters.incomeType')}
+              options={incomeTypeOptions}
+              value={incomeType}
+              onChange={(e) => handleFilterChange('incomeType', e.target.value)}
+            />
+          </div>
           <div className="w-full md:w-56">
             <Select
               label={t('finance:filters.customer')}
               options={customerOptions}
               value={customerId}
               onChange={(e) => handleFilterChange('customer', e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-44">
+            <Select
+              label={t('finance:filters.recurringFilterLabel')}
+              options={recurringFilterOptions}
+              value={recurringFilter}
+              onChange={(e) => handleFilterChange('recurring', e.target.value)}
             />
           </div>
           <div className="flex items-end">

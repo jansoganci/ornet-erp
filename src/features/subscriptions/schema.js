@@ -3,7 +3,7 @@ import i18n from '../../lib/i18n';
 
 // Constants
 export const SUBSCRIPTION_TYPES = ['recurring_card', 'manual_cash', 'manual_bank'];
-export const SERVICE_TYPES = ['alarm_only', 'camera_only', 'internet_only'];
+export const SERVICE_TYPES = ['alarm_only', 'camera_only', 'internet_only', 'alarm_camera', 'alarm_camera_internet', 'camera_internet'];
 export const BILLING_FREQUENCIES = ['monthly', '6_month', 'yearly'];
 export const SUBSCRIPTION_STATUSES = ['active', 'paused', 'cancelled'];
 export const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'skipped', 'write_off'];

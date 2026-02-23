@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { useActiveNotifications, useResolveNotification } from '../hooks';
 import { NotificationItem } from './NotificationItem';
@@ -187,6 +188,17 @@ export function NotificationDropdown({ isOpen, onClose, total }) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-2 border-t border-neutral-200 dark:border-[#262626] bg-neutral-50/50 dark:bg-neutral-900/20">
+        <Link
+          to="/notifications"
+          onClick={onClose}
+          className="flex items-center justify-center w-full py-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+        >
+          {t('actions.viewAll')}
+        </Link>
       </div>
     </div>
   );

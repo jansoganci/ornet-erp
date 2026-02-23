@@ -35,6 +35,7 @@ import { ProposalPdf } from './components/ProposalPdf';
 import { ProposalHero } from './components/ProposalHero';
 import { ProposalSiteCard } from './components/ProposalSiteCard';
 import { ProposalSummaryCard } from './components/ProposalSummaryCard';
+import { CreateWorkOrderFromProposalModal } from './components/CreateWorkOrderFromProposalModal';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useUpdateProposal } from './hooks';
 
@@ -71,6 +72,7 @@ export function ProposalDetailPage() {
   const [showFaturalandirModal, setShowFaturalandirModal] = useState(false);
   const [unlinkWoId, setUnlinkWoId] = useState(null);
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
+  const [showCreateWOModal, setShowCreateWOModal] = useState(false);
 
   const { data: proposal, isLoading, error, refetch } = useProposal(id);
   const { data: items = [] } = useProposalItems(id);
@@ -299,14 +301,7 @@ export function ProposalDetailPage() {
                 variant="outline"
                 size="sm"
                 leftIcon={<Plus className="w-3.5 h-3.5" />}
-                onClick={() => {
-                  const params = new URLSearchParams({
-                    proposalId: id,
-                    customerId: proposal.customer_id || '',
-                    siteId: proposal.site_id,
-                  });
-                  navigate(`/work-orders/new?${params.toString()}`);
-                }}
+                onClick={() => setShowCreateWOModal(true)}
               >
                 {t('proposals:detail.addWorkOrder')}
               </Button>
@@ -605,6 +600,14 @@ export function ProposalDetailPage() {
         customerId={proposal?.customer_id}
         site={null}
         onSuccess={handleSiteCreated}
+      />
+      <CreateWorkOrderFromProposalModal
+        open={showCreateWOModal}
+        onClose={() => setShowCreateWOModal(false)}
+        proposal={proposal}
+        onSuccess={(newId) => {
+          if (newId) navigate(`/work-orders/${newId}`);
+        }}
       />
     </PageContainer>
   );

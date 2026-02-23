@@ -20,6 +20,7 @@ import {
   DollarSign,
   RefreshCw,
   HardDrive,
+  Bell,
 } from 'lucide-react';
 
 /**
@@ -35,6 +36,7 @@ export const navItems = [
   { to: '/customers', icon: Users, labelKey: 'nav.customers' },
   { to: '/work-orders', icon: ClipboardList, labelKey: 'nav.workOrders' },
   { to: '/proposals', icon: FileText, labelKey: 'nav.proposals' },
+  { to: '/notifications', icon: Bell, labelKey: 'nav.notifications', notificationCenter: true },
   // badge: number - optional notification badge count
   // Planlama group
   {

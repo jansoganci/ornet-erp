@@ -53,7 +53,7 @@
       "reject": "Reddet",
       "cancel": "İptal Et",
       "markComplete": "Montaj Tamamlandı",
-      "faturalandir": "Faturalandır"
+      "bill": "Faturalandır"
     },
     "comingSoon": "Bu özellik yakında aktif edilecektir.",
     "confirmAccept": "Bu teklifi onaylamak istediğinize emin misiniz?",
@@ -77,6 +77,7 @@
     "noSite": "Lokasyon seçilmedi",
     "siteOptional": "(isteğe bağlı)",
     "editTitle": "Teklifi Düzenle",
+    "customerRequired": "Lütfen bir müşteri seçin",
     "fields": {
       "title": "Teklif Başlığı",
       "scopeOfWork": "Kapsam",
@@ -118,11 +119,11 @@
     "total": "Toplam",
     "addItem": "Malzeme Ekle",
     "units": {
-      "adet": "Adet",
-      "metre": "Metre",
-      "set": "Set",
-      "takim": "Takım"
-    },
+    "adet": "adet",
+    "metre": "metre",
+    "set": "set",
+    "takim": "takım"
+  },
     "sequence": "Sıra",
     "costTracking": "Maliyet Takibi (dahili)",
     "cost": "Maliyet",
@@ -146,8 +147,20 @@
     "rejected": "Reddedildi"
   },
   "filters": {
-    "allStatuses": "Tüm Durumlar",
-    "statusLabel": "Durum Filtresi"
+    "allStatuses": "Tümü",
+    "statusLabel": "Durum Filtresi",
+    "status": "Durum",
+    "selectYear": "Yıl Seç",
+    "selectMonth": "Ay Seç"
+  },
+  "createWorkOrder": {
+    "title": "Tekliften İş Emri Oluştur",
+    "loadingItems": "Malzemeler yükleniyor...",
+    "itemsCount": "{{count}} kalem aktarılacak",
+    "workTypeLabel": "İş Tipi",
+    "scheduledDate": "Planlanan Tarih",
+    "scheduledTime": "Planlanan Saat",
+    "submit": "İş Emri Oluştur"
   },
   "pdf": {
     "date": "Tarih",

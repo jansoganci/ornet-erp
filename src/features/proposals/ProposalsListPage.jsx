@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Building2, Calendar } from 'lucide-react';
 import { useSearchInput } from '../../hooks/useSearchInput';
@@ -12,7 +11,6 @@ import {
   Card,
   Table,
   Badge,
-  Spinner,
   Skeleton,
   EmptyState,
   ErrorState,
@@ -51,15 +49,46 @@ function ListSkeleton() {
 export function ProposalsListPage() {
   const { t } = useTranslation('proposals');
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { search, setSearch, debouncedSearch } = useSearchInput({ debounceMs: 300 });
-  const [status, setStatus] = useState('');
 
-  const { data: proposals, isLoading, error, refetch } = useProposals({ search: debouncedSearch, status });
+  const status = searchParams.get('status') || '';
+  const yearParam = searchParams.get('year') || '';
+  const monthParam = searchParams.get('month') || '';
+
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      if (value && value !== 'all' && value !== '') prev.set(key, value);
+      else prev.delete(key);
+      return prev;
+    });
+  };
+
+  const { data: proposals, isLoading, error, refetch } = useProposals({
+    search: debouncedSearch,
+    status,
+    year: yearParam || undefined,
+    month: monthParam || undefined,
+  });
 
   const statusOptions = STATUS_OPTIONS.map((opt) => ({
     value: opt.value,
-    label: t(opt.labelKey),
+    label: opt.value === '' ? t('common:filters.all') : t(opt.labelKey),
   }));
+
+  const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString());
+  const yearOptions = [
+    { value: '', label: t('common:filters.all') },
+    ...years.map((y) => ({ value: y, label: y })),
+  ];
+
+  const monthOptions = [
+    { value: '', label: t('common:filters.all') },
+    ...Object.entries(t('notifications:months', { returnObjects: true })).map(([val, label]) => ({
+      value: val,
+      label,
+    })),
+  ];
 
   const columns = [
     {
@@ -180,24 +209,47 @@ export function ProposalsListPage() {
       />
 
       {/* Filters */}
-      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
+      <Card className="p-3 border-neutral-200/60 dark:border-neutral-800/60">
+        <div className="flex flex-col lg:flex-row items-end gap-3">
+          <div className="flex-1 min-w-[200px] w-full">
             <SearchInput
               value={search}
               onChange={setSearch}
               placeholder={t('list.searchPlaceholder')}
               className="w-full"
+              size="sm"
             />
           </div>
-          <div className="w-full md:w-48">
-            <Select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              options={statusOptions}
-              placeholder={t('filters.allStatuses')}
-              className="w-full"
-            />
+          <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
+            <div className="w-full sm:flex-1 md:w-48">
+              <Select
+                label={t('filters.status')}
+                value={status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                options={statusOptions}
+                placeholder={t('filters.allStatuses')}
+                className="w-full"
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-32">
+              <Select
+                label={t('filters.selectYear')}
+                value={yearParam}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+                options={yearOptions}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-36">
+              <Select
+                label={t('filters.selectMonth')}
+                value={monthParam}
+                onChange={(e) => handleFilterChange('month', e.target.value)}
+                options={monthOptions}
+                size="sm"
+              />
+            </div>
           </div>
         </div>
       </Card>
@@ -221,12 +273,15 @@ export function ProposalsListPage() {
       )}
 
       {!isLoading && !error && proposals?.length > 0 && (
-        <Table
-          columns={columns}
-          data={proposals}
-          loading={isLoading}
-          onRowClick={(row) => navigate(`/proposals/${row.id}`)}
-        />
+        <div className="mt-6 bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
+          <Table
+            columns={columns}
+            data={proposals}
+            loading={isLoading}
+            onRowClick={(row) => navigate(`/proposals/${row.id}`)}
+            className="border-none"
+          />
+        </div>
       )}
     </PageContainer>
   );

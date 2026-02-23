@@ -90,6 +90,9 @@ export async function fetchTransactions(filters = {}) {
   if (filters.expense_category_id) {
     query = query.eq('expense_category_id', filters.expense_category_id);
   }
+  if (filters.income_type) {
+    query = query.eq('income_type', filters.income_type);
+  }
   if (filters.payment_method) {
     query = query.eq('payment_method', filters.payment_method);
   }

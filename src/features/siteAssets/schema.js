@@ -21,6 +21,8 @@ export const ASSET_TYPES = [
 
 export const ASSET_STATUSES = ['active', 'removed', 'replaced', 'faulty'];
 
+export const OWNERSHIP_TYPES = ['company_owned', 'customer_owned'];
+
 export const WO_ASSET_ACTIONS = ['installed', 'serviced', 'removed', 'replaced', 'inspected'];
 
 export const assetSchema = z.object({
@@ -35,6 +37,9 @@ export const assetSchema = z.object({
   location_note: z.string().optional().or(z.literal('')),
   warranty_expires_at: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
+  ownership_type: z.enum(OWNERSHIP_TYPES).optional().or(z.literal('')).or(z.null()),
+  subscription_id: z.string().uuid().optional().or(z.literal('')).or(z.null()),
+  quantity: z.coerce.number().min(1).max(100).default(1),
 });
 
 export const assetDefaultValues = {
@@ -49,6 +54,9 @@ export const assetDefaultValues = {
   location_note: '',
   warranty_expires_at: '',
   notes: '',
+  ownership_type: '',
+  subscription_id: '',
+  quantity: 1,
 };
 
 export const assetStatusVariant = {
@@ -56,4 +64,9 @@ export const assetStatusVariant = {
   removed: 'default',
   replaced: 'info',
   faulty: 'error',
+};
+
+export const ownershipVariant = {
+  company_owned: 'indigo',
+  customer_owned: 'default',
 };

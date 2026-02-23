@@ -10,8 +10,14 @@
     "searchPlaceholder": "Müşteri, lokasyon veya hesap no ara...",
     "addButton": "Yeni Abonelik",
     "filters": {
-      "allStatuses": "Tüm Durumlar",
-      "allTypes": "Tüm Tipler"
+      "allStatuses": "Tümü",
+      "allTypes": "Tümü",
+      "billingFrequency": "Ödeme Sıklığı",
+      "allFrequencies": "Tümü",
+      "selectYear": "Yıl Seç",
+      "selectMonth": "Ay Seç",
+      "status": "Durum",
+      "type": "Ödeme Türü"
     },
     "empty": {
       "title": "Henüz abonelik yok",
@@ -110,6 +116,7 @@
       "simCardClearSelection": "Seçimi kaldır",
       "billingFrequency": "Ödeme Sıklığı",
       "monthly": "Aylık",
+      "3_month": "3 Aylık",
       "6_month": "6 Aylık",
       "yearly": "Yıllık",
       "officialInvoice": "Resmi fatura (Paraşüt'e gönderilir)",
@@ -139,11 +146,12 @@
     "internet_only": "Sadece İnternet"
   },
   "serviceTypes": {
-    "alarm_only": "Sadece alarm",
-    "camera_only": "Sadece kamera",
-    "internet_only": "Sadece internet",
-    "alarm_camera": "Alarm + kamera",
-    "alarm_camera_internet": "Alarm + kamera + internet"
+    "alarm_only": "Alarm",
+    "camera_only": "Kamera",
+    "internet_only": "İnternet",
+    "alarm_camera": "Alarm ve Kamera",
+    "alarm_camera_internet": "Alarm, Kamera, İnternet",
+    "camera_internet": "Kamera ve İnternet"
   },
   "statuses": {
     "active": "Aktif",

@@ -12,7 +12,7 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-async function fetchTcmbXml(): Promise<{ rate: number; date: string } | null> {
+async function fetchTcmbXml(): Promise<{ buyRate: number; sellRate: number; date: string } | null> {
   const response = await fetch(TCMB_XML_URL);
   if (!response.ok) return null;
 
@@ -20,14 +20,21 @@ async function fetchTcmbXml(): Promise<{ rate: number; date: string } | null> {
 
   // Find USD Currency section
   const usdMatch = xmlText.match(/<Currency[^>]*Kod="USD"[^>]*>[\s\S]*?<\/Currency>/);
+  console.log("USD BLOCK:", usdMatch?.[0]);
   if (!usdMatch) return null;
 
-  // Extract ForexSelling (efektif satış)
-  const sellingMatch = usdMatch[0].match(/<ForexSelling>([\d.,]+)<\/ForexSelling>/);
-  if (!sellingMatch) return null;
+  // Extract BanknoteBuying (Efektif Alış)
+  const buyMatch = usdMatch[0].match(/<BanknoteBuying>([\d.,]+)<\/BanknoteBuying>/);
+  // Extract BanknoteSelling (Efektif Satış)
+  const sellMatch = usdMatch[0].match(/<BanknoteSelling>([\d.,]+)<\/BanknoteSelling>/);
+  console.log("BUY:", buyMatch?.[1], "SELL:", sellMatch?.[1]);
 
-  const rate = parseFloat(sellingMatch[1].replace(",", "."));
-  if (Number.isNaN(rate)) return null;
+  if (!buyMatch || !sellMatch) return null;
+
+  const buyRate = parseFloat(buyMatch[1].replace(",", "."));
+  const sellRate = parseFloat(sellMatch[1].replace(",", "."));
+
+  if (Number.isNaN(buyRate) || Number.isNaN(sellRate)) return null;
 
   // Extract date: Date="02/12/2026" (MM/DD/YYYY)
   const dateMatch = xmlText.match(/Date="(\d{2})\/(\d{2})\/(\d{4})"/);
@@ -36,7 +43,7 @@ async function fetchTcmbXml(): Promise<{ rate: number; date: string } | null> {
   const [, month, day, year] = dateMatch;
   const date = `${year}-${month}-${day}`; // YYYY-MM-DD
 
-  return { rate, date };
+  return { buyRate, sellRate, date };
 }
 
 Deno.serve(async (req: Request) => {
@@ -60,14 +67,14 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  const { rate, date } = result;
+  const { buyRate, sellRate, date } = result;
 
   const rows = [
     {
       currency: "USD",
-      buy_rate: null,
-      sell_rate: rate,
-      effective_rate: rate,
+      buy_rate: buyRate,
+      sell_rate: sellRate,
+      effective_rate: buyRate, // We'll keep effective_rate as buyRate for compatibility
       rate_date: date,
       source: "TCMB",
     },

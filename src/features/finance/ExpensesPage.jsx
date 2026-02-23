@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Repeat, TrendingDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Repeat, TrendingDown, ListOrdered, Receipt, ArrowDownCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -20,6 +20,9 @@ import { useTransactions, useDeleteTransaction, useCategories } from './hooks';
 import { useCustomers } from '../customers/hooks';
 import { QuickEntryModal } from './components/QuickEntryModal';
 import { ViewModeToggle } from './components/ViewModeToggle';
+import { GroupToggle } from './components/GroupToggle';
+import { ExpenseGroupedView } from './components/ExpenseGroupedView';
+import { KpiCard } from './components/KpiCard';
 import { formatDate, formatCurrency } from '../../lib/utils';
 import { PAYMENT_METHODS } from './schema';
 
@@ -53,6 +56,7 @@ export function ExpensesPage() {
   const categoryId = searchParams.get('category') || 'all';
   const customerId = searchParams.get('customer') || 'all';
   const recurringFilter = searchParams.get('recurring') || 'all';
+  const groupBy = searchParams.get('groupBy') || 'list';
 
   const handleFilterChange = (key, value) => {
     setSearchParams((prev) => {
@@ -62,7 +66,8 @@ export function ExpensesPage() {
         (k === 'viewMode' && v === 'total') ||
         (k === 'category' && v === 'all') ||
         (k === 'customer' && v === 'all') ||
-        (k === 'recurring' && v === 'all');
+        (k === 'recurring' && v === 'all') ||
+        (k === 'groupBy' && v === 'list');
       if (value && !isDefault(key, value)) prev.set(key, value);
       else prev.delete(key);
       return prev;
@@ -78,6 +83,36 @@ export function ExpensesPage() {
     customer_id: customerId === 'all' ? undefined : customerId,
     recurring_only: recurringFilter === 'recurring_only' ? true : undefined,
   });
+
+  const kpis = useMemo(() => {
+    if (!transactions?.length) return { total: 0, count: 0, average: 0, largest: 0 };
+    const total = transactions.reduce((sum, t) => sum + (Number(t.amount_try) || 0), 0);
+    const count = transactions.length;
+    const average = total / count;
+    const largest = Math.max(...transactions.map((t) => Number(t.amount_try) || 0));
+    return { total, count, average, largest };
+  }, [transactions]);
+
+  const groupedData = useMemo(() => {
+    if (!transactions?.length) return [];
+    const map = new Map();
+    transactions.forEach((tx) => {
+      const key = tx.expense_category_id || '__none__';
+      const categoryName =
+        tx.expense_categories?.name_tr ||
+        tx.expense_categories?.name_en ||
+        tx.expense_categories?.code ||
+        t('finance:grouped.noCategory');
+      if (!map.has(key)) {
+        map.set(key, { key, categoryName, total: 0, count: 0, items: [] });
+      }
+      const g = map.get(key);
+      g.total += Number(tx.amount_try) || 0;
+      g.count += 1;
+      g.items.push(tx);
+    });
+    return [...map.values()].sort((a, b) => b.total - a.total);
+  }, [transactions, t]);
 
   const { data: categories = [] } = useCategories({ is_active: true });
   const { data: customers = [] } = useCustomers();
@@ -230,8 +265,14 @@ export function ExpensesPage() {
 
   if (isLoading) {
     return (
-      <PageContainer maxWidth="xl" padding="default">
+      <PageContainer maxWidth="xl" padding="default" className="space-y-6">
         <PageHeader title={t('finance:list.title')} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <KpiCard title={t('finance:expense.kpi.total')} value="0" icon={TrendingDown} loading />
+          <KpiCard title={t('finance:expense.kpi.count')} value="0" icon={ListOrdered} loading />
+          <KpiCard title={t('finance:expense.kpi.average')} value="0" icon={Receipt} loading />
+          <KpiCard title={t('finance:expense.kpi.largest')} value="0" icon={ArrowDownCircle} loading />
+        </div>
         <div className="mt-6">
           <TableSkeleton cols={8} />
         </div>
@@ -270,6 +311,33 @@ export function ExpensesPage() {
           </Button>
         }
       />
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <KpiCard
+          title={t('finance:expense.kpi.total')}
+          value={formatCurrency(kpis.total)}
+          icon={TrendingDown}
+          loading={isLoading}
+        />
+        <KpiCard
+          title={t('finance:expense.kpi.count')}
+          value={String(kpis.count)}
+          icon={ListOrdered}
+          loading={isLoading}
+        />
+        <KpiCard
+          title={t('finance:expense.kpi.average')}
+          value={formatCurrency(kpis.average)}
+          icon={Receipt}
+          loading={isLoading}
+        />
+        <KpiCard
+          title={t('finance:expense.kpi.largest')}
+          value={formatCurrency(kpis.largest)}
+          icon={ArrowDownCircle}
+          loading={isLoading}
+        />
+      </div>
 
       <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
         <div className="flex flex-col md:flex-row gap-4 flex-wrap">
@@ -316,6 +384,9 @@ export function ExpensesPage() {
           <div className="flex items-end">
             <ViewModeToggle value={viewMode} onChange={(v) => handleFilterChange('viewMode', v)} size="md" />
           </div>
+          <div className="flex items-end">
+            <GroupToggle value={groupBy} onChange={(v) => handleFilterChange('groupBy', v)} />
+          </div>
         </div>
       </Card>
 
@@ -327,6 +398,8 @@ export function ExpensesPage() {
           actionLabel={t('finance:expense.addButton')}
           onAction={handleAdd}
         />
+      ) : groupBy === 'grouped' ? (
+        <ExpenseGroupedView groups={groupedData} onEditTransaction={handleEdit} />
       ) : (
         <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
           <Table columns={columns} data={transactions} onRowClick={(row) => handleEdit(row)} />

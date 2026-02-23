@@ -60,6 +60,7 @@ function getRootLabel(seg) {
     calendar: { labelKey: 'common:nav.calendar', to: '/calendar' },
     subscriptions: { labelKey: 'common:nav.subscriptions', to: '/subscriptions' },
     proposals: { labelKey: 'common:nav.proposals', to: '/proposals' },
+    notifications: { labelKey: 'common:nav.notifications', to: '/notifications' },
     finance: { labelKey: 'common:nav.groups.finance', to: '/finance' },
     equipment: { labelKey: 'common:nav.equipment', to: '/equipment' },
     'sim-cards': { labelKey: 'simCards:title', to: '/sim-cards' },

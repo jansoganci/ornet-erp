@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, X, FileText, StickyNote, Image, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
@@ -62,7 +62,6 @@ export function ProposalFormPage() {
 
   const blocker = useUnsavedChanges({ isDirty: hasInitialized && isDirty });
 
-  const selectedSiteId = watch('site_id');
   const selectedCurrency = watch('currency') ?? 'USD';
 
   // Populate form when editing — only after both proposal and items have loaded
@@ -137,7 +136,9 @@ export function ProposalFormPage() {
   };
 
   const onInvalid = (formErrors) => {
-    if (formErrors.items) {
+    if (formErrors.site_id) {
+      toast.error(t('errors:validation.required'));
+    } else if (formErrors.items) {
       toast.error(t('common:validation.required'));
     }
   };
@@ -173,19 +174,22 @@ export function ProposalFormPage() {
         onSubmit={handleSubmit(onSubmit, onInvalid)}
         className="space-y-8 mt-6"
       >
-        {/* Hidden input for site_id */}
-        <input type="hidden" {...register('site_id')} />
-
         {/* 1. Customer & Site Selection */}
         <Card className="p-1 overflow-visible">
-          <CustomerSiteSelector
-            selectedCustomerId={selectedCustomerId}
-            selectedSiteId={selectedSiteId || ''}
-            onCustomerChange={(cid) => setSelectedCustomerId(cid)}
-            onSiteChange={(sid) => setValue('site_id', sid || '', { shouldValidate: true })}
-            onAddNewCustomer={() => navigate('/customers/new')}
-            onAddNewSite={() => setShowSiteModal(true)}
-            siteOptional
+          <Controller
+            name="site_id"
+            control={control}
+            render={({ field }) => (
+              <CustomerSiteSelector
+                selectedCustomerId={selectedCustomerId}
+                selectedSiteId={field.value || ''}
+                onCustomerChange={(cid) => setSelectedCustomerId(cid)}
+                onSiteChange={(sid) => field.onChange(sid || '')}
+                onAddNewCustomer={() => navigate('/customers/new')}
+                onAddNewSite={() => setShowSiteModal(true)}
+                error={errors.site_id?.message}
+              />
+            )}
           />
         </Card>
 

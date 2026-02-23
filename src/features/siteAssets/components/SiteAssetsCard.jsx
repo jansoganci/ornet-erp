@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HardDrive, Plus, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { HardDrive, Plus, Edit, Trash2, AlertTriangle, Layers } from 'lucide-react';
 import { Card, Badge, Button, Table, IconButton, Modal } from '../../../components/ui';
 import { AssetStatusBadge } from './AssetStatusBadge';
+import { OwnershipBadge } from './OwnershipBadge';
 import { AssetFormModal } from './AssetFormModal';
+import { BulkAssetRegisterModal } from './BulkAssetRegisterModal';
 import { useAssetsByCustomer, useDeleteAsset, useUpdateAsset } from '../hooks';
 
 export function SiteAssetsCard({ customerId, sites = [] }) {
@@ -13,6 +15,7 @@ export function SiteAssetsCard({ customerId, sites = [] }) {
   const updateAsset = useUpdateAsset();
 
   const [showFormModal, setShowFormModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [selectedSiteId, setSelectedSiteId] = useState(null);
@@ -21,6 +24,11 @@ export function SiteAssetsCard({ customerId, sites = [] }) {
     setSelectedAsset(null);
     setSelectedSiteId(siteId || (sites.length === 1 ? sites[0].id : null));
     setShowFormModal(true);
+  };
+
+  const handleBulkAdd = (siteId) => {
+    setSelectedSiteId(siteId || (sites.length === 1 ? sites[0].id : null));
+    setShowBulkModal(true);
   };
 
   const handleEdit = (asset) => {
@@ -58,9 +66,12 @@ export function SiteAssetsCard({ customerId, sites = [] }) {
       header: t('siteAssets:fields.assetType'),
       render: (_, asset) => (
         <div>
-          <p className="font-medium text-neutral-900 dark:text-neutral-50">
-            {t(`siteAssets:types.${asset.asset_type}`)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-neutral-900 dark:text-neutral-50">
+              {t(`siteAssets:types.${asset.asset_type}`)}
+            </p>
+            <OwnershipBadge type={asset.ownership_type} />
+          </div>
           {asset.brand && (
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {asset.brand} {asset.model || ''}
@@ -160,6 +171,14 @@ export function SiteAssetsCard({ customerId, sites = [] }) {
               <Button
                 size="sm"
                 variant="outline"
+                leftIcon={<Layers className="w-4 h-4" />}
+                onClick={() => handleBulkAdd()}
+              >
+                {t('siteAssets:bulkRegister.title')}
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
                 leftIcon={<Plus className="w-4 h-4" />}
                 onClick={() => handleAdd()}
               >
@@ -189,14 +208,24 @@ export function SiteAssetsCard({ customerId, sites = [] }) {
                         {t('siteAssets:section.siteCount', { count: siteAssets.length })}
                       </Badge>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      leftIcon={<Plus className="w-4 h-4" />}
-                      onClick={() => handleAdd(site.id)}
-                    >
-                      {t('siteAssets:addButton')}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        leftIcon={<Layers className="w-4 h-4" />}
+                        onClick={() => handleBulkAdd(site.id)}
+                      >
+                        {t('siteAssets:bulkRegister.title')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        leftIcon={<Plus className="w-4 h-4" />}
+                        onClick={() => handleAdd(site.id)}
+                      >
+                        {t('siteAssets:addButton')}
+                      </Button>
+                    </div>
                   </div>
                   {siteAssets.length > 0 ? (
                     <Table
@@ -230,6 +259,13 @@ export function SiteAssetsCard({ customerId, sites = [] }) {
         siteId={selectedSiteId}
         customerId={customerId}
         asset={selectedAsset}
+      />
+
+      <BulkAssetRegisterModal
+        open={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        siteId={selectedSiteId}
+        customerId={customerId}
       />
 
       <Modal

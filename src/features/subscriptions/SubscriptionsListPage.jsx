@@ -14,6 +14,7 @@ import {
   Skeleton,
   ErrorState,
   TableSkeleton,
+  DateRangeFilter,
 } from '../../components/ui';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { formatCurrency, formatDate } from '../../lib/utils';
@@ -35,6 +36,9 @@ export function SubscriptionsListPage() {
   const debouncedSearch = useDebouncedValue(localSearch, 300);
   const status = searchParams.get('status') || 'all';
   const type = searchParams.get('type') || 'all';
+  const billingFrequency = searchParams.get('billing_frequency') || 'all';
+  const yearParam = searchParams.get('year') || '';
+  const monthParam = searchParams.get('month') || '';
 
   // Sync local search from URL
   useEffect(() => {
@@ -51,7 +55,14 @@ export function SubscriptionsListPage() {
     });
   }, [debouncedSearch, searchFromUrl, setSearchParams]);
 
-  const { data: subscriptions = [], isLoading, error, refetch } = useSubscriptions({ search: debouncedSearch, status, type });
+  const { data: subscriptions = [], isLoading, error, refetch } = useSubscriptions({
+    search: debouncedSearch,
+    status,
+    type,
+    billing_frequency: billingFrequency === 'all' ? undefined : billingFrequency,
+    year: yearParam || undefined,
+    month: monthParam || undefined,
+  });
   const { data: stats } = useSubscriptionStats();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
@@ -88,6 +99,28 @@ export function SubscriptionsListPage() {
     ...SUBSCRIPTION_TYPES.map((tp) => ({
       value: tp,
       label: t(`subscriptions:types.${tp}`),
+    })),
+  ];
+
+  const billingFrequencyOptions = [
+    { value: 'all', label: t('subscriptions:list.filters.allFrequencies') },
+    { value: 'monthly', label: t('subscriptions:form.fields.monthly') },
+    { value: '3_month', label: t('subscriptions:form.fields.3_month') },
+    { value: '6_month', label: t('subscriptions:form.fields.6_month') },
+    { value: 'yearly', label: t('subscriptions:form.fields.yearly') },
+  ];
+
+  const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString());
+  const yearOptions = [
+    { value: 'all', label: t('common:filters.all') },
+    ...years.map((y) => ({ value: y, label: y })),
+  ];
+
+  const monthOptions = [
+    { value: 'all', label: t('common:filters.all') },
+    ...Object.entries(t('notifications:months', { returnObjects: true })).map(([val, label]) => ({
+      value: val,
+      label,
     })),
   ];
 
@@ -269,29 +302,66 @@ export function SubscriptionsListPage() {
       )}
 
       {/* Filters */}
-      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
+      <Card className="p-3 border-neutral-200/60 dark:border-neutral-800/60">
+        <div className="flex flex-col lg:flex-row items-end gap-3">
+          <div className="flex-1 min-w-[200px] w-full">
             <SearchInput
               placeholder={t('subscriptions:list.searchPlaceholder')}
               value={localSearch}
               onChange={handleSearch}
               className="w-full"
+              size="sm"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3 w-full md:w-auto md:min-w-[400px]">
-            <Select
-              options={statusOptions}
-              value={status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              leftIcon={<Filter className="w-4 h-4" />}
-            />
-            <Select
-              options={typeOptions}
-              value={type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
-              leftIcon={<Tag className="w-4 h-4" />}
-            />
+          <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
+            <div className="w-full sm:flex-1 md:w-40">
+              <Select
+                label={t('subscriptions:list.filters.status')}
+                options={statusOptions}
+                value={status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                leftIcon={<Filter className="w-4 h-4" />}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-40">
+              <Select
+                label={t('subscriptions:list.filters.type')}
+                options={typeOptions}
+                value={type}
+                onChange={(e) => handleFilterChange('type', e.target.value)}
+                leftIcon={<Tag className="w-4 h-4" />}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-44">
+              <Select
+                label={t('subscriptions:list.filters.billingFrequency')}
+                options={billingFrequencyOptions}
+                value={billingFrequency}
+                onChange={(e) => handleFilterChange('billing_frequency', e.target.value)}
+                leftIcon={<Calendar className="w-4 h-4" />}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-32">
+              <Select
+                label={t('subscriptions:list.filters.selectYear')}
+                options={yearOptions}
+                value={yearParam}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-36">
+              <Select
+                label={t('subscriptions:list.filters.selectMonth')}
+                options={monthOptions}
+                value={monthParam}
+                onChange={(e) => handleFilterChange('month', e.target.value)}
+                size="sm"
+              />
+            </div>
           </div>
         </div>
       </Card>

@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 import { Plus, Download, Filter, Edit2, Trash2, FileSpreadsheet, Pencil, Cpu as SimIcon, Calendar } from 'lucide-react';
 import { useSimCards, useDeleteSimCard, useUpdateSimCard, useSimFinancialStats } from './hooks';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -17,9 +18,9 @@ import {
   Table,
   IconButton,
   Modal,
+  DateRangeFilter,
 } from '../../components/ui';
 import { formatCurrency, formatDate } from '../../lib/utils';
-import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { SimCardStats } from './components/SimCardStats';
 import { QuickStatusSelect } from './components/QuickStatusSelect';
 
@@ -28,55 +29,59 @@ export function SimCardsListPage() {
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const search = searchParams.get('search') || '';
-  const statusFilter = searchParams.get('status') || 'all';
   const [quickEditMode, setQuickEditMode] = useState(false);
   const [simToDelete, setSimToDelete] = useState(null);
 
-  const handleSearch = (value) => {
+  const searchFromUrl = searchParams.get('search') || '';
+  const [localSearch, setLocalSearch] = useState(searchFromUrl);
+  const debouncedSearch = useDebouncedValue(localSearch, 300);
+  const statusFilter = searchParams.get('status') || 'all';
+  const operatorFilter = searchParams.get('operator') || 'all';
+  const yearParam = searchParams.get('year') || '';
+  const monthParam = searchParams.get('month') || '';
+
+  // Sync local search from URL
+  useEffect(() => {
+    setLocalSearch(searchFromUrl);
+  }, [searchFromUrl]);
+  // Sync debounced search to URL
+  useEffect(() => {
+    if (searchFromUrl === debouncedSearch) return;
     setSearchParams((prev) => {
-      if (value) prev.set('search', value);
-      else prev.delete('search');
+      const next = new URLSearchParams(prev);
+      if (debouncedSearch) next.set('search', debouncedSearch);
+      else next.delete('search');
+      return next;
+    });
+  }, [debouncedSearch, searchFromUrl, setSearchParams]);
+
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      if (value && value !== 'all') prev.set(key, value);
+      else prev.delete(key);
       return prev;
     });
   };
 
-  const handleStatusFilter = (value) => {
-    setSearchParams((prev) => {
-      if (value && value !== 'all') prev.set('status', value);
-      else prev.delete('status');
-      return prev;
-    });
-  };
-
-  const { data: simCards, isLoading, error, refetch } = useSimCards();
+  const { data: simCards, isLoading, error, refetch } = useSimCards({
+    search: debouncedSearch || undefined,
+    status: statusFilter,
+    operator: operatorFilter,
+    year: yearParam || undefined,
+    month: monthParam || undefined,
+  });
   const { data: simStats } = useSimFinancialStats();
   const deleteSimMutation = useDeleteSimCard();
   const updateSimCardMutation = useUpdateSimCard();
-
-  const normalizedTerm = useMemo(() => normalizeForSearch(search), [search]);
-
-  const filteredSimCards = useMemo(() => {
-    if (!simCards) return [];
-    return simCards.filter((sim) => {
-      const matchesSearch =
-        !normalizedTerm ||
-        normalizeForSearch(sim.phone_number).includes(normalizedTerm) ||
-        normalizeForSearch(sim.buyer?.company_name).includes(normalizedTerm) ||
-        normalizeForSearch(sim.customers?.company_name).includes(normalizedTerm);
-      const matchesStatus = statusFilter === 'all' || sim.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [simCards, normalizedTerm, statusFilter]);
 
   const handleAdd = () => navigate('/sim-cards/new');
   const handleImport = () => navigate('/sim-cards/import');
   const handleEdit = (id) => navigate(`/sim-cards/${id}/edit`);
 
   const handleExport = () => {
-    if (!filteredSimCards?.length) return;
+    if (!simCards?.length) return;
 
-    const exportData = filteredSimCards.map(sim => ({
+    const exportData = simCards.map(sim => ({
       [t('list.columns.phoneNumber')]: sim.phone_number,
       [t('list.columns.operator')]: t(`operators.${sim.operator}`),
       [t('list.columns.status')]: t(`status.${sim.status}`),
@@ -251,7 +256,7 @@ export function SimCardsListPage() {
               variant="outline"
               leftIcon={<FileSpreadsheet className="w-4 h-4" />}
               onClick={handleExport}
-              disabled={!filteredSimCards?.length}
+              disabled={!simCards?.length}
             >
               {tCommon('actions.export')}
             </Button>
@@ -275,43 +280,91 @@ export function SimCardsListPage() {
 
       <SimCardStats simCards={simCards} statsData={simStats} />
 
-      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
+      <Card className="p-3 border-neutral-200/60 dark:border-neutral-800/60">
+        <div className="flex flex-col lg:flex-row items-end gap-3">
+          <div className="flex-1 min-w-[200px] w-full">
             <SearchInput
-              value={search}
-              onChange={handleSearch}
+              value={localSearch}
+              onChange={(v) => setLocalSearch(v)}
               placeholder={t('list.searchPlaceholder')}
               className="w-full"
+              size="sm"
             />
           </div>
-          
-          <div className="w-full md:w-64">
-            <Select
-              value={statusFilter}
-              onChange={(e) => handleStatusFilter(e.target.value)}
-              options={[
-                { value: 'all', label: t('list.filters.all') },
-                { value: 'available', label: t('list.filters.available') },
-                { value: 'active', label: t('list.filters.active') },
-                { value: 'subscription', label: t('list.filters.subscription') },
-                { value: 'cancelled', label: t('list.filters.cancelled') }
-              ]}
-              leftIcon={<Filter className="w-4 h-4" />}
-            />
+
+          <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
+            <div className="w-full sm:flex-1 md:w-40">
+              <Select
+                label={t('list.filters.status')}
+                value={statusFilter}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                options={[
+                  { value: 'all', label: t('list.filters.all') },
+                  { value: 'available', label: t('list.filters.available') },
+                  { value: 'active', label: t('list.filters.active') },
+                  { value: 'subscription', label: t('list.filters.subscription') },
+                  { value: 'cancelled', label: t('list.filters.cancelled') }
+                ]}
+                leftIcon={<Filter className="w-4 h-4" />}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-40">
+              <Select
+                label={t('list.filters.operator')}
+                value={operatorFilter}
+                onChange={(e) => handleFilterChange('operator', e.target.value)}
+                options={[
+                  { value: 'all', label: t('list.filters.allOperators') },
+                  { value: 'TURKCELL', label: t('operators.TURKCELL') },
+                  { value: 'VODAFONE', label: t('operators.VODAFONE') },
+                  { value: 'TURK_TELEKOM', label: t('operators.TURK_TELEKOM') },
+                ]}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-32">
+              <Select
+                label={t('list.filters.selectYear')}
+                value={yearParam}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+                options={[
+                  { value: 'all', label: t('list.filters.all') },
+                  ...Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString()).map(y => ({ value: y, label: y }))
+                ]}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-36">
+              <Select
+                label={t('list.filters.selectMonth')}
+                value={monthParam}
+                onChange={(e) => handleFilterChange('month', e.target.value)}
+                options={[
+                  { value: 'all', label: t('list.filters.all') },
+                  ...Object.entries(t('notifications:months', { returnObjects: true })).map(([val, label]) => ({
+                    value: val,
+                    label,
+                  })),
+                ]}
+                size="sm"
+              />
+            </div>
+            <div className="flex items-center pb-0.5">
+              <Button
+                variant={quickEditMode ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setQuickEditMode(!quickEditMode)}
+                leftIcon={<Pencil className="w-4 h-4" />}
+              >
+                {t('list.quickEdit')}
+              </Button>
+            </div>
           </div>
-          <Button
-            variant={quickEditMode ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setQuickEditMode(!quickEditMode)}
-            leftIcon={<Pencil className="w-4 h-4" />}
-          >
-            {t('list.quickEdit')}
-          </Button>
         </div>
       </Card>
 
-      {!filteredSimCards?.length ? (
+      {!simCards?.length ? (
         <EmptyState
           icon={SimIcon}
           title={t('list.empty.title')}
@@ -323,7 +376,7 @@ export function SimCardsListPage() {
         <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
           <Table
             columns={columns}
-            data={filteredSimCards}
+            data={simCards}
             onRowClick={(row) => handleEdit(row.id)}
             className="border-none"
           />

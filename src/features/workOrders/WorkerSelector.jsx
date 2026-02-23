@@ -45,6 +45,10 @@ export function WorkerSelector({
         <div className="py-8 flex justify-center">
           <Spinner size="md" />
         </div>
+      ) : profiles.length === 0 ? (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 py-4">
+          {t('workOrders:form.noFieldWorkers')}
+        </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {profiles.map((profile) => {
@@ -56,7 +60,11 @@ export function WorkerSelector({
                 key={profile.id}
                 variant={isSelected ? 'selected' : 'interactive'}
                 padding="compact"
-                onClick={() => !isDisabled && handleToggle(profile.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isDisabled) handleToggle(profile.id);
+                }}
                 className={cn(
                   'relative transition-all duration-200',
                   isDisabled && 'opacity-50 cursor-not-allowed grayscale'

@@ -30,6 +30,12 @@
       "card": "Kredi Kartı",
       "cash": "Nakit",
       "bank_transfer": "Banka Transferi"
+    },
+    "kpi": {
+      "total": "Toplam Gider",
+      "count": "İşlem Sayısı",
+      "average": "İşlem Başı Ortalama",
+      "largest": "En Yüksek Gider"
     }
   },
   "income": {
@@ -74,7 +80,13 @@
       "maintenance": "Bakım",
       "other": "Diğer"
     },
-    "editTitle": "Gelir Düzenle"
+    "editTitle": "Gelir Düzenle",
+    "kpi": {
+      "total": "Toplam Gelir",
+      "count": "İşlem Sayısı",
+      "average": "İşlem Başı Ortalama",
+      "largest": "En Yüksek Gelir"
+    }
   },
   "list": {
     "title": "Giderler",
@@ -98,14 +110,15 @@
     "materialCostPct": "Malzeme Maliyeti %",
     "simNetProfit": "SIM Net Kar",
     "subscriptionNetProfit": "Abonelik Net Kar",
-    "revenueVsExpenses": "Gelir vs Gider",
+    "revenueVsExpenses": "Gelir ve Gider Karşılaştırması",
     "recentTransactions": "Son İşlemler",
-    "expenseByCategory": "Gidere Göre Kategori"
+    "expenseByCategory": "Kategoriye Göre Giderler"
   },
   "filters": {
     "period": "Dönem",
     "customer": "Müşteri",
     "category": "Kategori",
+    "incomeType": "Gelir Tipi",
     "paymentMethod": "Ödeme Yöntemi",
     "all": "Tümü",
     "recurringFilterLabel": "Tip",
@@ -141,6 +154,15 @@
     "office_supplies": "Kırtasiye / Ofis",
     "subscription_cogs": "Abonelik Maliyeti"
   },
+  "grouped": {
+    "viewToggle": "Görünüm",
+    "listLabel": "Liste",
+    "groupedLabel": "Gruplu",
+    "countHeader": "Kayıt",
+    "count": "{{count}} kayıt",
+    "noCategory": "Kategorisiz",
+    "moreItems": "ve {{count}} kayıt daha..."
+  },
   "actions": {
     "edit": "Düzenle",
     "delete": "Sil"
@@ -171,7 +193,7 @@
     "source": "Kaynak",
     "empty": "Henüz kur kaydı yok",
     "duplicateDate": "Bu tarih için kur zaten mevcut.",
-    "fetchTcmb": "TCMB'dan Getir",
+    "fetchTcmb": "TCMB'den Getir",
     "fetchSuccess": "{{count}} kur başarıyla güncellendi ({{date}})",
     "fetchNoData": "TCMB'den bugün için kur bulunamadı."
   },

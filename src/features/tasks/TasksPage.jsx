@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -19,6 +20,7 @@ import {
   EmptyState,
   Skeleton,
   ErrorState,
+  DateRangeFilter,
 } from '../../components/ui';
 import { useTasks, useUpdateTask, useDeleteTask, useProfiles } from './hooks';
 import { groupPlansByHorizon } from './utils';
@@ -63,11 +65,27 @@ const SECTION_CONFIG = [
 
 export function TasksPage() {
   const { t } = useTranslation('tasks');
-  const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [highlightDate, setHighlightDate] = useState(null);
+
+  const assigneeFilter = searchParams.get('assignee') || 'all';
+  const dateFrom = searchParams.get('dateFrom') || '';
+  const dateTo = searchParams.get('dateTo') || '';
+
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      const isDefault = (k, v) =>
+        (k === 'assignee' && v === 'all') ||
+        (k === 'dateFrom' && v === '') ||
+        (k === 'dateTo' && v === '');
+      if (value && !isDefault(key, value)) prev.set(key, value);
+      else prev.delete(key);
+      return prev;
+    });
+  };
 
   // Refs for each section to allow scrolling
   const sectionRefs = useRef({});
@@ -75,6 +93,8 @@ export function TasksPage() {
   const { data: tasks, isLoading, error, refetch } = useTasks({
     status: 'all',
     assigned_to: assigneeFilter,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
   });
   const { data: profiles } = useProfiles();
   const updateMutation = useUpdateTask();
@@ -154,19 +174,27 @@ export function TasksPage() {
       <QuickPlanInput />
 
       {/* Filters */}
-      {profiles?.length > 1 && (
-        <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
-          <div className="max-w-xs">
-            <Select
-              options={assigneeOptions}
-              value={assigneeFilter}
-              onChange={(e) => setAssigneeFilter(e.target.value)}
-              placeholder={t('list.filters.all')}
-              className="w-full"
-            />
-          </div>
-        </Card>
-      )}
+      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
+        <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
+          {profiles?.length > 1 && (
+            <div className="w-full sm:w-56">
+              <Select
+                options={assigneeOptions}
+                value={assigneeFilter}
+                onChange={(e) => handleFilterChange('assignee', e.target.value)}
+                placeholder={t('list.filters.all')}
+                className="w-full"
+              />
+            </div>
+          )}
+          <DateRangeFilter
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onFromChange={(v) => handleFilterChange('dateFrom', v)}
+            onToChange={(v) => handleFilterChange('dateTo', v)}
+          />
+        </div>
+      </Card>
 
       {/* Content: 2-column layout on desktop, single on mobile */}
       {isLoading ? (

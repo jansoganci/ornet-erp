@@ -41,9 +41,9 @@
     "diger": "Diğer"
   },
   "units": {
-    "adet": "Adet",
-    "metre": "Metre",
-    "paket": "Paket"
+    "adet": "adet",
+    "metre": "metre",
+    "paket": "paket"
   },
   "status": {
     "active": "Aktif",
@@ -66,6 +66,13 @@
     "parse": "Dosya okunamadı. Lütfen geçerli bir Excel dosyası yükleyin.",
     "missingCode": "Satır {{row}}: Kod eksik.",
     "missingName": "Satır {{row}}: Ad eksik."
+  },
+  "filters": {
+    "all": "Tümü",
+    "category": "Kategori",
+    "status": "Durum",
+    "selectYear": "Yıl Seç",
+    "selectMonth": "Ay Seç"
   },
   "usage": {
     "title": "Kullanım Geçmişi",

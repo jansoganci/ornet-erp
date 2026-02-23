@@ -48,6 +48,7 @@ import {
   ProposalDetailPage,
   ProposalFormPage,
 } from './features/proposals';
+import { NotificationsCenterPage } from './features/notifications';
 import { ProfilePage } from './features/profile';
 import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, ReportsPage, RecurringExpensesPage } from './features/finance';
 import { SiteAssetsListPage } from './features/siteAssets';
@@ -77,6 +78,7 @@ const router = createBrowserRouter(
       >
         <Route index element={<DashboardPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="notifications" element={<NotificationsCenterPage />} />
 
         {/* Customer routes */}
         <Route path="customers" element={<CustomersListPage />} />

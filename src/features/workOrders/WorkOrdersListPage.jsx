@@ -3,17 +3,18 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, ClipboardList, Search, Filter, Calendar, Building2, AlertCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { 
-  Button, 
-  SearchInput, 
-  Select, 
-  Table, 
-  Badge, 
-  Card, 
-  EmptyState, 
-  Skeleton, 
+import {
+  Button,
+  SearchInput,
+  Select,
+  Table,
+  Badge,
+  Card,
+  EmptyState,
+  Skeleton,
   ErrorState,
-  TableSkeleton
+  TableSkeleton,
+  DateRangeFilter,
 } from '../../components/ui';
 import { 
   formatDate, 
@@ -51,27 +52,29 @@ export function WorkOrdersListPage() {
 
   const status = searchParams.get('status') || 'all';
   const work_type = searchParams.get('work_type') || 'all';
-  const priority = searchParams.get('priority') || 'all';
+  const yearParam = searchParams.get('year') || '';
+  const monthParam = searchParams.get('month') || '';
 
   const { data: workOrders = [], isLoading, error, refetch } = useWorkOrders({
     search: debouncedSearch,
     status,
     work_type,
-    priority
+    year: yearParam || undefined,
+    month: monthParam || undefined,
   });
 
   const handleSearch = (value) => setLocalSearch(value);
 
   const handleFilterChange = (key, value) => {
     setSearchParams(prev => {
-      if (value && value !== 'all') prev.set(key, value);
+      if (value && value !== 'all' && value !== '') prev.set(key, value);
       else prev.delete(key);
       return prev;
     });
   };
 
   const statusOptions = [
-    { value: 'all', label: t('workOrders:list.filters.all') },
+    { value: 'all', label: t('common:filters.all') },
     { value: 'pending', label: tCommon('status.pending') },
     { value: 'scheduled', label: tCommon('status.scheduled') },
     { value: 'in_progress', label: tCommon('status.in_progress') },
@@ -80,19 +83,25 @@ export function WorkOrdersListPage() {
   ];
 
   const typeOptions = [
-    { value: 'all', label: t('workOrders:list.filters.allTypes') },
+    { value: 'all', label: t('common:filters.all') },
     ...WORK_TYPES.map(type => ({
       value: type,
       label: tCommon(`workType.${type}`)
     }))
   ];
 
-  const priorityOptions = [
-    { value: 'all', label: t('workOrders:list.filters.allPriorities') },
-    { value: 'low', label: tCommon('priority.low') },
-    { value: 'normal', label: tCommon('priority.normal') },
-    { value: 'high', label: tCommon('priority.high') },
-    { value: 'urgent', label: tCommon('priority.urgent') },
+  const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString());
+  const yearOptions = [
+    { value: 'all', label: t('common:filters.all') },
+    ...years.map((y) => ({ value: y, label: y })),
+  ];
+
+  const monthOptions = [
+    { value: 'all', label: t('common:filters.all') },
+    ...Object.entries(t('notifications:months', { returnObjects: true })).map(([val, label]) => ({
+      value: val,
+      label,
+    })),
   ];
 
   const columns = [
@@ -218,38 +227,56 @@ export function WorkOrdersListPage() {
       />
 
       {/* Filters */}
-      <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
+      <Card className="p-3 border-neutral-200/60 dark:border-neutral-800/60">
+        <div className="flex flex-col lg:flex-row items-end gap-3">
+          <div className="flex-1 min-w-[200px] w-full">
             <SearchInput
               placeholder={t('workOrders:list.searchPlaceholder')}
               value={localSearch}
               onChange={handleSearch}
               className="w-full"
+              size="sm"
             />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full md:w-auto md:min-w-[600px]">
-            <Select
-              options={statusOptions}
-              value={status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              placeholder={t('workOrders:list.filters.statusPlaceholder')}
-              leftIcon={<Filter className="w-4 h-4" />}
-            />
-            <Select
-              options={typeOptions}
-              value={work_type}
-              onChange={(e) => handleFilterChange('work_type', e.target.value)}
-              placeholder={t('workOrders:list.filters.allTypes')}
-              leftIcon={<ClipboardList className="w-4 h-4" />}
-            />
-            <Select
-              options={priorityOptions}
-              value={priority}
-              onChange={(e) => handleFilterChange('priority', e.target.value)}
-              placeholder={t('workOrders:list.filters.priority')}
-              leftIcon={<AlertCircle className="w-4 h-4" />}
-            />
+          <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
+            <div className="w-full sm:flex-1 md:w-44">
+              <Select
+                label={t('workOrders:list.filters.status')}
+                options={statusOptions}
+                value={status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                leftIcon={<Filter className="w-4 h-4" />}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-44">
+              <Select
+                label={t('workOrders:list.filters.workType')}
+                options={typeOptions}
+                value={work_type}
+                onChange={(e) => handleFilterChange('work_type', e.target.value)}
+                leftIcon={<ClipboardList className="w-4 h-4" />}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-32">
+              <Select
+                label={t('workOrders:list.filters.selectYear')}
+                options={yearOptions}
+                value={yearParam}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 md:w-36">
+              <Select
+                label={t('workOrders:list.filters.selectMonth')}
+                options={monthOptions}
+                value={monthParam}
+                onChange={(e) => handleFilterChange('month', e.target.value)}
+                size="sm"
+              />
+            </div>
           </div>
         </div>
       </Card>

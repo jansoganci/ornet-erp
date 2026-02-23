@@ -16,7 +16,7 @@ function sanitizeDates(data) {
 /**
  * Fetch all proposals with optional filters
  */
-export async function fetchProposals({ search = '', status = '' } = {}) {
+export async function fetchProposals({ search = '', status = '', dateFrom = '', dateTo = '' } = {}) {
   let query = supabase
     .from('proposals_detail')
     .select('*')
@@ -31,6 +31,13 @@ export async function fetchProposals({ search = '', status = '' } = {}) {
 
   if (status) {
     query = query.eq('status', status);
+  }
+
+  if (dateFrom) {
+    query = query.gte('created_at', dateFrom);
+  }
+  if (dateTo) {
+    query = query.lte('created_at', dateTo + 'T23:59:59');
   }
 
   const { data, error } = await query;

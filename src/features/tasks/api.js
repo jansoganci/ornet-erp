@@ -71,9 +71,9 @@ const mockProfiles = [
   { id: 'user-2', full_name: 'Jane Accountant', role: 'accountant' },
 ];
 
-export async function fetchTasks({ status, assigned_to } = {}) {
+export async function fetchTasks({ status, assigned_to, dateFrom, dateTo } = {}) {
   if (!isSupabaseConfigured) {
-    return getMockTasks(status, assigned_to);
+    return getMockTasks(status, assigned_to, dateFrom, dateTo);
   }
 
   try {
@@ -89,30 +89,46 @@ export async function fetchTasks({ status, assigned_to } = {}) {
       query = query.eq('assigned_to', assigned_to);
     }
 
+    if (dateFrom) {
+      query = query.gte('due_date', dateFrom);
+    }
+
+    if (dateTo) {
+      query = query.lte('due_date', dateTo);
+    }
+
     const { data, error } = await query
       .order('due_date', { ascending: true })
       .order('priority', { ascending: false });
 
     if (error) {
-      if (error.status === 401) return getMockTasks(status, assigned_to);
+      if (error.status === 401) return getMockTasks(status, assigned_to, dateFrom, dateTo);
       throw error;
     }
     return data;
   } catch (err) {
-    if (err.status === 401) return getMockTasks(status, assigned_to);
+    if (err.status === 401) return getMockTasks(status, assigned_to, dateFrom, dateTo);
     throw err;
   }
 }
 
-function getMockTasks(status, assigned_to) {
+function getMockTasks(status, assigned_to, dateFrom, dateTo) {
   let filtered = [...mockTasks];
-  
+
   if (status && status !== 'all') {
     filtered = filtered.filter(t => t.status === status);
   }
-  
+
   if (assigned_to && assigned_to !== 'all') {
     filtered = filtered.filter(t => t.assigned_to === assigned_to);
+  }
+
+  if (dateFrom) {
+    filtered = filtered.filter(t => t.due_date && t.due_date >= dateFrom);
+  }
+
+  if (dateTo) {
+    filtered = filtered.filter(t => t.due_date && t.due_date <= dateTo);
   }
 
   filtered.sort((a, b) => {

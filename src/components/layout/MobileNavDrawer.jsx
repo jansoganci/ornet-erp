@@ -17,7 +17,10 @@ export function MobileNavDrawer({ open, onClose }) {
   const { t } = useTranslation();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
-  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const hasNotificationAccess = isAdmin || currentProfile?.role === 'accountant';
+  const visibleNavItems = navItems.filter(
+    (item) => (!item.adminOnly || isAdmin) && (!item.notificationCenter || hasNotificationAccess)
+  );
 
   const handleEscape = useCallback(
     (e) => {

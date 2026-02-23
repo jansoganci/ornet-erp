@@ -44,6 +44,12 @@ export async function fetchAssets(filters = {}) {
       `serial_number_search.ilike.%${normalized}%,brand_search.ilike.%${normalized}%,model_search.ilike.%${normalized}%`
     );
   }
+  if (filters.dateFrom) {
+    query = query.gte('installed_at', filters.dateFrom);
+  }
+  if (filters.dateTo) {
+    query = query.lte('installed_at', filters.dateTo);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
@@ -85,7 +91,7 @@ export async function fetchAssetsByWorkOrder(workOrderId) {
 export async function createAsset(data) {
   // Clean empty strings to null
   const payload = { ...data };
-  for (const key of ['brand', 'model', 'serial_number', 'material_id', 'installed_at', 'location_note', 'warranty_expires_at', 'notes']) {
+  for (const key of ['brand', 'model', 'serial_number', 'material_id', 'installed_at', 'location_note', 'warranty_expires_at', 'notes', 'ownership_type', 'subscription_id']) {
     if (payload[key] === '') payload[key] = null;
   }
 
@@ -103,7 +109,7 @@ export async function bulkCreateAssets(items) {
   // Clean each item
   const cleaned = items.map((item) => {
     const payload = { ...item };
-    for (const key of ['brand', 'model', 'serial_number', 'material_id', 'installed_at', 'location_note', 'warranty_expires_at', 'notes']) {
+    for (const key of ['brand', 'model', 'serial_number', 'material_id', 'installed_at', 'location_note', 'warranty_expires_at', 'notes', 'ownership_type', 'subscription_id']) {
       if (payload[key] === '') payload[key] = null;
     }
     return payload;
@@ -120,7 +126,7 @@ export async function bulkCreateAssets(items) {
 
 export async function updateAsset(id, data) {
   const payload = { ...data };
-  for (const key of ['brand', 'model', 'serial_number', 'material_id', 'installed_at', 'location_note', 'warranty_expires_at', 'notes']) {
+  for (const key of ['brand', 'model', 'serial_number', 'material_id', 'installed_at', 'location_note', 'warranty_expires_at', 'notes', 'ownership_type', 'subscription_id']) {
     if (payload[key] === '') payload[key] = null;
   }
 

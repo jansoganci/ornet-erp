@@ -22,14 +22,16 @@
       "all": "Tümü",
       "type": "Tip",
       "workType": "İş Tipi",
-      "allTypes": "Tüm Tipler",
+      "allTypes": "Tümü",
       "status": "Durum",
-      "allStatuses": "Tüm Durumlar",
+      "allStatuses": "Tümü",
       "priority": "Öncelik",
       "allPriorities": "Tüm Öncelikler",
       "dateRange": "Tarih Aralığı",
       "statusPlaceholder": "Durum Filtresi",
-      "typePlaceholder": "Tip Filtresi"
+      "typePlaceholder": "Tip Filtresi",
+      "selectYear": "Yıl Seç",
+      "selectMonth": "Ay Seç"
     }
   },
   "detail": {
@@ -71,7 +73,7 @@
     "proposalLink": "Teklif",
     "viewProposal": "Teklifi Görüntüle",
     "notAssignedYet": "Henüz atanmadı",
-    "assignedCount": "{{count}} Kişi",
+    "assignedCount": "{{count}} Personel",
     "amountNotEntered": "Tutar girilmedi"
   },
   "form": {
@@ -106,6 +108,7 @@
       "title": "Başlık",
       "notes": "Notlar"
     },
+    "noFieldWorkers": "Listelenecek saha personeli yok. Önce kullanıcıları saha personeli rolüyle ekleyin.",
     "placeholders": {
       "selectCustomer": "Müşteri seçin",
       "searchCustomer": "Müşteri ara...",

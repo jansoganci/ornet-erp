@@ -101,6 +101,24 @@ export function useCreateWorkOrder() {
   });
 }
 
+export function useCreateWorkOrderFromProposal() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('common');
+
+  return useMutation({
+    mutationFn: api.createWorkOrderFromProposal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: siteKeys.all });
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
+      toast.success(t('success.created'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.createFailed'));
+    },
+  });
+}
+
 export function useUpdateWorkOrder() {
   const queryClient = useQueryClient();
   const { t } = useTranslation('common');

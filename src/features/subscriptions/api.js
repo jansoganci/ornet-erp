@@ -75,6 +75,13 @@ export async function fetchSubscriptions(filters = {}) {
     query = query.eq('site_id', filters.site_id);
   }
 
+  if (filters.dateFrom) {
+    query = query.gte('start_date', filters.dateFrom);
+  }
+  if (filters.dateTo) {
+    query = query.lte('start_date', filters.dateTo);
+  }
+
   const { data, error } = await query
     .order('created_at', { ascending: false });
 

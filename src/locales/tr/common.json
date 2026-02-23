@@ -80,7 +80,9 @@
   "filters": {
     "all": "Tümü",
     "allStatuses": "Tüm Durumlar",
-    "allTypes": "Tüm Tipler"
+    "allTypes": "Tüm Tipler",
+    "dateFrom": "Başlangıç Tarihi",
+    "dateTo": "Bitiş Tarihi"
   },
   "empty": {
     "noData": "Veri bulunamadı",
@@ -96,7 +98,7 @@
     "TRY": "TRY (₺)",
     "USD": "USD ($)"
   },
-  "deleteConfirm": "silinsin mi?",
+  "deleteConfirm": "Silinsin mi?",
   "noResults": "Sonuç bulunamadı",
   "success": {
     "saved": "Başarıyla kaydedildi",
@@ -113,7 +115,7 @@
     "title": "Bir şeyler yanlış gitti",
     "description": "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
     "boundaryTitle": "Uygulama Hatası",
-    "boundaryDescription": "Beklenmeyen bir hata oluştu. Lütfen sayfayı yenilemeyi veya daha sonra tekrar denemeyi deneyin."
+    "boundaryDescription": "Beklenmeyen bir hata oluştu. Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin."
   },
   "warning": "Uyarı",
   "info": "Bilgi",
@@ -161,6 +163,7 @@
     "profile": "Profil",
     "settings": "Ayarlar",
     "logout": "Çıkış Yap",
+    "notifications": "Bildirimler",
     "more": "Menü",
     "groups": {
       "planning": "Planlama",
@@ -204,7 +207,7 @@
     "phone": "Telefon",
     "address": "Adres",
     "statusUpdate": "Durum Güncelleme",
-    "records": "kayıt",
+    "records": "Kayıt",
     "areYouSure": "Emin misiniz?"
   },
   "roles": {

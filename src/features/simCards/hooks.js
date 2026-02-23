@@ -12,10 +12,10 @@ export const simCardKeys = {
   history: (id) => [...simCardKeys.detail(id), 'history'],
 };
 
-export function useSimCards() {
+export function useSimCards(filters = {}) {
   return useQuery({
-    queryKey: simCardKeys.lists(),
-    queryFn: api.fetchSimCards,
+    queryKey: simCardKeys.list(filters),
+    queryFn: () => api.fetchSimCards(filters),
   });
 }
 

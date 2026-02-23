@@ -35,7 +35,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
   const { user, signOut } = useAuth();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
-  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const hasNotificationAccess = isAdmin || currentProfile?.role === 'accountant';
+  const visibleNavItems = navItems.filter(
+    (item) => (!item.adminOnly || isAdmin) && (!item.notificationCenter || hasNotificationAccess)
+  );
 
   const [groupState, setGroupState] = useState(loadGroupState);
 

@@ -17,9 +17,10 @@ import {
   CheckSquare,
   BellRing,
   Check,
-  CardSim,
+  Smartphone,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { Badge } from '../../../components/ui/Badge';
 
 /**
  * NotificationItem - Single notification row
@@ -44,11 +45,11 @@ const ICON_MAP = {
   work_order_assigned: { Icon: UserPlus, bg: 'bg-primary-100 dark:bg-primary-900/40', text: 'text-primary-600 dark:text-primary-400' },
   task_due_soon: { Icon: CheckSquare, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
   user_reminder: { Icon: BellRing, bg: 'bg-primary-100 dark:bg-primary-900/40', text: 'text-primary-600 dark:text-primary-400' },
-  sim_card_cancelled: { Icon: CardSim, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
+  sim_card_cancelled: { Icon: Smartphone, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
 };
 
 function getRoute(entityType, entityId) {
-  if (!entityId) return null;
+  if (!entityId && entityType !== 'task') return null;
   
   switch (entityType) {
     case 'work_order':
@@ -75,10 +76,12 @@ export function NotificationItem({
   entity_type,
   entity_id,
   created_at,
+  resolved_at,
   notification_id,
   notification_source,
   onResolve,
   onNavigate,
+  isResolved = false,
 }) {
   const { t } = useTranslation('notifications');
   const navigate = useNavigate();
@@ -86,8 +89,9 @@ export function NotificationItem({
   const config = ICON_MAP[notification_type] ?? { Icon: FileText, bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-400' };
   const { Icon, bg, text } = config;
 
-  const relativeTime = created_at
-    ? formatDistanceToNow(new Date(created_at), { addSuffix: true, locale: tr })
+  const timestamp = isResolved ? resolved_at : created_at;
+  const relativeTime = timestamp
+    ? formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: tr })
     : '';
 
   const handleClick = () => {
@@ -110,9 +114,14 @@ export function NotificationItem({
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
-            {title}
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
+              {title}
+            </p>
+            <Badge variant="default" size="sm" className="flex-shrink-0 font-normal">
+              {t('types.' + notification_type)}
+            </Badge>
+          </div>
           {body && (
             <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">
               {body}
@@ -120,9 +129,9 @@ export function NotificationItem({
           )}
           <div className="flex items-center justify-between mt-1">
             <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-              {relativeTime}
+              {isResolved ? `${t('resolvedAt')}: ${relativeTime}` : relativeTime}
             </span>
-            {notification_source === 'stored' && notification_id && (
+            {notification_source === 'stored' && notification_id && !isResolved && (
               <button
                 type="button"
                 onClick={(e) => {

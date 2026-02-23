@@ -85,7 +85,7 @@ export function Modal({
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 z-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
       />
 
@@ -95,7 +95,7 @@ export function Modal({
         tabIndex={-1}
         onKeyDown={handleTabKey}
         className={cn(
-          'relative bg-white dark:bg-[#171717] shadow-xl w-full max-h-[95vh] md:max-h-[90vh] overflow-hidden flex flex-col transition-colors',
+          'relative z-10 bg-white dark:bg-[#171717] shadow-xl w-full max-h-[95vh] md:max-h-[90vh] overflow-hidden flex flex-col transition-colors',
           'rounded-t-2xl md:rounded-lg animate-slide-up md:animate-fade-in',
           sizes[size],
           className
@@ -121,8 +121,8 @@ export function Modal({
           </div>
         )}
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 text-neutral-700 dark:text-neutral-300">
+        {/* Content - pointer-events-auto so clicks reach inputs/selects/buttons inside modals */}
+        <div className="flex-1 overflow-y-auto p-6 text-neutral-700 dark:text-neutral-300 pointer-events-auto">
           {children}
         </div>
 

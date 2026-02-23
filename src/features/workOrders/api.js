@@ -91,6 +91,85 @@ export async function createWorkOrder(data) {
   return created;
 }
 
+/**
+ * Create a work order from a proposal: insert work order, copy items to work_order_materials,
+ * link via proposal_work_orders, set work_orders.proposal_id.
+ * @returns {Promise<{ id: string }>} The new work order (with id)
+ */
+export async function createWorkOrderFromProposal({
+  proposalId,
+  siteId,
+  workType,
+  scheduledDate = null,
+  scheduledTime = null,
+  assignedTo = [],
+  amount = null,
+  currency = 'TRY',
+  materialsDiscountPercent = 0,
+  description = null,
+  notes = null,
+  items = [],
+}) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const workOrderPayload = {
+    site_id: siteId,
+    work_type: workType,
+    status: 'pending',
+    priority: 'normal',
+    scheduled_date: scheduledDate || null,
+    scheduled_time: scheduledTime || null,
+    assigned_to: Array.isArray(assignedTo) && assignedTo.length > 0 ? assignedTo.filter(Boolean) : [],
+    amount: amount != null ? parseFloat(amount) : null,
+    currency: currency || 'TRY',
+    materials_discount_percent: materialsDiscountPercent ?? 0,
+    description: description?.trim() || null,
+    notes: notes?.trim() || null,
+    created_by: user.id,
+  };
+
+  const { data: created, error } = await supabase
+    .from('work_orders')
+    .insert(workOrderPayload)
+    .select('id')
+    .single();
+
+  if (error) throw error;
+
+  if (items && items.length > 0) {
+    const materialRows = items.map((item, index) => ({
+      work_order_id: created.id,
+      sort_order: item.sort_order ?? index,
+      description: item.description ?? '',
+      quantity: item.quantity ?? 1,
+      unit: item.unit || 'adet',
+      unit_price: item.unit_price ?? item.unit_price_usd ?? 0,
+      cost: item.cost ?? item.cost_usd ?? null,
+      material_id: item.material_id || null,
+    }));
+    const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);
+    if (mError) throw mError;
+  }
+
+  const { error: junctionError } = await supabase
+    .from('proposal_work_orders')
+    .insert({ proposal_id: proposalId, work_order_id: created.id });
+
+  if (junctionError) throw junctionError;
+
+  const { error: updateError } = await supabase
+    .from('work_orders')
+    .update({ proposal_id: proposalId })
+    .eq('id', created.id);
+
+  if (updateError) throw updateError;
+
+  return { ...created, id: created.id };
+}
+
 export async function updateWorkOrder({ id, items, materials_discount_percent, ...data }) {
   const updatePayload = { ...data };
   if (materials_discount_percent !== undefined) {
