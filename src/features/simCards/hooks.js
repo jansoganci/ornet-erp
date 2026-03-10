@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { getErrorMessage } from '../../lib/errorHandler';
 import * as api from './api';
 
 export const simCardKeys = {
@@ -17,6 +18,25 @@ export function useSimCards(filters = {}) {
     queryKey: simCardKeys.list(filters),
     queryFn: () => api.fetchSimCards(filters),
   });
+}
+
+const SIM_PAGE_SIZE = 100;
+
+export function useSimCardsPaginated(filters = {}, page = 0) {
+  const query = useQuery({
+    queryKey: [...simCardKeys.list(filters), 'paginated', page],
+    queryFn: () => api.fetchSimCardsPaginated(filters, page, SIM_PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  });
+
+  const count = query.data?.count ?? 0;
+  return {
+    ...query,
+    data: query.data?.data ?? [],
+    totalCount: count,
+    pageCount: Math.ceil(count / SIM_PAGE_SIZE),
+    pageSize: SIM_PAGE_SIZE,
+  };
 }
 
 export function useSimCard(id) {
@@ -38,7 +58,7 @@ export function useCreateSimCard() {
       toast.success(t('success.created'));
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getErrorMessage(error, 'simCards.createFailed'));
     },
   });
 }
@@ -56,7 +76,7 @@ export function useUpdateSimCard() {
       toast.success(t('success.updated'));
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getErrorMessage(error, 'simCards.updateFailed'));
     },
   });
 }
@@ -72,7 +92,7 @@ export function useDeleteSimCard() {
       toast.success(t('success.deleted'));
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getErrorMessage(error, 'simCards.deleteFailed'));
     },
   });
 }
@@ -127,7 +147,7 @@ export function useBulkCreateSimCards() {
       toast.success(t('success.created'));
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getErrorMessage(error, 'simCards.createFailed'));
     },
   });
 }

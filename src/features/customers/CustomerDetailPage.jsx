@@ -1,14 +1,15 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCustomer, useDeleteCustomer } from './hooks';
 import { useWorkOrdersByCustomer } from '../workOrders/hooks';
 import { useSitesByCustomer } from '../customerSites/hooks';
 import { useSimCardsByCustomer } from '../simCards/hooks';
-import { useSubscriptions } from '../subscriptions/hooks';
+import { useCustomerSubscriptions } from '../subscriptions/hooks';
 import { useAssetsByCustomer } from '../siteAssets/hooks';
 import { PageContainer } from '../../components/layout';
 import { Button, Modal, Skeleton, ErrorState } from '../../components/ui';
+import { CustomerDetailProvider } from './CustomerDetailContext';
 import { CustomerHero } from './components/CustomerHero';
 import { CustomerTabBar } from './components/CustomerTabBar';
 import { CustomerOverviewTab } from './tabs/CustomerOverviewTab';
@@ -54,7 +55,7 @@ export function CustomerDetailPage() {
   const { data: sites = [], isLoading: sitesLoading } = useSitesByCustomer(id);
   const { data: workOrders = [], isLoading: workOrdersLoading } = useWorkOrdersByCustomer(id);
   const { data: simCards = [], isLoading: simCardsLoading } = useSimCardsByCustomer(id);
-  const { data: allSubscriptions = [] } = useSubscriptions({});
+  const { data: customerSubscriptions = [] } = useCustomerSubscriptions(id);
   const { data: assets = [] } = useAssetsByCustomer(id);
   const deleteCustomer = useDeleteCustomer();
 
@@ -70,31 +71,32 @@ export function CustomerDetailPage() {
     });
   };
 
-  // Subscriptions grouped by site
-  const siteIds = sites.map((s) => s.id);
-  const customerSubscriptions = (allSubscriptions || []).filter((sub) =>
-    siteIds.includes(sub.site_id)
-  );
-  const subscriptionsBySite = customerSubscriptions.reduce((acc, sub) => {
-    if (!acc[sub.site_id]) acc[sub.site_id] = [];
-    acc[sub.site_id].push(sub);
-    return acc;
-  }, {});
+  // Subscriptions grouped by site (memoized)
+  const subscriptionsBySite = useMemo(() => {
+    return (customerSubscriptions || []).reduce((acc, sub) => {
+      if (!acc[sub.site_id]) acc[sub.site_id] = [];
+      acc[sub.site_id].push(sub);
+      return acc;
+    }, {});
+  }, [customerSubscriptions]);
 
-  // Computed counts for metrics
-  const counts = {
-    activeSubscriptions: customerSubscriptions.filter((s) => s.status === 'active').length,
-    openWorkOrders: workOrders.filter(
+  // Computed counts for metrics (memoized)
+  const counts = useMemo(() => ({
+    activeSubscriptions: (customerSubscriptions || []).filter((s) => s.status === 'active').length,
+    openWorkOrders: (workOrders || []).filter(
       (wo) => !['completed', 'cancelled'].includes(wo.status)
     ).length,
-    activeSimCards: simCards.filter((s) => s.status === 'active').length,
-    faultyEquipment: assets.filter((a) => a.status === 'faulty').length,
-  };
+    activeSimCards: (simCards || []).filter((s) => s.status === 'active').length,
+    faultyEquipment: (assets || []).filter((a) => a.status === 'faulty').length,
+  }), [customerSubscriptions, workOrders, simCards, assets]);
 
-  // Monthly revenue — sum of active subscription base prices
-  const monthlyRevenue = customerSubscriptions
-    .filter((s) => s.status === 'active')
-    .reduce((sum, s) => sum + (Number(s.base_price) || 0), 0);
+  // Monthly revenue — sum of active subscription base prices (memoized)
+  const monthlyRevenue = useMemo(
+    () => (customerSubscriptions || [])
+      .filter((s) => s.status === 'active')
+      .reduce((sum, s) => sum + (Number(s.base_price) || 0), 0),
+    [customerSubscriptions]
+  );
 
   // Modals
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -135,6 +137,41 @@ export function CustomerDetailPage() {
     );
   }
 
+  const detailContextValue = useMemo(
+    () => ({
+      customerId: id,
+      customer,
+      sites,
+      workOrders,
+      simCards,
+      assets,
+      subscriptionsBySite,
+      counts,
+      navigate,
+      onNewWorkOrder: handleNewWorkOrder,
+      onTabChange: handleTabChange,
+      sitesLoading,
+      workOrdersLoading,
+      simCardsLoading,
+    }),
+    [
+      id,
+      customer,
+      sites,
+      workOrders,
+      simCards,
+      assets,
+      subscriptionsBySite,
+      counts,
+      navigate,
+      handleNewWorkOrder,
+      handleTabChange,
+      sitesLoading,
+      workOrdersLoading,
+      simCardsLoading,
+    ]
+  );
+
   return (
     <PageContainer maxWidth="full" padding="default" className="space-y-5">
       {/* ── Hero ── */}
@@ -160,52 +197,13 @@ export function CustomerDetailPage() {
       />
 
       {/* ── Tab Content ── */}
-      {activeTab === 'overview' && (
-        <CustomerOverviewTab
-          customer={customer}
-          sites={sites}
-          workOrders={workOrders}
-          assets={assets}
-          counts={counts}
-          subscriptionsBySite={subscriptionsBySite}
-          onTabSwitch={handleTabChange}
-          navigate={navigate}
-          customerId={id}
-        />
-      )}
-
-      {activeTab === 'locations' && (
-        <CustomerLocationsTab
-          customerId={id}
-          sites={sites}
-          sitesLoading={sitesLoading}
-          subscriptionsBySite={subscriptionsBySite}
-          onNewWorkOrder={handleNewWorkOrder}
-          navigate={navigate}
-        />
-      )}
-
-      {activeTab === 'workOrders' && (
-        <CustomerWorkOrdersTab
-          customerId={id}
-          workOrders={workOrders}
-          workOrdersLoading={workOrdersLoading}
-          navigate={navigate}
-        />
-      )}
-
-      {activeTab === 'simCards' && (
-        <CustomerSimCardsTab
-          customerId={id}
-          simCards={simCards}
-          simCardsLoading={simCardsLoading}
-          navigate={navigate}
-        />
-      )}
-
-      {activeTab === 'equipment' && (
-        <CustomerEquipmentTab customerId={id} sites={sites} />
-      )}
+      <CustomerDetailProvider value={detailContextValue}>
+        {activeTab === 'overview' && <CustomerOverviewTab />}
+        {activeTab === 'locations' && <CustomerLocationsTab />}
+        {activeTab === 'workOrders' && <CustomerWorkOrdersTab />}
+        {activeTab === 'simCards' && <CustomerSimCardsTab />}
+        {activeTab === 'equipment' && <CustomerEquipmentTab />}
+      </CustomerDetailProvider>
 
       {/* ── Delete Confirm Modal ── */}
       <Modal

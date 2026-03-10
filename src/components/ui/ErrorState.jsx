@@ -21,10 +21,10 @@ export function ErrorState({
       
       <div className="max-w-sm mx-auto">
         <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-1">
-          {title || t('error.title') || 'An error occurred'}
+          {title || t('error.title')}
         </h3>
         <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-          {message || t('error.description') || 'Something went wrong. Please try again.'}
+          {message || t('error.description')}
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export function ErrorState({
           leftIcon={<RefreshCw className="w-4 h-4" />}
           className="mt-2"
         >
-          {t('actions.retry') || 'Retry'}
+          {t('actions.retry')}
         </Button>
       )}
     </div>

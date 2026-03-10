@@ -60,5 +60,11 @@
   "confirm": {
     "pauseTitle": "Şablonu Duraklat",
     "pauseMessage": "Bu şablonu duraklatmak istediğinize emin misiniz? Duraklatıldığında otomatik gider oluşturma durur."
+  },
+  "generate": {
+    "button": "Bu Ay Oluştur",
+    "success": "{{count}} tekrarlayan gider kaydı oluşturuldu.",
+    "successGeneric": "Tekrarlayan giderler oluşturuldu.",
+    "noTemplates": "Oluşturulacak aktif şablon yok."
   }
 }

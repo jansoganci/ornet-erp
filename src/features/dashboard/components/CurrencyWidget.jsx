@@ -55,7 +55,7 @@ export function CurrencyWidget() {
           symbol="USD" 
           icon={DollarSign} 
           rate={usdRate} 
-          label="Amerikan Doları"
+          label={t('finance:exchangeRates.usdLabel')}
         />
       </div>
     </div>
@@ -80,13 +80,13 @@ function CurrencyCard({ symbol, icon: Icon, rate, label }) {
 
         <div className="flex gap-8 text-right">
           <div>
-            <div className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase tracking-tighter font-medium">Efektif Alış</div>
+            <div className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase tracking-tighter font-medium">{t('finance:exchangeRates.effectiveBuy')}</div>
             <div className="text-base font-bold text-neutral-900 dark:text-neutral-50 tabular-nums">
               {rate?.buy_rate ? Number(rate.buy_rate).toFixed(4) : '-'}
             </div>
           </div>
           <div>
-            <div className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase tracking-tighter font-medium">Efektif Satış</div>
+            <div className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase tracking-tighter font-medium">{t('finance:exchangeRates.effectiveSell')}</div>
             <div className="text-base font-bold text-primary-600 dark:text-primary-400 tabular-nums">
               {rate?.sell_rate ? Number(rate.sell_rate).toFixed(4) : '-'}
             </div>

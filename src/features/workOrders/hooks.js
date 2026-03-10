@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/errorHandler';
@@ -40,6 +40,25 @@ export function useWorkOrders(filters) {
     queryKey: workOrderKeys.list(filters),
     queryFn: () => api.fetchWorkOrders(filters),
   });
+}
+
+const WO_PAGE_SIZE = 50;
+
+export function useWorkOrdersPaginated(filters = {}, page = 0) {
+  const query = useQuery({
+    queryKey: [...workOrderKeys.list(filters), 'paginated', page],
+    queryFn: () => api.fetchWorkOrdersPaginated(filters, page, WO_PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  });
+
+  const count = query.data?.count ?? 0;
+  return {
+    ...query,
+    data: query.data?.data ?? [],
+    totalCount: count,
+    pageCount: Math.ceil(count / WO_PAGE_SIZE),
+    pageSize: WO_PAGE_SIZE,
+  };
 }
 
 export function useWorkOrder(id) {

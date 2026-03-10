@@ -33,9 +33,9 @@ export function SimCardImportPage() {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        validateAndFormatData(jsonData);
+        validateAndFormatData(jsonData, t);
       } catch {
-        setErrors(['Dosya okunamadı. Lütfen geçerli bir Excel dosyası yükleyin.']);
+        setErrors([t('simCards:import.parseError')]);
       } finally {
         setIsParsing(false);
       }
@@ -44,7 +44,7 @@ export function SimCardImportPage() {
     reader.readAsBinaryString(file);
   };
 
-  const validateAndFormatData = (rawRows) => {
+  const validateAndFormatData = (rawRows, tFn) => {
     const formattedData = [];
     const validationErrors = [];
 
@@ -83,7 +83,7 @@ export function SimCardImportPage() {
 
       // Validation
       if (!rowData.phone_number) {
-        rowErrors.push(`Satır ${index + 1}: Hat numarası eksik.`);
+        rowErrors.push(tFn('simCards:import.missingPhone', { row: index + 1 }));
       }
 
       // Format prices
@@ -117,7 +117,7 @@ export function SimCardImportPage() {
         const buyerKey = String(rowData.buyer_name).toLowerCase().trim();
         rowData.buyer_id = buyerLookup[buyerKey] || null;
         if (!rowData.buyer_id) {
-          rowErrors.push(`Satır ${index + 1}: Alıcı "${rowData.buyer_name}" bulunamadı.`);
+          rowErrors.push(tFn('simCards:import.buyerNotFound', { row: index + 1, name: rowData.buyer_name }));
         }
       }
       delete rowData.buyer_name;
@@ -153,7 +153,7 @@ export function SimCardImportPage() {
     return (
       <PageContainer maxWidth="xl">
         <ErrorState 
-          message={getErrorMessage(bulkCreateMutation.error)} 
+          message={getErrorMessage(bulkCreateMutation.error, 'simCards.createFailed')} 
           onRetry={() => bulkCreateMutation.reset()} 
         />
       </PageContainer>
@@ -195,10 +195,10 @@ export function SimCardImportPage() {
               <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-              Excel Dosyası Yükleyin
+              {t('simCards:import.uploadTitle')}
             </h3>
             <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-              SIM kart listesini içeren .xlsx veya .xls dosyasını sürükleyin veya seçin.
+              {t('simCards:import.uploadDescription')}
             </p>
             <input
               type="file"
@@ -209,30 +209,28 @@ export function SimCardImportPage() {
             />
             <div className="flex gap-3">
               <Button onClick={() => fileInputRef.current?.click()}>
-                Dosya Seç
+                {t('simCards:import.selectFile')}
               </Button>
               <Button variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
-                Şablon İndir
+                {t('simCards:import.downloadTemplate')}
               </Button>
             </div>
 
             <Card className="mt-6 p-4 bg-neutral-50 dark:bg-neutral-800/30 border-neutral-200 dark:border-neutral-700">
               <h4 className="font-medium text-neutral-900 dark:text-neutral-50 mb-3 flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-neutral-500" />
-                Excel formatı
+                {t('simCards:import.excelFormat')}
               </h4>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-                İlk satırda sütun başlıkları olmalı. <strong>HAT NO</strong> zorunludur; diğerleri isteğe bağlı.
-              </p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3" dangerouslySetInnerHTML={{ __html: t('simCards:import.formatIntro') }} />
               <div className="text-xs text-neutral-500 dark:text-neutral-500 space-y-1">
-                <p><strong>HAT NO</strong> — Telefon numarası (örn: +90 555 123 4567)</p>
-                <p><strong>OPERATOR</strong> — Turkcell, Vodafone veya Türk Telekom</p>
-                <p><strong>KAPASITE</strong> — Örn: 100MB, 1GB</p>
-                <p><strong>ALICI</strong> — Alıcı firma adı (sistemde kayıtlı müşteri adıyla eşleşmeli)</p>
-                <p><strong>AYLIK MALIYET</strong> — Aylık maliyet (₺)</p>
-                <p><strong>AYLIK SATIS FIYAT</strong> — Aylık satış fiyatı (₺)</p>
-                <p><strong>STATUS</strong> — available, active, subscription, cancelled (boşsa: available)</p>
-                <p><strong>NOTLAR</strong> — Notlar</p>
+                <p>{t('simCards:import.formatHatNo')}</p>
+                <p>{t('simCards:import.formatOperator')}</p>
+                <p>{t('simCards:import.formatCapacity')}</p>
+                <p>{t('simCards:import.formatBuyer')}</p>
+                <p>{t('simCards:import.formatCost')}</p>
+                <p>{t('simCards:import.formatSale')}</p>
+                <p>{t('simCards:import.formatStatus')}</p>
+                <p>{t('simCards:import.formatNotes')}</p>
               </div>
             </Card>
           </Card>
@@ -242,18 +240,18 @@ export function SimCardImportPage() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span className="font-medium">{data.length} Geçerli Satır</span>
+                  <span className="font-medium">{t('simCards:import.validRows', { count: data.length })}</span>
                 </div>
                 {errors.length > 0 && (
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-red-500" />
-                    <span className="font-medium text-red-600">{errors.length} Hatalı Satır</span>
+                    <span className="font-medium text-red-600">{t('simCards:import.invalidRows', { count: errors.length })}</span>
                   </div>
                 )}
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleReset} leftIcon={<X className="w-4 h-4" />}>
-                  Vazgeç
+                  {t('simCards:import.cancel')}
                 </Button>
                 <Button 
                   variant="primary" 
@@ -262,7 +260,7 @@ export function SimCardImportPage() {
                   leftIcon={<Save className="w-4 h-4" />}
                   disabled={data.length === 0}
                 >
-                  İçe Aktarımı Başlat
+                  {t('simCards:import.startImport')}
                 </Button>
               </div>
             </div>
@@ -271,7 +269,7 @@ export function SimCardImportPage() {
               <Card className="p-4 bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/20">
                 <h4 className="font-medium text-red-800 dark:text-red-400 mb-2 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
-                  Hatalar
+                  {t('simCards:import.errors')}
                 </h4>
                 <ul className="text-sm text-red-700 dark:text-red-400 space-y-1 max-h-40 overflow-y-auto">
                   {errors.map((err, i) => (
@@ -286,11 +284,11 @@ export function SimCardImportPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Hat No</th>
-                      <th className="px-4 py-3 font-medium">Operatör</th>
-                      <th className="px-4 py-3 font-medium">Alıcı</th>
-                      <th className="px-4 py-3 font-medium">Maliyet</th>
-                      <th className="px-4 py-3 font-medium">Satış</th>
+                      <th className="px-4 py-3 font-medium">{t('simCards:list.columns.phoneNumber')}</th>
+                      <th className="px-4 py-3 font-medium">{t('simCards:list.columns.operator')}</th>
+                      <th className="px-4 py-3 font-medium">{t('simCards:list.columns.buyer')}</th>
+                      <th className="px-4 py-3 font-medium">{t('simCards:form.costPrice')}</th>
+                      <th className="px-4 py-3 font-medium">{t('simCards:form.salePrice')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
@@ -314,7 +312,7 @@ export function SimCardImportPage() {
                 </table>
                 {data.length > 10 && (
                   <div className="p-3 text-center text-neutral-500 text-xs bg-neutral-50/50 dark:bg-neutral-800/20">
-                    ... ve {data.length - 10} satır daha
+                    {t('simCards:import.andMoreRows', { count: data.length - 10 })}
                   </div>
                 )}
               </div>
@@ -327,7 +325,7 @@ export function SimCardImportPage() {
         <div className="fixed inset-0 bg-white/80 dark:bg-black/80 flex items-center justify-center z-50">
           <div className="text-center">
             <Spinner size="lg" className="mb-4 mx-auto" />
-            <p className="font-medium">Excel dosyası işleniyor...</p>
+            <p className="font-medium">{t('simCards:import.processing')}</p>
           </div>
         </div>
       )}

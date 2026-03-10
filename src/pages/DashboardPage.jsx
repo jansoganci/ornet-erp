@@ -15,10 +15,12 @@ import {
   CalendarCheck,
   Search,
   CreditCard,
-  Cpu as SimIcon
+  Cpu as SimIcon,
+  AlertCircle,
 } from 'lucide-react';
 import { PageContainer } from '../components/layout';
 import { Button, Card, Skeleton, ErrorState, CardSkeleton } from '../components/ui';
+import { getErrorMessage } from '../lib/errorHandler';
 import { formatDate, cn } from '../lib/utils';
 import {
   useDashboardStats,
@@ -32,6 +34,8 @@ import { CurrencyWidget } from '../features/dashboard/components/CurrencyWidget'
 import { TaskModal } from '../features/tasks/TaskModal';
 import { useUpdateTask } from '../features/tasks/hooks';
 import { useAuth } from '../hooks/useAuth';
+import { useCurrentProfile } from '../features/subscriptions/hooks';
+import { useActionBoardCounts } from '../features/actionBoard/hooks';
 
 function TodoListSkeleton() {
   return (
@@ -62,6 +66,48 @@ function TodoListSkeleton() {
   );
 }
 
+function ActionBoardCard({ total, isLoading }) {
+  const { t } = useTranslation('actionBoard');
+  const navigate = useNavigate();
+  const hasItems = total > 0;
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('/action-board')}
+      className={cn(
+        'flex items-center gap-3 w-full rounded-xl px-4 py-3 border text-left transition-colors',
+        hasItems
+          ? 'bg-error-50 dark:bg-error-900/15 border-error-200 dark:border-error-800/40 hover:bg-error-100 dark:hover:bg-error-900/25'
+          : 'bg-success-50 dark:bg-success-900/10 border-success-200 dark:border-success-800/40 hover:bg-success-100 dark:hover:bg-success-900/20'
+      )}
+    >
+      <AlertCircle
+        className={cn(
+          'w-5 h-5 flex-shrink-0',
+          hasItems
+            ? 'text-error-600 dark:text-error-400'
+            : 'text-success-600 dark:text-success-400'
+        )}
+      />
+      <div className="flex-1 min-w-0">
+        {isLoading ? (
+          <div className="h-4 w-32 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+        ) : hasItems ? (
+          <p className="text-sm font-medium text-error-700 dark:text-error-300">
+            {total} {t('dashboard.items')} — {t('dashboard.title')}
+          </p>
+        ) : (
+          <p className="text-sm font-medium text-success-700 dark:text-success-300">
+            {t('dashboard.allClear')}
+          </p>
+        )}
+      </div>
+      <ChevronRight className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+    </button>
+  );
+}
+
 export function DashboardPage() {
   const { t } = useTranslation('dashboard');
   const { t: tCommon } = useTranslation('common');
@@ -75,6 +121,9 @@ export function DashboardPage() {
   const { data: schedule, isLoading: isScheduleLoading, error: scheduleError, refetch: refetchSchedule } = useTodaySchedule();
   const { data: tasks, isLoading: isTasksLoading, error: tasksError, refetch: refetchTasks } = usePendingTasks();
   const updateTaskMutation = useUpdateTask();
+  const { data: currentProfile } = useCurrentProfile();
+  const isAdmin = currentProfile?.role === 'admin';
+  const { total: actionTotal, isLoading: isActionLoading } = useActionBoardCounts();
 
   const isInitialLoading = isStatsLoading || isSubStatsLoading || isSimStatsLoading;
 
@@ -144,7 +193,7 @@ export function DashboardPage() {
       <CurrencyWidget />
 
       {statsError ? (
-        <ErrorState message={statsError.message} onRetry={() => refetchStats()} />
+        <ErrorState message={getErrorMessage(statsError, 'dashboard.loadFailed')} onRetry={() => refetchStats()} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <StatCard
@@ -196,6 +245,11 @@ export function DashboardPage() {
             onClick={() => navigate('/sim-cards')}
           />
         </div>
+      )}
+
+      {/* Action Board Doorbell — admin only */}
+      {isAdmin && (
+        <ActionBoardCard total={actionTotal} isLoading={isActionLoading} />
       )}
 
       {/* Quick Actions Section */}
@@ -282,7 +336,7 @@ export function DashboardPage() {
         {isTodoLoading ? (
           <TodoListSkeleton />
         ) : todoError ? (
-          <ErrorState message={todoError.message} onRetry={refetchTodo} />
+          <ErrorState message={getErrorMessage(todoError, 'dashboard.loadFailed')} onRetry={refetchTodo} />
         ) : isEmpty ? (
           <Card className="p-5 text-center border border-dashed border-neutral-200 dark:border-[#262626]">
             <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('todoSection.empty')}</p>

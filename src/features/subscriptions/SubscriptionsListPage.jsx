@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, CreditCard, Filter, Tag, TrendingUp, TrendingDown, Minus, Users, Pause, AlertTriangle, FileSpreadsheet, Receipt, Wallet, Building2, Calendar } from 'lucide-react';
+import { Plus, CreditCard, Filter, Tag, TrendingUp, TrendingDown, Minus, Users, Pause, AlertTriangle, FileSpreadsheet, Receipt, Wallet, Building2, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -18,7 +18,7 @@ import {
 } from '../../components/ui';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { formatCurrency, formatDate } from '../../lib/utils';
-import { useSubscriptions, useSubscriptionStats, useCurrentProfile } from './hooks';
+import { useSubscriptionsPaginated, useSubscriptionStats, useCurrentProfile } from './hooks';
 import { SUBSCRIPTION_TYPES } from './schema';
 import { StatCard } from './components/StatCard';
 import { SubscriptionStatusBadge } from './components/SubscriptionStatusBadge';
@@ -39,30 +39,43 @@ export function SubscriptionsListPage() {
   const billingFrequency = searchParams.get('billing_frequency') || 'all';
   const yearParam = searchParams.get('year') || '';
   const monthParam = searchParams.get('month') || '';
+  const page = Number(searchParams.get('page') || '0');
 
   // Sync local search from URL
   useEffect(() => {
     setLocalSearch(searchFromUrl);
   }, [searchFromUrl]);
-  // Sync debounced search to URL — setState in effect is intentional
+  // Sync debounced search to URL — reset page on new search
   useEffect(() => {
     if (searchFromUrl === debouncedSearch) return;
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (debouncedSearch) next.set('search', debouncedSearch);
       else next.delete('search');
+      next.delete('page');
       return next;
     });
   }, [debouncedSearch, searchFromUrl, setSearchParams]);
 
-  const { data: subscriptions = [], isLoading, error, refetch } = useSubscriptions({
+  const filters = {
     search: debouncedSearch,
     status,
     type,
     billing_frequency: billingFrequency === 'all' ? undefined : billingFrequency,
     year: yearParam || undefined,
     month: monthParam || undefined,
-  });
+  };
+
+  const {
+    data: subscriptions,
+    isLoading,
+    error,
+    refetch,
+    totalCount,
+    pageCount,
+    pageSize,
+    isFetching,
+  } = useSubscriptionsPaginated(filters, page);
   const { data: stats } = useSubscriptionStats();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
@@ -83,7 +96,17 @@ export function SubscriptionsListPage() {
     setSearchParams((prev) => {
       if (value && value !== 'all') prev.set(key, value);
       else prev.delete(key);
+      prev.delete('page'); // reset to first page on any filter change
       return prev;
+    });
+  };
+
+  const handlePageChange = (newPage) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newPage > 0) next.set('page', String(newPage));
+      else next.delete('page');
+      return next;
     });
   };
 
@@ -381,13 +404,39 @@ export function SubscriptionsListPage() {
           onAction={() => navigate('/subscriptions/new')}
         />
       ) : (
-        <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
+        <div className={`bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm transition-opacity ${isFetching && !isLoading ? 'opacity-70' : ''}`}>
           <Table
             columns={columns}
             data={subscriptions}
             onRowClick={(row) => navigate(`/subscriptions/${row.id}`)}
             className="border-none"
           />
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                {page * pageSize + 1}–{Math.min((page + 1) * pageSize, totalCount)} / {totalCount} abonelik
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 0}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm text-neutral-600 dark:text-neutral-400 px-2">
+                  {page + 1} / {pageCount}
+                </span>
+                <button
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= pageCount - 1}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

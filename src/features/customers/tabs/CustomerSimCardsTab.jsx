@@ -1,14 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { Button, Table, Badge } from '../../../components/ui';
+import { useCustomerDetail } from '../CustomerDetailContext';
 
-export function CustomerSimCardsTab({
-  customerId,
-  simCards = [],
-  simCardsLoading = false,
-  navigate,
-}) {
+export function CustomerSimCardsTab() {
   const { t } = useTranslation(['customers', 'simCards']);
+  const { customerId, simCards = [], simCardsLoading = false, navigate } = useCustomerDetail();
 
   const columns = [
     {

@@ -15,87 +15,63 @@ export async function fetchPaymentsBySubscription(subscriptionId) {
 }
 
 /**
- * Record a payment — set status=paid with payment details
- * Validates immutability rule: paid+invoiced payments cannot be modified
- * Handles invoice logic: card=always invoiced, cash/bank=user choice
+ * Record a payment atomically via fn_record_payment RPC.
+ *
+ * The DB function acquires a row-level lock (SELECT FOR UPDATE) before any
+ * read or write, so two concurrent requests for the same payment cannot both
+ * pass the immutability check. All logic (VAT calc, UPDATE, audit insert)
+ * runs in a single transaction.
  */
 export async function recordPayment(paymentId, paymentData) {
-  // Fetch current payment to check immutability
-  const { data: current, error: fetchErr } = await supabase
-    .from('subscription_payments')
-    .select('*')
-    .eq('id', paymentId)
-    .single();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (fetchErr) throw fetchErr;
-
-  // Immutability check: paid + invoiced = locked
-  if (current.status === 'paid' && current.invoice_no) {
-    throw new Error('Bu ödeme faturalanmış ve değiştirilemez.');
-  }
-
-  // Build update payload based on invoice logic
+  // Resolve invoice flag (card always invoiced)
   const isCard = paymentData.payment_method === 'card';
   const shouldInvoice = isCard ? true : !!paymentData.should_invoice;
 
-  let vatRate, vatAmount, totalAmount;
-
-  if (shouldInvoice) {
-    // Use provided vat_rate; fallback to rate derived from existing amounts or 20%
-    vatRate = paymentData.vat_rate != null
-      ? paymentData.vat_rate
-      : (current.vat_amount > 0
-        ? Math.round((current.vat_amount / current.amount) * 10000) / 100
-        : 20);
-    vatAmount = Math.round(current.amount * vatRate) / 100;
-    totalAmount = current.amount + vatAmount;
-  } else {
-    // No invoice: zero VAT
-    vatRate = 0;
-    vatAmount = 0;
-    totalAmount = current.amount;
+  // Resolve vat_rate client-side so the DB function receives a concrete value.
+  // When no explicit rate is provided we need the existing payment to derive it.
+  // Fetch only if vat_rate is missing — this read is outside the lock, but it's
+  // read-only and only used for the fallback; the DB still enforces immutability.
+  let vatRate = paymentData.vat_rate ?? null;
+  if (shouldInvoice && vatRate == null) {
+    const { data: current, error: fetchErr } = await supabase
+      .from('subscription_payments')
+      .select('amount, vat_amount')
+      .eq('id', paymentId)
+      .single();
+    if (fetchErr) throw fetchErr;
+    vatRate = current.vat_amount > 0
+      ? Math.round((current.vat_amount / current.amount) * 10000) / 100
+      : 20;
   }
 
-  const { data, error } = await supabase
-    .from('subscription_payments')
-    .update({
-      status: 'paid',
-      payment_date: paymentData.payment_date,
-      payment_method: paymentData.payment_method,
-      should_invoice: shouldInvoice,
-      payment_vat_rate: vatRate,
-      vat_amount: vatAmount,
-      total_amount: totalAmount,
-      invoice_no: shouldInvoice ? (paymentData.invoice_no || null) : null,
-      invoice_type: shouldInvoice ? (paymentData.invoice_type || null) : null,
-      invoice_date: shouldInvoice && paymentData.invoice_no ? paymentData.payment_date : null,
-      notes: paymentData.notes || null,
-      reference_no: paymentData.reference_no || null,
-    })
-    .eq('id', paymentId)
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // Audit log
-  const { data: { user } } = await supabase.auth.getUser();
-  await supabase.from('audit_logs').insert({
-    table_name: 'subscription_payments',
-    record_id: paymentId,
-    action: 'payment_recorded',
-    old_values: { status: current.status },
-    new_values: {
-      status: 'paid',
-      payment_date: paymentData.payment_date,
-      payment_method: paymentData.payment_method,
-      should_invoice: shouldInvoice,
-    },
-    user_id: user?.id || null,
-    description: `Ödeme kaydedildi: ${current.payment_month}`,
+  const { data, error } = await supabase.rpc('fn_record_payment', {
+    p_payment_id:     paymentId,
+    p_payment_date:   paymentData.payment_date,
+    p_payment_method: paymentData.payment_method,
+    p_should_invoice: shouldInvoice,
+    p_vat_rate:       shouldInvoice ? vatRate : 0,
+    p_invoice_no:     paymentData.invoice_no   || null,
+    p_invoice_type:   paymentData.invoice_type || null,
+    p_notes:          paymentData.notes        || null,
+    p_reference_no:   paymentData.reference_no || null,
+    p_user_id:        user?.id || null,
   });
 
-  return data;
+  if (error) {
+    // Translate DB exceptions to user-friendly messages
+    if (error.message?.includes('payment_locked')) {
+      throw new Error('Bu ödeme faturalanmış ve değiştirilemez.');
+    }
+    if (error.message?.includes('payment_not_found')) {
+      throw new Error('Ödeme kaydı bulunamadı.');
+    }
+    throw error;
+  }
+
+  // RPC returns SETOF — unwrap single row
+  return Array.isArray(data) ? data[0] : data;
 }
 
 /**

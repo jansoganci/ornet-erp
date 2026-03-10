@@ -2,18 +2,20 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Plus } from 'lucide-react';
 import { Button, Card, Skeleton } from '../../../components/ui';
+import { useCustomerDetail } from '../CustomerDetailContext';
 import { SiteCard } from '../../customerSites/SiteCard';
 import { SiteFormModal } from '../../customerSites/SiteFormModal';
 
-export function CustomerLocationsTab({
-  customerId,
-  sites = [],
-  sitesLoading = false,
-  subscriptionsBySite = {},
-  onNewWorkOrder,
-  navigate,
-}) {
+export function CustomerLocationsTab() {
   const { t } = useTranslation('customers');
+  const {
+    customerId,
+    sites = [],
+    sitesLoading = false,
+    subscriptionsBySite = {},
+    onNewWorkOrder,
+    navigate,
+  } = useCustomerDetail();
 
   const [showSiteModal, setShowSiteModal] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);

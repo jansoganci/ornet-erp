@@ -1,0 +1,43 @@
+{
+  "title": "Aksiyon Listesi",
+  "sections": {
+    "lateWorkOrders": {
+      "title": "Gecikmiş İş Emirleri",
+      "empty": "Gecikmiş iş emri bulunmuyor."
+    },
+    "overduePayments": {
+      "title": "30+ Gün Ödemesiz Aboneler",
+      "empty": "Gecikmiş ödeme bulunmuyor."
+    },
+    "pendingProposals": {
+      "title": "İş Emri Bekleyen Teklifler",
+      "empty": "Bekleyen teklif bulunmuyor."
+    }
+  },
+  "columns": {
+    "customer": "Müşteri",
+    "site": "Lokasyon",
+    "workType": "İş Türü",
+    "scheduledDate": "Planlanan Tarih",
+    "daysLate": "{{count}} gün gecikmiş",
+    "paymentMonth": "Ödeme Ayı",
+    "daysOverdue": "{{count}} gündür ödenmedi",
+    "amountDue": "Tutar",
+    "proposalNo": "Teklif No",
+    "proposalTitle": "Başlık",
+    "acceptedDate": "Kabul Tarihi"
+  },
+  "actions": {
+    "editWorkOrder": "Düzenle",
+    "goToSubscription": "Aboneliğe Git",
+    "goToProposal": "İş Emri Oluştur"
+  },
+  "allClear": "Temiz",
+  "realtimeNote": "Tüm listeler gerçek zamanlı olarak hesaplanmaktadır.",
+  "dashboard": {
+    "title": "Aksiyon Gerektiren",
+    "items": "aksiyon",
+    "allClear": "Her şey yolunda",
+    "viewAll": "Tümünü Gör"
+  }
+}

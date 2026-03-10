@@ -124,11 +124,32 @@ export function useUpdateCategory() {
   });
 }
 
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation(['common', 'finance']);
+
+  return useMutation({
+    mutationFn: api.deleteExpenseCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      toast.success(t('common:success.deleted'));
+    },
+    onError: (error) => {
+      if (String(error?.code) === '23503') {
+        toast.error(t('finance:categories.deleteInUse'));
+      } else {
+        toast.error(getErrorMessage(error, 'common.deleteFailed'));
+      }
+    },
+  });
+}
+
 // Exchange rates
 export function useExchangeRates(filters) {
   return useQuery({
     queryKey: rateKeys.list(filters),
     queryFn: () => api.fetchRates(filters),
+    staleTime: 1000 * 60 * 60, // 1 hour - TCMB rates change once per day
   });
 }
 
@@ -137,6 +158,7 @@ export function useLatestRate(currency) {
     queryKey: rateKeys.latest(currency),
     queryFn: () => api.getLatestRate(currency),
     enabled: !!currency,
+    staleTime: 1000 * 60 * 60, // 1 hour - TCMB rates change once per day
   });
 }
 
@@ -160,6 +182,22 @@ export function useCreateRate() {
   });
 }
 
+export function useDeleteRate() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('common');
+
+  return useMutation({
+    mutationFn: api.deleteRate,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rateKeys.all });
+      toast.success(t('success.deleted'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.deleteFailed'));
+    },
+  });
+}
+
 export function useFetchTcmbRates() {
   const queryClient = useQueryClient();
   const { t } = useTranslation(['common', 'finance']);
@@ -175,7 +213,7 @@ export function useFetchTcmbRates() {
       toast.success(msg);
     },
     onError: (error) => {
-      toast.error(error?.message || getErrorMessage(error, 'common.error'));
+      toast.error(getErrorMessage(error, 'common.unexpected'));
     },
   });
 }

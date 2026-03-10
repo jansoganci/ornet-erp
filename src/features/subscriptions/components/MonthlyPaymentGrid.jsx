@@ -5,8 +5,6 @@ import { Card } from '../../../components/ui';
 import { formatCurrency, cn } from '../../../lib/utils';
 import { PaymentRecordModal } from './PaymentRecordModal';
 
-const MONTH_NAMES_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-
 const statusConfig = {
   paid: {
     bg: 'bg-success-50 dark:bg-success-900/20',
@@ -51,7 +49,7 @@ function getMonthIndex(paymentMonth) {
 }
 
 export function MonthlyPaymentGrid({ payments = [] }) {
-  const { t } = useTranslation('subscriptions');
+  const { t } = useTranslation(['subscriptions', 'common']);
   const [selectedPayment, setSelectedPayment] = useState(null);
 
   const handleCellClick = (payment) => {
@@ -96,7 +94,7 @@ export function MonthlyPaymentGrid({ payments = [] }) {
                 )}
               >
                 <span className={cn('text-xs font-bold uppercase tracking-wider', config.textColor)}>
-                  {MONTH_NAMES_TR[monthIdx]}
+                  {t('common:monthsShort.' + monthIdx)}
                 </span>
                 <Icon className={cn('w-4 h-4 my-1', config.iconColor)} />
                 <span className={cn('text-[10px] font-medium', config.textColor)}>

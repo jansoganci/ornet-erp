@@ -134,6 +134,22 @@
     "badge": "Tekrarlayan",
     "variableBadge": "Değişken"
   },
+  "categories": {
+    "manageTitle": "Kategori Yönetimi",
+    "manageButton": "Kategorileri Yönet",
+    "addButton": "Kategori Ekle",
+    "editTitle": "Kategori Düzenle",
+    "createTitle": "Yeni Kategori",
+    "deleteInUse": "Bu kategori tekrarlayan gider şablonlarında kullanılıyor, silinemez.",
+    "deleteRateConfirm": "Bu döviz kuru kaydını silmek istediğinize emin misiniz?",
+    "empty": "Henüz kategori yok"
+  },
+  "categoryForm": {
+    "code": "Kod",
+    "nameTr": "Ad (Türkçe)",
+    "nameEn": "Ad (İngilizce)",
+    "sortOrder": "Sıra"
+  },
   "expenseCategories": {
     "material": "Malzeme / Ekipman",
     "sim_operator": "Operator Faturaları",
@@ -184,6 +200,10 @@
   },
   "exchangeRates": {
     "title": "Döviz Kurları",
+    "usdLabel": "Amerikan Doları",
+    "eurLabel": "Euro",
+    "effectiveBuy": "Efektif Alış",
+    "effectiveSell": "Efektif Satış",
     "addRate": "Kur Ekle",
     "currency": "Para Birimi",
     "date": "Tarih",
@@ -206,5 +226,27 @@
     "netProfit": "Net Kar",
     "empty": "Seçilen dönemde veri yok",
     "emptyDescription": "Farklı bir dönem seçerek tekrar deneyin."
+  },
+  "export": {
+    "csv": "CSV İndir",
+    "plFilename": "Gelir_Gider",
+    "vatFilename": "KDV_Raporu"
+  },
+  "exportColumns": {
+    "date": "Tarih",
+    "period": "Dönem",
+    "source": "Kaynak",
+    "category": "Kategori",
+    "direction": "Yön",
+    "amount": "Tutar",
+    "currency": "Para Birimi",
+    "vatRate": "KDV Oranı",
+    "outputVat": "Çıktı KDV",
+    "inputVat": "Girdi KDV",
+    "netVat": "Net KDV",
+    "total": "Toplam",
+    "cogs": "Maliyet",
+    "income": "Gelir",
+    "expense": "Gider"
   }
 }

@@ -39,6 +39,65 @@ export async function fetchWorkOrders(filters = {}) {
   return data;
 }
 
+export async function fetchWorkOrdersPaginated(filters = {}, page = 0, pageSize = 50) {
+  let query = supabase
+    .from('work_orders_detail')
+    .select('*', { count: 'exact' });
+
+  if (filters.search) {
+    const normalized = normalizeForSearch(filters.search);
+    query = query.or(`company_name_search.ilike.%${normalized}%,account_no_search.ilike.%${normalized}%,form_no_search.ilike.%${normalized}%`);
+  }
+
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+
+  if (filters.work_type && filters.work_type !== 'all') {
+    query = query.eq('work_type', filters.work_type);
+  }
+
+  if (filters.priority && filters.priority !== 'all') {
+    query = query.eq('priority', filters.priority);
+  }
+
+  if (filters.dateFrom) {
+    query = query.gte('scheduled_date', filters.dateFrom);
+  }
+
+  if (filters.dateTo) {
+    query = query.lte('scheduled_date', filters.dateTo);
+  }
+
+  // Year + month filter on scheduled_date (server-side)
+  if (filters.year && filters.year !== 'all') {
+    query = query
+      .gte('scheduled_date', `${filters.year}-01-01`)
+      .lte('scheduled_date', `${filters.year}-12-31`);
+  }
+  if (filters.month && filters.month !== 'all') {
+    const m = String(filters.month).padStart(2, '0');
+    const year = filters.year && filters.year !== 'all' ? filters.year : new Date().getFullYear();
+    const nextMonth = Number(m) === 12
+      ? `${Number(year) + 1}-01`
+      : `${year}-${String(Number(m) + 1).padStart(2, '0')}`;
+    query = query
+      .gte('scheduled_date', `${year}-${m}-01`)
+      .lt('scheduled_date', `${nextMonth}-01`);
+  }
+
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, count, error } = await query
+    .order('scheduled_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return { data: data ?? [], count: count ?? 0 };
+}
+
 export async function fetchWorkOrder(id) {
   const { data, error } = await supabase
     .from('work_orders_detail')

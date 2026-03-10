@@ -108,14 +108,14 @@ export function PaymentMethodFormModal({ open, onClose, customerId }) {
                 {...register('card_last4')}
               />
               <Select
-                label="Marka"
+                label={t('subscriptions:payment.fields.cardBrand')}
                 options={CARD_BRANDS.map(b => ({ value: b, label: b.toUpperCase() }))}
                 error={errors.card_brand?.message}
                 {...register('card_brand')}
               />
             </div>
             <Input
-              label="Kart Sahibi"
+              label={t('subscriptions:payment.fields.cardHolder')}
               error={errors.card_holder?.message}
               {...register('card_holder')}
             />
@@ -133,7 +133,7 @@ export function PaymentMethodFormModal({ open, onClose, customerId }) {
         {methodType === 'bank_transfer' && (
           <div className="space-y-4">
             <Input
-              label="Banka Adı"
+              label={t('subscriptions:payment.fields.bankName')}
               error={errors.bank_name?.message}
               {...register('bank_name')}
             />
@@ -149,8 +149,8 @@ export function PaymentMethodFormModal({ open, onClose, customerId }) {
         {/* Cash - label */}
         {methodType === 'cash' && (
           <Input
-            label="Etiket"
-            placeholder="Örn: Elden Nakit"
+            label={t('subscriptions:payment.fields.label')}
+            placeholder={t('subscriptions:payment.fields.labelPlaceholder')}
             error={errors.label?.message}
             {...register('label')}
           />
@@ -164,7 +164,7 @@ export function PaymentMethodFormModal({ open, onClose, customerId }) {
             {...register('is_default')}
           />
           <span className="text-sm text-neutral-700 dark:text-neutral-300">
-            Varsayılan ödeme yöntemi
+            {t('subscriptions:payment.fields.defaultPaymentMethod')}
           </span>
         </label>
       </div>

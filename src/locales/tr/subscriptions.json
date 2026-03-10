@@ -174,7 +174,13 @@
       "invoiceNo": "Fatura No",
       "invoiceType": "Fatura Tipi",
       "notes": "Not",
-      "referenceNo": "Dekont no"
+      "referenceNo": "Dekont no",
+      "cardBrand": "Marka",
+      "cardHolder": "Kart Sahibi",
+      "bankName": "Banka Adı",
+      "label": "Etiket",
+      "labelPlaceholder": "Örn: Elden Nakit",
+      "defaultPaymentMethod": "Varsayılan ödeme yöntemi"
     },
     "methods": {
       "card": "Kredi Kartı",
@@ -185,6 +191,11 @@
       "e_fatura": "e-Fatura",
       "e_arsiv": "e-Arşiv",
       "kagit": "Kağıt Fatura"
+    },
+    "amountLabels": {
+      "amount": "Tutar",
+      "vat": "KDV",
+      "total": "Toplam"
     },
     "invoice": {
       "shouldInvoice": "Fatura kesilsin mi?",
@@ -291,7 +302,41 @@
       "lineFee": "Hat Ücreti",
       "vatRate": "KDV (%)",
       "cost": "Maliyet",
+      "currentTotal": "Güncel Tutar",
+      "vatAmount": "KDV Tutarı",
+      "totalWithVat": "KDV Dahil Tutar",
       "notesColumn": "Not"
+    },
+    "zamPercent": "Zam %",
+    "zamPercentPlaceholder": "%",
+    "messageColumn": "Mesaj",
+    "copyMessage": "Kopyala",
+    "copied": "Kopyalandı!",
+    "messageAyLabel": "Mesaj ayı",
+    "noPriceChange": "Fiyat değişikliği yapın",
+    "exportExcel": "Excel İndir",
+    "messageTemplate": {
+      "greeting": "Merhaba,",
+      "intro": "{{service}} {{frequency}} kira bedeli {{month}} ayı itibariyle mevcut piyasa koşulları ve maliyet artışları nedeniyle yükseldi:",
+      "basePrice": "Abonelik ücreti",
+      "simFee": "SIM kart ücreti",
+      "smsFee": "SMS ücreti",
+      "total": "Toplam",
+      "unchangedParts": "Kalan bölümler değişmeyecek",
+      "closing": "Mevcut fiyatlar {{month}} ayı itibariyle yansıyacaktır. Bilgilerinize sunar, iyi çalışmalar dilerim."
+    },
+    "serviceLabelsForMessage": {
+      "alarm_only": "Alarm Sistemi",
+      "camera_only": "Kamera Sistemi",
+      "internet_only": "İnternet Paketi",
+      "alarm_camera": "Alarm ve Kamera Sistemi",
+      "alarm_camera_internet": "Alarm, Kamera ve İnternet Sistemi",
+      "camera_internet": "Kamera ve İnternet Sistemi"
+    },
+    "frequencyLabelsForMessage": {
+      "monthly": "aylık",
+      "6_month": "6 aylık",
+      "yearly": "yıllık"
     },
     "notes": {
       "title": "Fiyat revizyon notları",
@@ -303,7 +348,6 @@
       "successCreated": "Not kaydedildi"
     },
     "saveButton": "Değişiklikleri kaydet",
-    "saveSuccess": "Fiyat revizyonları başarıyla kaydedildi",
     "saveSuccess": "Fiyatlar başarıyla güncellendi",
     "empty": {
       "title": "Abonelik bulunamadı",
@@ -311,6 +355,7 @@
     }
   },
   "validation": {
-    "paymentMethodRequired": "Kart aboneliği için ödeme yöntemi zorunludur"
+    "paymentMethodRequired": "Kart aboneliği için ödeme yöntemi zorunludur",
+    "cardPaymentsMustBeInvoiced": "Kart ödemeleri faturalanmalıdır"
   }
 }

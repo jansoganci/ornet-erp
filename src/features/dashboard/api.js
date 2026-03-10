@@ -81,48 +81,23 @@ const mockPendingTasks = [
 export async function fetchDashboardStats() {
   if (!isSupabaseConfigured) return mockStats;
 
-  try {
-    const { data, error } = await supabase.rpc('get_dashboard_stats');
-    if (error) {
-      // 401 unauth, 404 function missing, 400 bad request (e.g. schema mismatch) -> use mock
-      if (error.status === 401 || error.status === 404 || error.status === 400) return mockStats;
-      throw error;
-    }
-    return data;
-  } catch (err) {
-    if (err?.status === 401 || err?.status === 404 || err?.status === 400) return mockStats;
-    throw err;
-  }
+  const { data, error } = await supabase.rpc('get_dashboard_stats');
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchTodaySchedule() {
   if (!isSupabaseConfigured) return mockSchedule;
 
-  try {
-    const { data, error } = await supabase.rpc('get_today_schedule');
-    if (error) {
-      if (error.status === 401 || error.status === 404 || error.status === 400) return mockSchedule;
-      throw error;
-    }
-    return data;
-  } catch (err) {
-    if (err?.status === 401 || err?.status === 404 || err?.status === 400) return mockSchedule;
-    throw err;
-  }
+  const { data, error } = await supabase.rpc('get_today_schedule');
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchPendingTasks() {
   if (!isSupabaseConfigured) return mockPendingTasks;
 
-  try {
-    const { data, error } = await supabase.rpc('get_my_pending_tasks', { limit_count: 5 });
-    if (error) {
-      if (error.status === 401 || error.status === 404 || error.status === 400) return mockPendingTasks;
-      throw error;
-    }
-    return data;
-  } catch (err) {
-    if (err?.status === 401 || err?.status === 404 || err?.status === 400) return mockPendingTasks;
-    throw err;
-  }
+  const { data, error } = await supabase.rpc('get_my_pending_tasks', { limit_count: 5 });
+  if (error) throw error;
+  return data;
 }

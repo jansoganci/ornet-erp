@@ -21,6 +21,8 @@ import financeTr from '../locales/tr/finance.json'
 import notificationsTr from '../locales/tr/notifications.json'
 import recurringTr from '../locales/tr/recurring.json'
 import siteAssetsTr from '../locales/tr/siteAssets.json'
+import invoiceAnalysisTr from '../locales/tr/invoiceAnalysis.json'
+import actionBoardTr from '../locales/tr/actionBoard.json'
 
 i18n.use(initReactI18next).init({
   lng: 'tr',
@@ -46,6 +48,8 @@ i18n.use(initReactI18next).init({
     'notifications',
     'recurring',
     'siteAssets',
+    'invoiceAnalysis',
+    'actionBoard',
   ],
   resources: {
     tr: {
@@ -68,6 +72,8 @@ i18n.use(initReactI18next).init({
       notifications: notificationsTr,
       recurring: recurringTr,
       siteAssets: siteAssetsTr,
+      invoiceAnalysis: invoiceAnalysisTr,
+      actionBoard: actionBoardTr,
     },
   },
   interpolation: {

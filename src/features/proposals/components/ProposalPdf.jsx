@@ -8,6 +8,7 @@ import {
   Font,
 } from '@react-pdf/renderer';
 import { getCurrencySymbol } from '../../../lib/utils';
+import i18n from '../../../lib/i18n';
 
 Font.register({
   family: 'Inter',
@@ -242,17 +243,12 @@ const styles = StyleSheet.create({
   },
 });
 
-const MONTHS_TR = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
-];
-
 function formatTurkishDate(dateStr) {
   if (dateStr == null || dateStr === '') return '';
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return '';
-  const month = MONTHS_TR[d.getMonth()];
-  return `${d.getDate()} ${month != null ? month : ''} ${d.getFullYear()}`;
+  const month = i18n.t('common:monthsFull.' + d.getMonth());
+  return `${d.getDate()} ${month || ''} ${d.getFullYear()}`;
 }
 
 function formatByCurrency(amount, currency = 'USD') {
@@ -319,14 +315,14 @@ export function ProposalPdf({ proposal, items }) {
         {/* Header grid: 8 fields (centered) */}
         <View style={styles.headerGridWrap}>
           <View style={styles.headerGrid}>
-            <HeaderField label="FİRMA ADI :" value={prop.company_name} />
-            <HeaderField label="KEŞİF TARİHİ :" value={prop.survey_date ? formatTurkishDate(prop.survey_date) : ''} />
-            <HeaderField label="YETKİLİ KİŞİ :" value={prop.authorized_person} />
-            <HeaderField label="TEKLİF TARİHİ :" value={proposalDate} />
-            <HeaderField label="PROJE ADI :" value={prop.title} />
-            <HeaderField label="MONTAJ TARİHİ :" value={prop.installation_date ? formatTurkishDate(prop.installation_date) : ''} />
-            <HeaderField label="MÜŞTERİ TEMSİLCİSİ :" value={prop.customer_representative} />
-            <HeaderField label="BİTİŞ TARİHİ :" value={prop.completion_date ? formatTurkishDate(prop.completion_date) : ''} />
+            <HeaderField label={i18n.t('proposals:pdf.headerLabels.companyName')} value={prop.company_name} />
+            <HeaderField label={i18n.t('proposals:pdf.headerLabels.surveyDate')} value={prop.survey_date ? formatTurkishDate(prop.survey_date) : ''} />
+            <HeaderField label={i18n.t('proposals:pdf.headerLabels.authorizedPerson')} value={prop.authorized_person} />
+            <HeaderField label={i18n.t('proposals:pdf.headerLabels.proposalDate')} value={proposalDate} />
+            <HeaderField label={i18n.t('proposals:pdf.headerLabels.title')} value={prop.title} />
+            <HeaderField label={i18n.t('proposals:pdf.headerLabels.installationDate')} value={prop.installation_date ? formatTurkishDate(prop.installation_date) : ''} />
+            <HeaderField label={i18n.t('proposals:pdf.headerLabels.customerRepresentative')} value={prop.customer_representative} />
+            <HeaderField label={i18n.t('proposals:pdf.headerLabels.completionDate')} value={prop.completion_date ? formatTurkishDate(prop.completion_date) : ''} />
           </View>
         </View>
 

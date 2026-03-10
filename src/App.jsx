@@ -42,6 +42,7 @@ import {
   SimCardsListPage,
   SimCardFormPage,
   SimCardImportPage,
+  InvoiceAnalysisPage,
 } from './features/simCards';
 import {
   ProposalsListPage,
@@ -52,6 +53,7 @@ import { NotificationsCenterPage } from './features/notifications';
 import { ProfilePage } from './features/profile';
 import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, ReportsPage, RecurringExpensesPage } from './features/finance';
 import { SiteAssetsListPage } from './features/siteAssets';
+import { ActionBoardPage } from './features/actionBoard';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -79,6 +81,7 @@ const router = createBrowserRouter(
         <Route index element={<DashboardPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="notifications" element={<NotificationsCenterPage />} />
+        <Route path="action-board" element={<ActionBoardPage />} />
 
         {/* Customer routes */}
         <Route path="customers" element={<CustomersListPage />} />
@@ -133,6 +136,7 @@ const router = createBrowserRouter(
         <Route path="sim-cards" element={<SimCardsListPage />} />
         <Route path="sim-cards/new" element={<SimCardFormPage />} />
         <Route path="sim-cards/import" element={<SimCardImportPage />} />
+        <Route path="sim-cards/invoice-analysis" element={<InvoiceAnalysisPage />} />
         <Route path="sim-cards/:id/edit" element={<SimCardFormPage />} />
       </Route>
 

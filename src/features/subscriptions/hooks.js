@@ -1,10 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { supabase } from '../../lib/supabase';
 import {
   fetchSubscriptions,
+  fetchSubscriptionsPaginated,
+  fetchSubscriptionsByCustomer,
   fetchSubscription,
   createSubscription,
   updateSubscription,
@@ -39,6 +41,7 @@ export const subscriptionKeys = {
   all: ['subscriptions'],
   lists: () => [...subscriptionKeys.all, 'list'],
   list: (filters) => [...subscriptionKeys.lists(), filters],
+  listByCustomer: (customerId) => [...subscriptionKeys.lists(), 'customer', customerId],
   details: () => [...subscriptionKeys.all, 'detail'],
   detail: (id) => [...subscriptionKeys.details(), id],
   payments: (id) => [...subscriptionKeys.detail(id), 'payments'],
@@ -84,11 +87,38 @@ export function useSubscriptions(filters = {}) {
   });
 }
 
+const PAGE_SIZE = 50;
+
+export function useSubscriptionsPaginated(filters = {}, page = 0) {
+  const query = useQuery({
+    queryKey: [...subscriptionKeys.list(filters), 'paginated', page],
+    queryFn: () => fetchSubscriptionsPaginated(filters, page, PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  });
+
+  const count = query.data?.count ?? 0;
+  return {
+    ...query,
+    data: query.data?.data ?? [],
+    totalCount: count,
+    pageCount: Math.ceil(count / PAGE_SIZE),
+    pageSize: PAGE_SIZE,
+  };
+}
+
 export function useSubscriptionsBySite(siteId) {
   return useQuery({
     queryKey: subscriptionKeys.list({ site_id: siteId }),
     queryFn: () => fetchSubscriptions({ site_id: siteId }),
     enabled: !!siteId,
+  });
+}
+
+export function useCustomerSubscriptions(customerId) {
+  return useQuery({
+    queryKey: subscriptionKeys.listByCustomer(customerId),
+    queryFn: () => fetchSubscriptionsByCustomer(customerId),
+    enabled: !!customerId,
   });
 }
 
@@ -269,7 +299,7 @@ export function useImportSubscriptions() {
       toast.success(t('import.success'));
     },
     onError: (error) => {
-      toast.error(error?.message || t('import.failed'));
+      toast.error(getErrorMessage(error, 'subscriptions.importFailed'));
     },
   });
 }

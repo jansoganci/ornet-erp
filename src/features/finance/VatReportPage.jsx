@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { Percent } from 'lucide-react';
+import { Percent, Download } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Card, Select, Table, EmptyState, Spinner, ErrorState } from '../../components/ui';
+import { Button, Card, Select, Table, EmptyState, Spinner, ErrorState } from '../../components/ui';
 import { useVatReport } from './hooks';
 import { ViewModeToggle } from './components/ViewModeToggle';
 import { formatCurrency } from '../../lib/utils';
+import { toCSV, downloadCSV } from '../../lib/csvExport';
 
 function getLast12Months() {
   const months = [];
@@ -103,6 +104,32 @@ export function VatReportPage() {
     { value: 'quarter', label: t('finance:vatReport.quarter') },
   ];
 
+  const handleExportCSV = () => {
+    if (rows.length === 0) return;
+    const exportRows = rows.map((r) => ({
+      period: r.period,
+      output_vat: r.output_vat ?? '',
+      input_vat: r.input_vat ?? '',
+      net_vat: r.net_vat ?? '',
+    }));
+    if (totals) {
+      exportRows.push({
+        period: t('finance:vatReport.total'),
+        output_vat: totals.output_vat,
+        input_vat: totals.input_vat,
+        net_vat: totals.net_vat,
+      });
+    }
+    const columns = [
+      { key: 'period', header: t('finance:exportColumns.period') },
+      { key: 'output_vat', header: t('finance:exportColumns.outputVat') },
+      { key: 'input_vat', header: t('finance:exportColumns.inputVat') },
+      { key: 'net_vat', header: t('finance:exportColumns.netVat') },
+    ];
+    const csv = toCSV(exportRows, columns);
+    downloadCSV(csv, `${t('finance:export.vatFilename')}_${effectivePeriod || period}.csv`);
+  };
+
   const columns = [
     {
       header: t('finance:filters.period'),
@@ -164,7 +191,7 @@ export function VatReportPage() {
       <PageHeader title={t('finance:vatReport.title')} breadcrumbs={breadcrumbs} />
 
       <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
-        <div className="flex flex-col md:flex-row gap-4 flex-wrap">
+        <div className="flex flex-col md:flex-row gap-4 flex-wrap items-end">
           <div className="w-full md:w-40">
             <Select
               label={t('finance:vatReport.periodType')}
@@ -181,8 +208,18 @@ export function VatReportPage() {
               onChange={(e) => handleFilterChange('period', e.target.value)}
             />
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <ViewModeToggle value={viewMode} onChange={(v) => handleFilterChange('viewMode', v)} size="md" />
+            {rows.length > 0 && (
+              <Button
+                variant="outline"
+                size="md"
+                leftIcon={<Download className="w-4 h-4" />}
+                onClick={handleExportCSV}
+              >
+                {t('finance:export.csv')}
+              </Button>
+            )}
           </div>
         </div>
       </Card>

@@ -95,6 +95,97 @@ export async function fetchSubscriptions(filters = {}) {
 }
 
 /**
+ * Paginated version of fetchSubscriptions.
+ * Returns { data, count } where count is the total matching rows.
+ * All filters applied server-side (no client-side post-processing).
+ */
+export async function fetchSubscriptionsPaginated(filters = {}, page = 0, pageSize = 50) {
+  let query = supabase
+    .from('subscriptions_detail')
+    .select('*', { count: 'exact' });
+
+  if (filters.search) {
+    const normalized = normalizeForSearch(filters.search);
+    query = query.or(
+      `company_name_search.ilike.%${normalized}%,account_no_search.ilike.%${normalized}%,site_name_search.ilike.%${normalized}%`
+    );
+  }
+
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+
+  if (filters.type && filters.type !== 'all') {
+    query = query.eq('subscription_type', filters.type);
+  }
+
+  if (filters.managedBy) {
+    query = query.eq('managed_by', filters.managedBy);
+  }
+
+  if (filters.service_type && filters.service_type !== 'all') {
+    query = query.eq('service_type', filters.service_type);
+  }
+
+  if (filters.billing_frequency && filters.billing_frequency !== 'all') {
+    query = query.eq('billing_frequency', filters.billing_frequency);
+  }
+
+  if (filters.site_id) {
+    query = query.eq('site_id', filters.site_id);
+  }
+
+  if (filters.dateFrom) {
+    query = query.gte('start_date', filters.dateFrom);
+  }
+  if (filters.dateTo) {
+    query = query.lte('start_date', filters.dateTo);
+  }
+
+  // Year + month filter on start_date (server-side)
+  if (filters.year && filters.year !== 'all') {
+    query = query
+      .gte('start_date', `${filters.year}-01-01`)
+      .lte('start_date', `${filters.year}-12-31`);
+  }
+  if (filters.month && filters.month !== 'all') {
+    const m = String(filters.month).padStart(2, '0');
+    const year = filters.year && filters.year !== 'all' ? filters.year : new Date().getFullYear();
+    const nextMonth = Number(m) === 12 ? `${Number(year) + 1}-01` : `${year}-${String(Number(m) + 1).padStart(2, '0')}`;
+    query = query
+      .gte('start_date', `${year}-${m}-01`)
+      .lt('start_date', `${nextMonth}-01`);
+  }
+
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, count, error } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return { data: data ?? [], count: count ?? 0 };
+}
+
+/**
+ * Fetch subscriptions for a specific customer (uses subscriptions_detail view).
+ * Optimized for CustomerDetailPage — avoids fetching all subscriptions.
+ */
+export async function fetchSubscriptionsByCustomer(customerId) {
+  if (!customerId) return [];
+
+  const { data, error } = await supabase
+    .from('subscriptions_detail')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
  * Fetch a single subscription by ID
  */
 export async function fetchSubscription(id) {
@@ -224,46 +315,35 @@ export async function updateSubscription({ id, ...updateData }) {
 
   if (error) throw error;
 
-  // Check if pricing changed — recalculate pending payment amounts
+  // Check if pricing changed — recalculate pending payment amounts atomically
   const priceFields = ['base_price', 'sms_fee', 'line_fee', 'static_ip_fee', 'vat_rate'];
   const priceChanged = priceFields.some(
     (field) => updateData[field] !== undefined && Number(updateData[field]) !== Number(current[field])
   );
 
   if (priceChanged) {
-    const subtotal = Number(data.base_price) + Number(data.sms_fee) + Number(data.line_fee) + Number(data.static_ip_fee);
-    const vatAmount = Math.round(subtotal * Number(data.vat_rate) / 100 * 100) / 100;
-    const totalAmount = subtotal + vatAmount;
-
-    // Multiply by billing frequency (base_price etc. are always monthly)
-    const freq = data.billing_frequency || current.billing_frequency;
-    const multiplier = freq === 'yearly' || data.subscription_type === 'annual' ? 12
-      : freq === '6_month' ? 6
-      : 1;
-
-    const { error: updatePaymentsErr } = await supabase
-      .from('subscription_payments')
-      .update({
-        amount: subtotal * multiplier,
-        vat_amount: vatAmount * multiplier,
-        total_amount: totalAmount * multiplier,
-      })
-      .eq('subscription_id', id)
-      .eq('status', 'pending');
-
-    if (updatePaymentsErr) throw updatePaymentsErr;
-
-    await insertAuditLog('subscriptions', id, 'price_change', {
-      base_price: current.base_price,
-      sms_fee: current.sms_fee,
-      line_fee: current.line_fee,
-      vat_rate: current.vat_rate,
-    }, {
-      base_price: data.base_price,
-      sms_fee: data.sms_fee,
-      line_fee: data.line_fee,
-      vat_rate: data.vat_rate,
-    }, 'Fiyat güncellendi');
+    // fn_update_subscription_price locks the subscription row, updates prices,
+    // and recalculates all pending payments in a single transaction — preventing
+    // a concurrent update from producing inconsistent payment amounts.
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error: rpcErr } = await supabase.rpc('fn_update_subscription_price', {
+      p_subscription_id: id,
+      p_base_price:      Number(data.base_price),
+      p_sms_fee:         Number(data.sms_fee),
+      p_line_fee:        Number(data.line_fee),
+      p_static_ip_fee:   Number(data.static_ip_fee),
+      p_vat_rate:        Number(data.vat_rate),
+      p_cost:            Number(data.cost),
+      p_old_prices: {
+        base_price:    current.base_price,
+        sms_fee:       current.sms_fee,
+        line_fee:      current.line_fee,
+        static_ip_fee: current.static_ip_fee,
+        vat_rate:      current.vat_rate,
+      },
+      p_user_id: user?.id || null,
+    });
+    if (rpcErr) throw rpcErr;
   } else {
     await insertAuditLog('subscriptions', id, 'update', current, data, 'Abonelik güncellendi');
   }

@@ -220,6 +220,15 @@ export async function updateCategory(id, data) {
   return result;
 }
 
+export async function deleteExpenseCategory(id) {
+  const { error } = await supabase
+    .from('expense_categories')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
 // exchange_rates
 export async function fetchRates(filters = {}) {
   let query = supabase
@@ -251,6 +260,15 @@ export async function createRate(data) {
 
   if (error) throw error;
   return result;
+}
+
+export async function deleteRate(id) {
+  const { error } = await supabase
+    .from('exchange_rates')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
 export async function getLatestRate(currency = 'USD') {

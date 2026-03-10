@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Clock, Wifi, AlertTriangle, Phone, Mail, MapPin, FileText } from 'lucide-react';
 import { Card, Button } from '../../../components/ui';
 import { formatPhone } from '../../../lib/utils';
+import { useCustomerDetail } from '../CustomerDetailContext';
 import { CustomerMetricCard } from '../components/CustomerMetricCard';
 import { CustomerAlertItem } from '../components/CustomerAlertItem';
 import { RecentWorkOrderRow } from '../components/RecentWorkOrderRow';
@@ -11,17 +12,18 @@ import { ContactRow } from '../components/ContactRow';
 const MAX_RECENT_WORK_ORDERS = 5;
 const MAX_LOCATION_SUMMARY = 6;
 
-export function CustomerOverviewTab({
-  customer,
-  sites = [],
-  workOrders = [],
-  assets = [],
-  counts = {},
-  subscriptionsBySite = {},
-  onTabSwitch,
-  navigate,
-}) {
+export function CustomerOverviewTab() {
   const { t } = useTranslation('customers');
+  const {
+    customer,
+    sites = [],
+    workOrders = [],
+    assets = [],
+    counts = {},
+    subscriptionsBySite = {},
+    onTabChange,
+    navigate,
+  } = useCustomerDetail();
 
   // Calculated
   const recentWorkOrders = workOrders.slice(0, MAX_RECENT_WORK_ORDERS);
@@ -96,7 +98,7 @@ export function CustomerOverviewTab({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onTabSwitch('workOrders')}
+              onClick={() => onTabChange('workOrders')}
               className="text-primary-600 dark:text-primary-400 text-xs"
             >
               {t('detail.overview.recentWorkOrders.viewAll')}
@@ -130,7 +132,7 @@ export function CustomerOverviewTab({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onTabSwitch('locations')}
+              onClick={() => onTabChange('locations')}
               className="text-primary-600 dark:text-primary-400 text-xs"
             >
               {t('detail.overview.locationSummary.viewAll')}
@@ -147,7 +149,7 @@ export function CustomerOverviewTab({
                   key={site.id}
                   site={site}
                   subscription={primary}
-                  onClick={() => onTabSwitch('locations')}
+                  onClick={() => onTabChange('locations')}
                 />
               );
             })}

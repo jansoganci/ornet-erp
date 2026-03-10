@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, ClipboardList, Search, Filter, Calendar, Building2, AlertCircle } from 'lucide-react';
+import { Plus, ClipboardList, Search, Filter, Calendar, Building2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -23,7 +23,7 @@ import {
   priorityVariant,
 } from '../../lib/utils';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
-import { useWorkOrders } from './hooks';
+import { useWorkOrdersPaginated } from './hooks';
 import { WORK_TYPES } from './schema';
 
 export function WorkOrdersListPage() {
@@ -39,13 +39,14 @@ export function WorkOrdersListPage() {
   useEffect(() => {
     setLocalSearch(searchFromUrl);
   }, [searchFromUrl]);
-  // Sync debounced search to URL — setState in effect is intentional
+  // Sync debounced search to URL — reset page on new search
   useEffect(() => {
     if (searchFromUrl === debouncedSearch) return;
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (debouncedSearch) next.set('search', debouncedSearch);
       else next.delete('search');
+      next.delete('page');
       return next;
     });
   }, [debouncedSearch, searchFromUrl, setSearchParams]);
@@ -54,14 +55,26 @@ export function WorkOrdersListPage() {
   const work_type = searchParams.get('work_type') || 'all';
   const yearParam = searchParams.get('year') || '';
   const monthParam = searchParams.get('month') || '';
+  const page = Number(searchParams.get('page') || '0');
 
-  const { data: workOrders = [], isLoading, error, refetch } = useWorkOrders({
+  const filters = {
     search: debouncedSearch,
     status,
     work_type,
     year: yearParam || undefined,
     month: monthParam || undefined,
-  });
+  };
+
+  const {
+    data: workOrders,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+    totalCount,
+    pageCount,
+    pageSize,
+  } = useWorkOrdersPaginated(filters, page);
 
   const handleSearch = (value) => setLocalSearch(value);
 
@@ -69,7 +82,17 @@ export function WorkOrdersListPage() {
     setSearchParams(prev => {
       if (value && value !== 'all' && value !== '') prev.set(key, value);
       else prev.delete(key);
+      prev.delete('page');
       return prev;
+    });
+  };
+
+  const handlePageChange = (newPage) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newPage > 0) next.set('page', String(newPage));
+      else next.delete('page');
+      return next;
     });
   };
 
@@ -287,7 +310,7 @@ export function WorkOrdersListPage() {
         </div>
       ) : error ? (
         <ErrorState message={error.message} onRetry={() => refetch()} />
-      ) : workOrders.length === 0 ? (
+      ) : totalCount === 0 ? (
         <EmptyState
           icon={ClipboardList}
           title={t('workOrders:list.empty.title')}
@@ -296,13 +319,39 @@ export function WorkOrdersListPage() {
           onAction={() => navigate('/work-orders/new')}
         />
       ) : (
-        <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
+        <div className={`bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm transition-opacity ${isFetching && !isLoading ? 'opacity-70' : ''}`}>
           <Table
             columns={columns}
             data={workOrders}
             onRowClick={(row) => navigate(`/work-orders/${row.id}`)}
             className="border-none"
           />
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                {page * pageSize + 1}–{Math.min((page + 1) * pageSize, totalCount)} / {totalCount} {t('workOrders:list.unit')}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 0}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm text-neutral-600 dark:text-neutral-400 px-2">
+                  {page + 1} / {pageCount}
+                </span>
+                <button
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= pageCount - 1}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </PageContainer>

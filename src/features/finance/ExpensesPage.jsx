@@ -19,6 +19,7 @@ import {
 import { useTransactions, useDeleteTransaction, useCategories } from './hooks';
 import { useCustomers } from '../customers/hooks';
 import { QuickEntryModal } from './components/QuickEntryModal';
+import { CategoryManagementModal } from './components/CategoryManagementModal';
 import { ViewModeToggle } from './components/ViewModeToggle';
 import { GroupToggle } from './components/GroupToggle';
 import { ExpenseGroupedView } from './components/ExpenseGroupedView';
@@ -44,6 +45,7 @@ export function ExpensesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const defaultPeriod = useMemo(() => {
@@ -357,13 +359,21 @@ export function ExpensesPage() {
               onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
             />
           </div>
-          <div className="w-full md:w-56">
+          <div className="w-full md:w-56 flex flex-col gap-1">
             <Select
               label={t('finance:filters.category')}
               options={categoryOptions}
               value={categoryId}
               onChange={(e) => handleFilterChange('category', e.target.value)}
             />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-primary-600 dark:text-primary-400 self-start -mt-1"
+              onClick={() => setShowCategoryModal(true)}
+            >
+              {t('finance:categories.manageButton')}
+            </Button>
           </div>
           <div className="w-full md:w-56">
             <Select
@@ -414,6 +424,11 @@ export function ExpensesPage() {
         }}
         direction="expense"
         transaction={editingTransaction}
+      />
+
+      <CategoryManagementModal
+        open={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
       />
 
       <Modal

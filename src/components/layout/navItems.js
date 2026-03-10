@@ -21,6 +21,9 @@ import {
   RefreshCw,
   HardDrive,
   Bell,
+  FileSearch,
+  AlertCircle,
+  Radio,
 } from 'lucide-react';
 
 /**
@@ -36,8 +39,17 @@ export const navItems = [
   { to: '/customers', icon: Users, labelKey: 'nav.customers' },
   { to: '/work-orders', icon: ClipboardList, labelKey: 'nav.workOrders' },
   { to: '/proposals', icon: FileText, labelKey: 'nav.proposals' },
-  { to: '/notifications', icon: Bell, labelKey: 'nav.notifications', notificationCenter: true },
-  // badge: number - optional notification badge count
+  // Operasyon group (notifications + action board)
+  {
+    type: 'group',
+    id: 'operations',
+    labelKey: 'nav.groups.operations',
+    icon: Radio,
+    children: [
+      { to: '/notifications', icon: Bell, labelKey: 'nav.notifications', notificationCenter: true },
+      { to: '/action-board', icon: AlertCircle, labelKey: 'nav.actionBoard', adminOnly: true },
+    ],
+  },
   // Planlama group
   {
     type: 'group',
@@ -59,6 +71,7 @@ export const navItems = [
     children: [
       { to: '/subscriptions', icon: CreditCard, labelKey: 'nav.subscriptions' },
       { to: '/sim-cards', icon: Cpu, labelKey: 'simCards:title' },
+      { to: '/sim-cards/invoice-analysis', icon: FileSearch, labelKey: 'invoiceAnalysis:title' },
       { to: '/equipment', icon: HardDrive, labelKey: 'nav.equipment' },
     ],
   },

@@ -40,6 +40,53 @@ export async function fetchSimCards(filters = {}) {
   return data;
 }
 
+/**
+ * Paginated SIM cards fetch. Returns { data, count }.
+ * Keeps fetchSimCards() intact for export and other non-paginated callers.
+ */
+export async function fetchSimCardsPaginated(filters = {}, page = 0, pageSize = 100) {
+  let query = supabase
+    .from('sim_cards')
+    .select(SIM_CARD_SELECT, { count: 'exact' })
+    .is('deleted_at', null);
+
+  if (filters.search) {
+    const term = normalizeForSearch(filters.search);
+    query = query.ilike('phone_number', `%${term}%`);
+  }
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+  if (filters.operator && filters.operator !== 'all') {
+    query = query.eq('operator', filters.operator);
+  }
+  if (filters.year && filters.year !== 'all') {
+    query = query
+      .gte('activation_date', `${filters.year}-01-01`)
+      .lte('activation_date', `${filters.year}-12-31`);
+  }
+  if (filters.month && filters.month !== 'all') {
+    const m = String(filters.month).padStart(2, '0');
+    const year = filters.year && filters.year !== 'all' ? filters.year : new Date().getFullYear();
+    const nextMonth = Number(m) === 12
+      ? `${Number(year) + 1}-01`
+      : `${year}-${String(Number(m) + 1).padStart(2, '0')}`;
+    query = query
+      .gte('activation_date', `${year}-${m}-01`)
+      .lt('activation_date', `${nextMonth}-01`);
+  }
+
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, count, error } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return { data: data ?? [], count: count ?? 0 };
+}
+
 export async function fetchSimCardById(id) {
   const { data, error } = await supabase
     .from('sim_cards')
@@ -168,6 +215,21 @@ export async function fetchSimCardsForSubscription(siteId, search = '') {
       normalizeForSearch(s.phone_number).includes(normalizedTerm) ||
       normalizeForSearch(s.buyer?.company_name).includes(normalizedTerm)
   );
+}
+
+/**
+ * Fetch ALL Turkcell SIM cards for invoice analysis (bypasses default pagination).
+ */
+export async function fetchAllTurkcellSimCards() {
+  const { data, error } = await supabase
+    .from('sim_cards')
+    .select(SIM_CARD_SELECT)
+    .is('deleted_at', null)
+    .eq('operator', 'TURKCELL')
+    .order('phone_number', { ascending: true });
+
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchSimFinancialStats() {

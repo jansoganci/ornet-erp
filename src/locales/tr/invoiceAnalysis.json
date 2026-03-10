@@ -1,0 +1,77 @@
+{
+  "title": "Fatura Analizi",
+  "upload": {
+    "title": "Turkcell Fatura PDF Yükle",
+    "description": "Aylık Turkcell faturanızı yükleyin. Sistem PDF'den hat verilerini okuyarak envanter ile karşılaştırır.",
+    "button": "PDF Seç",
+    "parsing": "PDF okunuyor...",
+    "accept": ".pdf"
+  },
+  "summary": {
+    "totalLines": "Toplam Hat",
+    "totalAmount": "Fatura Toplamı",
+    "matched": "Eşleşen Hat",
+    "invoiceOnly": "Kayıt Dışı Hat",
+    "overageCount": "Aşım Sayısı",
+    "estimatedProfitLoss": "Tahmini Kar/Zarar"
+  },
+  "alerts": {
+    "invoiceOnly": {
+      "title": "Kayıt Dışı Hatlar",
+      "description": "Faturada var ama envanterde kayıtlı olmayan hatlar. Bu hatlar için ödeme yapılıyor ancak takip edilmiyor."
+    },
+    "overage": {
+      "title": "Aşım Tespit Edilenler",
+      "description": "Fatura tutarı maliyet fiyatının %50'sinden fazla olan hatlar. Tarife aşımı yaşanıyor olabilir."
+    },
+    "loss": {
+      "title": "Zararlı Hatlar",
+      "description": "Satış fiyatı fatura tutarından düşük olan hatlar. Bu hatlar doğrudan zarar yaratıyor."
+    },
+    "inventoryOnly": {
+      "title": "Faturasız Envanter",
+      "description": "Envanterde kayıtlı ama bu faturada görünmeyen Turkcell hatlar."
+    }
+  },
+  "tabs": {
+    "matched": "Eşleşenler",
+    "invoiceOnly": "Sadece Faturada",
+    "inventoryOnly": "Sadece Envanterde"
+  },
+  "table": {
+    "hatNo": "Hat No",
+    "tariff": "Tarife",
+    "invoiceAmount": "Fatura Tutarı",
+    "costPrice": "Maliyet",
+    "salePrice": "Satış Fiyatı",
+    "profitLoss": "Kar/Zarar",
+    "kdv": "KDV",
+    "oiv": "ÖİV",
+    "status": "Durum",
+    "buyer": "Alıcı",
+    "overage": "Aşım",
+    "lineUnit": "hat"
+  },
+  "chart": {
+    "title": "Tarife Dağılımı",
+    "byCount": "Hat Sayısı",
+    "byAmount": "Tutar (₺)",
+    "noData": "Tarife verisi bulunamadı."
+  },
+  "filters": {
+    "overageOnly": "Sadece Aşımları Göster",
+    "showMore": "{{count}} satır daha göster"
+  },
+  "errors": {
+    "parseFailed": "PDF okunamadı. Lütfen geçerli bir Turkcell fatura dosyası yükleyin.",
+    "noLinesFound": "PDF'de hat verisi bulunamadı. Fatura formatı desteklenmiyor olabilir.",
+    "fetchFailed": "Envanter verileri alınamadı. Lütfen tekrar deneyin."
+  },
+  "reset": "Yeni Fatura Yükle",
+  "loading": {
+    "inventory": "Envanter yükleniyor..."
+  },
+  "invoice": {
+    "period": "Fatura Dönemi"
+  }
+}

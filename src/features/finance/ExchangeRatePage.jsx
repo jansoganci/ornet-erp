@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { Plus, DollarSign, RefreshCw } from 'lucide-react';
+import { Plus, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -9,12 +10,13 @@ import {
   Card,
   Table,
   EmptyState,
-  Spinner,
   ErrorState,
   TableSkeleton,
+  IconButton,
+  Modal,
 } from '../../components/ui';
 import { useCurrentProfile } from '../subscriptions/hooks';
-import { useExchangeRates, useCreateRate, useFetchTcmbRates } from './hooks';
+import { useExchangeRates, useCreateRate, useFetchTcmbRates, useDeleteRate } from './hooks';
 import { rateSchema, rateDefaultValues } from './schema';
 import { formatDate } from '../../lib/utils';
 
@@ -46,9 +48,11 @@ export function ExchangeRatePage() {
 
   const { data: currentProfile } = useCurrentProfile();
   const hasFinanceAccess = currentProfile?.role === 'admin' || currentProfile?.role === 'accountant';
+  const [rateToDelete, setRateToDelete] = useState(null);
   const { data: rates = [], isLoading, error, refetch } = useExchangeRates();
   const createMutation = useCreateRate();
   const fetchTcmbMutation = useFetchTcmbRates();
+  const deleteMutation = useDeleteRate();
 
   const onSubmit = async (data) => {
     const payload = {
@@ -104,6 +108,27 @@ export function ExchangeRatePage() {
       accessor: 'source',
       render: (val) => val || '-',
     },
+    ...(hasFinanceAccess
+      ? [
+          {
+            header: '',
+            accessor: 'actions',
+            stickyRight: true,
+            render: (_, row) => (
+              <IconButton
+                icon={Trash2}
+                variant="ghost"
+                size="sm"
+                aria-label={t('common:actions.delete')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRateToDelete(row);
+                }}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
 
   const breadcrumbs = [
@@ -205,11 +230,7 @@ export function ExchangeRatePage() {
         </form>
       </Card>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Spinner size="lg" />
-        </div>
-      ) : rates.length === 0 ? (
+      {rates.length === 0 ? (
         <EmptyState
           icon={DollarSign}
           title={t('finance:exchangeRates.empty')}
@@ -224,6 +245,39 @@ export function ExchangeRatePage() {
           />
         </div>
       )}
+
+      <Modal
+        open={!!rateToDelete}
+        onClose={() => setRateToDelete(null)}
+        title={t('finance:deleteConfirm.title')}
+        size="sm"
+        footer={
+          <div className="flex gap-3 w-full">
+            <Button variant="ghost" onClick={() => setRateToDelete(null)} className="flex-1">
+              {t('common:actions.cancel')}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                if (rateToDelete) {
+                  try {
+                    await deleteMutation.mutateAsync(rateToDelete.id);
+                    setRateToDelete(null);
+                  } catch {
+                    // Error handled by mutation onError
+                  }
+                }
+              }}
+              loading={deleteMutation.isPending}
+              className="flex-1"
+            >
+              {t('common:actions.delete')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-center py-4">{t('finance:categories.deleteRateConfirm')}</p>
+      </Modal>
     </PageContainer>
   );
 }

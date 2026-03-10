@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
-import { Plus, Download, Filter, Edit2, Trash2, FileSpreadsheet, Pencil, Cpu as SimIcon, Calendar } from 'lucide-react';
-import { useSimCards, useDeleteSimCard, useUpdateSimCard, useSimFinancialStats } from './hooks';
+import { Plus, Download, Filter, Edit2, Trash2, FileSpreadsheet, Pencil, Cpu as SimIcon, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSimCardsPaginated, useDeleteSimCard, useUpdateSimCard, useSimFinancialStats } from './hooks';
+import { fetchSimCards } from './api';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
@@ -21,6 +22,7 @@ import {
   DateRangeFilter,
 } from '../../components/ui';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { getErrorMessage } from '../../lib/errorHandler';
 import { SimCardStats } from './components/SimCardStats';
 import { QuickStatusSelect } from './components/QuickStatusSelect';
 
@@ -31,6 +33,7 @@ export function SimCardsListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [quickEditMode, setQuickEditMode] = useState(false);
   const [simToDelete, setSimToDelete] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const searchFromUrl = searchParams.get('search') || '';
   const [localSearch, setLocalSearch] = useState(searchFromUrl);
@@ -39,18 +42,20 @@ export function SimCardsListPage() {
   const operatorFilter = searchParams.get('operator') || 'all';
   const yearParam = searchParams.get('year') || '';
   const monthParam = searchParams.get('month') || '';
+  const page = Number(searchParams.get('page') || '0');
 
   // Sync local search from URL
   useEffect(() => {
     setLocalSearch(searchFromUrl);
   }, [searchFromUrl]);
-  // Sync debounced search to URL
+  // Sync debounced search to URL — reset page on new search
   useEffect(() => {
     if (searchFromUrl === debouncedSearch) return;
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (debouncedSearch) next.set('search', debouncedSearch);
       else next.delete('search');
+      next.delete('page');
       return next;
     });
   }, [debouncedSearch, searchFromUrl, setSearchParams]);
@@ -59,17 +64,38 @@ export function SimCardsListPage() {
     setSearchParams((prev) => {
       if (value && value !== 'all') prev.set(key, value);
       else prev.delete(key);
+      prev.delete('page');
       return prev;
     });
   };
 
-  const { data: simCards, isLoading, error, refetch } = useSimCards({
+  const handlePageChange = (newPage) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newPage > 0) next.set('page', String(newPage));
+      else next.delete('page');
+      return next;
+    });
+  };
+
+  const filters = {
     search: debouncedSearch || undefined,
     status: statusFilter,
     operator: operatorFilter,
     year: yearParam || undefined,
     month: monthParam || undefined,
-  });
+  };
+
+  const {
+    data: simCards,
+    isLoading,
+    error,
+    refetch,
+    isFetching,
+    totalCount,
+    pageCount,
+    pageSize,
+  } = useSimCardsPaginated(filters, page);
   const { data: simStats } = useSimFinancialStats();
   const deleteSimMutation = useDeleteSimCard();
   const updateSimCardMutation = useUpdateSimCard();
@@ -78,25 +104,32 @@ export function SimCardsListPage() {
   const handleImport = () => navigate('/sim-cards/import');
   const handleEdit = (id) => navigate(`/sim-cards/${id}/edit`);
 
-  const handleExport = () => {
-    if (!simCards?.length) return;
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      // Fetch all matching rows (not just current page) for complete export
+      const all = await fetchSimCards(filters);
+      if (!all?.length) return;
 
-    const exportData = simCards.map(sim => ({
-      [t('list.columns.phoneNumber')]: sim.phone_number,
-      [t('list.columns.operator')]: t(`operators.${sim.operator}`),
-      [t('list.columns.status')]: t(`status.${sim.status}`),
-      [t('list.columns.buyer')]: sim.buyer?.company_name || '-',
-      [t('list.columns.customer')]: sim.customers?.company_name || '-',
-      [t('list.columns.site')]: sim.customer_sites?.site_name || '-',
-      [t('list.columns.costPrice')]: sim.cost_price,
-      [t('list.columns.salePrice')]: sim.sale_price,
-      [t('form.notes')]: sim.notes
-    }));
+      const exportData = all.map(sim => ({
+        [t('list.columns.phoneNumber')]: sim.phone_number,
+        [t('list.columns.operator')]: t(`operators.${sim.operator}`),
+        [t('list.columns.status')]: t(`status.${sim.status}`),
+        [t('list.columns.buyer')]: sim.buyer?.company_name || '-',
+        [t('list.columns.customer')]: sim.customers?.company_name || '-',
+        [t('list.columns.site')]: sim.customer_sites?.site_name || '-',
+        [t('list.columns.costPrice')]: sim.cost_price,
+        [t('list.columns.salePrice')]: sim.sale_price,
+        [t('form.notes')]: sim.notes
+      }));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "SIM_Cards");
-    XLSX.writeFile(wb, `Ornet_SIM_Listesi_${new Date().toISOString().split('T')[0]}.xlsx`);
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "SIM_Cards");
+      XLSX.writeFile(wb, `Ornet_SIM_Listesi_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleDelete = (row) => {
@@ -143,7 +176,7 @@ export function SimCardsListPage() {
   if (error) {
     return (
       <PageContainer maxWidth="xl">
-        <ErrorState message={error.message} onRetry={() => refetch()} />
+        <ErrorState message={getErrorMessage(error, 'simCards.loadFailed')} onRetry={() => refetch()} />
       </PageContainer>
     );
   }
@@ -256,7 +289,8 @@ export function SimCardsListPage() {
               variant="outline"
               leftIcon={<FileSpreadsheet className="w-4 h-4" />}
               onClick={handleExport}
-              disabled={!simCards?.length}
+              loading={isExporting}
+              disabled={totalCount === 0}
             >
               {tCommon('actions.export')}
             </Button>
@@ -364,7 +398,7 @@ export function SimCardsListPage() {
         </div>
       </Card>
 
-      {!simCards?.length ? (
+      {totalCount === 0 && !isFetching ? (
         <EmptyState
           icon={SimIcon}
           title={t('list.empty.title')}
@@ -373,13 +407,39 @@ export function SimCardsListPage() {
           onAction={handleAdd}
         />
       ) : (
-        <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
+        <div className={`bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm transition-opacity ${isFetching && !isLoading ? 'opacity-70' : ''}`}>
           <Table
             columns={columns}
             data={simCards}
             onRowClick={(row) => handleEdit(row.id)}
             className="border-none"
           />
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200 dark:border-neutral-800">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                {page * pageSize + 1}–{Math.min((page + 1) * pageSize, totalCount)} / {totalCount} SIM
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 0}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm text-neutral-600 dark:text-neutral-400 px-2">
+                  {page + 1} / {pageCount}
+                </span>
+                <button
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= pageCount - 1}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
       <Modal

@@ -24,18 +24,16 @@
 - Calendar view
 - Dashboard with metrics
 - Authentication (login, register, password reset)
+- **Subscription Management** - Monthly/yearly alarm and camera rental tracking with payment grid
+- **SIM Card Management** - 2500+ phone numbers in security devices (location, owner, revenue, status)
+- **Proposals/Quotes** - Offer generator with PDF export and work order bridge
+- **Finance Module** - Income, expenses, VAT tracking, exchange rates (TCMB), recurring expenses, P&L reports
+- **Notifications** - In-app notification center with triggered alerts
+- **Site Assets** - Equipment tracking per customer location
+- **User Profile** - Profile management
 
 ### Planned Features
-- **Finance Module** - Full-scale finance service for ~$1M revenue company
-- **Subscription Management** - Track monthly/yearly alarm and camera rentals
-- **Data Card/SIM Management** - Track 2500+ phone numbers in security devices
-  - Which card is where
-  - Who has which card
-  - Revenue per card
-  - Active/inactive status
 - **Customer Situation Tracking** - Current status of all customers
-- **Reporting System** - Monthly, quarterly reports (work done, revenue)
-- **Offer/Quote Generator** - Prepare offers for customers
 - **Paraşüt Integration** - Connect to Paraşüt accounting system
 - **Invoice Automation** - Generate invoices (monthly, yearly, on installation) and auto-send to Paraşüt
 
@@ -78,7 +76,14 @@ src/
 │   ├── materials/          # Materials/inventory
 │   ├── workHistory/        # Work history
 │   ├── calendar/           # Calendar view
-│   └── dashboard/          # Dashboard
+│   ├── dashboard/          # Dashboard
+│   ├── subscriptions/      # Subscription & recurring payment management
+│   ├── simCards/           # SIM card / data card inventory
+│   ├── proposals/          # Quotes/offers with PDF export
+│   ├── finance/            # Income, expenses, VAT, exchange rates, reports
+│   ├── siteAssets/         # Equipment tracking per site
+│   ├── notifications/      # In-app notification center
+│   └── profile/            # User profile management
 │
 ├── components/
 │   ├── layout/             # Layout components
@@ -353,6 +358,18 @@ const { t } = useTranslation('myNamespace');
 - `materials` - Material catalog
 - `tasks` - Task records
 - `profiles` - User profiles
+- `subscriptions` - Recurring subscription contracts
+- `subscription_payments` - Monthly payment records per subscription
+- `sim_cards` - SIM/data card inventory
+- `proposals` - Customer quotes/offers
+- `proposal_items` - Line items per proposal
+- `proposal_work_orders` - Junction: proposals ↔ work orders
+- `financial_transactions` - Income & expense ledger
+- `expense_categories` - Expense classification
+- `exchange_rates` - TCMB currency rates (auto-fetched)
+- `recurring_expenses` - Scheduled repeating expenses
+- `site_assets` - Equipment assigned to customer sites
+- `notifications` - In-app notification records
 
 ### Query Patterns
 ```javascript

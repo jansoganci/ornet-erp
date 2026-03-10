@@ -2,14 +2,11 @@ import { useTranslation } from 'react-i18next';
 import { FileText, Plus } from 'lucide-react';
 import { Button, Table, Badge } from '../../../components/ui';
 import { formatDate, workOrderStatusVariant } from '../../../lib/utils';
+import { useCustomerDetail } from '../CustomerDetailContext';
 
-export function CustomerWorkOrdersTab({
-  customerId,
-  workOrders = [],
-  workOrdersLoading = false,
-  navigate,
-}) {
+export function CustomerWorkOrdersTab() {
   const { t } = useTranslation('customers');
+  const { customerId, workOrders = [], workOrdersLoading = false, navigate } = useCustomerDetail();
   const { t: tCommon } = useTranslation('common');
   const { t: tWO } = useTranslation('workOrders');
 

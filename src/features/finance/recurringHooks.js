@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/errorHandler';
 import * as recurringApi from './recurringApi';
 import { recurringKeys } from './recurringApi';
+import { transactionKeys, profitAndLossKeys } from './api';
 
 // Templates
 export function useTemplateLastGenerated() {
@@ -77,6 +78,28 @@ export function useDeleteRecurringTemplate() {
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'common.deleteFailed'));
+    },
+  });
+}
+
+export function useTriggerRecurringGeneration() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('recurring');
+
+  return useMutation({
+    mutationFn: recurringApi.triggerRecurringGeneration,
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: recurringKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
+      if (typeof count === 'number') {
+        toast.success(t('generate.success', { count }));
+      } else {
+        toast.success(t('generate.successGeneric'));
+      }
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.createFailed'));
     },
   });
 }

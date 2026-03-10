@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Repeat } from 'lucide-react';
+import { Plus, Repeat, Play } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Spinner, EmptyState, ErrorState, Modal, TableSkeleton } from '../../components/ui';
 import {
@@ -9,6 +9,7 @@ import {
   useTemplateLastGenerated,
   useUpdateRecurringTemplate,
   useDeleteRecurringTemplate,
+  useTriggerRecurringGeneration,
 } from './recurringHooks';
 import { RecurringTemplateRow } from './recurring/RecurringTemplateRow';
 import { RecurringTemplateFormModal } from './recurring/RecurringTemplateFormModal';
@@ -26,6 +27,7 @@ export function RecurringExpensesPage() {
   // Mutations
   const updateTemplateMutation = useUpdateRecurringTemplate();
   const deleteTemplateMutation = useDeleteRecurringTemplate();
+  const triggerGenerationMutation = useTriggerRecurringGeneration();
 
   // Modal state
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
@@ -134,10 +136,23 @@ export function RecurringExpensesPage() {
         title={t('recurring:title')}
         breadcrumbs={breadcrumbs}
         actions={
-          <Button variant="primary" onClick={handleNewTemplate} className="gap-1.5">
-            <Plus className="w-4 h-4" />
-            {t('recurring:templates.addButton')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => triggerGenerationMutation.mutate()}
+              loading={triggerGenerationMutation.isPending}
+              disabled={activeTemplates.length === 0}
+              className="gap-1.5"
+              title={activeTemplates.length === 0 ? t('recurring:generate.noTemplates') : undefined}
+            >
+              <Play className="w-4 h-4" />
+              {t('recurring:generate.button')}
+            </Button>
+            <Button variant="primary" onClick={handleNewTemplate} className="gap-1.5">
+              <Plus className="w-4 h-4" />
+              {t('recurring:templates.addButton')}
+            </Button>
+          </div>
         }
       />
 

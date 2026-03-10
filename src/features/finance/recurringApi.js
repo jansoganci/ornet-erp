@@ -79,3 +79,9 @@ export async function deleteRecurringTemplate(id) {
 
   if (error) throw error;
 }
+
+export async function triggerRecurringGeneration() {
+  const { data, error } = await supabase.rpc('fn_generate_recurring_expenses');
+  if (error) throw error;
+  return data;
+}

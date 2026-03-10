@@ -7,12 +7,10 @@ import { paymentRecordSchema, paymentRecordDefaultValues, PAYMENT_METHODS, INVOI
 import { useRecordPayment } from '../hooks';
 import { formatCurrency } from '../../../lib/utils';
 
-const MONTH_NAMES_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-
-function getMonthLabel(paymentMonth) {
+function getMonthLabel(paymentMonth, t) {
   if (!paymentMonth) return '';
   const d = new Date(paymentMonth);
-  return `${MONTH_NAMES_TR[d.getMonth()]} ${d.getFullYear()}`;
+  return `${t('common:monthsShort.' + d.getMonth())} ${d.getFullYear()}`;
 }
 
 export function PaymentRecordModal({ open, onClose, payment }) {
@@ -93,7 +91,7 @@ export function PaymentRecordModal({ open, onClose, payment }) {
     <Modal
       open={open}
       onClose={onClose}
-      title={`${t('subscriptions:payment.recordTitle')} — ${getMonthLabel(payment?.payment_month)}`}
+      title={`${t('subscriptions:payment.recordTitle')} — ${getMonthLabel(payment?.payment_month, t)}`}
       size="sm"
       footer={
         !isLocked && (
@@ -116,15 +114,15 @@ export function PaymentRecordModal({ open, onClose, payment }) {
         {/* Live amount display */}
         <div className="grid grid-cols-3 gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50">
           <div className="text-center">
-            <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Tutar</p>
+            <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">{t('subscriptions:payment.amountLabels.amount')}</p>
             <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(amounts.amount)}</p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">KDV</p>
+            <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">{t('subscriptions:payment.amountLabels.vat')}</p>
             <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(amounts.vatAmount)}</p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Toplam</p>
+            <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">{t('subscriptions:payment.amountLabels.total')}</p>
             <p className="text-sm font-bold text-primary-700 dark:text-primary-300">{formatCurrency(amounts.totalAmount)}</p>
           </div>
         </div>

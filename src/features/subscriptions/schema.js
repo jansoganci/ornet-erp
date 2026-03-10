@@ -12,6 +12,13 @@ export const INVOICE_TYPES = ['e_fatura', 'e_arsiv', 'kagit'];
 
 const toNumber = (val) => (val === '' || val === undefined || val === null ? undefined : Number(val));
 
+// Optional string: accepts string, '', undefined; outputs string | undefined
+const optionalString = z.union([z.string(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v));
+// Optional UUID: accepts uuid string, '', undefined; outputs string | undefined
+const optionalUuid = z.union([z.string().uuid(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v));
+// Optional enum: accepts enum value, '', undefined; outputs string | undefined
+const optionalEnum = (enumValues) => z.union([z.enum(enumValues), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v));
+
 // Subscription form schema
 export const subscriptionSchema = z.object({
   site_id: z.string().min(1, i18n.t('errors:validation.required')),
@@ -26,18 +33,18 @@ export const subscriptionSchema = z.object({
   static_ip_fee: z.preprocess(toNumber, z.number().min(0).default(0)),
   static_ip_cost: z.preprocess(toNumber, z.number().min(0).default(0)),
   currency: z.string().default('TRY'),
-  payment_method_id: z.string().optional().or(z.literal('')),
-  sold_by: z.string().optional().or(z.literal('')),
-  managed_by: z.string().optional().or(z.literal('')),
-  notes: z.string().optional().or(z.literal('')),
-  setup_notes: z.string().optional().or(z.literal('')),
-  service_type: z.enum(SERVICE_TYPES).optional().or(z.literal('')),
+  payment_method_id: optionalString,
+  sold_by: optionalString,
+  managed_by: optionalString,
+  notes: optionalString,
+  setup_notes: optionalString,
+  service_type: optionalEnum(SERVICE_TYPES),
   billing_frequency: z.enum(BILLING_FREQUENCIES).default('monthly'),
-  cash_collector_id: z.string().optional().or(z.literal('')),
+  cash_collector_id: optionalString,
   official_invoice: z.boolean().default(true),
-  card_bank_name: z.string().optional().or(z.literal('')),
-  card_last4: z.string().max(4).optional().or(z.literal('')),
-  sim_card_id: z.string().uuid().nullable().optional().or(z.literal('')),
+  card_bank_name: optionalString,
+  card_last4: z.union([z.string().max(4), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
+  sim_card_id: optionalUuid,
 }).refine((data) => {
   if (data.subscription_type === 'recurring_card') {
     const hasPaymentMethod = data.payment_method_id && String(data.payment_method_id).trim();
@@ -91,10 +98,10 @@ export const paymentRecordSchema = z.object({
   payment_method: z.enum(PAYMENT_METHODS),
   should_invoice: z.boolean().default(true),
   vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),
-  invoice_no: z.string().optional().or(z.literal('')),
-  invoice_type: z.enum(INVOICE_TYPES).optional().or(z.literal('')),
-  notes: z.string().optional().or(z.literal('')),
-  reference_no: z.string().optional().or(z.literal('')),
+  invoice_no: optionalString,
+  invoice_type: optionalEnum(INVOICE_TYPES),
+  notes: optionalString,
+  reference_no: optionalString,
 }).refine((data) => {
   // Card payments must always be invoiced
   if (data.payment_method === 'card' && data.should_invoice === false) {
@@ -102,7 +109,7 @@ export const paymentRecordSchema = z.object({
   }
   return true;
 }, {
-  message: 'Kart ödemeleri faturalanmalıdır',
+  message: i18n.t('subscriptions:validation.cardPaymentsMustBeInvoiced'),
   path: ['should_invoice'],
 });
 
@@ -121,13 +128,13 @@ export const paymentRecordDefaultValues = {
 export const paymentMethodSchema = z.object({
   customer_id: z.string().min(1, i18n.t('errors:validation.required')),
   method_type: z.enum(['card', 'bank_transfer', 'cash']),
-  card_last4: z.string().length(4).optional().or(z.literal('')),
-  card_holder: z.string().optional().or(z.literal('')),
-  card_expiry: z.string().optional().or(z.literal('')),
-  card_brand: z.string().optional().or(z.literal('')),
-  bank_name: z.string().optional().or(z.literal('')),
-  iban: z.string().optional().or(z.literal('')),
-  label: z.string().optional().or(z.literal('')),
+  card_last4: z.union([z.string().length(4), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
+  card_holder: optionalString,
+  card_expiry: optionalString,
+  card_brand: optionalString,
+  bank_name: optionalString,
+  iban: optionalString,
+  label: optionalString,
   is_default: z.boolean().default(false),
 });
 

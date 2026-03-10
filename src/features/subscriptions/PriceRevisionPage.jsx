@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CreditCard, ArrowLeft, StickyNote } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { CreditCard, ArrowLeft, StickyNote, Copy, Check, Download } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -16,7 +17,7 @@ import {
   IconButton,
   TableSkeleton,
 } from '../../components/ui';
-import { formatDate } from '../../lib/utils';
+import { formatDate, formatCurrency } from '../../lib/utils';
 import { useSubscriptions, useCurrentProfile, useBulkUpdateSubscriptionPrices } from './hooks';
 import { RevisionNotesModal } from './components/RevisionNotesModal';
 import { SERVICE_TYPES, BILLING_FREQUENCIES } from './schema';
@@ -25,6 +26,61 @@ function toNum(val, defaultVal = 0) {
   if (val === '' || val === undefined || val === null) return defaultVal;
   const n = Number(val);
   return Number.isNaN(n) ? defaultVal : n;
+}
+
+function formatForMessage(n) {
+  return Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '₺';
+}
+
+function buildPriceRevisionMessage(originalRow, displayRow, messageMonth, t) {
+  if (!originalRow || !displayRow) return null;
+  const oldBase = toNum(originalRow.base_price, 0);
+  const oldSms = toNum(originalRow.sms_fee, 0);
+  const oldLine = toNum(originalRow.line_fee, 0);
+  const newBase = toNum(displayRow.base_price, 0);
+  const newSms = toNum(displayRow.sms_fee, 0);
+  const newLine = toNum(displayRow.line_fee, 0);
+  if (oldBase === newBase && oldSms === newSms && oldLine === newLine) return null;
+  const serviceLabel = originalRow.service_type
+    ? (t(`subscriptions:priceRevision.serviceLabelsForMessage.${originalRow.service_type}`) || 'Abonelik')
+    : 'Abonelik';
+  const frequencyLabel =
+    t(`subscriptions:priceRevision.frequencyLabelsForMessage.${originalRow.billing_frequency || 'monthly'}`) || 'aylık';
+  const monthLabel = t(`subscriptions:priceRevision.filters.months.${messageMonth}`);
+  const lines = [];
+  if (oldBase !== newBase && (oldBase > 0 || newBase > 0)) {
+    lines.push(
+      t('subscriptions:priceRevision.messageTemplate.basePrice') + `: ${formatForMessage(oldBase)}'den ${formatForMessage(newBase)}'ye`
+    );
+  }
+  if (oldSms !== newSms && (oldSms > 0 || newSms > 0)) {
+    lines.push(
+      t('subscriptions:priceRevision.messageTemplate.smsFee') + `: ${formatForMessage(oldSms)}'den ${formatForMessage(newSms)}'ye`
+    );
+  }
+  if (oldLine !== newLine && (oldLine > 0 || newLine > 0)) {
+    lines.push(
+      t('subscriptions:priceRevision.messageTemplate.simFee') + `: ${formatForMessage(oldLine)}'den ${formatForMessage(newLine)}'ye`
+    );
+  }
+  const hasUnchanged = (oldBase === newBase && (oldBase > 0 || newBase > 0)) ||
+    (oldSms === newSms && (oldSms > 0 || newSms > 0)) ||
+    (oldLine === newLine && (oldLine > 0 || newLine > 0));
+  if (hasUnchanged && lines.length > 0) {
+    lines.push(t('subscriptions:priceRevision.messageTemplate.unchangedParts'));
+  }
+  const oldTotal = oldBase + oldSms + oldLine;
+  const newTotal = newBase + newSms + newLine;
+  lines.push(
+    t('subscriptions:priceRevision.messageTemplate.total') + `: ${formatForMessage(oldTotal)}'den ${formatForMessage(newTotal)}'ye`
+  );
+  const intro = t('subscriptions:priceRevision.messageTemplate.intro', {
+    service: serviceLabel,
+    frequency: frequencyLabel,
+    month: monthLabel,
+  });
+  const closing = t('subscriptions:priceRevision.messageTemplate.closing', { month: monthLabel });
+  return `${t('subscriptions:priceRevision.messageTemplate.greeting')} ${intro}\n• ${lines.join('\n• ')}\n\n${closing}`;
 }
 
 export function PriceRevisionPage() {
@@ -38,6 +94,8 @@ export function PriceRevisionPage() {
   const [startMonth, setStartMonth] = useState('');
   const [editsById, setEditsById] = useState({});
   const [notesModalSubscription, setNotesModalSubscription] = useState(null);
+  const [messageMonth, setMessageMonth] = useState(() => new Date().getMonth() + 1);
+  const [copiedId, setCopiedId] = useState(null);
 
   const filters = useMemo(() => {
     const f = {
@@ -66,6 +124,31 @@ export function PriceRevisionPage() {
     }));
   };
 
+  const handleZamPercentChange = (id, value) => {
+    const original = subscriptions.find((s) => s.id === id);
+    const orijinalBase = original?.base_price ?? 0;
+    if (value === '' || value === null || value === undefined || Number(value) === 0) {
+      setEditsById((prev) => {
+        const next = { ...prev[id] };
+        delete next.zam_percent;
+        delete next.base_price;
+        if (Object.keys(next).length === 0) {
+          const rest = { ...prev };
+          delete rest[id];
+          return rest;
+        }
+        return { ...prev, [id]: next };
+      });
+      return;
+    }
+    const zp = Number(value);
+    const yeniBase = orijinalBase * (1 + zp / 100);
+    setEditsById((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], zam_percent: zp, base_price: yeniBase },
+    }));
+  };
+
   const handleSaveClick = () => {
     const payload = Object.keys(editsById).map((id) => {
       const row = subscriptions.find((s) => s.id === id);
@@ -83,6 +166,37 @@ export function PriceRevisionPage() {
     bulkUpdateMutation.mutate(payload, {
       onSuccess: () => setEditsById({}),
     });
+  };
+
+  const handleExportExcel = () => {
+    if (!displayRows.length) return;
+    const exportData = displayRows.map((row) => {
+      const base = toNum(row.base_price, 0);
+      const sms = toNum(row.sms_fee, 0);
+      const line = toNum(row.line_fee, 0);
+      const total = base + sms + line;
+      return {
+        [t('subscriptions:priceRevision.columns.customer')]: row.company_name || '',
+        [t('subscriptions:priceRevision.columns.site')]: row.site_name || '',
+        [t('subscriptions:priceRevision.columns.accountNo')]: row.account_no || '',
+        [t('subscriptions:priceRevision.columns.startDate')]: formatDate(row.start_date),
+        [t('subscriptions:priceRevision.columns.type')]: row.subscription_type ? t(`subscriptions:types.${row.subscription_type}`) : '',
+        [t('subscriptions:priceRevision.columns.serviceType')]: row.service_type ? t(`subscriptions:serviceTypes.${row.service_type}`) : '',
+        [t('subscriptions:priceRevision.columns.billingFrequency')]: t(`subscriptions:priceRevision.filters.${row.billing_frequency || 'monthly'}`),
+        [t('subscriptions:priceRevision.zamPercent')]: row.zam_percent != null && row.zam_percent !== '' ? Number(row.zam_percent) : '',
+        [t('subscriptions:priceRevision.columns.basePrice')]: base,
+        [t('subscriptions:priceRevision.columns.smsFee')]: sms,
+        [t('subscriptions:priceRevision.columns.lineFee')]: line,
+        [t('subscriptions:priceRevision.columns.vatRate')]: toNum(row.vat_rate, 20),
+        [t('subscriptions:priceRevision.columns.cost')]: toNum(row.cost, 0),
+        [t('subscriptions:priceRevision.messageTemplate.total')]: total,
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Fiyat Revizyonu');
+    const fileName = `Fiyat_Revizyonu_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   const hasEdits = Object.keys(editsById).length > 0;
@@ -158,13 +272,6 @@ export function PriceRevisionPage() {
       ),
     },
     {
-      header: t('subscriptions:priceRevision.columns.accountNo'),
-      accessor: 'account_no',
-      render: (value) => (
-        <span className="font-mono text-sm text-neutral-600 dark:text-neutral-400">{value || '—'}</span>
-      ),
-    },
-    {
       header: t('subscriptions:priceRevision.columns.startDate'),
       accessor: 'start_date',
       render: (value) => <span className="text-sm whitespace-nowrap">{formatDate(value)}</span>,
@@ -194,6 +301,82 @@ export function PriceRevisionPage() {
         <span className="text-sm">
           {t(`subscriptions:priceRevision.filters.${value || 'monthly'}`)}
         </span>
+      ),
+    },
+    {
+      header: t('subscriptions:priceRevision.columns.currentTotal'),
+      accessor: 'base_price',
+      align: 'right',
+      render: (_, row) => {
+        const base = toNum(row.base_price, 0);
+        const sms = toNum(row.sms_fee, 0);
+        const line = toNum(row.line_fee, 0);
+        return (
+          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+            {formatCurrency(base + sms + line)}
+          </span>
+        );
+      },
+    },
+    {
+      header: t('subscriptions:priceRevision.columns.vatAmount'),
+      accessor: 'vat_amount',
+      align: 'right',
+      render: (_, row) => {
+        const base = toNum(row.base_price, 0);
+        const sms = toNum(row.sms_fee, 0);
+        const line = toNum(row.line_fee, 0);
+        const vatRate = toNum(row.vat_rate, 20);
+        const guncelTutar = base + sms + line;
+        const kdvTutar = guncelTutar * (vatRate / 100);
+        return (
+          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+            {formatCurrency(kdvTutar)}
+          </span>
+        );
+      },
+    },
+    {
+      header: t('subscriptions:priceRevision.columns.totalWithVat'),
+      accessor: 'total_with_vat',
+      align: 'right',
+      render: (_, row) => {
+        const base = toNum(row.base_price, 0);
+        const sms = toNum(row.sms_fee, 0);
+        const line = toNum(row.line_fee, 0);
+        const vatRate = toNum(row.vat_rate, 20);
+        const guncelTutar = base + sms + line;
+        const kdvTutar = guncelTutar * (vatRate / 100);
+        return (
+          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+            {formatCurrency(guncelTutar + kdvTutar)}
+          </span>
+        );
+      },
+    },
+    {
+      header: t('subscriptions:priceRevision.zamPercent'),
+      accessor: 'zam_percent',
+      align: 'center',
+      render: (_, row) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            placeholder={t('subscriptions:priceRevision.zamPercentPlaceholder')}
+            size="sm"
+            className="w-20 text-center mx-auto"
+            value={row.zam_percent ?? ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              handleZamPercentChange(row.id, val === '' ? '' : Number(val));
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            onKeyUp={(e) => e.stopPropagation()}
+          />
+        </div>
       ),
     },
     {
@@ -292,6 +475,42 @@ export function PriceRevisionPage() {
       ),
     },
     {
+      header: t('subscriptions:priceRevision.messageColumn'),
+      accessor: 'id',
+      render: (_, row) => {
+        const original = subscriptions.find((s) => s.id === row.id);
+        const message = buildPriceRevisionMessage(original, row, messageMonth, t);
+        if (!message) {
+          return (
+            <span className="text-xs text-neutral-400">
+              {t('subscriptions:priceRevision.noPriceChange')}
+            </span>
+          );
+        }
+        return (
+          <div className="flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
+            <div className="max-h-[80px] w-56 overflow-y-auto rounded border border-neutral-200 dark:border-[#262626] bg-neutral-50/50 dark:bg-neutral-900/30 p-2 text-xs text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
+              {message}
+            </div>
+            <Button
+              size="sm"
+              variant={copiedId === row.id ? 'secondary' : 'outline'}
+              className="shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(message);
+                setCopiedId(row.id);
+                setTimeout(() => setCopiedId(null), 2000);
+              }}
+              leftIcon={copiedId === row.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            >
+              {copiedId === row.id ? t('subscriptions:priceRevision.copied') : t('subscriptions:priceRevision.copyMessage')}
+            </Button>
+          </div>
+        );
+      },
+    },
+    {
       header: t('subscriptions:priceRevision.columns.notesColumn'),
       accessor: 'id',
       render: (_, row) => (
@@ -314,14 +533,24 @@ export function PriceRevisionPage() {
       <PageHeader
         title={t('subscriptions:priceRevision.title')}
         actions={
-          <Button
-            variant="primary"
-            onClick={handleSaveClick}
-            disabled={!hasEdits || bulkUpdateMutation.isPending}
-            loading={bulkUpdateMutation.isPending}
-          >
-            {t('subscriptions:priceRevision.saveButton')}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={displayRows.length === 0}
+              leftIcon={<Download className="w-4 h-4" />}
+            >
+              {t('subscriptions:priceRevision.exportExcel')}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSaveClick}
+              disabled={!hasEdits || bulkUpdateMutation.isPending}
+              loading={bulkUpdateMutation.isPending}
+            >
+              {t('subscriptions:priceRevision.saveButton')}
+            </Button>
+          </div>
         }
       />
 
@@ -359,6 +588,18 @@ export function PriceRevisionPage() {
               />
             </div>
           )}
+          <div className="w-full sm:w-auto min-w-[200px]">
+            <Select
+              label={t('subscriptions:priceRevision.messageAyLabel')}
+              options={Array.from({ length: 12 }, (_, i) => ({
+                value: String(i + 1),
+                label: t(`subscriptions:priceRevision.filters.months.${i + 1}`),
+              }))}
+              value={String(messageMonth)}
+              onChange={(e) => setMessageMonth(Number(e.target.value))}
+              size="sm"
+            />
+          </div>
         </div>
       </Card>
 

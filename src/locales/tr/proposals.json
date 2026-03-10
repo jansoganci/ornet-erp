@@ -163,6 +163,16 @@
     "submit": "İş Emri Oluştur"
   },
   "pdf": {
+    "headerLabels": {
+      "companyName": "FİRMA ADI :",
+      "surveyDate": "KEŞİF TARİHİ :",
+      "authorizedPerson": "YETKİLİ KİŞİ :",
+      "proposalDate": "TEKLİF TARİHİ :",
+      "title": "PROJE ADI :",
+      "installationDate": "MONTAJ TARİHİ :",
+      "customerRepresentative": "MÜŞTERİ TEMSİLCİSİ :",
+      "completionDate": "BİTİŞ TARİHİ :"
+    },
     "date": "Tarih",
     "scopeOfWork": "İş Kapsamı",
     "itemTable": {

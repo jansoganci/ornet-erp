@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Card, Select, Spinner, ErrorState, EmptyState, TableSkeleton } from '../../components/ui';
+import { Button, Card, Select, ErrorState, EmptyState, TableSkeleton } from '../../components/ui';
 import { useProfitAndLoss } from './hooks';
 import { ViewModeToggle } from './components/ViewModeToggle';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, formatDate } from '../../lib/utils';
+import { toCSV, downloadCSV } from '../../lib/csvExport';
+import { getSourceLabel } from './exportUtils';
 
 function getLast6Months() {
   const months = [];
@@ -75,6 +77,32 @@ export function ReportsPage() {
 
   const hasData = pl.revenue > 0 || pl.expenses > 0;
 
+  const handleExportCSV = () => {
+    if (!plData?.length) return;
+    const exportRows = plData.map((row) => ({
+      period_date: formatDate(row.period_date),
+      source_label: getSourceLabel(row.source_type, row.direction, t),
+      direction_label: row.direction === 'income' ? t('finance:exportColumns.income') : t('finance:exportColumns.expense'),
+      amount_try: row.amount_try != null && row.amount_try !== '' ? Number(row.amount_try) : '',
+      original_currency: row.original_currency ?? 'TRY',
+      output_vat: row.output_vat != null && row.output_vat !== '' ? Number(row.output_vat) : '',
+      input_vat: row.input_vat != null && row.input_vat !== '' ? Number(row.input_vat) : '',
+      cogs_try: row.cogs_try != null && row.cogs_try !== '' ? Number(row.cogs_try) : '',
+    }));
+    const columns = [
+      { key: 'period_date', header: t('finance:exportColumns.date') },
+      { key: 'source_label', header: t('finance:exportColumns.category') },
+      { key: 'direction_label', header: t('finance:exportColumns.direction') },
+      { key: 'amount_try', header: t('finance:exportColumns.amount') },
+      { key: 'original_currency', header: t('finance:exportColumns.currency') },
+      { key: 'output_vat', header: t('finance:exportColumns.outputVat') },
+      { key: 'input_vat', header: t('finance:exportColumns.inputVat') },
+      { key: 'cogs_try', header: t('finance:exportColumns.cogs') },
+    ];
+    const csv = toCSV(exportRows, columns);
+    downloadCSV(csv, `${t('finance:export.plFilename')}_${period}.csv`);
+  };
+
   const breadcrumbs = [
     { label: t('common:nav.dashboard'), to: '/' },
     { label: t('finance:dashboard.title'), to: '/finance' },
@@ -106,7 +134,7 @@ export function ReportsPage() {
       <PageHeader title={t('finance:reports.title')} breadcrumbs={breadcrumbs} />
 
       <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
-        <div className="flex flex-col md:flex-row gap-4 flex-wrap">
+        <div className="flex flex-col md:flex-row gap-4 flex-wrap items-end">
           <div className="w-full md:w-40">
             <Select
               label={t('finance:filters.period')}
@@ -115,17 +143,23 @@ export function ReportsPage() {
               onChange={(e) => handleFilterChange('period', e.target.value)}
             />
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <ViewModeToggle value={viewMode} onChange={(v) => handleFilterChange('viewMode', v)} size="md" />
+            {plData?.length > 0 && (
+              <Button
+                variant="outline"
+                size="md"
+                leftIcon={<Download className="w-4 h-4" />}
+                onClick={handleExportCSV}
+              >
+                {t('finance:export.csv')}
+              </Button>
+            )}
           </div>
         </div>
       </Card>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Spinner size="lg" />
-        </div>
-      ) : !hasData ? (
+      {!hasData ? (
         <EmptyState
           icon={FileText}
           title={t('finance:reports.empty')}

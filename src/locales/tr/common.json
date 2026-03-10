@@ -64,6 +64,8 @@
     "maintenance": "Bakım",
     "other": "Diğer"
   },
+  "monthsShort": ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"],
+  "monthsFull": ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"],
   "time": {
     "at": "Saat",
     "today": "Bugün",
@@ -164,12 +166,14 @@
     "settings": "Ayarlar",
     "logout": "Çıkış Yap",
     "notifications": "Bildirimler",
+    "actionBoard": "Aksiyon Listesi",
     "more": "Menü",
     "groups": {
       "planning": "Planlama",
       "revenueInfra": "Gelir ve Altyapı",
       "finance": "Finans",
-      "settings": "Ayarlar"
+      "settings": "Ayarlar",
+      "operations": "Operasyon"
     },
     "finance": {
       "dashboard": "Finans Özeti",

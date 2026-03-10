@@ -30,5 +30,17 @@
     "sessionExpired": "Oturumunuz sona erdi, lütfen tekrar giriş yapın",
     "supabaseNotConfigured": "Sistem yapılandırılmamış. Lütfen yöneticiyle iletişime geçin."
   },
+  "dashboard": {
+    "loadFailed": "Dashboard verileri yüklenemedi"
+  },
+  "subscriptions": {
+    "importFailed": "İçe aktarım başarısız oldu"
+  },
+  "simCards": {
+    "loadFailed": "SIM kartlar yüklenemedi",
+    "createFailed": "SIM kart oluşturulamadı",
+    "updateFailed": "SIM kart güncellenemedi",
+    "deleteFailed": "SIM kart silinemedi"
+  },
   "invalid": "Geçersiz işlem. Lütfen tekrar deneyin."
 }
