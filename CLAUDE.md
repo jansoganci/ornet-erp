@@ -1,6 +1,7 @@
 # CLAUDE.md - Ornet ERP Project Context
 
 > This file helps Claude understand the project context, architecture, and coding conventions.
+> Last updated: 2026-03-13
 
 ---
 
@@ -17,19 +18,20 @@
 ### Current Features
 - Customer management with multi-location support (sites)
 - Work order management (keşif, montaj, servis, bakım)
-- Task management
-- Materials/inventory tracking
+- Task management with mini calendar sidebar and plan groups
+- Materials/inventory tracking with import and usage modals
 - Daily work tracking
 - Work history search
-- Calendar view
-- Dashboard with metrics
-- Authentication (login, register, password reset)
-- **Subscription Management** - Monthly/yearly alarm and camera rental tracking with payment grid
-- **SIM Card Management** - 2500+ phone numbers in security devices (location, owner, revenue, status)
-- **Proposals/Quotes** - Offer generator with PDF export and work order bridge
-- **Finance Module** - Income, expenses, VAT tracking, exchange rates (TCMB), recurring expenses, P&L reports
-- **Notifications** - In-app notification center with triggered alerts
-- **Site Assets** - Equipment tracking per customer location
+- Calendar view (react-big-calendar)
+- Dashboard with metrics and currency widget
+- Authentication (login, register, password reset, email verification)
+- **Action Board** - Admin-only operational command center
+- **Subscription Management** - Monthly/yearly alarm and camera rental tracking with payment grid, pause/cancel, price revisions
+- **SIM Card Management** - 2500+ phone numbers in security devices (location, owner, revenue, status) with import and invoice analysis (Turkcell PDF parsing)
+- **Proposals/Quotes** - Offer generator with PDF export (@react-pdf/renderer) and work order bridge
+- **Finance Module** - Income, expenses, VAT tracking, exchange rates (TCMB), recurring expenses, P&L reports, CSV export
+- **Notifications** - In-app notification center with triggered alerts and reminder form
+- **Site Assets** - Equipment tracking per customer location with bulk registration
 - **User Profile** - Profile management
 
 ### Planned Features
@@ -50,10 +52,17 @@
 | Forms | react-hook-form + zod | 7.x / 4.x |
 | Backend | Supabase (PostgreSQL) | 2.x |
 | Styling | Tailwind CSS | 4.x |
+| CSS Utilities | clsx + tailwind-merge | 2.x / 3.x |
 | Icons | lucide-react | 0.563.x |
 | i18n | i18next + react-i18next | 25.x |
 | Notifications | sonner | 2.x |
 | Date Utils | date-fns | 4.x |
+| Charts | recharts | 3.x |
+| Calendar | react-big-calendar | 1.x |
+| PDF Export | @react-pdf/renderer | 4.x |
+| PDF Parsing | pdfjs-dist | 5.x |
+| Excel/CSV | xlsx | 0.18.x |
+| Error Tracking | @sentry/react | 10.x |
 
 ---
 
@@ -68,43 +77,72 @@ src/
 │   └── AuthRoute.jsx       # Redirect if logged in
 │
 ├── features/               # Feature modules (domain-driven)
+│   ├── actionBoard/        # Admin action board
 │   ├── auth/               # Authentication
+│   ├── calendar/           # Calendar view
 │   ├── customers/          # Customer management
 │   ├── customerSites/      # Customer locations
-│   ├── workOrders/         # Work orders
-│   ├── tasks/              # Task management
-│   ├── materials/          # Materials/inventory
-│   ├── workHistory/        # Work history
-│   ├── calendar/           # Calendar view
-│   ├── dashboard/          # Dashboard
-│   ├── subscriptions/      # Subscription & recurring payment management
-│   ├── simCards/           # SIM card / data card inventory
-│   ├── proposals/          # Quotes/offers with PDF export
+│   ├── dashboard/          # Dashboard & metrics
 │   ├── finance/            # Income, expenses, VAT, exchange rates, reports
-│   ├── siteAssets/         # Equipment tracking per site
+│   ├── materials/          # Materials/inventory
 │   ├── notifications/      # In-app notification center
-│   └── profile/            # User profile management
+│   ├── profile/            # User profile management
+│   ├── proposals/          # Quotes/offers with PDF export
+│   ├── service/            # (reserved, empty)
+│   ├── simCards/           # SIM card / data card inventory
+│   ├── siteAssets/         # Equipment tracking per site
+│   ├── subscriptions/      # Subscription & recurring payment management
+│   ├── tasks/              # Task management
+│   ├── workHistory/        # Work history
+│   └── workOrders/         # Work orders
 │
 ├── components/
 │   ├── layout/             # Layout components
-│   └── ui/                 # Reusable UI components
+│   ├── ui/                 # Reusable UI components
+│   └── ErrorBoundary.jsx   # Top-level error boundary
 │
 ├── hooks/                  # Global hooks
 │   ├── useAuth.js          # Authentication
-│   └── useTheme.jsx        # Theme toggle
+│   ├── useDebouncedValue.js# Debounce hook for search inputs
+│   ├── useSearchInput.js   # Search input state management
+│   ├── useTheme.jsx        # Theme toggle
+│   ├── useUnsavedChanges.js# Warn before leaving with unsaved changes
+│   └── themeContext.js     # Theme context provider
 │
 ├── lib/                    # Utilities
+│   ├── breadcrumbConfig.js # Breadcrumb route definitions
+│   ├── csvExport.js        # CSV export utility
+│   ├── errorHandler.js     # Error localization
+│   ├── i18n.js             # i18next config (21 namespaces)
+│   ├── normalizeForSearch.js # Turkish character normalization for search
 │   ├── supabase.js         # Supabase client
-│   ├── i18n.js             # i18next config
-│   ├── utils.js            # Helper functions
-│   └── errorHandler.js     # Error localization
+│   └── utils.js            # Helper functions
 │
-├── locales/tr/             # Turkish translations
-│   ├── common.json
+├── locales/tr/             # Turkish translations (21 files)
+│   ├── actionBoard.json
 │   ├── auth.json
+│   ├── calendar.json
+│   ├── common.json
 │   ├── customers.json
-│   ├── workOrders.json
-│   └── ...
+│   ├── dailyWork.json
+│   ├── dashboard.json
+│   ├── errors.json
+│   ├── finance.json
+│   ├── invoiceAnalysis.json
+│   ├── materials.json
+│   ├── notifications.json
+│   ├── profile.json
+│   ├── proposals.json
+│   ├── recurring.json
+│   ├── simCards.json
+│   ├── siteAssets.json
+│   ├── subscriptions.json
+│   ├── tasks.json
+│   ├── workHistory.json
+│   └── workOrders.json
+│
+├── pages/
+│   └── DashboardPage.jsx   # Main dashboard page
 │
 ├── App.jsx                 # Router configuration
 ├── main.jsx                # Entry point
@@ -126,6 +164,41 @@ features/customers/
 ├── CustomerFormPage.jsx    # Create/Edit form
 └── components/             # Feature-specific components
 ```
+
+Some features split API concerns into multiple files (e.g., `subscriptions` has `api.js`, `importApi.js`, `paymentsApi.js`, `paymentMethodsApi.js`; `finance` has `recurringApi.js`).
+
+---
+
+## Routing
+
+All routes are defined in `src/App.jsx`. Key route groups:
+
+| Group | Routes |
+|-------|--------|
+| Auth (public) | `/login`, `/register`, `/forgot-password`, `/auth/update-password`, `/auth/verify-email` |
+| Dashboard | `/`, `/profile`, `/notifications`, `/action-board` |
+| Customers | `/customers`, `/customers/new`, `/customers/:id`, `/customers/:id/edit` |
+| Work Orders | `/work-orders`, `/work-orders/new`, `/work-orders/:id`, `/work-orders/:id/edit` |
+| Planning | `/daily-work`, `/work-history`, `/tasks`, `/calendar` |
+| Materials | `/materials`, `/materials/import` |
+| Subscriptions | `/subscriptions`, `/subscriptions/price-revision`, `/subscriptions/new`, `/subscriptions/:id`, `/subscriptions/:id/edit` |
+| Proposals | `/proposals`, `/proposals/new`, `/proposals/:id`, `/proposals/:id/edit` |
+| Finance | `/finance`, `/finance/expenses`, `/finance/income`, `/finance/vat`, `/finance/exchange`, `/finance/recurring`, `/finance/reports` |
+| Equipment | `/equipment` |
+| SIM Cards | `/sim-cards`, `/sim-cards/new`, `/sim-cards/import`, `/sim-cards/invoice-analysis`, `/sim-cards/:id/edit` |
+
+---
+
+## Navigation
+
+Navigation is configured in `src/components/layout/navItems.js` with these groups:
+
+1. **Top-level** (5 items, also in mobile bottom bar): Dashboard, Daily Work, Customers, Work Orders, Proposals
+2. **Operasyon**: Notifications, Action Board (admin only)
+3. **Planlama**: Calendar, Tasks, Work History
+4. **Gelir ve Altyapı**: Subscriptions, SIM Cards, Invoice Analysis, Equipment
+5. **Finans**: Finance Dashboard, Income, Expenses, VAT, Exchange Rates, Recurring Expenses, Reports
+6. **Ayarlar** (collapsed by default): Materials
 
 ---
 
@@ -231,7 +304,6 @@ function MyPage() {
 |-----------|-------|
 | `Button` | Primary, secondary, outline, ghost, danger, success variants |
 | `Input` | Text input with label, error, hint support |
-| `PasswordInput` | Password with show/hide toggle (in auth) |
 | `Textarea` | Multi-line input |
 | `Select` | Dropdown selection |
 | `Modal` | Dialog/modal windows |
@@ -240,10 +312,17 @@ function MyPage() {
 | `Table` | Data tables |
 | `Spinner` | Loading spinner |
 | `Skeleton` | Loading placeholder |
+| `CardSkeleton` | Card-shaped skeleton loader |
+| `TableSkeleton` | Table-shaped skeleton loader |
+| `FormSkeleton` | Form-shaped skeleton loader |
 | `EmptyState` | Empty data state |
 | `ErrorState` | Error display with retry |
 | `SearchInput` | Search field |
 | `IconButton` | Icon-only button |
+| `DateRangeFilter` | Date range picker for filters |
+| `MaterialCombobox` | Searchable material selector |
+| `SimCardCombobox` | Searchable SIM card selector |
+| `UnsavedChangesModal` | Warn user before leaving with unsaved changes |
 
 ### Layout Components (src/components/layout/)
 
@@ -251,8 +330,14 @@ function MyPage() {
 |-----------|-------|
 | `PageContainer` | Page wrapper with max-width |
 | `PageHeader` | Page title, breadcrumbs, actions |
+| `Container` | Generic container with padding |
 | `Sidebar` | Navigation sidebar |
+| `MobileNavDrawer` | Mobile slide-out navigation |
+| `Header` | Top application header |
+| `Footer` | Application footer |
+| `NavGroup` | Collapsible navigation group |
 | `Stack` | Spacing utility |
+| `UserProfileDropdown` | User menu in header |
 
 ### Usage Example
 
@@ -282,6 +367,14 @@ function MyPage() {
 - Use Tailwind classes exclusively
 - Mobile-first responsive design
 - Dark mode with `dark:` prefix
+- Use `clsx` + `tailwind-merge` for conditional class composition
+
+```jsx
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+const cn = (...inputs) => twMerge(clsx(inputs));
+```
 
 ### Responsive Breakpoints
 ```
@@ -303,10 +396,10 @@ xl: 1280px  - Large desktops
 
 ### Common Dark Mode Colors
 ```
-Background:  dark:bg-[#0a0a0a]  (app background)
-Surface:     dark:bg-[#171717]  (cards, modals)
+Background:  dark:bg-[#0a0a0a]    (app background)
+Surface:     dark:bg-[#171717]    (cards, modals)
 Border:      dark:border-[#262626]
-Text:        dark:text-neutral-50 (primary)
+Text:        dark:text-neutral-50  (primary)
              dark:text-neutral-400 (secondary)
 ```
 
@@ -316,31 +409,36 @@ Text:        dark:text-neutral-50 (primary)
 
 ### Translation Files Location
 ```
-src/locales/tr/
-├── common.json      # General UI, actions, time
-├── auth.json        # Authentication
-├── customers.json   # Customer module
-├── workOrders.json  # Work orders
-├── materials.json   # Materials
-├── tasks.json       # Tasks
-├── dashboard.json   # Dashboard
-├── errors.json      # Error messages
-└── ...
+src/locales/tr/          (21 namespaces)
+├── actionBoard.json     # Action board
+├── auth.json            # Authentication
+├── calendar.json        # Calendar view
+├── common.json          # General UI, actions, time
+├── customers.json       # Customer module
+├── dailyWork.json       # Daily work tracking
+├── dashboard.json       # Dashboard
+├── errors.json          # Error messages
+├── finance.json         # Finance module
+├── invoiceAnalysis.json # SIM card invoice analysis
+├── materials.json       # Materials
+├── notifications.json   # Notifications
+├── profile.json         # User profile
+├── proposals.json       # Proposals/quotes
+├── recurring.json       # Recurring expenses
+├── simCards.json        # SIM cards
+├── siteAssets.json      # Site assets/equipment
+├── subscriptions.json   # Subscriptions
+├── tasks.json           # Tasks
+├── workHistory.json     # Work history
+└── workOrders.json      # Work orders
 ```
 
 ### Adding New Translations
 
-1. Add keys to appropriate JSON file:
-```json
-{
-  "myFeature": {
-    "title": "Başlık",
-    "description": "Açıklama"
-  }
-}
-```
+1. Add namespace JSON file to `src/locales/tr/myFeature.json`
+2. Register namespace in `src/lib/i18n.js`
+3. Use in component:
 
-2. Use in component:
 ```jsx
 const { t } = useTranslation('myNamespace');
 <h1>{t('myFeature.title')}</h1>
@@ -393,6 +491,30 @@ const { data } = await supabase
 
 ---
 
+## Global Hooks Reference
+
+| Hook | Location | Purpose |
+|------|----------|---------|
+| `useAuth` | `src/hooks/useAuth.js` | Auth state, user, session |
+| `useTheme` | `src/hooks/useTheme.jsx` | Light/dark theme toggle |
+| `useDebouncedValue` | `src/hooks/useDebouncedValue.js` | Debounce rapidly changing values |
+| `useSearchInput` | `src/hooks/useSearchInput.js` | Search input state with debounce |
+| `useUnsavedChanges` | `src/hooks/useUnsavedChanges.js` | Warn before navigating away |
+
+---
+
+## Utility Libraries
+
+| File | Purpose |
+|------|---------|
+| `src/lib/utils.js` | General helper functions |
+| `src/lib/csvExport.js` | CSV file export |
+| `src/lib/normalizeForSearch.js` | Normalize Turkish characters for search (ş→s, ı→i, etc.) |
+| `src/lib/breadcrumbConfig.js` | Route-to-breadcrumb mapping |
+| `src/lib/errorHandler.js` | Localize Supabase/API errors |
+
+---
+
 ## Critical Rules
 
 ### ALWAYS Do
@@ -406,7 +528,7 @@ const { data } = await supabase
 7. **Use React Query hooks** - For all data fetching
 8. **Include dark mode** - All UI must work in dark mode
 9. **Use English in code** - Variables, functions, comments in English
-10. **Add proper TypeScript-like patterns** - Even in JS, use consistent types
+10. **Normalize search** - Use `normalizeForSearch` for Turkish text search
 
 ### NEVER Do
 
@@ -474,7 +596,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
    - `MyFeaturePage.jsx` - Page component
    - `index.js` - Exports
 3. Add translations: `src/locales/tr/myFeature.json`
-4. Register in i18n: `src/lib/i18n.js`
+4. Register namespace in: `src/lib/i18n.js`
 5. Add route: `src/App.jsx`
 6. Add to navigation: `src/components/layout/navItems.js`
 
@@ -556,13 +678,21 @@ export function MyPage() {
 | Malzeme | Material | Equipment/parts |
 | Personel | Worker/Staff | Field technician |
 | Görev | Task | To-do item |
+| Abone | Subscriber | Subscription contract holder |
+| Teklif | Proposal/Quote | Offer document |
+| Fatura | Invoice | Billing document |
+| Gelir | Income | Revenue |
+| Gider | Expense | Cost |
+| KDV | VAT | Turkish value-added tax |
 
 ---
 
 ## Contact & Resources
 
 - **Supabase Dashboard**: Check database/auth settings
-- **Paraşüt**: Future accounting integration
+- **Paraşüt**: Future accounting integration target
 - **Tailwind Docs**: https://tailwindcss.com/docs
 - **React Query Docs**: https://tanstack.com/query
 - **i18next Docs**: https://www.i18next.com
+- **Recharts Docs**: https://recharts.org/en-US/api
+- **React PDF Renderer**: https://react-pdf.org
