@@ -144,10 +144,11 @@ export function useUpdateWorkOrder() {
   
   return useMutation({
     mutationFn: api.updateWorkOrder,
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.materials(id) });
       toast.success(t('success.updated'));
     },
     onError: (error) => {

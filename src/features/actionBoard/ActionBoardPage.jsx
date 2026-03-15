@@ -1,16 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, RefreshCw } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
-import { formatDate, formatCurrency, cn } from '../../lib/utils';
+import { formatDate, formatCurrency } from '../../lib/utils';
 import { useCurrentProfile } from '../subscriptions/hooks';
 import { useActionBoardData } from './hooks';
 
 /* ─────────────────────────────────────────────
    Section wrapper
 ───────────────────────────────────────────── */
-function Section({ title, count, variant = 'error', children, empty, emptyText }) {
+function Section({ title, count, variant = 'error', children, empty, emptyText, error, loading, onRetry }) {
   const { t } = useTranslation('actionBoard');
 
   return (
@@ -18,7 +18,7 @@ function Section({ title, count, variant = 'error', children, empty, emptyText }
       <div className="flex items-center gap-2">
         <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">{title}</h2>
         <Badge
-          variant={empty ? 'success' : variant}
+          variant={error ? 'warning' : empty ? 'success' : variant}
           size="sm"
           className="tabular-nums"
         >
@@ -26,7 +26,23 @@ function Section({ title, count, variant = 'error', children, empty, emptyText }
         </Badge>
       </div>
 
-      {empty ? (
+      {error ? (
+        <Card className="flex items-center gap-3 p-4 border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10">
+          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <p className="text-sm text-amber-700 dark:text-amber-300 flex-1">{t('sectionLoadFailed')}</p>
+          {onRetry && (
+            <Button variant="outline" size="sm" onClick={onRetry} leftIcon={<RefreshCw className="w-4 h-4" />}>
+              {t('retrySection')}
+            </Button>
+          )}
+        </Card>
+      ) : loading ? (
+        <div className="bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden p-4">
+          <div className="flex justify-center py-8">
+            <Spinner size="md" />
+          </div>
+        </div>
+      ) : empty ? (
         <Card className="flex items-center gap-3 p-4 border-success-200 dark:border-success-800/40 bg-success-50 dark:bg-success-900/10">
           <CheckCircle2 className="w-4 h-4 text-success-600 dark:text-success-400 flex-shrink-0" />
           <p className="text-sm text-success-700 dark:text-success-300">{emptyText}</p>
@@ -137,35 +153,57 @@ function ProposalRow({ item, onClick }) {
 export function ActionBoardPage() {
   const { t } = useTranslation('actionBoard');
   const navigate = useNavigate();
-  const { data: profile } = useCurrentProfile();
+  const { data: profile, isLoading: isProfileLoading } = useCurrentProfile();
 
   const {
     lateWorkOrders,
     overduePayments,
     pendingProposals,
     isLoading,
+    loading,
     errors,
     refetch,
+    refetchLateWorkOrders,
+    refetchOverduePayments,
+    refetchPendingProposals,
   } = useActionBoardData();
 
-  // Admin-only gate
-  if (profile && profile.role !== 'admin') {
+  const hasAnyError =
+    errors.lateWorkOrders || errors.overduePayments || errors.pendingProposals;
+  const hasAllErrors =
+    errors.lateWorkOrders && errors.overduePayments && errors.pendingProposals;
+  const allLoading =
+    loading.lateWorkOrders && loading.overduePayments && loading.pendingProposals;
+
+  // Admin-only gate — fail-safe: only render for confirmed admin
+  if (!profile || profile.role !== 'admin') {
     return (
       <PageContainer maxWidth="lg" padding="default">
-        <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-          <AlertCircle className="w-10 h-10 text-neutral-400" />
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Bu sayfa yalnızca yöneticiler tarafından görüntülenebilir.
-          </p>
-        </div>
+        {!profile && isProfileLoading ? (
+          <div className="flex justify-center py-24">
+            <Spinner size="lg" />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+            <AlertCircle className="w-10 h-10 text-neutral-400" />
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Bu sayfa yalnızca yöneticiler tarafından görüntülenebilir.
+            </p>
+          </div>
+        )}
       </PageContainer>
     );
   }
 
-  const hasAnyError =
-    errors.lateWorkOrders || errors.overduePayments || errors.pendingProposals;
+  if (hasAllErrors) {
+    return (
+      <PageContainer maxWidth="lg" padding="default">
+        <ErrorState onRetry={refetch} />
+      </PageContainer>
+    );
+  }
 
-  if (isLoading) {
+  if (allLoading) {
     return (
       <PageContainer maxWidth="lg" padding="default">
         <div className="flex justify-center py-24">
@@ -175,17 +213,21 @@ export function ActionBoardPage() {
     );
   }
 
-  if (hasAnyError) {
-    return (
-      <PageContainer maxWidth="lg" padding="default">
-        <ErrorState onRetry={refetch} />
-      </PageContainer>
-    );
-  }
-
   return (
     <PageContainer maxWidth="lg" padding="default" className="space-y-8 pb-12">
       <PageHeader title={t('title')} />
+
+      {hasAnyError && (
+        <Card className="flex items-center gap-3 p-4 border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10">
+          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-200 flex-1">
+            {t('partialLoadWarning')}
+          </p>
+          <Button variant="outline" size="sm" onClick={refetch} leftIcon={<RefreshCw className="w-4 h-4" />}>
+            {t('common:actions.retry')}
+          </Button>
+        </Card>
+      )}
 
       {/* Section 1 — Late Work Orders */}
       <Section
@@ -194,6 +236,9 @@ export function ActionBoardPage() {
         variant="error"
         empty={lateWorkOrders.length === 0}
         emptyText={t('sections.lateWorkOrders.empty')}
+        error={!!errors.lateWorkOrders}
+        loading={loading.lateWorkOrders}
+        onRetry={refetchLateWorkOrders}
       >
         {lateWorkOrders.map((item) => (
           <WorkOrderRow
@@ -211,6 +256,9 @@ export function ActionBoardPage() {
         variant="error"
         empty={overduePayments.length === 0}
         emptyText={t('sections.overduePayments.empty')}
+        error={!!errors.overduePayments}
+        loading={loading.overduePayments}
+        onRetry={refetchOverduePayments}
       >
         {overduePayments.map((item) => (
           <PaymentRow
@@ -228,6 +276,9 @@ export function ActionBoardPage() {
         variant="warning"
         empty={pendingProposals.length === 0}
         emptyText={t('sections.pendingProposals.empty')}
+        error={!!errors.pendingProposals}
+        loading={loading.pendingProposals}
+        onRetry={refetchPendingProposals}
       >
         {pendingProposals.map((item) => (
           <ProposalRow

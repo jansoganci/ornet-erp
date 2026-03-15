@@ -124,7 +124,7 @@ export function BulkAssetRegisterModal({
       reset();
       onClose();
     } catch (error) {
-      console.error('Bulk registration failed:', error);
+      console.error('Bulk registration failed:', error?.message ?? error);
     }
   };
 
@@ -179,7 +179,10 @@ export function BulkAssetRegisterModal({
           <CustomerSiteSelector
             selectedCustomerId={selectedCustomerId}
             selectedSiteId={selectedSiteId}
-            onCustomerChange={(cid) => setSelectedCustomerId(cid)}
+            onCustomerChange={(cid) => {
+              setSelectedCustomerId(cid);
+              setValue('customer_id', cid, { shouldValidate: true });
+            }}
             onSiteChange={(sid) => setValue('site_id', sid, { shouldValidate: true })}
             onAddNewCustomer={() => {}}
             onAddNewSite={() => {}}

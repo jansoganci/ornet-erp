@@ -35,6 +35,11 @@ export function useActionBoardData() {
       lateWorkOrders.isLoading ||
       overduePayments.isLoading ||
       pendingProposals.isLoading,
+    loading: {
+      lateWorkOrders: lateWorkOrders.isLoading,
+      overduePayments: overduePayments.isLoading,
+      pendingProposals: pendingProposals.isLoading,
+    },
     errors: {
       lateWorkOrders: lateWorkOrders.error,
       overduePayments: overduePayments.error,
@@ -45,14 +50,20 @@ export function useActionBoardData() {
       overduePayments.refetch();
       pendingProposals.refetch();
     },
+    refetchLateWorkOrders: () => lateWorkOrders.refetch(),
+    refetchOverduePayments: () => overduePayments.refetch(),
+    refetchPendingProposals: () => pendingProposals.refetch(),
   };
 }
 
 /** Lightweight hook for the dashboard doorbell card — counts only */
 export function useActionBoardCounts() {
-  const { lateWorkOrders, overduePayments, pendingProposals, isLoading } =
+  const { lateWorkOrders, overduePayments, pendingProposals, isLoading, errors } =
     useActionBoardData();
-  const total =
-    lateWorkOrders.length + overduePayments.length + pendingProposals.length;
-  return { total, isLoading };
+  const lateWorkOrderCount  = lateWorkOrders.length;
+  const overduePaymentCount = overduePayments.length;
+  const pendingProposalCount = pendingProposals.length;
+  const total = lateWorkOrderCount + overduePaymentCount + pendingProposalCount;
+  const isError = !!(errors.lateWorkOrders || errors.overduePayments || errors.pendingProposals);
+  return { total, lateWorkOrderCount, overduePaymentCount, pendingProposalCount, isLoading, isError };
 }

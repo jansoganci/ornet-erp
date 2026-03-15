@@ -27,6 +27,7 @@ export function ProposalHero({
   onEdit,
   onDelete,
   onDownloadPdf,
+  isExporting,
   onFlowAction,
   onFaturalandir,
   flowLoading,
@@ -127,6 +128,7 @@ export function ProposalHero({
             size="sm"
             leftIcon={<Download className="w-4 h-4" />}
             onClick={onDownloadPdf}
+            loading={isExporting}
           >
             {t('proposals:detail.actions.downloadPdf')}
           </Button>

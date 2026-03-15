@@ -110,3 +110,22 @@ export async function completeReminder(id) {
 
   if (error) throw error;
 }
+
+export function subscribeToNotifications(onChange) {
+  return supabase
+    .channel('notifications-realtime')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+      },
+      onChange
+    )
+    .subscribe();
+}
+
+export function unsubscribeFromNotifications(channel) {
+  return supabase.removeChannel(channel);
+}

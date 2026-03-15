@@ -72,7 +72,7 @@ export function mapWorkOrderToEvent(workOrder) {
     (workOrder.scheduled_date
       ? parseScheduledAt(workOrder.scheduled_date, '09:00')
       : null);
-  if (!start || Number.isNaN(start.getTime())) return null;
+  if (!start || isNaN(start.getTime())) return null;
   const end = new Date(start.getTime() + DEFAULT_EVENT_DURATION_MS);
 
   return {
@@ -133,7 +133,7 @@ function parseDueAt(due_date, due_time) {
  */
 export function mapTaskToEvent(task) {
   const start = parseDueAt(task.due_date, task.due_time);
-  if (!start || Number.isNaN(start.getTime())) return null;
+  if (!start || isNaN(start.getTime())) return null;
   const end = new Date(start.getTime() + DEFAULT_EVENT_DURATION_MS);
 
   return {
@@ -169,8 +169,8 @@ export function mapWorkOrdersToEvents(workOrders) {
  * Month view: "Şubat 2026"
  */
 export function formatDateRangeLabel(dateFrom, dateTo, view, language) {
-  const start = new Date(dateFrom + 'T12:00:00');
-  const end = new Date(dateTo + 'T12:00:00');
+  const start = new Date(dateFrom + 'T12:00:00Z');
+  const end = new Date(dateTo + 'T12:00:00Z');
   const locale = language === 'tr' ? tr : undefined;
   const capitalize = (str) =>
     str.charAt(0).toLocaleUpperCase(language) + str.slice(1);

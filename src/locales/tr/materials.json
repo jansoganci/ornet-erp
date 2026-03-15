@@ -65,7 +65,8 @@
     "success": "{{created}} eklendi, {{updated}} güncellendi",
     "parse": "Dosya okunamadı. Lütfen geçerli bir Excel dosyası yükleyin.",
     "missingCode": "Satır {{row}}: Kod eksik.",
-    "missingName": "Satır {{row}}: Ad eksik."
+    "missingName": "Satır {{row}}: Ad eksik.",
+    "parseError": "Dosya okunamadı. Lütfen Excel formatını kontrol edin."
   },
   "filters": {
     "all": "Tümü",

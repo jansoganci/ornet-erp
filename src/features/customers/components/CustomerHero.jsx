@@ -41,22 +41,26 @@ export function CustomerHero({
           >
             {t('customers:detail.actions.newWorkOrder')}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Edit className="w-4 h-4" />}
-            onClick={onEdit}
-          >
-            {t('customers:detail.actions.edit')}
-          </Button>
-          <IconButton
-            icon={Trash2}
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            aria-label={t('customers:detail.actions.delete')}
-            className="text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/30"
-          />
+          {onEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Edit className="w-4 h-4" />}
+              onClick={onEdit}
+            >
+              {t('customers:detail.actions.edit')}
+            </Button>
+          )}
+          {onDelete && (
+            <IconButton
+              icon={Trash2}
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              aria-label={t('customers:detail.actions.delete')}
+              className="text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/30"
+            />
+          )}
         </div>
       </div>
 
@@ -109,34 +113,36 @@ export function CustomerHero({
             </div>
           </div>
 
-          {/* Aylık Gelir */}
-          <div className={cn(
-            'flex items-center gap-2.5 p-3 rounded-lg',
-            monthlyRevenue > 0
-              ? 'bg-primary-50 dark:bg-primary-950/20'
-              : 'bg-neutral-50 dark:bg-neutral-800/50'
-          )}>
-            <TrendingUp className={cn(
-              'w-4 h-4 flex-shrink-0',
+          {/* Aylık Gelir — only for admin/accountant */}
+          {monthlyRevenue > 0 || onEdit ? (
+            <div className={cn(
+              'flex items-center gap-2.5 p-3 rounded-lg',
               monthlyRevenue > 0
-                ? 'text-primary-600 dark:text-primary-400'
-                : 'text-neutral-500 dark:text-neutral-400'
-            )} />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-500 tracking-wider">
-                {t('customers:detail.monthlyRevenue')}
-              </p>
-              <p className={cn(
-                'text-sm font-bold mt-0.5 tabular-nums',
+                ? 'bg-primary-50 dark:bg-primary-950/20'
+                : 'bg-neutral-50 dark:bg-neutral-800/50'
+            )}>
+              <TrendingUp className={cn(
+                'w-4 h-4 flex-shrink-0',
                 monthlyRevenue > 0
                   ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-neutral-900 dark:text-neutral-50'
-              )}>
-                {monthlyStr}
-                <span className="text-xs font-medium opacity-70">/ay</span>
-              </p>
+                  : 'text-neutral-500 dark:text-neutral-400'
+              )} />
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-500 tracking-wider">
+                  {t('customers:detail.monthlyRevenue')}
+                </p>
+                <p className={cn(
+                  'text-sm font-bold mt-0.5 tabular-nums',
+                  monthlyRevenue > 0
+                    ? 'text-primary-600 dark:text-primary-400'
+                    : 'text-neutral-900 dark:text-neutral-50'
+                )}>
+                  {monthlyStr}
+                  <span className="text-xs font-medium opacity-70">/ay</span>
+                </p>
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ export const siteKeys = {
   all: ['customerSites'],
   lists: () => [...siteKeys.all, 'list'],
   listByCustomer: (customerId) => [...siteKeys.lists(), { customerId }],
+  listAll: (filters) => [...siteKeys.lists(), 'all', filters],
   details: () => [...siteKeys.all, 'detail'],
   detail: (id) => [...siteKeys.details(), id],
   byAccountNo: (accountNo) => [...siteKeys.all, 'accountNo', accountNo],
@@ -77,6 +78,25 @@ export async function deleteSite(id) {
     .eq('id', id);
 
   if (error) throw error;
+}
+
+export async function fetchAllSites({ search = '' } = {}) {
+  let query = supabase
+    .from('customer_sites')
+    .select('*, customers(company_name, subscriber_title)')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+
+  if (search) {
+    const normalized = normalizeForSearch(search);
+    query = query.or(
+      `account_no_search.ilike.%${normalized}%,site_name_search.ilike.%${normalized}%`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
 }
 
 export async function searchSites(query) {

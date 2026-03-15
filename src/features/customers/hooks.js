@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/errorHandler';
+import { siteKeys } from '../customerSites/api';
 import {
   fetchCustomers,
   fetchCustomer,
@@ -9,6 +10,7 @@ import {
   updateCustomer,
   deleteCustomer,
 } from './api';
+import { importCustomersAndSitesFromRows } from './importApi';
 // Query keys
 export const customerKeys = {
   all: ['customers'],
@@ -79,6 +81,27 @@ export function useUpdateCustomer() {
 }
 
 /**
+ * Hook to import customers and sites from validated rows
+ * @param {Object} [options]
+ * @param {(progress: {current: number, total: number}) => void} [options.onProgress]
+ */
+export function useImportCustomersAndSites({ onProgress } = {}) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('common');
+
+  return useMutation({
+    mutationFn: (rows) => importCustomersAndSitesFromRows(rows, { onProgress }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: siteKeys.all });
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.importFailed'));
+    },
+  });
+}
+
+/**
  * Hook to delete a customer
  */
 export function useDeleteCustomer() {
@@ -90,6 +113,7 @@ export function useDeleteCustomer() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
       queryClient.removeQueries({ queryKey: customerKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: siteKeys.listByCustomer(id) });
       toast.success(t('success.deleted'));
     },
     onError: (error) => {

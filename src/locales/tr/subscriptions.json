@@ -387,6 +387,7 @@
       "description": "Seçilen filtreye uyan abonelik yok."
     }
   },
+  "priceUpdatePartialError": "Abonelik fiyatı güncellendi ancak ödeme tutarları güncellenemedi. Lütfen ödemeleri manuel olarak kontrol edin.",
   "validation": {
     "paymentMethodRequired": "Kart aboneliği için ödeme yöntemi zorunludur",
     "cardPaymentsMustBeInvoiced": "Kart ödemeleri faturalanmalıdır"

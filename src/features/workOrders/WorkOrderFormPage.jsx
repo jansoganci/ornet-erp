@@ -101,36 +101,36 @@ export function WorkOrderFormPage() {
 
   // Populate form when editing
   useEffect(() => {
-    if (workOrder && isEdit) {
-      const siteId = workOrder.site_id ?? '';
-      const assignedTo = Array.isArray(workOrder.assigned_to) ? workOrder.assigned_to : [];
-      const items = (workOrder.work_order_materials || []).map(wom => ({
-        description: wom.description || wom.materials?.name || '',
-        quantity: parseFloat(wom.quantity) || 1,
-        unit: wom.unit || 'adet',
-        unit_price: wom.unit_price ?? wom.unit_price_usd ?? 0,
-        cost: wom.cost ?? wom.cost_usd ?? null,
-        material_id: wom.material_id || null,
-      }));
-      reset({
-        site_id: siteId,
-        form_no: workOrder.form_no || '',
-        work_type: workOrder.work_type || 'service',
-        work_type_other: workOrder.work_type_other || '',
-        status: workOrder.status || 'pending',
-        priority: workOrder.priority || 'normal',
-        scheduled_date: workOrder.scheduled_date || '',
-        scheduled_time: workOrder.scheduled_time || '',
-        assigned_to: assignedTo,
-        description: workOrder.description || '',
-        notes: workOrder.notes || '',
-        amount: workOrder.amount ?? '',
-        currency: workOrder.currency || 'TRY',
-        items: items.length > 0 ? items : workOrderDefaultValues.items,
-        materials_discount_percent: workOrder.materials_discount_percent ?? 0,
-      });
-      if (workOrder.customer_id) setSelectedCustomerId(workOrder.customer_id);
-    }
+    if (!isEdit) return;
+    if (!workOrder) return;
+    const siteId = workOrder.site_id ?? '';
+    const assignedTo = Array.isArray(workOrder.assigned_to) ? workOrder.assigned_to : [];
+    const items = (workOrder.work_order_materials || []).map(wom => ({
+      description: wom.description || wom.materials?.name || '',
+      quantity: parseFloat(wom.quantity) || 1,
+      unit: wom.unit || 'adet',
+      unit_price: wom.unit_price ?? wom.unit_price_usd ?? 0,
+      cost: wom.cost ?? wom.cost_usd ?? null,
+      material_id: wom.material_id || null,
+    }));
+    reset({
+      site_id: siteId,
+      form_no: workOrder.form_no || '',
+      work_type: workOrder.work_type || 'service',
+      work_type_other: workOrder.work_type_other || '',
+      status: workOrder.status || 'pending',
+      priority: workOrder.priority || 'normal',
+      scheduled_date: workOrder.scheduled_date || '',
+      scheduled_time: workOrder.scheduled_time || '',
+      assigned_to: assignedTo,
+      description: workOrder.description || '',
+      notes: workOrder.notes || '',
+      amount: workOrder.amount ?? '',
+      currency: workOrder.currency || 'TRY',
+      items: items.length > 0 ? items : workOrderDefaultValues.items,
+      materials_discount_percent: workOrder.materials_discount_percent ?? 0,
+    });
+    if (workOrder.customer_id) setSelectedCustomerId(workOrder.customer_id);
   }, [workOrder, isEdit, reset]);
 
   // Handle prefilled customer ID

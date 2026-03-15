@@ -347,7 +347,9 @@ export async function updateSubscription({ id, ...updateData }) {
       },
       p_user_id: user?.id || null,
     });
-    if (rpcErr) throw rpcErr;
+    // Subscription header is already saved — do not throw and roll back the
+    // whole update. Instead signal partial failure so the hook can warn the user.
+    if (rpcErr) return { ...data, _priceUpdateFailed: true };
   } else {
     await insertAuditLog('subscriptions', id, 'update', current, data, 'Abonelik güncellendi');
   }
@@ -372,13 +374,16 @@ export async function pauseSubscription(id, reason) {
 
   if (error) throw error;
 
-  // Mark future pending payments as skipped
+  // Mark future pending payments as skipped (current month is NOT skipped)
+  const now = new Date();
+  const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+    .toISOString().slice(0, 10);
   const { error: skipErr } = await supabase
     .from('subscription_payments')
     .update({ status: 'skipped' })
     .eq('subscription_id', id)
     .eq('status', 'pending')
-    .gte('payment_month', new Date().toISOString().slice(0, 7) + '-01');
+    .gte('payment_month', nextMonthStart);
 
   if (skipErr) throw skipErr;
 
@@ -473,6 +478,16 @@ export async function fetchRevisionNotes(subscriptionId) {
  * @param {{ subscription_id: string, note: string, revision_date: string }} payload
  * @returns {Promise<object>} Inserted row
  */
+export async function getSubscriptionUpdatedAt(id) {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('updated_at')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data?.updated_at;
+}
+
 export async function createRevisionNote({ subscription_id, note, revision_date }) {
   const { data: { user } } = await supabase.auth.getUser();
   const { data, error } = await supabase

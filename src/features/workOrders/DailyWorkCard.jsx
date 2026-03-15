@@ -86,7 +86,7 @@ export function DailyWorkCard({
                   title={worker.name}
                 >
                   <span className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase">
-                    {worker.name.charAt(0)}
+                    {(worker.name ?? '?').charAt(0)}
                   </span>
                 </div>
               ))}

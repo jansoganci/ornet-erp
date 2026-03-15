@@ -5,7 +5,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, X, DollarSign, FileText, Users, StickyNote, CreditCard, Wallet, Banknote, RefreshCw, AlertTriangle } from 'lucide-react';
 import { cn, formatCurrency } from '../../lib/utils';
-import { supabase } from '../../lib/supabase';
 import { PageContainer } from '../../components/layout';
 import {
   Button,
@@ -19,6 +18,7 @@ import {
   FormSkeleton,
 } from '../../components/ui';
 import { subscriptionSchema, subscriptionDefaultValues, SUBSCRIPTION_TYPES, SERVICE_TYPES, BILLING_FREQUENCIES } from './schema';
+import { getSubscriptionUpdatedAt } from './api';
 import {
   useSubscription,
   useCreateSubscription,
@@ -224,13 +224,9 @@ export function SubscriptionFormPage() {
 
       if (isEdit && loadedUpdatedAtRef.current) {
         // Concurrent edit check: compare stored updated_at with current DB value
-        const { data: current } = await supabase
-          .from('subscriptions')
-          .select('updated_at')
-          .eq('id', id)
-          .single();
+        const updatedAt = await getSubscriptionUpdatedAt(id);
 
-        if (current?.updated_at && current.updated_at !== loadedUpdatedAtRef.current) {
+        if (updatedAt && updatedAt !== loadedUpdatedAtRef.current) {
           // Someone else saved after we opened the form — ask the user
           setPendingSubmitData(formattedData);
           setConflictModal(true);
@@ -239,8 +235,8 @@ export function SubscriptionFormPage() {
       }
 
       await saveSubscription(formattedData);
-    } catch (err) {
-      toast.error(err?.message || t('common:errors.saveFailed'));
+    } catch {
+      toast.error(t('common:errors.saveFailed'));
     }
   };
 
@@ -248,8 +244,8 @@ export function SubscriptionFormPage() {
     setConflictModal(false);
     try {
       await saveSubscription(pendingSubmitData);
-    } catch (err) {
-      toast.error(err?.message || t('common:errors.saveFailed'));
+    } catch {
+      toast.error(t('common:errors.saveFailed'));
     }
   };
 

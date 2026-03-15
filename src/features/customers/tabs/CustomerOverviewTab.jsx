@@ -8,12 +8,14 @@ import { CustomerAlertItem } from '../components/CustomerAlertItem';
 import { RecentWorkOrderRow } from '../components/RecentWorkOrderRow';
 import { LocationSummaryCard } from '../components/LocationSummaryCard';
 import { ContactRow } from '../components/ContactRow';
+import { useRole } from '../../../lib/roles';
 
 const MAX_RECENT_WORK_ORDERS = 5;
 const MAX_LOCATION_SUMMARY = 6;
 
 export function CustomerOverviewTab() {
   const { t } = useTranslation('customers');
+  const { isFieldWorker } = useRole();
   const {
     customer,
     sites = [],
@@ -57,25 +59,29 @@ export function CustomerOverviewTab() {
   return (
     <div className="space-y-6">
       {/* ── 1. Metrik Kartlar ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <CustomerMetricCard
-          icon={CheckCircle2}
-          label={t('detail.overview.metrics.activeSubscriptions')}
-          value={counts.activeSubscriptions ?? 0}
-          variant="success"
-        />
+      <div className={`grid gap-3 ${isFieldWorker ? 'grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'}`}>
+        {!isFieldWorker && (
+          <CustomerMetricCard
+            icon={CheckCircle2}
+            label={t('detail.overview.metrics.activeSubscriptions')}
+            value={counts.activeSubscriptions ?? 0}
+            variant="success"
+          />
+        )}
         <CustomerMetricCard
           icon={Clock}
           label={t('detail.overview.metrics.openWorkOrders')}
           value={counts.openWorkOrders ?? 0}
           variant="info"
         />
-        <CustomerMetricCard
-          icon={Wifi}
-          label={t('detail.overview.metrics.activeSimCards')}
-          value={counts.activeSimCards ?? 0}
-          variant="default"
-        />
+        {!isFieldWorker && (
+          <CustomerMetricCard
+            icon={Wifi}
+            label={t('detail.overview.metrics.activeSimCards')}
+            value={counts.activeSimCards ?? 0}
+            variant="default"
+          />
+        )}
         <CustomerMetricCard
           icon={AlertTriangle}
           label={t('detail.overview.metrics.faultyEquipment')}
@@ -163,7 +169,7 @@ export function CustomerOverviewTab() {
       </div>
 
       {/* ── 5. Müşteri Bilgileri + İletişim + Notlar (2-col on lg+) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${!isFieldWorker ? 'lg:grid-cols-2' : ''}`}>
         {/* Sol: Müşteri Bilgileri + İletişim */}
         <div className="space-y-6">
           {/* Müşteri Bilgileri */}
@@ -242,24 +248,26 @@ export function CustomerOverviewTab() {
           </Card>
         </div>
 
-        {/* Sağ: Notlar */}
-        <Card padding="compact" className="h-fit">
-          <div className="flex items-center gap-2 mb-3">
-            <FileText className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-              {t('detail.notes')}
-            </h2>
-          </div>
-          {customer.notes ? (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap leading-relaxed">
-              {customer.notes}
-            </p>
-          ) : (
-            <p className="text-sm text-neutral-400 dark:text-neutral-500 italic">
-              {t('detail.noNotes')}
-            </p>
-          )}
-        </Card>
+        {/* Sağ: Notlar — hidden for field_worker */}
+        {!isFieldWorker && (
+          <Card padding="compact" className="h-fit">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+                {t('detail.notes')}
+              </h2>
+            </div>
+            {customer.notes ? (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap leading-relaxed">
+                {customer.notes}
+              </p>
+            ) : (
+              <p className="text-sm text-neutral-400 dark:text-neutral-500 italic">
+                {t('detail.noNotes')}
+              </p>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/utils';
 import { IconButton } from '../ui';
+import { Skeleton } from '../ui/Skeleton';
 import { NavGroup } from './NavGroup';
 import { navItems } from './navItems';
 import { useCurrentProfile } from '../../features/subscriptions/hooks';
@@ -15,12 +16,28 @@ function isFlatItem(item) {
 
 export function MobileNavDrawer({ open, onClose }) {
   const { t } = useTranslation();
-  const { data: currentProfile } = useCurrentProfile();
+  const { data: currentProfile, isLoading: profileIsLoading } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
-  const hasNotificationAccess = isAdmin || currentProfile?.role === 'accountant';
-  const visibleNavItems = navItems.filter(
-    (item) => (!item.adminOnly || isAdmin) && (!item.notificationCenter || hasNotificationAccess)
-  );
+  const canWrite = isAdmin || currentProfile?.role === 'accountant';
+  const hasNotificationAccess = canWrite;
+
+  const visibleNavItems = navItems
+    .filter(
+      (item) =>
+        (!item.adminOnly || isAdmin) &&
+        (!item.notificationCenter || hasNotificationAccess) &&
+        (!item.canWriteOnly || canWrite)
+    )
+    .map((item) => {
+      if (item.type !== 'group') return item;
+      if (item.canWriteOnly && !canWrite) return null;
+      const visibleChildren = item.children.filter(
+        (child) => !child.canWriteOnly || canWrite
+      );
+      if (visibleChildren.length === 0) return null;
+      return { ...item, children: visibleChildren };
+    })
+    .filter(Boolean);
 
   const handleEscape = useCallback(
     (e) => {
@@ -88,7 +105,15 @@ export function MobileNavDrawer({ open, onClose }) {
         {/* Nav Content - Scrollable */}
         <div className="flex-1 overflow-y-auto overscroll-contain py-4">
           <nav className="space-y-1 px-4">
-            {visibleNavItems.map((item) =>
+            {profileIsLoading ? (
+              <>
+                <Skeleton className="h-12 w-full rounded-lg" />
+                <Skeleton className="h-12 w-full rounded-lg" />
+                <Skeleton className="h-12 w-full rounded-lg" />
+                <Skeleton className="h-12 w-full rounded-lg" />
+              </>
+            ) : (
+            visibleNavItems.map((item) =>
               isFlatItem(item) ? (
                 <NavLink
                   key={item.to}
@@ -122,7 +147,7 @@ export function MobileNavDrawer({ open, onClose }) {
                   compact={true}
                 />
               )
-            )}
+            ))}
           </nav>
         </div>
       </div>

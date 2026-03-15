@@ -1,98 +1,76 @@
-import { RefreshCw, DollarSign, Euro } from 'lucide-react';
+import { RefreshCw, DollarSign } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLatestRate, useFetchTcmbRates } from '../../finance/hooks';
-import { Button, Card, Skeleton } from '../../../components/ui';
+import { Skeleton } from '../../../components/ui';
 import { cn } from '../../../lib/utils';
 
+/**
+ * CurrencyWidget — Compact inline USD/TRY rate chip.
+ * Designed to sit on the right side of the dashboard welcome row.
+ * Glassmorphism tokens match the rest of the dashboard cards.
+ */
 export function CurrencyWidget() {
-  const { t } = useTranslation(['common', 'finance']);
-  const { data: usdRate, isLoading: isUsdLoading } = useLatestRate('USD');
-  const { data: eurRate, isLoading: isEurLoading } = useLatestRate('EUR');
+  const { t } = useTranslation('finance');
+  const { data: usdRate, isLoading } = useLatestRate('USD');
   const fetchTcmbRatesMutation = useFetchTcmbRates();
 
-  const handleRefresh = () => {
-    fetchTcmbRatesMutation.mutate();
-  };
-
-  const isLoading = isUsdLoading || isEurLoading;
-
   if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 gap-3">
-        <Skeleton className="h-14 w-full rounded-xl" />
-        <Skeleton className="h-14 w-full rounded-xl" />
-      </div>
-    );
+    return <Skeleton className="h-10 w-56 rounded-xl flex-shrink-0" />;
   }
 
+  const buy  = usdRate?.buy_rate  ? Number(usdRate.buy_rate).toFixed(4)  : '–';
+  const sell = usdRate?.sell_rate ? Number(usdRate.sell_rate).toFixed(4) : '–';
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <h2 className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-            {t('finance:exchangeRates.title')}
-          </h2>
-          {usdRate?.rate_date && (
-            <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
-              {new Date(usdRate.rate_date).toLocaleDateString('tr-TR')} {usdRate.created_at ? new Date(usdRate.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : ''}
-            </span>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="xs"
-          className="h-7 px-2 text-xs gap-1.5"
-          onClick={handleRefresh}
-          loading={fetchTcmbRatesMutation.isPending}
-        >
-          <RefreshCw className={cn("w-3 h-3", fetchTcmbRatesMutation.isPending && "animate-spin")} />
-          {t('finance:exchangeRates.fetchTcmb')}
-        </Button>
+    <div className={cn(
+      'flex items-center gap-3 rounded-xl border px-3.5 py-2 flex-shrink-0',
+      'bg-white border-gray-200',
+      'dark:bg-gray-800/40 dark:backdrop-blur-sm dark:border-white/10'
+    )}>
+      {/* Icon + label */}
+      <div className="flex items-center gap-1.5">
+        <DollarSign className="w-3.5 h-3.5 text-neutral-400 dark:text-neutral-500 flex-shrink-0" />
+        <span className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+          USD/TRY
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
-        <CurrencyCard 
-          symbol="USD" 
-          icon={DollarSign} 
-          rate={usdRate} 
-          label={t('finance:exchangeRates.usdLabel')}
-        />
+      {/* Divider */}
+      <span className="w-px h-4 bg-gray-200 dark:bg-white/10 flex-shrink-0" />
+
+      {/* Buy */}
+      <div className="text-center">
+        <p className="text-[9px] font-medium text-neutral-400 dark:text-neutral-500 uppercase leading-none mb-0.5">
+          {t('exchangeRates.effectiveBuy')}
+        </p>
+        <p className="text-xs font-semibold tabular-nums text-neutral-700 dark:text-neutral-300">
+          {buy}
+        </p>
       </div>
+
+      {/* Sell */}
+      <div className="text-center">
+        <p className="text-[9px] font-medium text-neutral-400 dark:text-neutral-500 uppercase leading-none mb-0.5">
+          {t('exchangeRates.effectiveSell')}
+        </p>
+        <p className="text-xs font-semibold tabular-nums text-primary-600 dark:text-primary-400">
+          {sell}
+        </p>
+      </div>
+
+      {/* Divider */}
+      <span className="w-px h-4 bg-gray-200 dark:bg-white/10 flex-shrink-0" />
+
+      {/* Refresh */}
+      <button
+        type="button"
+        onClick={() => fetchTcmbRatesMutation.mutate()}
+        disabled={fetchTcmbRatesMutation.isPending}
+        title={t('exchangeRates.fetchTcmb')}
+        className="flex items-center justify-center w-6 h-6 rounded-md text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors disabled:opacity-40"
+      >
+        <RefreshCw className={cn('w-3 h-3', fetchTcmbRatesMutation.isPending && 'animate-spin')} />
+      </button>
     </div>
-  );
-}
-
-function CurrencyCard({ symbol, icon: Icon, rate, label }) {
-  const { t } = useTranslation('finance');
-
-  return (
-    <Card className="p-3 bg-white dark:bg-[#171717] border-neutral-200 dark:border-[#262626]">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-[#262626] flex items-center justify-center">
-            <Icon className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-neutral-900 dark:text-neutral-50">{symbol}</div>
-            <div className="text-[10px] text-neutral-500 dark:text-neutral-500 leading-none">{label}</div>
-          </div>
-        </div>
-
-        <div className="flex gap-8 text-right">
-          <div>
-            <div className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase tracking-tighter font-medium">{t('finance:exchangeRates.effectiveBuy')}</div>
-            <div className="text-base font-bold text-neutral-900 dark:text-neutral-50 tabular-nums">
-              {rate?.buy_rate ? Number(rate.buy_rate).toFixed(4) : '-'}
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase tracking-tighter font-medium">{t('finance:exchangeRates.effectiveSell')}</div>
-            <div className="text-base font-bold text-primary-600 dark:text-primary-400 tabular-nums">
-              {rate?.sell_rate ? Number(rate.sell_rate).toFixed(4) : '-'}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Card>
   );
 }

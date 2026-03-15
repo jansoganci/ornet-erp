@@ -436,6 +436,68 @@ input:-webkit-autofill:focus {
 }
 
 /* ============================================
+   DASHBOARD ANIMATIONS
+   Used by KPIStatCard, SparklineStatCard,
+   TodayScheduleFeed, TodayTaskChecklist,
+   OverduePaymentsList
+   ============================================ */
+
+/* Delta badge: fades in after the metric value renders */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Feed rows: staggered entrance when list loads */
+@keyframes rowReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Alert card border pulse: draws eye to critical KPI cards */
+@keyframes softPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.delta-badge {
+  animation: fadeSlideUp 200ms ease-out 400ms both;
+}
+
+/* Apply to each feed row with inline --row-delay CSS variable:
+   style={{ '--row-delay': `${index * 50}ms` }}
+   Only apply to first 6 rows to avoid excessive animation. */
+.feed-row {
+  animation: rowReveal 250ms ease-out var(--row-delay, 0ms) both;
+}
+
+.alert-accent-border {
+  animation: softPulse 2.5s ease-in-out infinite;
+}
+
+/* Tabular numbers utility — prevents layout shift when metrics update */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* ============================================
    REACT BIG CALENDAR — Design System Overrides
    Matches Ornet ERP warm/clear design language
    ============================================ */

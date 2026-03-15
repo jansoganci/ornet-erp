@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/errorHandler';
-import { supabase } from '../../lib/supabase';
+import { getCurrentUserProfile } from '../profile/api';
 import {
   fetchSubscriptions,
   fetchSubscriptionsPaginated,
@@ -63,17 +63,7 @@ export const paymentMethodKeys = {
 export function useCurrentProfile() {
   return useQuery({
     queryKey: ['currentProfile'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone, role')
-        .eq('id', user.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: getCurrentUserProfile,
   });
 }
 
@@ -156,7 +146,11 @@ export function useUpdateSubscription() {
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.detail(data.id) });
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.stats() });
-      toast.success(t('form.success.updated'));
+      if (data?._priceUpdateFailed) {
+        toast.warning(t('priceUpdatePartialError'));
+      } else {
+        toast.success(t('form.success.updated'));
+      }
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'common.updateFailed'));
@@ -260,8 +254,9 @@ export function useRecordPayment() {
 
   return useMutation({
     mutationFn: ({ paymentId, data }) => recordPayment(paymentId, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
+      queryClient.invalidateQueries({ queryKey: subscriptionKeys.payments(data.subscription_id) });
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });

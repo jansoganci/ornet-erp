@@ -35,8 +35,8 @@ export function StaticIpModal({ simCardId, open, onClose }) {
       reset();
       onClose();
     },
-    onError: (err) => {
-      toast.error(err?.message || t('staticIp.success.assigned'));
+    onError: () => {
+      toast.error(t('common:errors.saveFailed'));
     },
   });
 

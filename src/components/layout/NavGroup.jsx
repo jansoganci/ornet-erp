@@ -31,17 +31,17 @@ export function NavGroup({
   );
 
   const headerClass = cn(
-    'flex items-center w-full rounded-lg text-sm font-medium min-h-[44px] min-w-[44px]',
+    'flex items-center w-full rounded-lg min-h-[44px] min-w-[44px]',
     compact ? 'gap-3 px-3 py-3' : 'gap-3 px-3 py-2',
-    !isStatic && 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors cursor-pointer'
+    !isStatic && 'text-neutral-500 dark:text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors cursor-pointer'
   );
 
   return (
     <div className="space-y-1">
       {isStatic ? (
         <div className={headerClass} role="group" aria-labelledby={`nav-group-${id}-label`}>
-          <Icon className="w-5 h-5 flex-shrink-0" />
-          <span id={`nav-group-${id}-label`} className="flex-1 truncate text-left font-medium text-neutral-700 dark:text-neutral-300">
+          <Icon className="w-4 h-4 flex-shrink-0" />
+          <span id={`nav-group-${id}-label`} className="flex-1 truncate text-left text-[11px] font-semibold uppercase tracking-widest">
             {label}
           </span>
         </div>
@@ -53,14 +53,16 @@ export function NavGroup({
           aria-expanded={isExpanded}
           aria-controls={`nav-group-${id}`}
         >
-          <Icon className="w-5 h-5 flex-shrink-0" />
+          <Icon className="w-4 h-4 flex-shrink-0" />
           {!isCollapsed && (
             <>
-              <span className="flex-1 truncate text-left">{label}</span>
+              <span className="flex-1 truncate text-left text-[11px] font-semibold uppercase tracking-widest">
+                {label}
+              </span>
               {isExpanded ? (
-                <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
               ) : (
-                <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
               )}
             </>
           )}

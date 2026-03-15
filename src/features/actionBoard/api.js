@@ -1,7 +1,9 @@
 import { supabase } from '../../lib/supabase';
 
 export async function fetchLateWorkOrders() {
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 
   const { data, error } = await supabase
     .from('work_orders_detail')
@@ -12,12 +14,14 @@ export async function fetchLateWorkOrders() {
 
   if (error) throw error;
 
-  return (data ?? []).map((row) => ({
-    ...row,
-    daysLate: Math.floor(
-      (new Date(today) - new Date(row.scheduled_date)) / (1000 * 60 * 60 * 24)
-    ),
-  }));
+  return (data ?? []).map((row) => {
+    const d = new Date(row.scheduled_date);
+    const scheduledUTC = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    return {
+      ...row,
+      daysLate: Math.floor((todayUTC - scheduledUTC) / (1000 * 60 * 60 * 24)),
+    };
+  });
 }
 
 export async function fetchOverduePayments() {

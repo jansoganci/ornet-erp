@@ -38,7 +38,7 @@ export const navItems = [
   { to: '/daily-work', icon: CalendarCheck, labelKey: 'nav.dailyWork' },
   { to: '/customers', icon: Users, labelKey: 'nav.customers' },
   { to: '/work-orders', icon: ClipboardList, labelKey: 'nav.workOrders' },
-  { to: '/proposals', icon: FileText, labelKey: 'nav.proposals' },
+  { to: '/proposals', icon: FileText, labelKey: 'nav.proposals', canWriteOnly: true },
   // Operasyon group (notifications + action board)
   {
     type: 'group',
@@ -69,18 +69,19 @@ export const navItems = [
     labelKey: 'nav.groups.revenueInfra',
     icon: Building2,
     children: [
-      { to: '/subscriptions', icon: CreditCard, labelKey: 'nav.subscriptions' },
-      { to: '/sim-cards', icon: Cpu, labelKey: 'simCards:title' },
-      { to: '/sim-cards/invoice-analysis', icon: FileSearch, labelKey: 'invoiceAnalysis:title' },
+      { to: '/subscriptions', icon: CreditCard, labelKey: 'nav.subscriptions', canWriteOnly: true },
+      { to: '/sim-cards', icon: Cpu, labelKey: 'simCards:title', canWriteOnly: true },
+      { to: '/sim-cards/invoice-analysis', icon: FileSearch, labelKey: 'invoiceAnalysis:title', canWriteOnly: true },
       { to: '/equipment', icon: HardDrive, labelKey: 'nav.equipment' },
     ],
   },
-  // Finance group
+  // Finance group — admin + accountant only
   {
     type: 'group',
     id: 'finance',
     labelKey: 'nav.groups.finance',
     icon: Receipt,
+    canWriteOnly: true,
     children: [
       { to: '/finance', icon: Receipt, labelKey: 'nav.finance.dashboard' },
       { to: '/finance/income', icon: TrendingUp, labelKey: 'nav.finance.income' },

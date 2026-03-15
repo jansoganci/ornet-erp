@@ -22,11 +22,32 @@ export function AppLayout() {
   const { theme, toggleTheme } = useTheme();
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
-  const hasFinanceAccess = isAdmin || currentProfile?.role === 'accountant';
-  const hasNotificationAccess = isAdmin || currentProfile?.role === 'accountant';
-  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const canWrite = isAdmin || currentProfile?.role === 'accountant';
+  const hasFinanceAccess = canWrite;
+  const hasNotificationAccess = canWrite;
+  const visibleNavItems = navItems
+    .filter((item) => (!item.adminOnly || isAdmin) && (!item.canWriteOnly || canWrite))
+    .map((item) => {
+      if (item.type !== 'group') return item;
+      if (item.canWriteOnly && !canWrite) return null;
+      const visibleChildren = item.children.filter((child) => !child.canWriteOnly || canWrite);
+      if (visibleChildren.length === 0) return null;
+      return { ...item, children: visibleChildren };
+    })
+    .filter(Boolean);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; }
+  });
+
+  const handleToggleSidebarCollapse = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('sidebarCollapsed', String(next)); } catch {}
+      return next;
+    });
+  };
   const [quickEntryOpen, setQuickEntryOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
@@ -78,13 +99,17 @@ export function AppLayout() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a] transition-colors overflow-x-hidden">
       {/* Sidebar (Responsive Drawer / Collapsible Desktop) */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
+      <Sidebar
+        isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        isCollapsed={false}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleSidebarCollapse}
       />
 
-      <div className="flex flex-col min-h-screen transition-all duration-300 overflow-x-hidden lg:pl-64">
+      <div className={cn(
+        'flex flex-col min-h-screen transition-all duration-300 overflow-x-hidden',
+        isSidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'
+      )}>
         {/* Topbar */}
         <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 bg-white dark:bg-[#171717] border-b border-neutral-200 dark:border-[#262626] transition-colors">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">

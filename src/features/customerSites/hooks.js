@@ -5,6 +5,14 @@ import { getErrorMessage } from '../../lib/errorHandler';
 import * as api from './api';
 import { siteKeys } from './api';
 
+export function useAllSites({ search = '', enabled = true } = {}) {
+  return useQuery({
+    queryKey: siteKeys.listAll({ search }),
+    queryFn: () => api.fetchAllSites({ search }),
+    enabled,
+  });
+}
+
 export function useSitesByCustomer(customerId) {
   return useQuery({
     queryKey: siteKeys.listByCustomer(customerId),
@@ -68,9 +76,10 @@ export function useDeleteSite() {
   const { t } = useTranslation('common');
 
   return useMutation({
-    mutationFn: api.deleteSite,
-    onSuccess: () => {
+    mutationFn: ({ id, customerId }) => api.deleteSite(id),
+    onSuccess: (_, { customerId }) => {
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
+      queryClient.invalidateQueries({ queryKey: siteKeys.listByCustomer(customerId) });
       toast.success(t('success.deleted'));
     },
     onError: (error) => {

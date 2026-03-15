@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import i18n from '../../lib/i18n';
 
+const isoDateSchema = z.string().regex(
+  /^\d{4}-\d{2}-\d{2}$/,
+  'Geçerli bir tarih giriniz (YYYY-AA-GG)'
+);
+
 // Constants
 export const SUBSCRIPTION_TYPES = ['recurring_card', 'manual_cash', 'manual_bank'];
 export const SERVICE_TYPES = ['alarm_only', 'camera_only', 'internet_only', 'alarm_camera', 'alarm_camera_internet', 'camera_internet'];
@@ -21,9 +26,9 @@ const optionalEnum = (enumValues) => z.union([z.enum(enumValues), z.literal('')]
 
 // Subscription form schema
 export const subscriptionSchema = z.object({
-  site_id: z.string().min(1, i18n.t('errors:validation.required')),
+  site_id: z.string().min(1, i18n.t('errors:validation.required')).uuid(),
   subscription_type: z.enum(SUBSCRIPTION_TYPES),
-  start_date: z.string().min(1, i18n.t('errors:validation.required')),
+  start_date: isoDateSchema,
   billing_day: z.preprocess(toNumber, z.number().int().min(1).max(28).default(1)),
   base_price: z.preprocess(toNumber, z.number({ invalid_type_error: i18n.t('errors:validation.invalidNumber') }).min(0)),
   sms_fee: z.preprocess(toNumber, z.number().min(0).default(0)),
@@ -32,12 +37,12 @@ export const subscriptionSchema = z.object({
   cost: z.preprocess(toNumber, z.number().min(0).default(0)),
   static_ip_fee: z.preprocess(toNumber, z.number().min(0).default(0)),
   static_ip_cost: z.preprocess(toNumber, z.number().min(0).default(0)),
-  currency: z.string().default('TRY'),
-  payment_method_id: optionalString,
-  sold_by: optionalString,
-  managed_by: optionalString,
-  notes: optionalString,
-  setup_notes: optionalString,
+  currency: z.enum(['TRY', 'USD']).default('TRY'),
+  payment_method_id: optionalUuid,
+  sold_by: optionalUuid,
+  managed_by: optionalUuid,
+  notes: z.union([z.string().max(10000), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
+  setup_notes: z.union([z.string().max(10000), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
   service_type: optionalEnum(SERVICE_TYPES),
   billing_frequency: z.enum(BILLING_FREQUENCIES).default('monthly'),
   cash_collector_id: optionalString,
@@ -100,7 +105,7 @@ export const subscriptionDefaultValues = {
 
 // Payment record schema
 export const paymentRecordSchema = z.object({
-  payment_date: z.string().min(1, i18n.t('errors:validation.required')),
+  payment_date: isoDateSchema,
   payment_method: z.enum(PAYMENT_METHODS),
   should_invoice: z.boolean().default(true),
   vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),
@@ -139,7 +144,13 @@ export const paymentMethodSchema = z.object({
   card_expiry: optionalString,
   card_brand: optionalString,
   bank_name: optionalString,
-  iban: optionalString,
+  iban: z.union([
+    z.string().regex(
+      /^TR\d{2}[0-9]{22}$/,
+      'Geçerli bir IBAN giriniz (TR ile başlayan 26 karakter)'
+    ),
+    z.literal(''),
+  ]).optional().transform((v) => (v === '' ? undefined : v)),
   label: optionalString,
   is_default: z.boolean().default(false),
 });

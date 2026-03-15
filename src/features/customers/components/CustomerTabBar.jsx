@@ -10,12 +10,13 @@ const TABS = [
   { key: 'equipment',   icon: Package,          labelKey: 'detail.tabs.equipment',   countKey: 'equipment' },
 ];
 
-export function CustomerTabBar({ activeTab, onTabChange, counts = {} }) {
+export function CustomerTabBar({ activeTab, onTabChange, counts = {}, allowedTabs }) {
   const { t } = useTranslation('customers');
+  const visibleTabs = allowedTabs ? TABS.filter((tab) => allowedTabs.includes(tab.key)) : TABS;
 
   return (
     <div className="flex items-center gap-1 p-1 w-full bg-neutral-100 dark:bg-neutral-800/60 rounded-xl overflow-x-auto no-scrollbar">
-      {TABS.map(({ key, icon: IconComponent, labelKey, countKey }) => {
+      {visibleTabs.map(({ key, icon: IconComponent, labelKey, countKey }) => {
         const isActive = activeTab === key;
         const count = countKey != null ? (counts[countKey] ?? 0) : null;
 

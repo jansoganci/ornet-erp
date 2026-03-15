@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,14 +8,18 @@ import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Card, Input, Spinner, Textarea, FormSkeleton } from '../../components/ui';
 import { useEffect } from 'react';
 import { maskPhone } from '../../lib/utils';
+import { useRole } from '../../lib/roles';
 
 export function CustomerFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation(['customers', 'common', 'errors']);
   const { t: tCommon } = useTranslation('common');
+  const { isFieldWorker } = useRole();
 
   const isEdit = Boolean(id);
+
+  if (isFieldWorker) return <Navigate to="/customers" replace />;
   const { data: customer, isLoading: customerLoading } = useCustomer(id);
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
@@ -35,6 +39,7 @@ export function CustomerFormPage() {
     if (isEdit && customer) {
       reset({
         company_name: customer.company_name || '',
+        subscriber_title: customer.subscriber_title || '',
         phone: customer.phone || '',
         phone_secondary: customer.phone_secondary || '',
         email: customer.email || '',
@@ -98,6 +103,15 @@ export function CustomerFormPage() {
                 placeholder={t('customers:form.placeholders.companyName')}
                 error={errors.company_name?.message}
                 {...register('company_name')}
+              />
+            </div>
+
+            <div className="lg:col-span-2">
+              <Input
+                label={t('customers:form.fields.subscriberTitle')}
+                placeholder={t('customers:form.placeholders.subscriberTitle')}
+                error={errors.subscriber_title?.message}
+                {...register('subscriber_title')}
               />
             </div>
 

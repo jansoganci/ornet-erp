@@ -101,3 +101,30 @@ export async function fetchPendingTasks() {
   if (error) throw error;
   return data;
 }
+
+export async function fetchMonthlyRevenue(monthsBack = 7) {
+  if (!isSupabaseConfigured) {
+    // Mock: descending months ending today
+    const months = [];
+    const labels = ['Eyl', 'Eki', 'Kas', 'Ara', 'Oca', 'Şub', 'Mar'];
+    const now = new Date();
+    for (let i = monthsBack - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      months.push({ month: key, revenue: 60000 + Math.random() * 30000, expense: 30000 + Math.random() * 15000 });
+    }
+    return months;
+  }
+
+  const { data, error } = await supabase.rpc('get_monthly_revenue_expense', { months_back: monthsBack });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchOverduePayments() {
+  if (!isSupabaseConfigured) return [];
+
+  const { data, error } = await supabase.rpc('get_overdue_subscription_payments');
+  if (error) throw error;
+  return data ?? [];
+}

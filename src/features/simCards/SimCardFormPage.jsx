@@ -96,10 +96,13 @@ export function SimCardFormPage() {
   }
 
   const customerOptions = customers?.map(c => ({ value: c.id, label: c.company_name })) || [];
-  const siteOptions = sites?.map(s => ({ 
-    value: s.id, 
-    label: s.site_name ? `${s.site_name} (${s.account_no || '---'})` : `${s.address} (${s.account_no || '---'})`
-  })) || [];
+  const siteOptions = sites?.map(s => {
+    const loc = [s.site_name, s.address, s.district, s.city].filter(Boolean).join(', ');
+    return {
+      value: s.id,
+      label: loc ? `${loc} (${s.account_no || '---'})` : `Hesap: ${s.account_no || '---'}`
+    };
+  }) || [];
   
   const operatorOptions = [
     { value: 'TURKCELL', label: t('operators.TURKCELL') },

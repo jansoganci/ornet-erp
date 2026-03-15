@@ -7,6 +7,7 @@ import { useBulkUpsertMaterials } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
+import { toast } from 'sonner';
 
 const HEADERS = ['Kod', 'Ad', 'Kategori', 'Birim', 'Açıklama'];
 
@@ -47,8 +48,12 @@ export function MaterialImportPage() {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        validateAndFormatData(jsonData);
+        const result = validateAndFormatData(jsonData);
+        if (!result) {
+          toast.error(t('materials:import.parseError'));
+        }
       } catch {
+        toast.error(t('materials:import.parseError'));
         setErrors([t('materials:import.parse')]);
       } finally {
         setIsParsing(false);
@@ -59,6 +64,8 @@ export function MaterialImportPage() {
   };
 
   const validateAndFormatData = (rawRows) => {
+    if (!rawRows || rawRows.length === 0) return null;
+
     const formattedData = [];
     const validationErrors = [];
 
@@ -92,6 +99,7 @@ export function MaterialImportPage() {
 
     setData(formattedData);
     setErrors(validationErrors);
+    return formattedData;
   };
 
   const handleImport = async () => {

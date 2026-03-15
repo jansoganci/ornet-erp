@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { startOfDay, startOfWeek, isAfter, parseISO } from 'date-fns';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import {
   fetchActiveNotifications,
   fetchResolvedNotifications,
@@ -12,6 +12,8 @@ import {
   fetchReminders,
   createReminder,
   completeReminder,
+  subscribeToNotifications,
+  unsubscribeFromNotifications,
 } from './api';
 
 export const notificationKeys = {
@@ -141,26 +143,15 @@ export function useNotificationRealtime() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured) return;
 
-    const channel = supabase
-      .channel('notifications-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: notificationKeys.badge() });
-          queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-        }
-      )
-      .subscribe();
+    const channel = subscribeToNotifications(() => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.badge() });
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribeFromNotifications(channel);
     };
   }, [queryClient]);
 }

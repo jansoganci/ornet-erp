@@ -34,7 +34,8 @@
     "loadFailed": "Dashboard verileri yüklenemedi"
   },
   "subscriptions": {
-    "importFailed": "İçe aktarım başarısız oldu"
+    "importFailed": "İçe aktarım başarısız oldu",
+    "duplicateActive": "Bu lokasyon için bu hizmet tipinde zaten aktif bir abonelik var. Farklı bir hizmet tipi seçin veya mevcut aboneliği iptal edin."
   },
   "simCards": {
     "loadFailed": "SIM kartlar yüklenemedi",
@@ -43,5 +44,12 @@
     "deleteFailed": "SIM kart silinemedi",
     "rlsOrForbidden": "Bu işlem için yetkiniz bulunmuyor veya veritabanı kuralı ihlal edildi. Lütfen yönetici ile iletişime geçin."
   },
-  "invalid": "Geçersiz işlem. Lütfen tekrar deneyin."
+  "invalid": "Geçersiz işlem. Lütfen tekrar deneyin.",
+  "db": {
+    "duplicate": "Bu kayıt zaten mevcut.",
+    "foreignKey": "İlişkili kayıt nedeniyle işlem yapılamıyor.",
+    "notNull": "Zorunlu alan eksik.",
+    "checkViolation": "Geçersiz değer girildi.",
+    "invalidFormat": "Geçersiz veri formatı."
+  }
 }

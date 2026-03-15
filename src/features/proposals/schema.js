@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import i18n from '../../lib/i18n';
 
+const isoDateSchema = z.string().regex(
+  /^\d{4}-\d{2}-\d{2}$/,
+  'Geçerli bir tarih giriniz (YYYY-AA-GG)'
+);
+
 const optionalNum = () => z.coerce.number().min(0).optional().nullable();
 const optionalStr = () => z.string().optional().or(z.literal(''));
 
@@ -9,7 +14,10 @@ export const CURRENCIES = ['TRY', 'USD'];
 export const proposalItemSchema = z.object({
   description: z.string().min(1, i18n.t('errors:validation.required')),
   quantity: z.coerce.number().positive(),
-  unit: z.string().default('adet'),
+  unit: z.enum([
+    'adet', 'boy', 'paket', 'metre', 'mm', 'V', 'A', 'W',
+    'MHz', 'TB', 'MP', 'port', 'kanal', 'inç', 'rpm', 'bölge',
+  ]).default('adet'),
   unit_price: z.coerce.number().min(0),
   material_id: z.string().uuid().optional().nullable().or(z.literal('')),
   cost: z.coerce.number().min(0).optional().nullable(),
@@ -23,20 +31,20 @@ export const proposalItemSchema = z.object({
 });
 
 export const proposalSchema = z.object({
-  site_id: z.string().min(1, i18n.t('errors:validation.required')),
+  site_id: z.string().min(1, i18n.t('errors:validation.required')).uuid(),
   title: z.string().min(1, i18n.t('errors:validation.required')),
   scope_of_work: optionalStr(),
   notes: optionalStr(),
-  currency: z.string().default('USD'),
+  currency: z.enum(['TRY', 'USD']).default('USD'),
   items: z.array(proposalItemSchema).min(1, i18n.t('errors:validation.required')),
   // Header fields
   company_name: optionalStr(),
-  proposal_date: optionalStr(),
-  survey_date: optionalStr(),
+  proposal_date: isoDateSchema.optional().or(z.literal('')),
+  survey_date: isoDateSchema.optional().or(z.literal('')),
   authorized_person: optionalStr(),
-  installation_date: optionalStr(),
+  installation_date: isoDateSchema.optional().or(z.literal('')),
   customer_representative: optionalStr(),
-  completion_date: optionalStr(),
+  completion_date: isoDateSchema.optional().or(z.literal('')),
   discount_percent: z.coerce.number().min(0).max(100).optional().nullable(),
   terms_engineering: optionalStr(),
   terms_pricing: optionalStr(),

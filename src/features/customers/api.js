@@ -89,6 +89,18 @@ export async function updateCustomer({ id, ...customerData }) {
 }
 
 /**
+ * Fetch all existing customer company_names (for duplicate detection in import).
+ */
+export async function fetchExistingCustomerNames() {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('company_name')
+    .is('deleted_at', null);
+  if (error) throw error;
+  return data.map((r) => r.company_name).filter(Boolean);
+}
+
+/**
  * Delete a customer
  */
 export async function deleteCustomer(id) {

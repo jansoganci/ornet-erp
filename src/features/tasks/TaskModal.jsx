@@ -58,6 +58,7 @@ export function TaskModal({ open, onClose, task = null }) {
   }, [open, task, reset]);
 
   const onSubmit = (data) => {
+    if (createMutation.isPending || updateMutation.isPending) return;
     if (isEdit) {
       updateMutation.mutate(
         { id: task.id, ...data },
@@ -111,7 +112,7 @@ export function TaskModal({ open, onClose, task = null }) {
         </div>
       }
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form className="space-y-4">
         <Input
           label={t('form.fields.title')}
           placeholder={t('form.placeholders.title')}
