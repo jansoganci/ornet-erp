@@ -150,13 +150,13 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
   }, [activeTab, open, showTabs, isEditMode, reset, latestRate?.effective_rate]);
 
   useEffect(() => {
-    if (originalCurrency === 'USD' && latestRate?.effective_rate && !exchangeRate) {
+    if (originalCurrency === 'USD' && latestRate?.effective_rate && exchangeRate == null) {
       setValue('exchange_rate', latestRate.effective_rate);
     }
   }, [originalCurrency, latestRate?.effective_rate, exchangeRate, setValue]);
 
   useEffect(() => {
-    if (originalCurrency === 'USD' && amountOriginal != null && exchangeRate) {
+    if (originalCurrency === 'USD' && amountOriginal != null && exchangeRate != null) {
       const amt = Number(amountOriginal) || 0;
       const rate = Number(exchangeRate) || 0;
       setValue('amount_try', Math.round(amt * rate * 100) / 100);
