@@ -20,6 +20,13 @@ function parseCurrency(value) {
   return Number.isNaN(n) ? null : n;
 }
 
+function excelSerialToDate(serial) {
+  const utcMs = (serial - 25569) * 86400 * 1000;
+  const date = new Date(utcMs);
+  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(utcMs + offsetMs);
+}
+
 function parseImportDate(value) {
   try {
     if (value === null || value === undefined || value === '' || value === 0) return null;
@@ -28,7 +35,7 @@ function parseImportDate(value) {
 
     const excelSerial = Number(s);
     if (!Number.isNaN(excelSerial) && excelSerial > 1) {
-      const d = new Date((excelSerial - 25569) * 86400 * 1000);
+      const d = excelSerialToDate(excelSerial);
       if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1900) return null;
       return d.toISOString().slice(0, 10);
     }
@@ -233,9 +240,9 @@ export function SimCardImportPage() {
       } else if (skipped > 0) {
         toast.warning(t('simCards:import.allSkippedDuplicates', { count: skipped }));
       }
-    } catch (err) {
-      console.error('[handleImport] caught error:', err);
-      toast.error(err?.message || 'Import failed');
+    } catch {
+      toast.error(t('simCards:import.failed'));
+      toast.warning(t('simCards:import.partialFailureWarning'));
     }
   };
 

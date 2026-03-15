@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, User, Edit2, ClipboardList, Info, ChevronRight, CreditCard, Plus } from 'lucide-react';
+import { MapPin, Phone, User, Edit2, ClipboardList, Info, ChevronRight, CreditCard, Plus, Building2, Calendar } from 'lucide-react';
 import { 
   Card, 
   Button, 
@@ -8,6 +8,8 @@ import {
   IconButton 
 } from '../../components/ui';
 import { cn } from '../../lib/utils';
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 export function SiteCard({ 
   site, 
@@ -48,24 +50,44 @@ export function SiteCard({
               </div>
             </div>
           </div>
-          <IconButton
-            icon={Edit2}
-            size="sm"
-            variant="ghost"
-            onClick={() => onEdit(site)}
-            aria-label={t('common:actions.edit')}
-            className="opacity-0 group-hover:opacity-100 transition-opacity"
-          />
+          {onEdit && (
+            <IconButton
+              icon={Edit2}
+              size="sm"
+              variant="ghost"
+              onClick={() => onEdit(site)}
+              aria-label={t('common:actions.edit')}
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+          )}
         </div>
 
         {/* Content */}
         <div className="flex-1 space-y-3">
-          <div className="flex items-start text-sm text-neutral-600 dark:text-neutral-400">
-            <MapPin className="w-4 h-4 mr-2 mt-0.5 shrink-0 text-neutral-400" />
-            <p className="line-clamp-2">
-              {site.address} {site.district} {site.city}
-            </p>
-          </div>
+          {(site.address || site.district || site.city) && (
+            <div className="flex items-start text-sm text-neutral-600 dark:text-neutral-400">
+              <MapPin className="w-4 h-4 mr-2 mt-0.5 shrink-0 text-neutral-400" />
+              <p className="line-clamp-2">
+                {[site.address, site.district, site.city].filter(Boolean).join(', ')}
+              </p>
+            </div>
+          )}
+
+          {site.alarm_center && (
+            <div className="flex items-center text-sm text-neutral-600 dark:text-neutral-400">
+              <Building2 className="w-4 h-4 mr-2 shrink-0 text-neutral-400" />
+              <span className="truncate">{site.alarm_center}</span>
+            </div>
+          )}
+
+          {site.connection_date && (
+            <div className="flex items-center text-sm text-neutral-600 dark:text-neutral-400">
+              <Calendar className="w-4 h-4 mr-2 shrink-0 text-neutral-400" />
+              <span>
+                {format(new Date(site.connection_date), 'd MMM yyyy', { locale: tr })}
+              </span>
+            </div>
+          )}
 
           {(site.contact_name || site.contact_phone) && (
             <div className="flex items-center text-sm text-neutral-600 dark:text-neutral-400">

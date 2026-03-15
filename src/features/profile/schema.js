@@ -4,8 +4,13 @@ import i18n from '../../lib/i18n';
 export const profileSchema = z.object({
   full_name: z
     .string()
-    .min(1, i18n.t('profile:validation.fullNameRequired')),
-  phone: z.string().optional(),
+    .min(1, i18n.t('profile:validation.fullNameRequired'))
+    .max(100),
+  phone: z
+    .string()
+    .regex(/^[0-9+\s\-()]{7,20}$/, 'Geçerli bir telefon numarası giriniz')
+    .optional()
+    .or(z.literal('')),
 });
 
 export const profileDefaultValues = {
@@ -21,6 +26,7 @@ const passwordSchema = z
 
 export const changePasswordSchema = z
   .object({
+    currentPassword: z.string().min(1, i18n.t('auth:validation.passwordRequired')),
     password: passwordSchema,
     confirmPassword: z.string().min(1, i18n.t('auth:validation.confirmPasswordRequired')),
   })
@@ -30,6 +36,7 @@ export const changePasswordSchema = z
   });
 
 export const changePasswordDefaultValues = {
+  currentPassword: '',
   password: '',
   confirmPassword: '',
 };

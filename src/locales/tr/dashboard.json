@@ -1,6 +1,11 @@
 {
   "title": "Ana Sayfa",
   "welcome": "Hoş geldiniz",
+  "greeting": {
+    "morning": "Günaydın",
+    "afternoon": "İyi günler",
+    "evening": "İyi akşamlar"
+  },
   "stats": {
     "todayWorkOrders": "Bugünkü İşler",
     "pendingWorkOrders": "Bekleyen İşler",
@@ -27,7 +32,9 @@
     "addWorkOrder": "İş Emri Oluştur",
     "addTask": "Görev Ekle",
     "dailyWork": "Günlük İşler",
-    "workHistory": "İş Geçmişi Ara"
+    "workHistory": "İş Geçmişi Ara",
+    "tasks": "Görevlerim",
+    "actionBoard": "Aksiyon Panosu"
   },
   "todoSection": {
     "title": "Yapılacaklar",
@@ -38,5 +45,46 @@
   },
   "recentActivity": {
     "title": "Son Aktiviteler"
+  },
+  "kpi": {
+    "overdueWorkOrders": "Geciken İş Emirleri",
+    "todayPlanned": "Bugün Planlanan",
+    "activeSubscriptions": "Aktif Abonelik",
+    "mrr": "Aylık Tekrar Eden Gelir",
+    "uncollectedPayments": "Tahsil Edilemeyen",
+    "netProfit": "Net Kâr (Bu Ay)",
+    "waitingLabel": "bekliyor"
+  },
+  "sparkline": {
+    "monthlyRevenue": "Aylık Toplam Gelir",
+    "subscriptions": "Aktif Abonelikler",
+    "mrrTrend": "MRR Trendi"
+  },
+  "sections": {
+    "todaySchedule": "Bugünün Programı",
+    "overduePayments": "Geciken Ödemeler",
+    "todayTasks": "Bugünün Görevleri",
+    "revenueChart": "Gelir / Gider"
+  },
+  "feed": {
+    "viewAll": "Tümünü Gör",
+    "emptySchedule": "Bugün planlanmış iş emri yok.",
+    "emptyTasks": "Bugün için görev yok.",
+    "emptyPayments": "Geciken ödeme bulunmuyor.",
+    "daysOverdue_one": "{{count}} gündür bekliyor",
+    "daysOverdue_other": "{{count}} gündür bekliyor",
+    "monthsOverdue_one": "{{count}} ay gecikmiş",
+    "monthsOverdue_other": "{{count}} ay gecikmiş",
+    "call": "Ara"
+  },
+  "checklist": {
+    "counter": "{{completed}} / {{total}} tamamlandı"
+  },
+  "overduePayments": {
+    "empty": "Geciken ödeme bulunmuyor."
+  },
+  "chart": {
+    "revenue": "Gelir",
+    "expense": "Gider"
   }
 }

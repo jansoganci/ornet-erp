@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { fetchWorkOrders } from '../workOrders/api';
-import { fetchTasksByDateRange } from '../tasks/api';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { fetchWorkOrders, fetchTasksByDateRange, subscribeToCalendar, unsubscribeFromCalendar } from './api';
 import { mapWorkOrdersToEvents, mapTasksToEvents } from './utils';
 
 export const calendarKeys = {
@@ -82,36 +81,15 @@ export function useCalendarRealtime() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return;
+    if (!isSupabaseConfigured) return;
 
-    const channel = supabase
-      .channel('calendar-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'work_orders',
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: calendarKeys.all });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks',
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: calendarKeys.all });
-        }
-      )
-      .subscribe();
+    const channel = subscribeToCalendar(
+      () => { queryClient.invalidateQueries({ queryKey: calendarKeys.all }); },
+      () => { queryClient.invalidateQueries({ queryKey: calendarKeys.all }); }
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribeFromCalendar(channel);
     };
   }, [queryClient]);
 }

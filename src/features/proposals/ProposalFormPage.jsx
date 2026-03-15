@@ -130,7 +130,7 @@ export function ProposalFormPage() {
         if (!skipNavigate) navigate(`/proposals/${newProposal.id}`);
       }
     } catch (err) {
-      toast.error(err?.message || t('common:error.title'));
+      toast.error(t('common:errors.saveFailed'));
       throw err; // re-throw so onSave can detect network failure
     }
   };

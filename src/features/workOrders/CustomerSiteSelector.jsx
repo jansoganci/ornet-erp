@@ -216,10 +216,13 @@ export function CustomerSiteSelector({
                   onChange={handleSiteSelect}
                   options={[
                     ...(siteOptional ? [{ value: '', label: t('proposals:form.noSite') }] : []),
-                    ...sites.map(s => ({
-                      value: s.id,
-                      label: s.site_name ? `${s.site_name} (${s.account_no || '---'})` : `${s.address} (${s.account_no || '---'})`
-                    }))
+                    ...sites.map(s => {
+                      const loc = [s.site_name, s.address, s.district, s.city].filter(Boolean).join(', ');
+                      return {
+                        value: s.id,
+                        label: loc ? `${loc} (${s.account_no || '---'})` : `Hesap: ${s.account_no || '---'}`
+                      };
+                    })
                   ]}
                   placeholder={t('workOrders:form.placeholders.selectSite')}
                   error={error}
@@ -245,14 +248,16 @@ export function CustomerSiteSelector({
                         </p>
                       </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1">
-                        {t('customers:sites.fields.address')}
-                      </p>
-                      <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                        {selectedSite.address} {selectedSite.district} {selectedSite.city}
-                      </p>
-                    </div>
+                    {(selectedSite.address || selectedSite.district || selectedSite.city) && (
+                      <div>
+                        <p className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1">
+                          {t('customers:sites.fields.address')}
+                        </p>
+                        <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                          {[selectedSite.address, selectedSite.district, selectedSite.city].filter(Boolean).join(', ')}
+                        </p>
+                      </div>
+                    )}
                     {selectedSite.panel_info && (
                       <div className="pt-2 border-t border-neutral-200/50 dark:border-neutral-800/50">
                         <p className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1">

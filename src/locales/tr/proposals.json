@@ -182,6 +182,7 @@
       "unitPrice": "Birim Fiyat ($)",
       "total": "Toplam ($)"
     },
-    "grandTotal": "Genel Toplam"
+    "grandTotal": "Genel Toplam",
+    "exportError": "PDF oluşturulurken bir hata oluştu"
   }
 }

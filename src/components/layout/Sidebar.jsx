@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
-import { LogOut, User, X } from 'lucide-react';
+import { LogOut, User, X, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
 import { useCurrentProfile } from '../../features/subscriptions/hooks';
 import { navItems } from './navItems';
 import { NavGroup } from './NavGroup';
+import { Skeleton } from '../ui/Skeleton';
 
 function isFlatItem(item) {
   return !item.type || item.type !== 'group';
@@ -29,16 +30,39 @@ function loadGroupState() {
   return DEFAULT_GROUP_STATE;
 }
 
-export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
+const ROLE_LABELS = {
+  admin:        'Yönetici',
+  accountant:   'Muhasebe',
+  field_worker: 'Saha',
+  viewer:       'İzleyici',
+};
+
+export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) {
   const { t: tCommon } = useTranslation('common');
   const { t: tAuth } = useTranslation('auth');
   const { user, signOut } = useAuth();
-  const { data: currentProfile } = useCurrentProfile();
+  const { data: currentProfile, isLoading: profileIsLoading } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
+  const canWrite = isAdmin || currentProfile?.role === 'accountant';
   const hasNotificationAccess = isAdmin || currentProfile?.role === 'accountant';
-  const visibleNavItems = navItems.filter(
-    (item) => (!item.adminOnly || isAdmin) && (!item.notificationCenter || hasNotificationAccess)
-  );
+
+  const visibleNavItems = navItems
+    .filter(
+      (item) =>
+        (!item.adminOnly || isAdmin) &&
+        (!item.notificationCenter || hasNotificationAccess) &&
+        (!item.canWriteOnly || canWrite)
+    )
+    .map((item) => {
+      if (item.type !== 'group') return item;
+      if (item.canWriteOnly && !canWrite) return null;
+      const visibleChildren = item.children.filter(
+        (child) => !child.canWriteOnly || canWrite
+      );
+      if (visibleChildren.length === 0) return null;
+      return { ...item, children: visibleChildren };
+    })
+    .filter(Boolean);
 
   const [groupState, setGroupState] = useState(loadGroupState);
 
@@ -82,22 +106,48 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
       >
         {/* Brand */}
         <div className={cn(
-          'flex items-center justify-between h-16 border-b border-neutral-200 dark:border-[#262626]',
-          isCollapsed ? 'px-4 lg:px-2 lg:justify-center' : 'px-6'
+          'flex items-center h-16 border-b border-neutral-200 dark:border-[#262626] gap-2',
+          isCollapsed ? 'px-2 justify-center' : 'px-4'
         )}>
-          {!isCollapsed && (
-            <h1 className="text-xl font-bold font-heading text-primary-600 dark:text-primary-400">
-              {tCommon('appName')}
-            </h1>
+          {isCollapsed ? (
+            <button
+              onClick={onToggleCollapse}
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg bg-primary-600 dark:bg-primary-500 text-white hover:bg-primary-700 dark:hover:bg-primary-600 transition-colors mx-auto"
+              title={tCommon('nav.expandSidebar')}
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <>
+              {/* Logo + role badge */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold font-heading text-primary-600 dark:text-primary-400 leading-none">
+                    {tCommon('appName')}
+                  </h1>
+                  {currentProfile?.role && (
+                    <span className="hidden lg:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary-100 text-primary-700 dark:bg-primary-950/50 dark:text-primary-400 flex-shrink-0">
+                      {ROLE_LABELS[currentProfile.role] ?? currentProfile.role}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Desktop collapse toggle */}
+              <button
+                onClick={onToggleCollapse}
+                className="hidden lg:flex items-center justify-center w-7 h-7 rounded-md text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex-shrink-0"
+                title={tCommon('nav.collapseSidebar')}
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+            </>
           )}
-          {isCollapsed && (
-            <div className="w-8 h-8 rounded-lg bg-primary-600 dark:bg-primary-500 flex items-center justify-center lg:mx-auto">
-              <span className="text-white text-sm font-bold">O</span>
-            </div>
-          )}
+
+          {/* Mobile close button */}
           <button
             onClick={onClose}
-            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md lg:hidden"
+            className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md lg:hidden flex-shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -108,7 +158,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false }) {
           'flex-1 py-6 space-y-1 overflow-y-auto overflow-x-hidden',
           isCollapsed ? 'px-2' : 'px-4'
         )}>
-          {visibleNavItems.map((item) =>
+          {profileIsLoading && (
+            <div className="space-y-1">
+              <Skeleton className={cn('h-11 rounded-lg', isCollapsed ? 'w-10 mx-auto' : 'w-full')} />
+              <Skeleton className={cn('h-11 rounded-lg', isCollapsed ? 'w-10 mx-auto' : 'w-full')} />
+            </div>
+          )}
+          {!profileIsLoading && visibleNavItems.map((item) =>
             isFlatItem(item) ? (
               <NavLink
                 key={item.to}

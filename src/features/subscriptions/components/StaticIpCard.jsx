@@ -33,8 +33,8 @@ export function StaticIpCard({ simCardId, isAdmin = false }) {
       queryClient.invalidateQueries({ queryKey: ['staticIpHistory', simCardId] });
       toast.success(t('simCards:staticIp.success.cancelled'));
     },
-    onError: (err) => {
-      toast.error(err?.message);
+    onError: () => {
+      toast.error(t('common:errors.saveFailed'));
     },
   });
 

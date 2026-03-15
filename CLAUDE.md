@@ -517,6 +517,8 @@ const { data } = await supabase
 
 ## Critical Rules
 
+> See [/docs/CODING-LESSONS.md](/docs/CODING-LESSONS.md) for 14 audit-derived coding rules with bad/good code examples (React Query invalidation, timezone-safe dates, auth guards, form wiring, and more).
+
 ### ALWAYS Do
 
 1. **Implement i18n** - Every page, modal, popup must use translations

@@ -17,8 +17,10 @@ import { CustomerLocationsTab } from './tabs/CustomerLocationsTab';
 import { CustomerWorkOrdersTab } from './tabs/CustomerWorkOrdersTab';
 import { CustomerSimCardsTab } from './tabs/CustomerSimCardsTab';
 import { CustomerEquipmentTab } from './tabs/CustomerEquipmentTab';
+import { useRole } from '../../lib/roles';
 
-const VALID_TABS = ['overview', 'locations', 'workOrders', 'simCards', 'equipment'];
+const ALL_TABS = ['overview', 'locations', 'workOrders', 'simCards', 'equipment'];
+const FIELD_WORKER_TABS = ['overview', 'locations', 'workOrders', 'equipment'];
 
 function CustomerDetailSkeleton() {
   return (
@@ -49,6 +51,9 @@ export function CustomerDetailPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation('customers');
   const { t: tCommon } = useTranslation('common');
+  const { isFieldWorker, canWrite } = useRole();
+
+  const validTabs = isFieldWorker ? FIELD_WORKER_TABS : ALL_TABS;
 
   // Data fetching
   const { data: customer, isLoading, error, refetch } = useCustomer(id);
@@ -61,7 +66,7 @@ export function CustomerDetailPage() {
 
   // Active tab — read from URL, fall back to 'overview'
   const rawTab = searchParams.get('tab');
-  const activeTab = VALID_TABS.includes(rawTab) ? rawTab : 'overview';
+  const activeTab = validTabs.includes(rawTab) ? rawTab : 'overview';
 
   const handleTabChange = (tab) => {
     setSearchParams((prev) => {
@@ -177,10 +182,10 @@ export function CustomerDetailPage() {
       {/* ── Hero ── */}
       <CustomerHero
         customer={customer}
-        monthlyRevenue={monthlyRevenue}
+        monthlyRevenue={canWrite ? monthlyRevenue : 0}
         locationCount={sites.length}
-        onEdit={handleEdit}
-        onDelete={() => setShowDeleteModal(true)}
+        onEdit={canWrite ? handleEdit : undefined}
+        onDelete={canWrite ? () => setShowDeleteModal(true) : undefined}
         onNewWorkOrder={() => handleNewWorkOrder()}
       />
 
@@ -188,6 +193,7 @@ export function CustomerDetailPage() {
       <CustomerTabBar
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        allowedTabs={validTabs}
         counts={{
           locations: sites.length,
           workOrders: workOrders.length,

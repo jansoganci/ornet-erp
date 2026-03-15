@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import i18n from '../../lib/i18n';
 
+const isoDateSchema = z.string().regex(
+  /^\d{4}-\d{2}-\d{2}$/,
+  'Geçerli bir tarih giriniz (YYYY-AA-GG)'
+);
+
 export const ASSET_TYPES = [
   'alarm_panel',
   'keypad',
@@ -40,9 +45,9 @@ export const assetSchema = z.object({
   model: optionalString,
   serial_number: optionalString,
   material_id: optionalNullableUuid,
-  installed_at: optionalString,
+  installed_at: z.union([isoDateSchema, z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
   location_note: optionalString,
-  warranty_expires_at: optionalString,
+  warranty_expires_at: z.union([isoDateSchema, z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
   notes: optionalString,
   ownership_type: optionalNullableEnum(OWNERSHIP_TYPES),
   subscription_id: optionalNullableUuid,

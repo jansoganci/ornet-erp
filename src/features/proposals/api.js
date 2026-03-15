@@ -105,6 +105,7 @@ export async function createProposal({ items, ...proposalData }) {
   if (proposalError) throw proposalError;
 
   if (items?.length > 0) {
+    const _currency = proposalData.currency || 'USD';
     const itemsToInsert = items.map((item, index) => {
       const unitPrice = item.unit_price ?? 0;
       const cost = item.cost ?? null;
@@ -114,22 +115,22 @@ export async function createProposal({ items, ...proposalData }) {
         description: item.description,
         quantity: item.quantity,
         unit: item.unit || 'adet',
-        unit_price: unitPrice,
-        unit_price_usd: unitPrice,
+        unit_price: _currency === 'USD' ? null : unitPrice,
+        unit_price_usd: _currency === 'USD' ? unitPrice : null,
         material_id: item.material_id ?? null,
-        cost,
-        cost_usd: cost,
+        cost: _currency === 'USD' ? null : cost,
+        cost_usd: _currency === 'USD' ? cost : null,
         margin_percent: item.margin_percent ?? null,
-        product_cost: item.product_cost ?? null,
-        product_cost_usd: item.product_cost ?? null,
-        labor_cost: item.labor_cost ?? null,
-        labor_cost_usd: item.labor_cost ?? null,
-        shipping_cost: item.shipping_cost ?? null,
-        shipping_cost_usd: item.shipping_cost ?? null,
-        material_cost: item.material_cost ?? null,
-        material_cost_usd: item.material_cost ?? null,
-        misc_cost: item.misc_cost ?? null,
-        misc_cost_usd: item.misc_cost ?? null,
+        product_cost: _currency === 'USD' ? null : (item.product_cost ?? null),
+        product_cost_usd: _currency === 'USD' ? (item.product_cost ?? null) : null,
+        labor_cost: _currency === 'USD' ? null : (item.labor_cost ?? null),
+        labor_cost_usd: _currency === 'USD' ? (item.labor_cost ?? null) : null,
+        shipping_cost: _currency === 'USD' ? null : (item.shipping_cost ?? null),
+        shipping_cost_usd: _currency === 'USD' ? (item.shipping_cost ?? null) : null,
+        material_cost: _currency === 'USD' ? null : (item.material_cost ?? null),
+        material_cost_usd: _currency === 'USD' ? (item.material_cost ?? null) : null,
+        misc_cost: _currency === 'USD' ? null : (item.misc_cost ?? null),
+        misc_cost_usd: _currency === 'USD' ? (item.misc_cost ?? null) : null,
       };
     });
 
@@ -187,6 +188,9 @@ export async function updateProposalItems(proposalId, items) {
 
   if (deleteError) throw deleteError;
 
+  const { data: _cRow } = await supabase.from('proposals').select('currency').eq('id', proposalId).single();
+  const _currency = _cRow?.currency || 'USD';
+
   // Insert new items
   if (items?.length > 0) {
     const itemsToInsert = items.map((item, index) => {
@@ -198,22 +202,22 @@ export async function updateProposalItems(proposalId, items) {
         description: item.description,
         quantity: item.quantity,
         unit: item.unit || 'adet',
-        unit_price: unitPrice,
-        unit_price_usd: unitPrice,
+        unit_price: _currency === 'USD' ? null : unitPrice,
+        unit_price_usd: _currency === 'USD' ? unitPrice : null,
         material_id: item.material_id ?? null,
-        cost,
-        cost_usd: cost,
+        cost: _currency === 'USD' ? null : cost,
+        cost_usd: _currency === 'USD' ? cost : null,
         margin_percent: item.margin_percent ?? null,
-        product_cost: item.product_cost ?? null,
-        product_cost_usd: item.product_cost ?? null,
-        labor_cost: item.labor_cost ?? null,
-        labor_cost_usd: item.labor_cost ?? null,
-        shipping_cost: item.shipping_cost ?? null,
-        shipping_cost_usd: item.shipping_cost ?? null,
-        material_cost: item.material_cost ?? null,
-        material_cost_usd: item.material_cost ?? null,
-        misc_cost: item.misc_cost ?? null,
-        misc_cost_usd: item.misc_cost ?? null,
+        product_cost: _currency === 'USD' ? null : (item.product_cost ?? null),
+        product_cost_usd: _currency === 'USD' ? (item.product_cost ?? null) : null,
+        labor_cost: _currency === 'USD' ? null : (item.labor_cost ?? null),
+        labor_cost_usd: _currency === 'USD' ? (item.labor_cost ?? null) : null,
+        shipping_cost: _currency === 'USD' ? null : (item.shipping_cost ?? null),
+        shipping_cost_usd: _currency === 'USD' ? (item.shipping_cost ?? null) : null,
+        material_cost: _currency === 'USD' ? null : (item.material_cost ?? null),
+        material_cost_usd: _currency === 'USD' ? (item.material_cost ?? null) : null,
+        misc_cost: _currency === 'USD' ? null : (item.misc_cost ?? null),
+        misc_cost_usd: _currency === 'USD' ? (item.misc_cost ?? null) : null,
       };
     });
 
@@ -225,9 +229,8 @@ export async function updateProposalItems(proposalId, items) {
   }
 
   const total = (items || []).reduce((sum, i) => sum + (i.quantity * (i.unit_price ?? 0)), 0);
-  const { data: proposal } = await supabase.from('proposals').select('currency').eq('id', proposalId).single();
   const updatePayload = { total_amount: total };
-  if ((proposal?.currency || 'USD') === 'USD') {
+  if (_currency === 'USD') {
     updatePayload.total_amount_usd = total;
   }
 

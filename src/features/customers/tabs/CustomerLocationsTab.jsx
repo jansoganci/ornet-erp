@@ -5,9 +5,11 @@ import { Button, Card, Skeleton } from '../../../components/ui';
 import { useCustomerDetail } from '../CustomerDetailContext';
 import { SiteCard } from '../../customerSites/SiteCard';
 import { SiteFormModal } from '../../customerSites/SiteFormModal';
+import { useRole } from '../../../lib/roles';
 
 export function CustomerLocationsTab() {
   const { t } = useTranslation('customers');
+  const { canWrite } = useRole();
   const {
     customerId,
     sites = [],
@@ -37,14 +39,16 @@ export function CustomerLocationsTab() {
           <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-50">
             {t('sites.title')}
           </h2>
-          <Button
-            size="sm"
-            variant="outline"
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={handleAddSite}
-          >
-            {t('sites.addButton')}
-          </Button>
+          {canWrite && (
+            <Button
+              size="sm"
+              variant="outline"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={handleAddSite}
+            >
+              {t('sites.addButton')}
+            </Button>
+          )}
         </div>
 
         {sitesLoading ? (
@@ -60,13 +64,13 @@ export function CustomerLocationsTab() {
                 key={site.id}
                 site={site}
                 subscriptions={subscriptionsBySite[site.id] || []}
-                onEdit={handleEditSite}
+                onEdit={canWrite ? handleEditSite : undefined}
                 onCreateWorkOrder={onNewWorkOrder}
                 onViewHistory={(siteId) =>
                   navigate(`/work-history?siteId=${siteId}&type=account_no`)
                 }
-                onAddSubscription={(s) =>
-                  navigate(`/subscriptions/new?siteId=${s.id}&customerId=${customerId}`)
+                onAddSubscription={canWrite ? (s) =>
+                  navigate(`/subscriptions/new?siteId=${s.id}&customerId=${customerId}`) : undefined
                 }
               />
             ))}
@@ -75,14 +79,16 @@ export function CustomerLocationsTab() {
           <Card className="p-8 text-center border-dashed">
             <MapPin className="w-12 h-12 text-neutral-300 dark:text-neutral-700 mx-auto mb-3" />
             <p className="text-neutral-500 dark:text-neutral-400">{t('sites.noSites')}</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-4 text-primary-600"
-              onClick={handleAddSite}
-            >
-              {t('sites.addButton')}
-            </Button>
+            {canWrite && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-4 text-primary-600"
+                onClick={handleAddSite}
+              >
+                {t('sites.addButton')}
+              </Button>
+            )}
           </Card>
         )}
       </div>

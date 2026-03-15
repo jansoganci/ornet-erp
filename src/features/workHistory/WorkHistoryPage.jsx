@@ -150,7 +150,7 @@ export function WorkHistoryPage() {
     },
     {
       header: t('workHistory:results.columns.workers'),
-      accessor: 'assigned_workers',
+      accessor: 'assigned_to',
       render: (workers) => (
         <div className="flex -space-x-2 overflow-hidden">
           {workers?.map((w) => (
@@ -160,7 +160,7 @@ export function WorkHistoryPage() {
               title={w.name}
             >
               <span className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase leading-none tracking-normal">
-                {w.name.charAt(0)}
+                {(w.name ?? '?').charAt(0)}
               </span>
             </div>
           ))}

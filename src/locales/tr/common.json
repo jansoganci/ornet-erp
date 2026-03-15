@@ -119,6 +119,11 @@
     "boundaryTitle": "Uygulama Hatası",
     "boundaryDescription": "Beklenmeyen bir hata oluştu. Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin."
   },
+  "errors": {
+    "saveFailed": "Kayıt başarısız oldu. Lütfen tekrar deneyin.",
+    "loadFailed": "Veriler yüklenemedi. Lütfen tekrar deneyin.",
+    "deleteFailed": "Silme işlemi başarısız oldu. Lütfen tekrar deneyin."
+  },
   "warning": "Uyarı",
   "info": "Bilgi",
   "confirm": {
@@ -168,6 +173,8 @@
     "notifications": "Bildirimler",
     "actionBoard": "Aksiyon Listesi",
     "more": "Menü",
+    "collapseSidebar": "Menüyü Daralt",
+    "expandSidebar": "Menüyü Genişlet",
     "groups": {
       "planning": "Planlama",
       "revenueInfra": "Gelir ve Altyapı",
@@ -208,6 +215,7 @@
   "labels": {
     "admin": "Yönetici",
     "unknown": "Bilinmiyor",
+    "untitled": "Başlıksız",
     "phone": "Telefon",
     "address": "Adres",
     "statusUpdate": "Durum Güncelleme",

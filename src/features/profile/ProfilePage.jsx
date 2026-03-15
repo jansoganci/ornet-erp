@@ -26,7 +26,7 @@ function getRoleLabel(role) {
 
 export function ProfilePage() {
   const { t } = useTranslation(['profile', 'auth', 'common']);
-  const { user, updatePassword } = useAuth();
+  const { user, changePassword } = useAuth();
   const { data: profile, isLoading: profileLoading, error: profileError, refetch: refetchProfile } = useCurrentProfile();
   const updateProfileMutation = useUpdateProfile();
 
@@ -68,7 +68,7 @@ export function ProfilePage() {
 
   const onPasswordSubmit = async (data) => {
     try {
-      await updatePassword(data.password);
+      await changePassword(data.currentPassword, data.password);
       toast.success(t('profile:changePassword.success'));
       passwordForm.reset(changePasswordDefaultValues);
     } catch (error) {
@@ -157,6 +157,12 @@ export function ProfilePage() {
             onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
             className="space-y-4"
           >
+            <PasswordInput
+              label={t('profile:changePassword.currentPassword')}
+              autoComplete="current-password"
+              error={passwordForm.formState.errors.currentPassword?.message}
+              {...passwordForm.register('currentPassword')}
+            />
             <PasswordInput
               label={t('profile:changePassword.password')}
               autoComplete="new-password"

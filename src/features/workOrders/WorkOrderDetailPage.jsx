@@ -18,7 +18,8 @@ import {
   Table,
 } from '../../components/ui';
 import { formatDate, formatCurrency } from '../../lib/utils';
-import { useWorkOrder, useUpdateWorkOrderStatus, useDeleteWorkOrder } from './hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import { useWorkOrder, useUpdateWorkOrderStatus, useDeleteWorkOrder, workOrderKeys } from './hooks';
 import { WorkOrderHero } from './components/WorkOrderHero';
 import { WorkOrderStatusActions } from './components/WorkOrderStatusActions';
 import { WorkOrderSiteCard } from './components/WorkOrderSiteCard';
@@ -55,6 +56,7 @@ export function WorkOrderDetailPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [statusToUpdate, setStatusToUpdate] = useState(null);
 
+  const queryClient = useQueryClient();
   const { data: workOrder, isLoading, error, refetch } = useWorkOrder(id);
   const updateStatusMutation = useUpdateWorkOrderStatus();
   const deleteMutation = useDeleteWorkOrder();
@@ -91,7 +93,10 @@ export function WorkOrderDetailPage() {
     if (!id) return;
     setIsDeleteModalOpen(false);
     deleteMutation.mutate(id, {
-      onSuccess: () => window.location.replace('/work-orders'),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
+        navigate('/work-orders');
+      },
     });
   };
 

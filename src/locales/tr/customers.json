@@ -3,6 +3,7 @@
     "title": "Müşteriler",
     "searchPlaceholder": "Müşteri ara...",
     "addButton": "Müşteri Ekle",
+    "importButton": "İçe Aktar",
     "columns": {
       "name": "Müşteri Adı",
       "contact": "İletişim",
@@ -15,6 +16,20 @@
       "title": "Henüz müşteri yok",
       "description": "İlk müşterinizi ekleyerek başlayın",
       "action": "Müşteri Ekle"
+    },
+    "count": "{{count}} müşteri",
+    "siteCount": "{{count}} lokasyon",
+    "views": {
+      "customers": "Müşteriler",
+      "sites": "Lokasyonlar"
+    },
+    "siteColumns": {
+      "customer": "Müşteri",
+      "siteName": "Lokasyon Adı",
+      "alarmCenter": "Alarm Merkezi",
+      "accountNo": "Hesap No",
+      "city": "Şehir / İlçe",
+      "connectionDate": "Bağlantı Tarihi"
     },
     "noResults": {
       "title": "Sonuç bulunamadı",
@@ -107,7 +122,7 @@
     "placeholders": {
       "accountNo": "Örn: 123456",
       "siteName": "Örn: Merkez Şube",
-      "address": "Tam adres",
+      "address": "Tam adres (isteğe bağlı - sonra eklenebilir)",
       "panelInfo": "Örn: DSC 1616",
       "notes": "Lokasyona özel notlar"
     }
@@ -118,6 +133,7 @@
     "fields": {
       "name": "Müşteri Adı",
       "companyName": "Müşteri Adı",
+      "subscriberTitle": "Abone Ünvanı",
       "accountNumber": "Müşteri Kodu",
       "phone": "Telefon",
       "phoneSecondary": "İkinci Telefon",
@@ -131,6 +147,7 @@
     "placeholders": {
       "name": "Ad veya firma adı",
       "companyName": "Ad veya firma adı",
+      "subscriberTitle": "Müşterinin kendi müşterisini tanıması için (max 400 karakter)",
       "accountNumber": "Otomatik oluşturulacak",
       "phone": "0555 123 4567",
       "phoneSecondary": "0555 987 6543",
@@ -144,6 +161,43 @@
     "success": {
       "created": "Müşteri başarıyla oluşturuldu",
       "updated": "Müşteri başarıyla güncellendi"
+    }
+  },
+  "import": {
+    "title": "Müşteri İçe Aktar",
+    "uploadTitle": "Excel dosyası yükleyin",
+    "uploadDescription": "Müşteri ve lokasyon verilerini Excel dosyasından toplu olarak içe aktarın. Önce şablonu indirip doldurun.",
+    "selectFile": "Dosya Seç",
+    "downloadTemplate": "Şablon İndir",
+    "validRows": "{{count}} geçerli satır",
+    "invalidRows": "{{count}} hatalı satır",
+    "errors": "Doğrulama Hataları",
+    "rowError": "Satır {{row}}: {{field}} — {{message}}",
+    "resultRowError": "Satır {{row}}: {{message}}",
+    "startImport": "İçe Aktar",
+    "cancel": "İptal",
+    "processing": "Dosya işleniyor...",
+    "progressLabel": "{{current}} / {{total}} işleniyor",
+    "success": "{{created}} lokasyon oluşturuldu, {{skipped}} atlandı",
+    "partialSuccess": "İçe aktarma tamamlandı: {{created}} oluşturuldu, {{skipped}} atlandı, {{failed}} hata",
+    "resultSummary": "{{created}} oluşturuldu, {{skipped}} atlandı, {{failed}} hata",
+    "status": {
+      "created": "Oluşturuldu",
+      "skipped": "Atlandı",
+      "failed": "Hata"
+    },
+    "andMoreRows": "{{count}} satır daha...",
+    "errorMessages": {
+      "required": "Zorunlu alan boş",
+      "invalid_date": "Geçersiz tarih formatı (DD.MM.YYYY veya YYYY-MM-DD)",
+      "MAX_ROWS": "Maksimum 500 satır"
+    },
+    "duplicates": {
+      "warning": "{{count}} müşteri zaten sistemde kayıtlı",
+      "detail": "Bu müşteriler atlanmayacak — mevcut kayıtlara yeni lokasyonları eklenecek.",
+      "statusColumn": "Durum",
+      "statusNew": "Yeni",
+      "statusExisting": "Mevcut"
     }
   },
   "delete": {

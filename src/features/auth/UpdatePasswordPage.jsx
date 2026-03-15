@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -12,9 +12,8 @@ import { AuthLayout } from './components/AuthLayout';
 import { PasswordInput } from './components/PasswordInput';
 import { PasswordStrength } from './components/PasswordStrength';
 import { updatePasswordSchema, updatePasswordDefaultValues } from './schema';
-import { updatePassword } from './api';
+import { updatePassword, onAuthStateChange, getRawSession, isSupabaseConfigured } from './api';
 import { getAuthErrorKey } from './utils/errorMapper';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 export function UpdatePasswordPage() {
   const { t } = useTranslation('auth');
@@ -23,6 +22,7 @@ export function UpdatePasswordPage() {
   // States for the recovery flow
   const [pageState, setPageState] = useState('loading'); // loading | ready | success | error
   const [errorMessage, setErrorMessage] = useState('');
+  const timeoutRef = useRef(null);
 
   const {
     register,
@@ -39,27 +39,27 @@ export function UpdatePasswordPage() {
 
   // Check if user came from a valid password reset link
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       setPageState('error');
       setErrorMessage(t('auth:errors.supabaseNotConfigured'));
       return;
     }
 
     // Listen for the PASSWORD_RECOVERY event from Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = onAuthStateChange(
       (event, session) => {
         if (event === 'PASSWORD_RECOVERY') {
-          // User clicked on password reset link and is now in recovery mode
+          clearTimeout(timeoutRef.current);
           setPageState('ready');
         } else if (event === 'SIGNED_IN' && session) {
-          // User is signed in - might have already been in recovery mode
+          clearTimeout(timeoutRef.current);
           setPageState('ready');
         }
       }
     );
 
     // Also check current session - user might already be in recovery mode
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    getRawSession().then(({ data: { session }, error }) => {
       if (error) {
         setPageState('error');
         setErrorMessage(t('auth:errors.resetTokenInvalid'));
@@ -68,24 +68,25 @@ export function UpdatePasswordPage() {
 
       if (session) {
         // User has a valid session (from recovery link)
+        clearTimeout(timeoutRef.current);
         setPageState('ready');
       } else {
-        // No session - wait a moment for PASSWORD_RECOVERY event
-        // If it doesn't fire, show error
-        setTimeout(() => {
+        // No session - wait for PASSWORD_RECOVERY event.
+        // 8 s gives slow connections a fair chance; still catches genuinely
+        // expired / invalid links without leaving the user stuck forever.
+        timeoutRef.current = setTimeout(() => {
           setPageState((current) => {
-            if (current === 'loading') {
-              return 'error';
-            }
+            if (current === 'loading') return 'error';
             return current;
           });
           setErrorMessage(t('auth:errors.resetTokenExpired'));
-        }, 2000);
+        }, 8000);
       }
     });
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(timeoutRef.current);
     };
   }, [t]);
 

@@ -35,7 +35,7 @@ export function useAuth() {
     }
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    authApi.getRawSession().then(({ data: { session } }) => {
       setSession(session);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -52,7 +52,7 @@ export function useAuth() {
     });
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = authApi.onAuthStateChange(
       (event, session) => {
         setSession(session);
         const currentUser = session?.user ?? null;
@@ -110,11 +110,22 @@ export function useAuth() {
     }
   }, []);
 
-  // Update password (after reset)
+  // Update password (after reset link — no current password needed)
   const updatePassword = useCallback(async (newPassword) => {
     setError(null);
     try {
       await authApi.updatePassword(newPassword);
+    } catch (err) {
+      setError(err);
+      throw err;
+    }
+  }, []);
+
+  // Change password from profile — re-authenticates with current password first
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
+    setError(null);
+    try {
+      await authApi.changePassword(currentPassword, newPassword);
     } catch (err) {
       setError(err);
       throw err;
@@ -154,6 +165,7 @@ export function useAuth() {
       signOut,
       resetPassword,
       updatePassword,
+      changePassword,
       clearError,
     }),
     [
@@ -168,6 +180,7 @@ export function useAuth() {
       signOut,
       resetPassword,
       updatePassword,
+      changePassword,
       clearError,
     ]
   );

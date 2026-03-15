@@ -3,6 +3,14 @@ import { Providers } from './app/providers';
 import { ProtectedRoute } from './app/ProtectedRoute';
 import { AuthRoute } from './app/AuthRoute';
 import { AppLayout } from './app/AppLayout';
+import { useRole } from './lib/roles';
+
+function RoleRoute({ children }) {
+  const { canWrite, role } = useRole();
+  if (role === undefined) return null;
+  if (!canWrite) return <Navigate to="/work-orders" replace />;
+  return children;
+}
 
 // Auth pages
 import {
@@ -19,6 +27,7 @@ import {
   CustomersListPage,
   CustomerDetailPage,
   CustomerFormPage,
+  CustomerImportPage,
 } from './features/customers';
 import {
   WorkOrdersListPage,
@@ -85,6 +94,7 @@ const router = createBrowserRouter(
 
         {/* Customer routes */}
         <Route path="customers" element={<CustomersListPage />} />
+        <Route path="customers/import" element={<CustomerImportPage />} />
         <Route path="customers/new" element={<CustomerFormPage />} />
         <Route path="customers/:id" element={<CustomerDetailPage />} />
         <Route path="customers/:id/edit" element={<CustomerFormPage />} />
@@ -107,37 +117,37 @@ const router = createBrowserRouter(
         {/* Calendar */}
         <Route path="calendar" element={<CalendarPage />} />
 
-        {/* Subscription routes */}
-        <Route path="subscriptions" element={<SubscriptionsListPage />} />
-        <Route path="subscriptions/price-revision" element={<PriceRevisionPage />} />
-        <Route path="subscriptions/new" element={<SubscriptionFormPage />} />
-        <Route path="subscriptions/:id" element={<SubscriptionDetailPage />} />
-        <Route path="subscriptions/:id/edit" element={<SubscriptionFormPage />} />
+        {/* Subscription routes — admin + accountant only */}
+        <Route path="subscriptions" element={<RoleRoute><SubscriptionsListPage /></RoleRoute>} />
+        <Route path="subscriptions/price-revision" element={<RoleRoute><PriceRevisionPage /></RoleRoute>} />
+        <Route path="subscriptions/new" element={<RoleRoute><SubscriptionFormPage /></RoleRoute>} />
+        <Route path="subscriptions/:id" element={<RoleRoute><SubscriptionDetailPage /></RoleRoute>} />
+        <Route path="subscriptions/:id/edit" element={<RoleRoute><SubscriptionFormPage /></RoleRoute>} />
 
-        {/* Proposal routes */}
-        <Route path="proposals" element={<ProposalsListPage />} />
-        <Route path="proposals/new" element={<ProposalFormPage />} />
-        <Route path="proposals/:id" element={<ProposalDetailPage />} />
-        <Route path="proposals/:id/edit" element={<ProposalFormPage />} />
+        {/* Proposal routes — admin + accountant only */}
+        <Route path="proposals" element={<RoleRoute><ProposalsListPage /></RoleRoute>} />
+        <Route path="proposals/new" element={<RoleRoute><ProposalFormPage /></RoleRoute>} />
+        <Route path="proposals/:id" element={<RoleRoute><ProposalDetailPage /></RoleRoute>} />
+        <Route path="proposals/:id/edit" element={<RoleRoute><ProposalFormPage /></RoleRoute>} />
 
-        {/* Finance routes */}
-        <Route path="finance" element={<FinanceDashboardPage />} />
-        <Route path="finance/expenses" element={<ExpensesPage />} />
-        <Route path="finance/income" element={<IncomePage />} />
-        <Route path="finance/vat" element={<VatReportPage />} />
-        <Route path="finance/exchange" element={<ExchangeRatePage />} />
-        <Route path="finance/recurring" element={<RecurringExpensesPage />} />
-        <Route path="finance/reports" element={<ReportsPage />} />
+        {/* Finance routes — admin + accountant only */}
+        <Route path="finance" element={<RoleRoute><FinanceDashboardPage /></RoleRoute>} />
+        <Route path="finance/expenses" element={<RoleRoute><ExpensesPage /></RoleRoute>} />
+        <Route path="finance/income" element={<RoleRoute><IncomePage /></RoleRoute>} />
+        <Route path="finance/vat" element={<RoleRoute><VatReportPage /></RoleRoute>} />
+        <Route path="finance/exchange" element={<RoleRoute><ExchangeRatePage /></RoleRoute>} />
+        <Route path="finance/recurring" element={<RoleRoute><RecurringExpensesPage /></RoleRoute>} />
+        <Route path="finance/reports" element={<RoleRoute><ReportsPage /></RoleRoute>} />
 
         {/* Equipment / Site Assets routes */}
         <Route path="equipment" element={<SiteAssetsListPage />} />
 
-        {/* SIM Card routes */}
-        <Route path="sim-cards" element={<SimCardsListPage />} />
-        <Route path="sim-cards/new" element={<SimCardFormPage />} />
-        <Route path="sim-cards/import" element={<SimCardImportPage />} />
-        <Route path="sim-cards/invoice-analysis" element={<InvoiceAnalysisPage />} />
-        <Route path="sim-cards/:id/edit" element={<SimCardFormPage />} />
+        {/* SIM Card routes — admin + accountant only */}
+        <Route path="sim-cards" element={<RoleRoute><SimCardsListPage /></RoleRoute>} />
+        <Route path="sim-cards/new" element={<RoleRoute><SimCardFormPage /></RoleRoute>} />
+        <Route path="sim-cards/import" element={<RoleRoute><SimCardImportPage /></RoleRoute>} />
+        <Route path="sim-cards/invoice-analysis" element={<RoleRoute><InvoiceAnalysisPage /></RoleRoute>} />
+        <Route path="sim-cards/:id/edit" element={<RoleRoute><SimCardFormPage /></RoleRoute>} />
       </Route>
 
       {/* Catch-all redirect */}

@@ -6,7 +6,7 @@ import { CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
 import { AuthLayout } from './components/AuthLayout';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { onAuthStateChange, getRawSession, isSupabaseConfigured } from './api';
 
 export function VerifyEmailPage() {
   const { t } = useTranslation('auth');
@@ -18,7 +18,7 @@ export function VerifyEmailPage() {
   // Sync verification status from async check — setState in effect is intentional
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       setStatus('error');
       setErrorMessage(t('auth:errors.supabaseNotConfigured'));
       return;
@@ -29,7 +29,7 @@ export function VerifyEmailPage() {
     const checkVerification = async () => {
       try {
         // Get the current session
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await getRawSession();
 
         if (error) {
           setStatus('error');
@@ -45,13 +45,17 @@ export function VerifyEmailPage() {
           // This might happen if verification is still processing
           // Wait a moment and check again
           setTimeout(async () => {
-            const { data: { session: refreshedSession } } = await supabase.auth.getSession();
-            if (refreshedSession?.user?.email_confirmed_at) {
-              setStatus('success');
-            } else {
-              // Still not verified - show success anyway since they clicked the link
-              // The verification might be delayed
-              setStatus('success');
+            try {
+              const { data: { session: refreshedSession } } = await getRawSession();
+              if (refreshedSession?.user?.email_confirmed_at) {
+                setStatus('success');
+              } else {
+                setErrorMessage(t('verifyEmail.error.message'));
+                setStatus('error');
+              }
+            } catch {
+              setErrorMessage(t('verifyEmail.error.message'));
+              setStatus('error');
             }
           }, 1500);
         } else {
@@ -66,7 +70,7 @@ export function VerifyEmailPage() {
     };
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
           setStatus('success');

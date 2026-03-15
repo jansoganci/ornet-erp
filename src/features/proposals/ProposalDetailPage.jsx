@@ -13,6 +13,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
+import { toast } from 'sonner';
 import { PageContainer } from '../../components/layout';
 import {
   Button,
@@ -68,6 +69,7 @@ export function ProposalDetailPage() {
   const { t: tCommon } = useTranslation('common');
 
   const [confirmAction, setConfirmAction] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showFaturalandirModal, setShowFaturalandirModal] = useState(false);
   const [unlinkWoId, setUnlinkWoId] = useState(null);
@@ -145,15 +147,22 @@ export function ProposalDetailPage() {
   };
 
   const handleDownloadPdf = async () => {
-    const blob = await pdf(<ProposalPdf proposal={proposal} items={items} />).toBlob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${proposal.proposal_no || 'teklif'}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    setIsExporting(true);
+    try {
+      const blob = await pdf(<ProposalPdf proposal={proposal} items={items} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${proposal.proposal_no || 'teklif'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t('pdf.exportError'));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleEdit = () => navigate(`/proposals/${id}/edit`);
@@ -180,6 +189,7 @@ export function ProposalDetailPage() {
         onEdit={handleEdit}
         onDelete={() => setShowDeleteConfirm(true)}
         onDownloadPdf={handleDownloadPdf}
+        isExporting={isExporting}
         onFlowAction={setConfirmAction}
         onFaturalandir={() => setShowFaturalandirModal(true)}
         flowLoading={statusMutation.isPending}
@@ -449,6 +459,7 @@ export function ProposalDetailPage() {
               className="flex-1"
               leftIcon={<Download className="w-4 h-4" />}
               onClick={handleDownloadPdf}
+              loading={isExporting}
             >
               {t('proposals:detail.actions.downloadPdf')}
             </Button>
@@ -472,6 +483,7 @@ export function ProposalDetailPage() {
               className="flex-1"
               leftIcon={<Download className="w-4 h-4" />}
               onClick={handleDownloadPdf}
+              loading={isExporting}
             >
               {t('proposals:detail.actions.downloadPdf')}
             </Button>
@@ -487,6 +499,7 @@ export function ProposalDetailPage() {
               className="flex-1"
               leftIcon={<Download className="w-4 h-4" />}
               onClick={handleDownloadPdf}
+              loading={isExporting}
             >
               {t('proposals:detail.actions.downloadPdf')}
             </Button>
