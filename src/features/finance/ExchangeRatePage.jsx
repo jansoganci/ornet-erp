@@ -19,6 +19,7 @@ import { useCurrentProfile } from '../subscriptions/hooks';
 import { useExchangeRates, useCreateRate, useFetchTcmbRates, useDeleteRate } from './hooks';
 import { rateSchema, rateDefaultValues } from './schema';
 import { formatDate } from '../../lib/utils';
+import { getErrorMessage } from '../../lib/errorHandler';
 
 function getTodayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -152,7 +153,7 @@ export function ExchangeRatePage() {
     return (
       <PageContainer maxWidth="xl" padding="default">
         <PageHeader title={t('finance:exchangeRates.title')} breadcrumbs={breadcrumbs} />
-        <ErrorState message={error.message} onRetry={refetch} />
+        <ErrorState message={getErrorMessage(error)} onRetry={refetch} />
       </PageContainer>
     );
   }

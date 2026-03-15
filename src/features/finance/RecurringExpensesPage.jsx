@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Repeat, Play } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Spinner, EmptyState, ErrorState, Modal, TableSkeleton } from '../../components/ui';
+import { getErrorMessage } from '../../lib/errorHandler';
 import {
   useRecurringTemplates,
   useTemplateLastGenerated,
@@ -125,7 +126,7 @@ export function RecurringExpensesPage() {
     return (
       <PageContainer maxWidth="xl" padding="default">
         <PageHeader title={t('recurring:title')} breadcrumbs={breadcrumbs} />
-        <ErrorState message={error.message} onRetry={refetch} />
+        <ErrorState message={getErrorMessage(error)} onRetry={refetch} />
       </PageContainer>
     );
   }

@@ -21,6 +21,7 @@ import { QuickEntryModal } from './components/QuickEntryModal';
 import { ViewModeToggle } from './components/ViewModeToggle';
 import { KpiCard } from './components/KpiCard';
 import { formatDate, formatCurrency } from '../../lib/utils';
+import { getErrorMessage } from '../../lib/errorHandler';
 import { PAYMENT_METHODS, INCOME_TYPES } from './schema';
 
 function getLast12Months() {
@@ -233,7 +234,7 @@ export function IncomePage() {
             { label: t('finance:list.titleIncome') },
           ]}
         />
-        <ErrorState message={error.message} onRetry={refetch} />
+        <ErrorState message={getErrorMessage(error)} onRetry={refetch} />
       </PageContainer>
     );
   }

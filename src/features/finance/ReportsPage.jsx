@@ -7,6 +7,7 @@ import { Button, Card, Select, ErrorState, EmptyState, TableSkeleton } from '../
 import { useProfitAndLoss } from './hooks';
 import { ViewModeToggle } from './components/ViewModeToggle';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { getErrorMessage } from '../../lib/errorHandler';
 import { toCSV, downloadCSV } from '../../lib/csvExport';
 import { getSourceLabel } from './exportUtils';
 
@@ -124,7 +125,7 @@ export function ReportsPage() {
     return (
       <PageContainer maxWidth="xl" padding="default">
         <PageHeader title={t('finance:reports.title')} breadcrumbs={breadcrumbs} />
-        <ErrorState message={error.message} onRetry={refetch} />
+        <ErrorState message={getErrorMessage(error)} onRetry={refetch} />
       </PageContainer>
     );
   }

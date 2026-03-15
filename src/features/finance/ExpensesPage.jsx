@@ -25,6 +25,7 @@ import { GroupToggle } from './components/GroupToggle';
 import { ExpenseGroupedView } from './components/ExpenseGroupedView';
 import { KpiCard } from './components/KpiCard';
 import { formatDate, formatCurrency } from '../../lib/utils';
+import { getErrorMessage } from '../../lib/errorHandler';
 import { PAYMENT_METHODS } from './schema';
 
 function getLast12Months() {
@@ -293,7 +294,7 @@ export function ExpensesPage() {
             { label: t('finance:list.title') },
           ]}
         />
-        <ErrorState message={error.message} onRetry={refetch} />
+        <ErrorState message={getErrorMessage(error)} onRetry={refetch} />
       </PageContainer>
     );
   }
