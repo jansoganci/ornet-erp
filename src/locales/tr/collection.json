@@ -1,0 +1,49 @@
+{
+  "title": "Tahsilat Masası",
+  "subtitle": "Bekleyen abonelik ödemelerini buradan takip edin ve tahsil edin.",
+  "filters": {
+    "allPeriods": "Tüm Dönemler",
+    "year": "Yıl",
+    "month": "Ay",
+    "search": "Müşteri ara..."
+  },
+  "stats": {
+    "pending": "Bekleyen",
+    "pendingNet": "Bekleyen (Net)",
+    "pendingGross": "Bekleyen (KDV Dahil)",
+    "overdue": "Gecikmiş",
+    "collected": "Tahsil Edilmiş",
+    "total": "Toplam"
+  },
+  "columns": {
+    "customer": "Müşteri",
+    "site": "Lokasyon",
+    "accountNo": "Hesap No",
+    "period": "Dönem",
+    "frequency": "Sıklık",
+    "net": "Net (₺)",
+    "vat": "KDV (₺)",
+    "total": "Toplam (₺)",
+    "actions": "İşlem"
+  },
+  "actions": {
+    "pay": "Öde",
+    "viewSubscription": "Aboneliğe Git"
+  },
+  "badges": {
+    "overdue": "Gecikmiş",
+    "currentMonth": "Bu Ay",
+    "noInvoice": "Faturasız"
+  },
+  "frequency": {
+    "monthly": "Aylık",
+    "3_month": "3 Aylık",
+    "6_month": "6 Aylık",
+    "yearly": "Yıllık"
+  },
+  "empty": {
+    "title": "Bekleyen ödeme yok",
+    "description": "Seçili dönemde tahsil edilecek ödeme bulunmuyor."
+  },
+  "summary": "{{count}} bekleyen ödeme"
+}

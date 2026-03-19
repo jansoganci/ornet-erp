@@ -10,7 +10,7 @@ import { Button, SearchInput, Table, EmptyState, ErrorState } from '../../compon
 import { useRole } from '../../lib/roles';
 
 export function CustomersListPage() {
-  const { t } = useTranslation('customers');
+  const { t } = useTranslation(['customers', 'common']);
   const navigate = useNavigate();
   const { canWrite } = useRole();
   const { search, setSearch, debouncedSearch } = useSearchInput({ debounceMs: 300 });
@@ -150,7 +150,7 @@ export function CustomersListPage() {
                 leftIcon={<Upload className="w-5 h-5" />}
                 onClick={handleImport}
               >
-                {t('list.importButton')}
+                {t('common:import.bulkImportButton')}
               </Button>
               <Button
                 variant="primary"

@@ -35,14 +35,12 @@ import {
   WorkOrderFormPage,
   DailyWorkListPage,
 } from './features/workOrders';
-import {
-  TasksPage,
-} from './features/tasks';
-import { CalendarPage } from './features/calendar';
 import { WorkHistoryPage } from './features/workHistory';
 import { MaterialsListPage, MaterialImportPage } from './features/materials';
 import {
+  SubscriptionsLayout,
   SubscriptionsListPage,
+  SubscriptionImportPage,
   SubscriptionDetailPage,
   SubscriptionFormPage,
   PriceRevisionPage,
@@ -60,9 +58,10 @@ import {
 } from './features/proposals';
 import { NotificationsCenterPage } from './features/notifications';
 import { ProfilePage } from './features/profile';
-import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, ReportsPage, RecurringExpensesPage } from './features/finance';
-import { SiteAssetsListPage } from './features/siteAssets';
+import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, ReportsPage, RecurringExpensesPage, CollectionDeskPage } from './features/finance';
+import { SiteAssetsListPage, SiteAssetsImportPage } from './features/siteAssets';
 import { ActionBoardPage } from './features/actionBoard';
+import { OperationsBoardPage } from './features/operations';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -91,6 +90,7 @@ const router = createBrowserRouter(
         <Route path="profile" element={<ProfilePage />} />
         <Route path="notifications" element={<NotificationsCenterPage />} />
         <Route path="action-board" element={<ActionBoardPage />} />
+        <Route path="operations" element={<RoleRoute><OperationsBoardPage /></RoleRoute>} />
 
         {/* Customer routes */}
         <Route path="customers" element={<CustomersListPage />} />
@@ -111,18 +111,16 @@ const router = createBrowserRouter(
         <Route path="materials" element={<MaterialsListPage />} />
         <Route path="materials/import" element={<MaterialImportPage />} />
 
-        {/* Task routes */}
-        <Route path="tasks" element={<TasksPage />} />
-
-        {/* Calendar */}
-        <Route path="calendar" element={<CalendarPage />} />
-
         {/* Subscription routes — admin + accountant only */}
-        <Route path="subscriptions" element={<RoleRoute><SubscriptionsListPage /></RoleRoute>} />
-        <Route path="subscriptions/price-revision" element={<RoleRoute><PriceRevisionPage /></RoleRoute>} />
-        <Route path="subscriptions/new" element={<RoleRoute><SubscriptionFormPage /></RoleRoute>} />
-        <Route path="subscriptions/:id" element={<RoleRoute><SubscriptionDetailPage /></RoleRoute>} />
-        <Route path="subscriptions/:id/edit" element={<RoleRoute><SubscriptionFormPage /></RoleRoute>} />
+        <Route path="subscriptions" element={<RoleRoute><SubscriptionsLayout /></RoleRoute>}>
+          <Route index element={<SubscriptionsListPage />} />
+          <Route path="collection" element={<CollectionDeskPage />} />
+          <Route path="price-revision" element={<PriceRevisionPage />} />
+          <Route path="import" element={<SubscriptionImportPage />} />
+          <Route path="new" element={<SubscriptionFormPage />} />
+          <Route path=":id" element={<SubscriptionDetailPage />} />
+          <Route path=":id/edit" element={<SubscriptionFormPage />} />
+        </Route>
 
         {/* Proposal routes — admin + accountant only */}
         <Route path="proposals" element={<RoleRoute><ProposalsListPage /></RoleRoute>} />
@@ -141,6 +139,7 @@ const router = createBrowserRouter(
 
         {/* Equipment / Site Assets routes */}
         <Route path="equipment" element={<SiteAssetsListPage />} />
+        <Route path="equipment/import" element={<SiteAssetsImportPage />} />
 
         {/* SIM Card routes — admin + accountant only */}
         <Route path="sim-cards" element={<RoleRoute><SimCardsListPage /></RoleRoute>} />

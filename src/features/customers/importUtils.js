@@ -36,11 +36,18 @@ function sanitizeCell(val) {
   return String(val).split(/[\r\n]/)[0].trim();
 }
 
+/**
+ * Convert Excel serial to UTC date string (YYYY-MM-DD).
+ * Excel stores dates as days since 1900-01-01 00:00 UTC. Using UTC methods
+ * avoids timezone shift (e.g. midnight UTC becoming previous day in UTC+3).
+ */
 function excelSerialToDate(serial) {
   const utcMs = (serial - 25569) * 86400 * 1000;
   const date = new Date(utcMs);
-  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(utcMs + offsetMs);
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function parseConnectionDate(val) {
@@ -48,7 +55,7 @@ function parseConnectionDate(val) {
   if (!s) return null;
   // YYYY-MM-DD
   if (/^(\d{4})-(\d{2})-(\d{2})$/.test(s)) return s;
-  // DD.MM.YYYY
+  // DD.MM.YYYY or DD/MM/YYYY
   const dmy = /^(\d{1,2})[./](\d{1,2})[./](\d{4})$/.exec(s);
   if (dmy) {
     const [, d, m, y] = dmy;
@@ -57,9 +64,10 @@ function parseConnectionDate(val) {
   // Excel serial number
   const excelSerial = Number(s);
   if (!Number.isNaN(excelSerial) && excelSerial > 1) {
-    const d = excelSerialToDate(excelSerial);
-    if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1900) return null;
-    return d.toISOString().slice(0, 10);
+    const isoDate = excelSerialToDate(excelSerial);
+    const year = parseInt(isoDate.slice(0, 4), 10);
+    if (year <= 1900) return null;
+    return isoDate;
   }
   return null;
 }

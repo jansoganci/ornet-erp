@@ -1,4 +1,8 @@
 {
+  "tabs": {
+    "list": "Abonelik Listesi",
+    "collection": "Tahsilat Masası"
+  },
   "multiService": {
     "otherServices": "Diğer Hizmetler",
     "noOtherServices": "Bu lokasyonda henüz abonelik yok",
@@ -87,8 +91,8 @@
       "cashCollector": "Tahsil eden",
       "paymentStartMonth": "Ödeme Başlangıç Ayı"
     },
-    "officialInvoiceResmi": "Resmi",
-    "officialInvoiceGayri": "Gayri resmi",
+    "officialInvoiceResmi": "Faturalı",
+    "officialInvoiceGayri": "Faturasız",
     "noDescription": "Açıklama yok",
     "noNotes": "Not yok"
   },
@@ -111,6 +115,7 @@
       "basePrice": "Baz Fiyat",
       "smsFee": "SMS Ücreti",
       "lineFee": "Hat Ücreti",
+      "simAmount": "SIM Kart Ücreti",
       "vatRate": "KDV Oranı (%)",
       "cost": "Maliyet",
       "staticIpFee": "Statik IP Geliri",
@@ -293,7 +298,8 @@
     "trendSame": "Geçen ay ile aynı"
   },
   "import": {
-    "title": "Toplu İçe Aktar",
+    "title": "Excel ile toplu yükle",
+    "pageTitle": "Abonelikler — Excel ile toplu yükle",
     "downloadTemplate": "Şablon İndir",
     "selectFile": "Dosya Seç",
     "preview": "Önizleme",
@@ -321,6 +327,16 @@
       "row": "Satır",
       "field": "Alan",
       "error": "Hata"
+    },
+    "previewColumns": {
+      "rowNum": "#",
+      "customer": "Müşteri",
+      "site": "Lokasyon",
+      "subscriberTitle": "Abone Ünvanı",
+      "serviceType": "Tür",
+      "startDate": "Başlangıç",
+      "basePrice": "Kiralama",
+      "simAmount": "SIM"
     }
   },
   "priceRevision": {
@@ -359,6 +375,11 @@
       "type": "Tip",
       "serviceType": "Hizmet Türü",
       "billingFrequency": "Ödeme Sıklığı",
+      "amountBreakdown": "Tutarlar",
+      "officialInvoice": "Fatura",
+      "staticIpFeeColumn": "Sabit IP",
+      "simInventoryTl": "SIM env.",
+      "simInventoryTlHint": "Bağlı SIM kart envanter satış fiyatı (sim_cards.sale_price)",
       "pricing": "Fiyatlar",
       "basePrice": "Baz Fiyat",
       "smsFee": "SMS Ücreti",
@@ -366,10 +387,21 @@
       "vatRate": "KDV (%)",
       "cost": "Maliyet",
       "currentTotal": "Güncel Tutar",
+      "smsTl": "SMS TL",
+      "netSubtotal": "Ara toplam",
+      "pricingTotalLine": "Toplam",
       "vatAmount": "KDV Tutarı",
       "totalWithVat": "KDV Dahil Tutar",
       "notesColumn": "Not"
     },
+    "export": {
+      "columns": {
+        "setupNotes": "Kurulum / önceki dönem notları",
+        "notes": "Açıklama notu",
+        "vatRateReadonly": "KDV % (kayıt)"
+      }
+    },
+    "pricingBlockFootnote": "«Tutarlar» sütunu salt okunur dökümdür (Aylık, SIM TL, SMS TL, ara toplam, KDV, KDV dahil). Düzenleme «Fiyatlar» sütunundan yapılır. Ara toplam = Aylık + SIM TL + SMS TL. KDV oranı bu ekrandan değişmez. «Fiyatlar»da hat ücreti satırı yoktur; hat/SIM tek kalemde SIM TL olarak girilir.",
     "zamPercent": "Zam %",
     "zamPercentPlaceholder": "%",
     "messageColumn": "Mesaj",
@@ -382,7 +414,9 @@
       "greeting": "Merhaba,",
       "intro": "{{service}} {{frequency}} kira bedeli {{month}} ayı itibariyle mevcut piyasa koşulları ve maliyet artışları nedeniyle yükseldi:",
       "basePrice": "Abonelik ücreti",
-      "simFee": "SIM kart ücreti",
+      "lineFee": "Hat ücreti",
+      "subscriptionSimAmount": "SIM TL tutarı",
+      "staticIpFee": "Statik IP ücreti",
       "smsFee": "SMS ücreti",
       "total": "Toplam",
       "unchangedParts": "Kalan bölümler değişmeyecek",
@@ -413,7 +447,10 @@
       "add": "Not ekle",
       "revisionDate": "Revizyon tarihi",
       "empty": "Henüz not yok.",
-      "timelineTitle": "Geçmiş notlar",
+      "timelineTitle": "Revizyon zaman çizelgesi",
+      "subscriptionRecordTitle": "Abonelik kaydındaki notlar",
+      "setupNotesSection": "Önceki dönem / kurulum",
+      "generalNotesSection": "Açıklama",
       "noteLabel": "Not",
       "successCreated": "Not kaydedildi"
     },

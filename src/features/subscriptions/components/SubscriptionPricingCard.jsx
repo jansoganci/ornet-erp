@@ -10,11 +10,12 @@ export function SubscriptionPricingCard({ subscription, isAdmin = false }) {
   const smsFee = Number(subscription.sms_fee) || 0;
   const lineFee = Number(subscription.line_fee) || 0;
   const staticIpFee = Number(subscription.static_ip_fee) || 0;
+  const simAmount = Number(subscription.sim_amount) || 0;
   const vatRate = Number(subscription.vat_rate) || 0;
   const cost = Number(subscription.cost) || 0;
   const staticIpCost = Number(subscription.static_ip_cost) || 0;
 
-  const subtotal = basePrice + smsFee + lineFee + staticIpFee;
+  const subtotal = basePrice + smsFee + lineFee + staticIpFee + simAmount;
   const vatAmount = Math.round(subtotal * vatRate / 100 * 100) / 100;
   const total = subtotal + vatAmount;
   const profit = subtotal - cost - staticIpCost;
@@ -33,6 +34,9 @@ export function SubscriptionPricingCard({ subscription, isAdmin = false }) {
         <PriceRow label={t('form.fields.lineFee')} value={lineFee} />
         {staticIpFee > 0 && (
           <PriceRow label={t('form.fields.staticIpFee')} value={staticIpFee} />
+        )}
+        {simAmount > 0 && (
+          <PriceRow label={t('form.fields.simAmount')} value={simAmount} />
         )}
 
         <div className="border-t border-neutral-100 dark:border-neutral-800 pt-3 space-y-3">

@@ -33,6 +33,7 @@ export function CreateWorkOrderFromProposalModal({ open, onClose, proposal, onSu
         amount: proposal.total_amount ?? proposal.total_amount_usd ?? null,
         currency: proposal.currency ?? 'TRY',
         materialsDiscountPercent: proposal.materials_discount_percent ?? proposal.discount_percent ?? 0,
+        vatRate: proposal.vat_rate ?? 20,
         description: proposal.title ?? null,
         notes: proposal.notes ?? null,
         items,

@@ -100,6 +100,7 @@ export const subscriptionDefaultValues = {
 
 // Payment record schema
 export const paymentRecordSchema = z.object({
+  payment_date: isoDateSchema,
   payment_method: z.enum(PAYMENT_METHODS),
   should_invoice: z.boolean().default(true),
   vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),

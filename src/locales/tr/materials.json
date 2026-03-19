@@ -50,7 +50,8 @@
     "inactive": "Pasif"
   },
   "import": {
-    "title": "Excel İçe Aktar",
+    "title": "Excel ile toplu yükle",
+    "pageTitle": "Malzemeler — Excel ile toplu yükle",
     "uploadTitle": "Excel Dosyası Yükleyin",
     "uploadHint": "Malzeme listesini içeren .xlsx veya .xls dosyasını sürükleyin veya seçin.",
     "validRows": "Geçerli Satır",
@@ -66,7 +67,8 @@
     "parse": "Dosya okunamadı. Lütfen geçerli bir Excel dosyası yükleyin.",
     "missingCode": "Satır {{row}}: Kod eksik.",
     "missingName": "Satır {{row}}: Ad eksik.",
-    "parseError": "Dosya okunamadı. Lütfen Excel formatını kontrol edin."
+    "parseError": "Dosya okunamadı. Lütfen Excel formatını kontrol edin.",
+    "goToList": "Malzeme listesine git"
   },
   "filters": {
     "all": "Tümü",

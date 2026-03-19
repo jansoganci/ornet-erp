@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { Card } from '../../../components/ui';
+import { Card, Badge } from '../../../components/ui';
 import { formatCurrency } from '../../../lib/utils';
 
 function AlertSection({ emoji, title, description, count, defaultOpen, children }) {
@@ -99,12 +99,18 @@ export function InvoiceAlertsPanel({ invoiceOnly, overageLines, lossLines, inven
     {
       key: 'costPrice',
       label: t('table.costPrice'),
-      render: (row) => formatCurrency(row.costPrice),
+      render: (row) => row.hasUnknownCost ? (
+        <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
+      ) : (
+        formatCurrency(row.costPrice)
+      ),
     },
     {
       key: 'priceDiff',
       label: 'Fark',
-      render: (row) => (
+      render: (row) => row.hasUnknownCost ? (
+        <span className="text-neutral-400 dark:text-neutral-500">—</span>
+      ) : (
         <span className="text-warning-600 dark:text-warning-400 font-medium">
           +{formatCurrency(row.priceDiff)}
         </span>
@@ -120,6 +126,15 @@ export function InvoiceAlertsPanel({ invoiceOnly, overageLines, lossLines, inven
       key: 'invoiceAmount',
       label: t('table.invoiceAmount'),
       render: (row) => formatCurrency(row.invoiceAmount),
+    },
+    {
+      key: 'costPrice',
+      label: t('table.costPrice'),
+      render: (row) => row.hasUnknownCost ? (
+        <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
+      ) : (
+        formatCurrency(row.costPrice)
+      ),
     },
     {
       key: 'salePrice',

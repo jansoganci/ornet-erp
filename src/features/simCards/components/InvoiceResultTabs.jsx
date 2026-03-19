@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from '../../../components/ui';
+import { Card, Badge } from '../../../components/ui';
 import { formatCurrency } from '../../../lib/utils';
 
 const PAGE_SIZE = 50;
@@ -93,17 +93,26 @@ function MatchedTable({ rows }) {
                 <td className="px-4 py-2 font-mono text-xs text-neutral-700 dark:text-neutral-300">{row.hatNo}</td>
                 <td className="px-4 py-2 text-neutral-800 dark:text-neutral-200 max-w-[160px] truncate">{row.tariff}</td>
                 <td className="px-4 py-2 text-right text-neutral-800 dark:text-neutral-200">{formatCurrency(row.invoiceAmount)}</td>
-                <td className="px-4 py-2 text-right text-neutral-500 dark:text-neutral-400">{formatCurrency(row.costPrice)}</td>
+                <td className="px-4 py-2 text-right text-neutral-500 dark:text-neutral-400">
+                  {row.hasUnknownCost ? (
+                    <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
+                  ) : (
+                    formatCurrency(row.costPrice)
+                  )}
+                </td>
                 <td className="px-4 py-2 text-right text-neutral-500 dark:text-neutral-400">{formatCurrency(row.salePrice)}</td>
                 <td className={`px-4 py-2 text-right font-medium ${row.isLoss ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                   {formatCurrency(row.profit)}
                 </td>
                 <td className="px-4 py-2 text-neutral-700 dark:text-neutral-300 max-w-[140px] truncate">{row.buyer || '—'}</td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 space-x-1">
                   {row.isOverage && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
                       {t('table.overage')}
                     </span>
+                  )}
+                  {row.hasUnknownCost && (
+                    <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
                   )}
                 </td>
               </tr>
@@ -118,17 +127,33 @@ function MatchedTable({ rows }) {
           <div key={i} className={`px-4 py-3 space-y-1.5 ${rowBg(row)}`}>
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-xs font-semibold text-neutral-700 dark:text-neutral-300">{row.hatNo}</span>
-              {row.isOverage && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
-                  {t('table.overage')}
-                </span>
-              )}
+              <span className="flex gap-1">
+                {row.isOverage && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
+                    {t('table.overage')}
+                  </span>
+                )}
+                {row.hasUnknownCost && (
+                  <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
+                )}
+              </span>
             </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{row.tariff}</p>
             <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-600 dark:text-neutral-400">{t('table.invoiceAmount')}</span>
               <span className="font-medium text-neutral-900 dark:text-neutral-50">{formatCurrency(row.invoiceAmount)}</span>
             </div>
+            {!row.hasUnknownCost && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600 dark:text-neutral-400">{t('table.costPrice')}</span>
+                <span className="text-neutral-800 dark:text-neutral-200">{formatCurrency(row.costPrice)}</span>
+              </div>
+            )}
+            {row.hasUnknownCost && (
+              <div className="flex items-center justify-between text-sm">
+                <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
+              </div>
+            )}
             <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-600 dark:text-neutral-400">{t('table.profitLoss')}</span>
               <span className={`font-semibold ${row.isLoss ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>

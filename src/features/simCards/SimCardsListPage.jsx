@@ -27,8 +27,7 @@ import { getErrorMessage } from '../../lib/errorHandler';
 import { QuickStatusSelect } from './components/QuickStatusSelect';
 
 export function SimCardsListPage() {
-  const { t } = useTranslation('simCards');
-  const { t: tCommon } = useTranslation('common');
+  const { t } = useTranslation(['simCards', 'common']);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [quickEditMode, setQuickEditMode] = useState(false);
@@ -296,7 +295,7 @@ export function SimCardsListPage() {
       ),
     },
     {
-      header: tCommon('actions.actionsColumn'),
+      header: t('common:actions.actionsColumn'),
       accessor: 'id',
       align: 'right',
       render: (_, row) => (
@@ -326,7 +325,7 @@ export function SimCardsListPage() {
       <PageHeader
         title={t('title')}
         breadcrumbs={[
-          { label: tCommon('nav.dashboard'), to: '/' },
+          { label: t('common:nav.dashboard'), to: '/' },
           { label: t('title') },
         ]}
         actions={
@@ -338,14 +337,14 @@ export function SimCardsListPage() {
               loading={isExporting}
               disabled={totalCount === 0}
             >
-              {tCommon('actions.export')}
+              {t('common:actions.export')}
             </Button>
             <Button
               variant="outline"
               leftIcon={<Download className="w-4 h-4" />}
               onClick={handleImport}
             >
-              {t('actions.import')}
+              {t('common:import.bulkImportButton')}
             </Button>
             <Button
               variant="primary"
@@ -545,7 +544,7 @@ export function SimCardsListPage() {
               onClick={() => setSimToDelete(null)}
               className="flex-1"
             >
-              {tCommon('actions.cancel')}
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
@@ -553,7 +552,7 @@ export function SimCardsListPage() {
               loading={deleteSimMutation.isPending}
               className="flex-1"
             >
-              {tCommon('actions.delete')}
+              {t('common:actions.delete')}
             </Button>
           </div>
         }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import i18n from '../../lib/i18n';
-import { isoDateString, currencyEnum } from '../../lib/zodHelpers';
+import { isoDateString } from '../../lib/zodHelpers';
 
 const isoDateSchema = z.string().regex(
   /^\d{4}-\d{2}-\d{2}$/,

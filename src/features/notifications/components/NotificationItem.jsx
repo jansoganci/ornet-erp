@@ -51,8 +51,8 @@ const ICON_MAP = {
 };
 
 function getRoute(entityType, entityId, notificationType) {
-  // pending_payments_summary or subscription with null entity_id → subscriptions list
-  if (notificationType === 'pending_payments_summary') return '/subscriptions';
+  // pending_payments_summary → Collection Desk
+  if (notificationType === 'pending_payments_summary') return '/subscriptions/collection';
   if (entityType === 'subscription' && !entityId) return '/subscriptions';
   if (!entityId && entityType !== 'task') return null;
   

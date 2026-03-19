@@ -9,6 +9,7 @@ const isoDateSchema = z.string().regex(
 
 const optionalNum = () => z.coerce.number().min(0).optional().nullable();
 const optionalStr = () => z.string().optional().or(z.literal(''));
+const toNumber = (val) => (val === '' || val === undefined || val === null ? undefined : Number(val));
 
 export const CURRENCIES = ['TRY', 'USD'];
 
@@ -42,6 +43,7 @@ export const proposalSchema = z.object({
   terms_warranty: optionalStr(),
   terms_other: optionalStr(),
   terms_attachments: optionalStr(),
+  vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),
   items: z.array(proposalItemSchema).min(1, i18n.t('errors:validation.required')),
 });
 
@@ -99,5 +101,6 @@ export const proposalDefaultValues = {
   terms_warranty: defaultTermsWarranty,
   terms_other: defaultTermsOther,
   terms_attachments: defaultTermsAttachments,
+  vat_rate: 20,
   items: [defaultItem],
 };

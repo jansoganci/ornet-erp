@@ -25,6 +25,7 @@
 15. [Realtime channels — Always set up supabase.channel() inside api.js](#15-realtime-channels--always-set-up-supabasechannel-inside-apijs)
 16. [Page components — Never import supabase directly](#16-page-components--never-import-supabase-directly)
 17. [Dead imports — Remove unused imports immediately after refactoring](#17-dead-imports--remove-unused-imports-immediately-after-refactoring)
+18. [Proposal vs. Work Order Finance Trigger Flow](#18-proposal-vs-work-order-finance-trigger-flow)
 
 ---
 
@@ -878,6 +879,51 @@ import { getSubscriptionUpdatedAt } from './api';
 
 ---
 
+## 18. Proposal vs. Work Order Finance Trigger Flow
+
+**Audit references:** G12 (Phase 5 — documentation)
+
+Revenue from proposals and work orders is recorded in `financial_transactions` via database triggers. Two triggers share responsibility; a guard clause prevents double-counting.
+
+### How It Works
+
+| Source | Trigger | When It Fires |
+|--------|---------|----------------|
+| **Proposal** | `auto_record_proposal_revenue` | When `proposals.status` becomes `completed` (via `check_proposal_completion` when the last linked work order is completed) |
+| **Work Order** | `auto_record_work_order_revenue` | When `work_orders.status` becomes `completed` |
+
+### Critical Architecture Rule: Double-Counting Prevention
+
+A work order can be either:
+
+1. **Standalone** — created directly, not linked to a proposal (`proposal_id IS NULL`)
+2. **Proposal-linked** — created from a proposal (`proposal_id IS NOT NULL`)
+
+When a proposal-linked work order is completed, the proposal’s completion logic eventually sets the proposal to `completed`, which triggers `auto_record_proposal_revenue`. That trigger creates the income record for the proposal.
+
+If `auto_record_work_order_revenue` also ran for proposal-linked work orders, the same revenue would be recorded twice.
+
+To prevent this, the work order trigger includes a guard clause at the very beginning of its logic:
+
+```sql
+IF NEW.proposal_id IS NOT NULL THEN
+  RETURN NEW;
+END IF;
+```
+
+This means: **if a work order is linked to a proposal, the work order trigger does nothing.** Revenue is recorded only by the proposal trigger.
+
+### Rule for Future Developers
+
+**Do not remove or relax the `IF NEW.proposal_id IS NOT NULL THEN RETURN NEW;` guard clause.**
+
+- Work orders linked to proposals → revenue is handled by `auto_record_proposal_revenue`, not by the work order trigger.
+- Standalone work orders → revenue is handled by `auto_record_work_order_revenue`.
+
+This separation is the single source of truth for revenue attribution and prevents duplicate entries in P&L reports and finance dashboards.
+
+---
+
 ## Summary Checklist
 
 Before submitting any PR that touches mutations, forms, date logic, or auth flows, verify:
@@ -899,3 +945,4 @@ Before submitting any PR that touches mutations, forms, date logic, or auth flow
 - [ ] Supabase Realtime `channel()` / `removeChannel()` calls are in `api.js`, not in `hooks.js` or components
 - [ ] No page component (`.jsx`) imports `supabase` directly — all DB/auth calls go through named `api.js` functions
 - [ ] After moving any Supabase call to `api.js`, the originating file has no remaining `supabase` import
+- [ ] Never remove the `IF NEW.proposal_id IS NOT NULL THEN RETURN NEW;` guard in `auto_record_work_order_revenue` — it prevents double-counting proposal-linked work order revenue

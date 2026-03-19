@@ -31,7 +31,9 @@
     "inventoryOnly": {
       "title": "Faturasız Envanter",
       "description": "Envanterde kayıtlı ama bu faturada görünmeyen Turkcell hatlar."
-    }
+    },
+    "unknownCost": "{{count}} hat için maliyet girilmemiş",
+    "unknownCostDescription": "Bu hatların kar/zarar hesaplaması doğru olsa da; maliyet fiyatı girilmediği için fark analizi yapılamıyor. SIM kart kayıtlarına maliyet girin."
   },
   "tabs": {
     "matched": "Eşleşenler",
@@ -50,7 +52,8 @@
     "status": "Durum",
     "buyer": "Alıcı",
     "overage": "Aşım",
-    "lineUnit": "hat"
+    "lineUnit": "hat",
+    "unknownCost": "Maliyet Girilmemiş"
   },
   "chart": {
     "title": "Tarife Dağılımı",

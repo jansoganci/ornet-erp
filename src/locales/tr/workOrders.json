@@ -107,7 +107,8 @@
       "amount": "Tutar",
       "quantity": "Miktar",
       "title": "Başlık",
-      "notes": "Notlar"
+      "notes": "Notlar",
+      "vatRate": "KDV Oranı (%)"
     },
     "noFieldWorkers": "Listelenecek saha personeli yok. Önce kullanıcıları saha personeli rolüyle ekleyin.",
     "placeholders": {

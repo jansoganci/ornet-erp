@@ -1,14 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 import { Upload, AlertCircle, CheckCircle2, X, Save, HelpCircle, Download } from 'lucide-react';
-import { useBulkCreateSimCards, useCreateProviderCompany, useProviderCompanies } from './hooks';
+import { useBulkCreateSimCards, useCreateProviderCompany } from './hooks';
 import { fetchProviderCompanies, fetchExistingSimIdentifiers } from './api';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { useQueryClient } from '@tanstack/react-query';
 import { providerCompanyKeys } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
+import { ImportInstructionCard, ImportResultSummary } from '../../components/import';
 import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { toast } from 'sonner';
@@ -20,11 +21,18 @@ function parseCurrency(value) {
   return Number.isNaN(n) ? null : n;
 }
 
+/**
+ * Convert Excel serial to UTC date string (YYYY-MM-DD).
+ * Excel stores dates as days since 1900-01-01 00:00 UTC. Using UTC avoids
+ * timezone shift (e.g. midnight UTC becoming previous day in UTC-3).
+ */
 function excelSerialToDate(serial) {
   const utcMs = (serial - 25569) * 86400 * 1000;
   const date = new Date(utcMs);
-  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(utcMs + offsetMs);
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function parseImportDate(value) {
@@ -35,9 +43,11 @@ function parseImportDate(value) {
 
     const excelSerial = Number(s);
     if (!Number.isNaN(excelSerial) && excelSerial > 1) {
-      const d = excelSerialToDate(excelSerial);
-      if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1900) return null;
-      return d.toISOString().slice(0, 10);
+      const isoDate = excelSerialToDate(excelSerial);
+      if (!isoDate) return null;
+      const year = parseInt(isoDate.slice(0, 4), 10);
+      if (year <= 1900) return null;
+      return isoDate;
     }
 
     const ddmmyyyy = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/);
@@ -64,9 +74,9 @@ export function SimCardImportPage() {
   const [errors, setErrors] = useState([]);
   const [isParsing, setIsParsing] = useState(false);
   const [skippedCount, setSkippedCount] = useState(0);
+  const [importResult, setImportResult] = useState(null);
   const bulkCreateMutation = useBulkCreateSimCards();
   const createProviderMutation = useCreateProviderCompany();
-  const { data: providers } = useProviderCompanies();
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -74,6 +84,7 @@ export function SimCardImportPage() {
 
     setIsParsing(true);
     setSkippedCount(0);
+    setImportResult(null);
     const reader = new FileReader();
 
     reader.onload = (event) => {
@@ -191,6 +202,7 @@ export function SimCardImportPage() {
   const handleImport = async () => {
     if (data.length === 0) return;
 
+    setImportResult(null);
     try {
       let providersList = await queryClient.fetchQuery({ queryKey: providerCompanyKeys.all, queryFn: () => fetchProviderCompanies() });
       const nameToId = {};
@@ -233,18 +245,27 @@ export function SimCardImportPage() {
 
       if (filtered.length > 0) {
         await bulkCreateMutation.mutateAsync(filtered);
-        if (skipped > 0) {
-          toast.info(t('simCards:import.skippedDuplicates', { count: skipped }));
-        }
-        navigate('/sim-cards');
+        setImportResult({ created: filtered.length, skipped });
+        setTimeout(() => navigate('/sim-cards'), 2500);
       } else if (skipped > 0) {
-        toast.warning(t('simCards:import.allSkippedDuplicates', { count: skipped }));
+        setImportResult({ created: 0, skipped });
       }
     } catch {
       toast.error(t('simCards:import.failed'));
       toast.warning(t('simCards:import.partialFailureWarning'));
     }
   };
+
+  const instructionSteps = useMemo(
+    () => [
+      { title: t('common:import.stepDownload'), description: t('common:import.stepDownloadDesc') },
+      { title: t('common:import.stepFill'), description: t('common:import.stepFillDesc') },
+      { title: t('common:import.stepUpload'), description: t('common:import.stepUploadDesc') },
+      { title: t('common:import.stepReview'), description: t('common:import.stepReviewDesc') },
+      { title: t('common:import.stepImport'), description: t('common:import.stepImportDesc') },
+    ],
+    [t]
+  );
 
   if (bulkCreateMutation.isError) {
     return (
@@ -261,6 +282,7 @@ export function SimCardImportPage() {
     setData([]);
     setErrors([]);
     setSkippedCount(0);
+    setImportResult(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -292,42 +314,49 @@ export function SimCardImportPage() {
   return (
     <PageContainer maxWidth="full">
       <PageHeader
-        title={t('simCards:actions.import')}
+        title={t('simCards:import.pageTitle')}
         breadcrumbs={[
           { label: t('simCards:title'), to: '/sim-cards' },
-          { label: t('simCards:actions.import') },
+          { label: t('common:import.bulkImportButton') },
         ]}
       />
 
       <div className="mt-6 space-y-6">
         {data.length === 0 && !isParsing ? (
-          <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
-            <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
-              <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-              {t('simCards:import.uploadTitle')}
-            </h3>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-              {t('simCards:import.uploadDescription')}
-            </p>
-            <input
-              type="file"
-              accept=".xlsx, .xls"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
+          <div className="space-y-6">
+            <ImportInstructionCard
+              title={t('common:import.instructionTitle')}
+              intro={t('common:import.instructionIntro')}
+              steps={instructionSteps}
             />
-            <div className="flex gap-3">
-              <Button onClick={() => fileInputRef.current?.click()}>
-                {t('simCards:import.selectFile')}
-              </Button>
-              <Button variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
-                {t('simCards:import.downloadTemplate')}
-              </Button>
-            </div>
+            <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
+              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
+                <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+              </div>
+              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
+                {t('simCards:import.uploadTitle')}
+              </h3>
+              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
+                {t('simCards:import.uploadDescription')}
+              </p>
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+              />
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button onClick={() => fileInputRef.current?.click()}>
+                  {t('simCards:import.selectFile')}
+                </Button>
+                <Button variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
+                  {t('simCards:import.downloadTemplate')}
+                </Button>
+              </div>
+            </Card>
 
-            <Card className="mt-6 p-4 bg-neutral-50 dark:bg-neutral-800/30 border-neutral-200 dark:border-neutral-700">
+            <Card className="p-4 bg-neutral-50 dark:bg-neutral-800/30 border-neutral-200 dark:border-neutral-700">
               <h4 className="font-medium text-neutral-900 dark:text-neutral-50 mb-3 flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-neutral-500" />
                 {t('simCards:import.excelFormat')}
@@ -349,9 +378,30 @@ export function SimCardImportPage() {
                 <p>{t('simCards:import.formatNotes')}</p>
               </div>
             </Card>
-          </Card>
+          </div>
         ) : (
           <div className="space-y-6">
+            {importResult && (
+              <ImportResultSummary
+                variant={importResult.created === 0 && importResult.skipped > 0 ? 'partial' : 'success'}
+                title={t('common:import.summaryTitle')}
+                stats={[
+                  { label: t('common:import.summaryCreated'), value: importResult.created },
+                  { label: t('common:import.summarySkipped'), value: importResult.skipped },
+                ]}
+                message={
+                  importResult.created === 0 && importResult.skipped > 0
+                    ? t('simCards:import.allSkippedDuplicates', { count: importResult.skipped })
+                    : t('common:import.summarySuccess')
+                }
+              >
+                <div className="mt-3">
+                  <Button variant="outline" size="sm" onClick={() => navigate('/sim-cards')}>
+                    {t('simCards:import.goToList')}
+                  </Button>
+                </div>
+              </ImportResultSummary>
+            )}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -364,7 +414,7 @@ export function SimCardImportPage() {
                     <span className="font-medium text-red-600">{t('simCards:import.invalidRows', { count: errors.length })}</span>
                   </div>
                 )}
-                {skippedCount > 0 && (
+                {!importResult && skippedCount > 0 && (
                   <span className="text-sm text-amber-600 dark:text-amber-400">
                     {t('simCards:import.skippedDuplicates', { count: skippedCount })}
                   </span>
@@ -379,7 +429,7 @@ export function SimCardImportPage() {
                   onClick={handleImport}
                   loading={bulkCreateMutation.isPending || createProviderMutation.isPending}
                   leftIcon={<Save className="w-4 h-4" />}
-                  disabled={data.length === 0}
+                  disabled={data.length === 0 || !!importResult}
                 >
                   {t('simCards:import.startImport')}
                 </Button>

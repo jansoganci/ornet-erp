@@ -18,10 +18,16 @@ import {
   IconButton,
   TableSkeleton,
 } from '../../components/ui';
-import { formatDate, formatCurrency } from '../../lib/utils';
+import {
+  formatDate,
+  formatCurrency,
+  getPriceRevisionNetSubtotal,
+  getPriceRevisionVatAmount,
+  getPriceRevisionTotalWithVat,
+} from '../../lib/utils';
 import { useSubscriptions, useCurrentProfile, useBulkUpdateSubscriptionPrices } from './hooks';
 import { RevisionNotesModal } from './components/RevisionNotesModal';
-import { SERVICE_TYPES, BILLING_FREQUENCIES } from './schema';
+import { SERVICE_TYPES } from './schema';
 
 function toNum(val, defaultVal = 0) {
   if (val === '' || val === undefined || val === null) return defaultVal;
@@ -38,10 +44,14 @@ function buildPriceRevisionMessage(originalRow, displayRow, messageMonth, t) {
   const oldBase = toNum(originalRow.base_price, 0);
   const oldSms = toNum(originalRow.sms_fee, 0);
   const oldLine = toNum(originalRow.line_fee, 0);
+  const oldSim = toNum(originalRow.sim_amount, 0);
   const newBase = toNum(displayRow.base_price, 0);
   const newSms = toNum(displayRow.sms_fee, 0);
   const newLine = toNum(displayRow.line_fee, 0);
-  if (oldBase === newBase && oldSms === newSms && oldLine === newLine) return null;
+  const newSim = toNum(displayRow.sim_amount, 0);
+  if (oldBase === newBase && oldSms === newSms && oldLine === newLine && oldSim === newSim) {
+    return null;
+  }
   const serviceLabel = originalRow.service_type
     ? (t(`subscriptions:priceRevision.serviceLabelsForMessage.${originalRow.service_type}`) || 'Abonelik')
     : 'Abonelik';
@@ -51,29 +61,36 @@ function buildPriceRevisionMessage(originalRow, displayRow, messageMonth, t) {
   const lines = [];
   if (oldBase !== newBase && (oldBase > 0 || newBase > 0)) {
     lines.push(
-      t('subscriptions:priceRevision.messageTemplate.basePrice') + `: ${formatForMessage(oldBase)}'den ${formatForMessage(newBase)}'ye`
+      `${t('subscriptions:priceRevision.messageTemplate.basePrice')}: ${formatForMessage(oldBase)}'den ${formatForMessage(newBase)}'ye`
     );
   }
   if (oldSms !== newSms && (oldSms > 0 || newSms > 0)) {
     lines.push(
-      t('subscriptions:priceRevision.messageTemplate.smsFee') + `: ${formatForMessage(oldSms)}'den ${formatForMessage(newSms)}'ye`
+      `${t('subscriptions:priceRevision.messageTemplate.smsFee')}: ${formatForMessage(oldSms)}'den ${formatForMessage(newSms)}'ye`
     );
   }
   if (oldLine !== newLine && (oldLine > 0 || newLine > 0)) {
     lines.push(
-      t('subscriptions:priceRevision.messageTemplate.simFee') + `: ${formatForMessage(oldLine)}'den ${formatForMessage(newLine)}'ye`
+      `${t('subscriptions:priceRevision.messageTemplate.lineFee')}: ${formatForMessage(oldLine)}'den ${formatForMessage(newLine)}'ye`
     );
   }
-  const hasUnchanged = (oldBase === newBase && (oldBase > 0 || newBase > 0)) ||
+  if (oldSim !== newSim && (oldSim > 0 || newSim > 0)) {
+    lines.push(
+      `${t('subscriptions:priceRevision.messageTemplate.subscriptionSimAmount')}: ${formatForMessage(oldSim)}'den ${formatForMessage(newSim)}'ye`
+    );
+  }
+  const hasUnchanged =
+    (oldBase === newBase && (oldBase > 0 || newBase > 0)) ||
     (oldSms === newSms && (oldSms > 0 || newSms > 0)) ||
-    (oldLine === newLine && (oldLine > 0 || newLine > 0));
+    (oldLine === newLine && (oldLine > 0 || newLine > 0)) ||
+    (oldSim === newSim && (oldSim > 0 || newSim > 0));
   if (hasUnchanged && lines.length > 0) {
     lines.push(t('subscriptions:priceRevision.messageTemplate.unchangedParts'));
   }
-  const oldTotal = oldBase + oldSms + oldLine;
-  const newTotal = newBase + newSms + newLine;
+  const oldTotal = getPriceRevisionNetSubtotal(originalRow);
+  const newTotal = getPriceRevisionNetSubtotal(displayRow);
   lines.push(
-    t('subscriptions:priceRevision.messageTemplate.total') + `: ${formatForMessage(oldTotal)}'den ${formatForMessage(newTotal)}'ye`
+    `${t('subscriptions:priceRevision.messageTemplate.total')}: ${formatForMessage(oldTotal)}'den ${formatForMessage(newTotal)}'ye`
   );
   const intro = t('subscriptions:priceRevision.messageTemplate.intro', {
     service: serviceLabel,
@@ -160,6 +177,8 @@ export function PriceRevisionPage() {
         base_price: toNum(merged.base_price, 0),
         sms_fee: toNum(merged.sms_fee, 0),
         line_fee: toNum(merged.line_fee, 0),
+        static_ip_fee: toNum(merged.static_ip_fee, 0),
+        sim_amount: toNum(merged.sim_amount, 0),
         vat_rate: toNum(merged.vat_rate, 20),
         cost: toNum(merged.cost, 0),
       };
@@ -183,13 +202,25 @@ export function PriceRevisionPage() {
     });
   };
 
+  const truncateExportText = (text, max = 500) => {
+    if (text == null || text === '') return '';
+    const s = String(text);
+    return s.length > max ? `${s.slice(0, max)}…` : s;
+  };
+
   const handleExportExcel = () => {
     if (!displayRows.length) return;
     const exportData = displayRows.map((row) => {
       const base = toNum(row.base_price, 0);
       const sms = toNum(row.sms_fee, 0);
-      const line = toNum(row.line_fee, 0);
-      const total = base + sms + line;
+      const sim = toNum(row.sim_amount, 0);
+      const netSub = getPriceRevisionNetSubtotal(row);
+      const vatAmt = getPriceRevisionVatAmount(row);
+      const gross = getPriceRevisionTotalWithVat(row);
+      const officialLabel =
+        row.official_invoice !== false
+          ? t('subscriptions:detail.officialInvoiceResmi')
+          : t('subscriptions:detail.officialInvoiceGayri');
       return {
         [t('subscriptions:priceRevision.columns.customer')]: row.company_name || '',
         [t('subscriptions:priceRevision.columns.site')]: row.site_name || '',
@@ -197,13 +228,19 @@ export function PriceRevisionPage() {
         [t('subscriptions:priceRevision.columns.startDate')]: formatDate(row.start_date),
         [t('subscriptions:priceRevision.columns.serviceType')]: row.service_type ? t(`subscriptions:serviceTypes.${row.service_type}`) : '',
         [t('subscriptions:priceRevision.columns.billingFrequency')]: t(`subscriptions:priceRevision.filters.${row.billing_frequency || 'monthly'}`),
+        [t('subscriptions:priceRevision.columns.officialInvoice')]: officialLabel,
+        [t('subscriptions:list.columns.monthly')]: base,
+        [t('subscriptions:list.columns.simTl')]: sim,
+        [t('subscriptions:priceRevision.columns.smsTl')]: sms,
+        [t('subscriptions:priceRevision.columns.netSubtotal')]: netSub,
+        [t('subscriptions:priceRevision.columns.vatAmount')]: vatAmt,
+        [t('subscriptions:priceRevision.columns.totalWithVat')]: gross,
         [t('subscriptions:priceRevision.zamPercent')]: row.zam_percent != null && row.zam_percent !== '' ? Number(row.zam_percent) : '',
-        [t('subscriptions:priceRevision.columns.basePrice')]: base,
-        [t('subscriptions:priceRevision.columns.smsFee')]: sms,
-        [t('subscriptions:priceRevision.columns.lineFee')]: line,
-        [t('subscriptions:priceRevision.columns.vatRate')]: toNum(row.vat_rate, 20),
         [t('subscriptions:priceRevision.columns.cost')]: toNum(row.cost, 0),
-        [t('subscriptions:priceRevision.messageTemplate.total')]: total,
+        [t('subscriptions:priceRevision.export.columns.vatRateReadonly')]: toNum(row.vat_rate, 20),
+        [t('subscriptions:priceRevision.export.columns.setupNotes')]: truncateExportText(row.setup_notes),
+        [t('subscriptions:priceRevision.export.columns.notes')]: truncateExportText(row.notes),
+        [t('subscriptions:priceRevision.messageTemplate.total')]: netSub,
       };
     });
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -220,7 +257,7 @@ export function PriceRevisionPage() {
       <PageContainer maxWidth="full" padding="default">
         <PageHeader title={t('subscriptions:priceRevision.title')} />
         <div className="mt-6">
-          <TableSkeleton cols={8} />
+          <TableSkeleton cols={10} />
         </div>
       </PageContainer>
     );
@@ -280,9 +317,13 @@ export function PriceRevisionPage() {
       header: t('subscriptions:priceRevision.columns.customer'),
       accessor: 'company_name',
       render: (value, row) => (
-        <div className="min-w-[120px]">
-          <p className="font-medium text-neutral-900 dark:text-neutral-100 truncate">{value}</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{row.site_name}</p>
+        <div className="max-w-[14rem] min-w-0">
+          <p className="font-medium text-neutral-900 dark:text-neutral-100 whitespace-normal break-words">
+            {value}
+          </p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-normal break-words mt-0.5">
+            {row.site_name}
+          </p>
         </div>
       ),
     },
@@ -310,53 +351,74 @@ export function PriceRevisionPage() {
       ),
     },
     {
-      header: t('subscriptions:priceRevision.columns.currentTotal'),
+      header: t('subscriptions:priceRevision.columns.officialInvoice'),
+      accessor: 'official_invoice',
+      render: (_, row) => (
+        <Badge variant={row.official_invoice !== false ? 'info' : 'outline'} size="sm" className="whitespace-nowrap">
+          {row.official_invoice !== false
+            ? t('subscriptions:detail.officialInvoiceResmi')
+            : t('subscriptions:detail.officialInvoiceGayri')}
+        </Badge>
+      ),
+    },
+    {
+      header: t('subscriptions:priceRevision.columns.amountBreakdown'),
       accessor: 'base_price',
       align: 'right',
       render: (_, row) => {
-        const base = toNum(row.base_price, 0);
-        const sms = toNum(row.sms_fee, 0);
-        const line = toNum(row.line_fee, 0);
+        const rate = Number(row.vat_rate);
+        const vatRate = Number.isFinite(rate) ? rate : 20;
         return (
-          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
-            {formatCurrency(base + sms + line)}
-          </span>
-        );
-      },
-    },
-    {
-      header: t('subscriptions:priceRevision.columns.vatAmount'),
-      accessor: 'vat_amount',
-      align: 'right',
-      render: (_, row) => {
-        const base = toNum(row.base_price, 0);
-        const sms = toNum(row.sms_fee, 0);
-        const line = toNum(row.line_fee, 0);
-        const vatRate = toNum(row.vat_rate, 20);
-        const guncelTutar = base + sms + line;
-        const kdvTutar = guncelTutar * (vatRate / 100);
-        return (
-          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
-            {formatCurrency(kdvTutar)}
-          </span>
-        );
-      },
-    },
-    {
-      header: t('subscriptions:priceRevision.columns.totalWithVat'),
-      accessor: 'total_with_vat',
-      align: 'right',
-      render: (_, row) => {
-        const base = toNum(row.base_price, 0);
-        const sms = toNum(row.sms_fee, 0);
-        const line = toNum(row.line_fee, 0);
-        const vatRate = toNum(row.vat_rate, 20);
-        const guncelTutar = base + sms + line;
-        const kdvTutar = guncelTutar * (vatRate / 100);
-        return (
-          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
-            {formatCurrency(guncelTutar + kdvTutar)}
-          </span>
+          <div className="space-y-2 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+                {t('subscriptions:list.columns.monthly')}
+              </span>
+              <span className="w-24 text-right text-sm tabular-nums text-neutral-900 dark:text-neutral-100">
+                {formatCurrency(toNum(row.base_price, 0))}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+                {t('subscriptions:list.columns.simTl')}
+              </span>
+              <span className="w-24 text-right text-sm tabular-nums text-neutral-900 dark:text-neutral-100">
+                {formatCurrency(toNum(row.sim_amount, 0))}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+                {t('subscriptions:priceRevision.columns.smsTl')}
+              </span>
+              <span className="w-24 text-right text-sm tabular-nums text-neutral-900 dark:text-neutral-100">
+                {formatCurrency(toNum(row.sms_fee, 0))}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+                {t('subscriptions:priceRevision.columns.netSubtotal')}
+              </span>
+              <span className="w-24 text-right text-sm font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
+                {formatCurrency(getPriceRevisionNetSubtotal(row))}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+                {t('subscriptions:priceRevision.columns.vatAmount')}
+              </span>
+              <span className="w-24 text-right text-sm tabular-nums text-neutral-900 dark:text-neutral-100">
+                {vatRate <= 0 ? '—' : formatCurrency(getPriceRevisionVatAmount(row))}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+                {t('subscriptions:priceRevision.columns.totalWithVat')}
+              </span>
+              <span className="w-24 text-right text-sm font-medium tabular-nums text-neutral-900 dark:text-neutral-100">
+                {formatCurrency(getPriceRevisionTotalWithVat(row))}
+              </span>
+            </div>
+          </div>
         );
       },
     },
@@ -392,8 +454,8 @@ export function PriceRevisionPage() {
       render: (_, row) => (
         <div className="space-y-2 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
-              {t('subscriptions:priceRevision.columns.basePrice')}
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+              {t('subscriptions:list.columns.monthly')}
             </span>
             <Input
               type="number"
@@ -409,8 +471,25 @@ export function PriceRevisionPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
-              {t('subscriptions:priceRevision.columns.smsFee')}
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+              {t('subscriptions:list.columns.simTl')}
+            </span>
+            <Input
+              type="number"
+              min={0}
+              step={0.01}
+              size="sm"
+              className="w-24"
+              value={row.sim_amount ?? ''}
+              onChange={(e) => updateEdit(row.id, 'sim_amount', e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              onKeyUp={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+              {t('subscriptions:priceRevision.columns.smsTl')}
             </span>
             <Input
               type="number"
@@ -426,42 +505,21 @@ export function PriceRevisionPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
-              {t('subscriptions:priceRevision.columns.lineFee')}
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
+              {t('subscriptions:priceRevision.columns.pricingTotalLine')}
             </span>
             <Input
-              type="number"
-              min={0}
-              step={0.01}
+              type="text"
+              readOnly
+              tabIndex={-1}
               size="sm"
-              className="w-24"
-              value={row.line_fee ?? ''}
-              onChange={(e) => updateEdit(row.id, 'line_fee', e.target.value)}
+              className="w-24 text-right tabular-nums pointer-events-none text-neutral-900 dark:text-neutral-100"
+              value={formatCurrency(getPriceRevisionNetSubtotal(row))}
               onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              onKeyUp={(e) => e.stopPropagation()}
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
-              {t('subscriptions:priceRevision.columns.vatRate')}
-            </span>
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              step={0.01}
-              size="sm"
-              className="w-24"
-              value={row.vat_rate ?? ''}
-              onChange={(e) => updateEdit(row.id, 'vat_rate', e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              onKeyUp={(e) => e.stopPropagation()}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-20 shrink-0">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400 w-24 shrink-0">
               {t('subscriptions:priceRevision.columns.cost')}
             </span>
             <Input
@@ -527,7 +585,7 @@ export function PriceRevisionPage() {
           aria-label={t('subscriptions:priceRevision.notes.title')}
           onClick={(e) => {
             e.stopPropagation();
-            setNotesModalSubscription({ id: row.id, company_name: row.company_name, site_name: row.site_name });
+            setNotesModalSubscription(row);
           }}
         />
       ),
@@ -607,6 +665,9 @@ export function PriceRevisionPage() {
             />
           </div>
         </div>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-4 max-w-3xl leading-relaxed">
+          {t('subscriptions:priceRevision.pricingBlockFootnote')}
+        </p>
       </Card>
 
       {isLoading ? (

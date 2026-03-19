@@ -61,7 +61,7 @@
       "locations": "Lokasyonlar",
       "workOrders": "İş Emirleri",
       "simCards": "SIM Kartlar",
-      "equipment": "Ekipman"
+      "equipment": "Varlıklar"
     },
     "overview": {
       "metrics": {
@@ -179,7 +179,8 @@
     }
   },
   "import": {
-    "title": "Müşteri İçe Aktar",
+    "title": "Excel ile toplu yükle",
+    "pageTitle": "Müşteriler — Excel ile toplu yükle",
     "uploadTitle": "Excel dosyası yükleyin",
     "uploadDescription": "Müşteri ve lokasyon verilerini Excel dosyasından toplu olarak içe aktarın. Önce şablonu indirip doldurun.",
     "selectFile": "Dosya Seç",
@@ -209,7 +210,18 @@
     "errorMessages": {
       "required": "Zorunlu alan boş",
       "invalid_date": "Geçersiz tarih formatı (DD.MM.YYYY veya YYYY-MM-DD)",
-      "MAX_ROWS": "Maksimum 500 satır"
+      "MAX_ROWS": "Maksimum 500 satır",
+      "PARSE_FAILED": "Excel dosyası okunamadı. Şablonu kullanın veya dosya biçimini kontrol edin."
+    },
+    "previewColumns": {
+      "customer": "Müşteri",
+      "subscriberTitle": "Abone Ünvanı",
+      "center": "Merkez",
+      "accountNo": "ACC.",
+      "location": "Lokasyon",
+      "cityDistrict": "İl / İlçe",
+      "connectionDate": "Bağlantı Tarihi",
+      "status": "Durum"
     },
     "duplicates": {
       "warning": "{{count}} müşteri zaten sistemde kayıtlı",

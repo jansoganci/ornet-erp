@@ -99,6 +99,84 @@ export function formatCurrency(amount, currency = 'TRY') {
   }).format(amount);
 }
 
+/**
+ * Net subscription subtotal matching SubscriptionsListPage "total" column:
+ * base_price + sim_amount + sms_fee + static_ip_fee (line_fee excluded — list convention).
+ * @param {object} row - Subscription row (or merged display row)
+ * @returns {number}
+ */
+export function getSubscriptionListSubtotal(row) {
+  if (!row) return 0;
+  const base = Number(row.base_price) || 0;
+  const sim = Number(row.sim_amount) || 0;
+  const sms = Number(row.sms_fee) || 0;
+  const staticIp = Number(row.static_ip_fee) || 0;
+  return base + sim + sms + staticIp;
+}
+
+/**
+ * VAT amount (KDV) for list-aligned subtotal: subtotal * vat_rate / 100
+ * @param {object} row
+ * @returns {number}
+ */
+export function getSubscriptionListVatAmount(row) {
+  const subtotal = getSubscriptionListSubtotal(row);
+  const rate = Number(row?.vat_rate);
+  const vatRate = Number.isFinite(rate) ? rate : 20;
+  return subtotal * (vatRate / 100);
+}
+
+/**
+ * Gross total with VAT matching SubscriptionsListPage totalWithVatCalc.
+ * @param {object} row
+ * @returns {number}
+ */
+export function getSubscriptionListTotalWithVat(row) {
+  const subtotal = getSubscriptionListSubtotal(row);
+  const rate = Number(row?.vat_rate);
+  const vatRate = Number.isFinite(rate) ? rate : 20;
+  return subtotal * (1 + vatRate / 100);
+}
+
+/**
+ * Fiyat revizyonu ekranı: net ara toplam = baz + SIM TL + SMS TL (hat/satık IP hariç).
+ * @param {object} row
+ * @returns {number}
+ */
+export function getPriceRevisionNetSubtotal(row) {
+  if (!row) return 0;
+  const base = Number(row.base_price) || 0;
+  const sim = Number(row.sim_amount) || 0;
+  const sms = Number(row.sms_fee) || 0;
+  return base + sim + sms;
+}
+
+/**
+ * KDV tutarı (fiyat revizyonu net üzerinden). Oran 0 veya negatifse 0.
+ * @param {object} row
+ * @returns {number}
+ */
+export function getPriceRevisionVatAmount(row) {
+  const net = getPriceRevisionNetSubtotal(row);
+  const rate = Number(row?.vat_rate);
+  const vatRate = Number.isFinite(rate) ? rate : 20;
+  if (vatRate <= 0) return 0;
+  return net * (vatRate / 100);
+}
+
+/**
+ * KDV dahil tutar (fiyat revizyonu). KDV yoksa net ile aynı.
+ * @param {object} row
+ * @returns {number}
+ */
+export function getPriceRevisionTotalWithVat(row) {
+  const net = getPriceRevisionNetSubtotal(row);
+  const rate = Number(row?.vat_rate);
+  const vatRate = Number.isFinite(rate) ? rate : 20;
+  if (vatRate <= 0) return net;
+  return net * (1 + vatRate / 100);
+}
+
 const CURRENCY_SYMBOLS = { TRY: '₺', USD: '$', EUR: '€', CHF: 'Fr.' };
 
 /**

@@ -1,38 +1,57 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { HardDrive, Layers } from 'lucide-react';
+import { HardDrive, ExternalLink, AlertTriangle, Upload } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Card, Table, Spinner, ErrorState, EmptyState, Badge, SearchInput, Select, TableSkeleton, DateRangeFilter, Button } from '../../components/ui';
-import { AssetStatusBadge } from './components/AssetStatusBadge';
-import { OwnershipBadge } from './components/OwnershipBadge';
-import { BulkAssetRegisterModal } from './components/BulkAssetRegisterModal';
+import { Card, Table, ErrorState, EmptyState, Badge, SearchInput, Select, TableSkeleton, Button } from '../../components/ui';
+import { AddAssetModal } from './components/AddAssetModal';
 import { useAssets } from './hooks';
-import { ASSET_TYPES, ASSET_STATUSES, OWNERSHIP_TYPES } from './schema';
 import { formatDate } from '../../lib/utils';
+
+const SUBSCRIPTION_STATUSES = ['active', 'paused', 'cancelled', 'none'];
+
+function groupAssetsBySite(assets) {
+  const bySite = new Map();
+  for (const a of assets || []) {
+    const key = a.site_id;
+    if (!bySite.has(key)) {
+      bySite.set(key, {
+        site_id: a.site_id,
+        site_name: a.site_name,
+        account_no: a.account_no,
+        company_name: a.company_name,
+        customer_id: a.customer_id,
+        subscription_id: a.subscription_id,
+        subscription_status: a.subscription_status,
+        equipment: [],
+        earliest_installation_date: a.installation_date,
+      });
+    }
+    const row = bySite.get(key);
+    row.equipment.push({ name: a.equipment_name, quantity: a.quantity });
+    if (a.installation_date && (!row.earliest_installation_date || a.installation_date < row.earliest_installation_date)) {
+      row.earliest_installation_date = a.installation_date;
+    }
+  }
+  return Array.from(bySite.values());
+}
 
 export function SiteAssetsListPage() {
   const { t } = useTranslation(['siteAssets', 'common']);
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const searchFromUrl = searchParams.get('search') || '';
   const [localSearch, setLocalSearch] = useState(searchFromUrl);
   const debouncedSearch = useDebouncedValue(localSearch, 300);
+  const statusFilter = searchParams.get('status') || '';
 
-  const status = searchParams.get('status') || '';
-  const assetType = searchParams.get('assetType') || '';
-  const ownershipType = searchParams.get('ownershipType') || '';
-  const yearParam = searchParams.get('year') || '';
-  const monthParam = searchParams.get('month') || '';
-
-  // Sync local search from URL
   useEffect(() => {
     setLocalSearch(searchFromUrl);
   }, [searchFromUrl]);
 
-  // Sync debounced search to URL
   useEffect(() => {
     if (searchFromUrl === debouncedSearch) return;
     setSearchParams((prev) => {
@@ -43,125 +62,119 @@ export function SiteAssetsListPage() {
     });
   }, [debouncedSearch, searchFromUrl, setSearchParams]);
 
-  const handleFilterChange = (key, value) => {
-    setSearchParams((prev) => {
-      if (value && value !== 'all' && value !== '') prev.set(key, value);
-      else prev.delete(key);
-      return prev;
-    });
-  };
-
   const effectiveFilters = useMemo(
     () => ({
       search: debouncedSearch || undefined,
-      status: status || undefined,
-      asset_type: assetType || undefined,
-      ownership_type: ownershipType || undefined,
-      year: yearParam || undefined,
-      month: monthParam || undefined,
+      subscription_status: statusFilter || undefined,
     }),
-    [debouncedSearch, status, assetType, ownershipType, yearParam, monthParam]
+    [debouncedSearch, statusFilter]
   );
 
   const { data: assets, isLoading, error } = useAssets(effectiveFilters);
+  const groupedRows = useMemo(() => groupAssetsBySite(assets), [assets]);
 
   const statusOptions = [
     { value: '', label: t('siteAssets:filters.allStatuses') },
-    ...ASSET_STATUSES.map((s) => ({ value: s, label: t(`siteAssets:statuses.${s}`) })),
+    ...SUBSCRIPTION_STATUSES.map((s) => ({ value: s, label: t(`siteAssets:subscriptionStatus.${s}`) })),
   ];
 
-  const typeOptions = [
-    { value: '', label: t('siteAssets:filters.allTypes') },
-    ...ASSET_TYPES.map((type) => ({ value: type, label: t(`siteAssets:types.${type}`) })),
-  ];
-
-  const ownershipOptions = [
-    { value: '', label: t('siteAssets:filters.allOwnerships') },
-    ...OWNERSHIP_TYPES.map((type) => ({ value: type, label: t(`siteAssets:ownerships.${type}`) })),
-  ];
-
-  const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString());
-  const yearOptions = [
-    { value: '', label: t('common:filters.all') },
-    ...years.map((y) => ({ value: y, label: y })),
-  ];
-
-  const monthOptions = [
-    { value: '', label: t('common:filters.all') },
-    ...Object.entries(t('notifications:months', { returnObjects: true })).map(([val, label]) => ({
-      value: val,
-      label,
-    })),
-  ];
+  const handleFilterChange = (key, value) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value && value !== '') next.set(key, value);
+      else next.delete(key);
+      return next;
+    });
+  };
 
   const columns = [
     {
-      key: 'asset_type',
-      header: t('siteAssets:fields.assetType'),
-      render: (_, asset) => (
+      key: 'customer',
+      header: t('siteAssets:fields.customer'),
+      render: (_, row) => (
+        <p className="font-medium text-neutral-900 dark:text-neutral-50 truncate max-w-[180px]">
+          {row.company_name || '-'}
+        </p>
+      ),
+    },
+    {
+      key: 'site',
+      header: t('siteAssets:fields.siteAcc'),
+      render: (_, row) => (
         <div>
-          <div className="flex items-center gap-2">
-            <p className="font-medium text-neutral-900 dark:text-neutral-50">
-              {t(`siteAssets:types.${asset.asset_type}`)}
-            </p>
-            <OwnershipBadge type={asset.ownership_type} />
-          </div>
-          {asset.brand && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {asset.brand} {asset.model || ''}
-            </p>
+          <p className="font-medium text-neutral-900 dark:text-neutral-50 truncate max-w-[150px]">
+            {row.site_name || '-'}
+          </p>
+          {row.account_no && (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">{row.account_no}</p>
           )}
         </div>
       ),
     },
     {
-      key: 'serial_number',
-      header: t('siteAssets:fields.serialNumber'),
-      className: 'hidden md:table-cell',
-      render: (_, asset) => (
-        <span className="text-sm font-mono text-neutral-600 dark:text-neutral-400">
-          {asset.serial_number || '-'}
-        </span>
-      ),
-    },
-    {
-      key: 'site',
-      header: t('siteAssets:fields.site'),
-      render: (_, asset) => (
-        <div>
-          <p className="font-medium text-neutral-900 dark:text-neutral-50 truncate max-w-[150px]">
-            {asset.site_name || '-'}
-          </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {asset.customer_name || '-'}
-          </p>
+      key: 'equipment',
+      header: t('siteAssets:fields.equipmentList'),
+      render: (_, row) => (
+        <div className="flex flex-wrap gap-1.5">
+          {row.equipment.map((e, i) => (
+            <Badge key={i} variant="info" size="sm">
+              {e.name}: {e.quantity}
+            </Badge>
+          ))}
         </div>
       ),
     },
     {
-      key: 'location_note',
-      header: t('siteAssets:fields.locationNote'),
-      className: 'hidden lg:table-cell',
-      render: (_, asset) => (
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 truncate max-w-[150px] block">
-          {asset.location_note || '-'}
-        </span>
-      ),
-    },
-    {
-      key: 'installed_at',
-      header: t('siteAssets:fields.installedAt'),
+      key: 'installation_date',
+      header: t('siteAssets:fields.installationDate'),
       className: 'hidden md:table-cell',
-      render: (_, asset) => (
+      render: (_, row) => (
         <span className="text-sm text-neutral-600 dark:text-neutral-400">
-          {asset.installed_at ? formatDate(asset.installed_at) : '-'}
+          {row.earliest_installation_date ? formatDate(row.earliest_installation_date) : '-'}
         </span>
       ),
     },
     {
-      key: 'status',
-      header: t('siteAssets:detail.status'),
-      render: (_, asset) => <AssetStatusBadge status={asset.status} />,
+      key: 'subscription_status',
+      header: t('siteAssets:fields.subscriptionStatus'),
+      render: (_, row) => {
+        const status = row.subscription_status || 'none';
+        const isCancelled = status === 'cancelled';
+        return (
+          <div className="flex flex-col gap-1">
+            <Badge
+              variant={isCancelled ? 'error' : status === 'active' ? 'success' : status === 'paused' ? 'warning' : 'default'}
+              size="sm"
+            >
+              {t(`siteAssets:subscriptionStatus.${status}`)}
+            </Badge>
+            {isCancelled && (
+              <span className="text-xs text-error-600 dark:text-error-400 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                {t('siteAssets:alert.deviceRetrieval')}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: '',
+      className: 'w-20',
+      render: (_, row) =>
+        row.subscription_id ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<ExternalLink className="w-4 h-4" />}
+            onClick={() => navigate(`/subscriptions/${row.subscription_id}`)}
+          >
+            {t('siteAssets:actions.viewSubscription')}
+          </Button>
+        ) : (
+          <span className="text-xs text-neutral-400">—</span>
+        ),
     },
   ];
 
@@ -179,17 +192,22 @@ export function SiteAssetsListPage() {
         title={t('siteAssets:title')}
         description={
           <Badge variant="primary" size="sm">
-            {assets?.length || 0} {t('siteAssets:section.title').toLowerCase()}
+            {groupedRows.length} {t('siteAssets:section.sites')}
           </Badge>
         }
         actions={
-          <Button
-            variant="outline"
-            leftIcon={<Layers className="w-4 h-4" />}
-            onClick={() => setShowBulkModal(true)}
-          >
-            {t('siteAssets:bulkRegister.title')}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              leftIcon={<Upload className="w-4 h-4" />}
+              onClick={() => navigate('/equipment/import')}
+            >
+              {t('common:import.bulkImportButton')}
+            </Button>
+            <Button variant="primary" leftIcon={<HardDrive className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>
+              {t('siteAssets:addButton')}
+            </Button>
+          </div>
         }
       />
 
@@ -203,52 +221,14 @@ export function SiteAssetsListPage() {
               size="sm"
             />
           </div>
-          <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
-            <div className="w-full sm:flex-1 md:w-40">
-              <Select
-                label={t('siteAssets:filters.status')}
-                options={statusOptions}
-                value={status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-44">
-              <Select
-                label={t('siteAssets:filters.type')}
-                options={typeOptions}
-                value={assetType}
-                onChange={(e) => handleFilterChange('assetType', e.target.value)}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-44">
-              <Select
-                label={t('siteAssets:filters.ownership')}
-                options={ownershipOptions}
-                value={ownershipType}
-                onChange={(e) => handleFilterChange('ownershipType', e.target.value)}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-32">
-              <Select
-                label={t('siteAssets:filters.selectYear')}
-                options={yearOptions}
-                value={yearParam}
-                onChange={(e) => handleFilterChange('year', e.target.value)}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-36">
-              <Select
-                label={t('siteAssets:filters.selectMonth')}
-                options={monthOptions}
-                value={monthParam}
-                onChange={(e) => handleFilterChange('month', e.target.value)}
-                size="sm"
-              />
-            </div>
+          <div className="w-full sm:w-44">
+            <Select
+              label={t('siteAssets:filters.subscriptionStatus')}
+              options={statusOptions}
+              value={statusFilter}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+              size="sm"
+            />
           </div>
         </div>
       </Card>
@@ -256,18 +236,13 @@ export function SiteAssetsListPage() {
       <div className="mt-6 bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm">
         <Table
           columns={columns}
-          data={assets || []}
+          data={groupedRows}
           loading={isLoading}
           emptyMessage={t('siteAssets:empty.title')}
         />
       </div>
 
-      <BulkAssetRegisterModal
-        open={showBulkModal}
-        onClose={() => setShowBulkModal(false)}
-        siteId={undefined}
-        customerId={undefined}
-      />
+      <AddAssetModal open={showAddModal} onClose={() => setShowAddModal(false)} />
     </PageContainer>
   );
 }

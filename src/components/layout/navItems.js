@@ -3,8 +3,6 @@ import {
   Users,
   ClipboardList,
   Target,
-  Calendar,
-  CalendarCheck,
   Search,
   Package,
   CreditCard,
@@ -30,12 +28,12 @@ import {
  * Top-level nav items shown in bottom bar on mobile (< lg breakpoint).
  * Routes must match flat items or first child of a group.
  */
-export const topNavRoutes = ['/', '/daily-work', '/customers', '/work-orders', '/proposals'];
+export const topNavRoutes = ['/', '/operations', '/customers', '/work-orders', '/proposals'];
 
 export const navItems = [
   // Top-level frequently used items (5)
   { to: '/', icon: Home, labelKey: 'nav.dashboard', exact: true },
-  { to: '/daily-work', icon: CalendarCheck, labelKey: 'nav.dailyWork' },
+  { to: '/operations', icon: Target, labelKey: 'nav.operations', canWriteOnly: true },
   { to: '/customers', icon: Users, labelKey: 'nav.customers' },
   { to: '/work-orders', icon: ClipboardList, labelKey: 'nav.workOrders' },
   { to: '/proposals', icon: FileText, labelKey: 'nav.proposals', canWriteOnly: true },
@@ -57,8 +55,6 @@ export const navItems = [
     labelKey: 'nav.groups.planning',
     icon: CalendarClock,
     children: [
-      { to: '/calendar', icon: Calendar, labelKey: 'nav.calendar' },
-      { to: '/tasks', icon: Target, labelKey: 'nav.tasks' },
       { to: '/work-history', icon: Search, labelKey: 'nav.workHistory' },
     ],
   },

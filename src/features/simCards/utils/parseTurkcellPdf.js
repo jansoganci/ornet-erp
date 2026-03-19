@@ -18,7 +18,30 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
  * Line regex: F2-{10 digits}?{tariff}#{amount}${kdv}+{oiv}!{total}
  * Captures: hatNo, tariff, invoiceAmount, kdv, oiv, total
  */
-const LINE_REGEX = /F2-(\d{10})\?([^#]*)#([\d.]+)\$([\d.]+)\+([\d.]+)!([\d.]+)/g;
+const LINE_REGEX = /F2-(\d{10})\?([^#]*)#([\d.,]+)\$([\d.,]+)\+([\d.,]+)!([\d.,]+)/g;
+
+/**
+ * Parse currency string, handling Turkish format (1.234,56) and US format (1,234.56).
+ * Returns 0 on parse failure instead of NaN.
+ */
+function parseCurrencySafe(str) {
+  if (str == null || str === '') return 0;
+  let s = String(str).trim().replace(/\s/g, '');
+  // Turkish: 1.234,56 → remove dots (thousands), replace comma (decimal)
+  if (/^\d{1,3}(\.\d{3})*,\d+$/.test(s) || /^\d+,\d+$/.test(s)) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  }
+  // US: 1,234.56 or mixed
+  else if (s.includes(',') && s.includes('.')) {
+    s = s.replace(/,/g, '');
+  } else if (/^\d{1,3}(,\d{3})*\.\d+$/.test(s) || /^\d+\.\d+$/.test(s)) {
+    s = s.replace(/,/g, '');
+  } else if (s.includes(',')) {
+    s = s.replace(/,/g, '.');
+  }
+  const n = parseFloat(s.replace(/[^\d.-]/g, ''));
+  return Number.isNaN(n) ? 0 : n;
+}
 
 /**
  * Parse a Turkcell invoice PDF file.
@@ -52,10 +75,10 @@ export async function parseTurkcellPdf(file) {
       while ((match = LINE_REGEX.exec(pageText)) !== null) {
         const [, hatNo, tariff, invoiceAmountStr, kdvStr, oivStr, totalStr] = match;
 
-        const invoiceAmount = parseFloat(invoiceAmountStr) || 0;
-        const kdv = parseFloat(kdvStr) || 0;
-        const oiv = parseFloat(oivStr) || 0;
-        const total = parseFloat(totalStr) || 0;
+        const invoiceAmount = parseCurrencySafe(invoiceAmountStr);
+        const kdv = parseCurrencySafe(kdvStr);
+        const oiv = parseCurrencySafe(oivStr);
+        const total = parseCurrencySafe(totalStr);
         const tariffClean = tariff.trim();
 
         lines.push({

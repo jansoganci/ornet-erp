@@ -2,6 +2,8 @@ import { z } from 'zod';
 import i18n from '../../lib/i18n';
 import { isoDateStringOptional, currencyEnum } from '../../lib/zodHelpers';
 
+const toNumber = (val) => (val === '' || val === undefined || val === null ? undefined : Number(val));
+
 const isoDateSchema = z.string().regex(
   /^\d{4}-\d{2}-\d{2}$/,
   'Geçerli bir tarih giriniz (YYYY-AA-GG)'
@@ -37,6 +39,7 @@ export const workOrderSchema = z.object({
     cost: z.coerce.number().min(0).optional().nullable(),
   })).min(0),
   materials_discount_percent: z.coerce.number().min(0).max(100).optional().nullable(),
+  vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),
 }).refine((data) => {
   if (data.work_type === 'other') {
     return data.work_type_other && data.work_type_other.length > 0;
@@ -73,4 +76,5 @@ export const workOrderDefaultValues = {
     { description: '', quantity: 1, unit: 'adet', unit_price: 0, material_id: null, cost: null },
   ],
   materials_discount_percent: 0,
+  vat_rate: 20,
 };

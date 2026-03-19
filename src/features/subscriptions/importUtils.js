@@ -89,11 +89,18 @@ function trim(val) {
   return String(val).trim();
 }
 
+/**
+ * Convert Excel serial to UTC date string (YYYY-MM-DD).
+ * Excel stores dates as days since 1900-01-01 00:00 UTC. Using UTC methods
+ * avoids timezone shift (e.g. midnight UTC becoming previous day in UTC+3).
+ */
 function excelSerialToDate(serial) {
   const utcMs = (serial - 25569) * 86400 * 1000;
   const date = new Date(utcMs);
-  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(utcMs + offsetMs);
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function parseDate(val) {
@@ -120,10 +127,9 @@ function parseDate(val) {
   // Excel serial number (e.g. 44927)
   const serial = Number(s);
   if (Number.isFinite(serial) && serial > 1) {
-    const d = excelSerialToDate(serial);
-    if (!Number.isNaN(d.getTime()) && d.getFullYear() > 1900) {
-      return d.toISOString().slice(0, 10);
-    }
+    const isoDate = excelSerialToDate(serial);
+    const year = parseInt(isoDate.slice(0, 4), 10);
+    if (year > 1900) return isoDate;
   }
   return null;
 }
@@ -175,16 +181,6 @@ export function validateAndMapRows(excelRows) {
   }
 
   const toProcess = excelRows.slice(0, MAX_ROWS);
-
-  // DEBUG: İlk satırın raw key'lerini ve parse sonucunu logla (sorun çözülünce kaldır)
-  if (toProcess.length > 0 && typeof console !== 'undefined') {
-    const first = toProcess[0];
-    const keys = Object.keys(first);
-    const tlVal = first['TL'] ?? first[keys.find((k) => /^TL$/i.test(k.trim()))];
-    const hatVal = first['HAT TL'] ?? first[keys.find((k) => /HAT\s*TL/i.test(String(k).replace(/\u00a0/g, ' ')))];
-    console.log('[Import DEBUG] İlk satır raw keys:', keys);
-    console.log('[Import DEBUG] TL:', tlVal, '| HAT TL:', hatVal);
-  }
 
   // HAT TL / SIM sütununu bulmak için: key tam eşleşmezse "HAT" veya "SIM" içeren key ara
   const findSimColumn = (raw) => {
@@ -279,11 +275,6 @@ export function validateAndMapRows(excelRows) {
       setup_notes:           get('ONCEKI AYLARIN NOTLARI') || null,
     });
   });
-
-  // DEBUG: İlk satırın parse sonucunu logla
-  if (rows.length > 0 && typeof console !== 'undefined') {
-    console.log('[Import DEBUG] İlk satır parsed:', { base_price: rows[0].base_price, sim_amount: rows[0].sim_amount });
-  }
 
   return { rows, errors };
 }

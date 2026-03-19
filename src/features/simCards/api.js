@@ -29,6 +29,21 @@ export async function fetchSimCards(filters = {}) {
   if (filters.provider_company_id && filters.provider_company_id !== 'all') {
     query = query.eq('provider_company_id', filters.provider_company_id);
   }
+  if (filters.year && filters.year !== 'all') {
+    query = query
+      .gte('activation_date', `${filters.year}-01-01`)
+      .lte('activation_date', `${filters.year}-12-31`);
+  }
+  if (filters.month && filters.month !== 'all') {
+    const m = String(filters.month).padStart(2, '0');
+    const year = filters.year && filters.year !== 'all' ? filters.year : new Date().getFullYear();
+    const nextMonth = Number(m) === 12
+      ? `${Number(year) + 1}-01`
+      : `${year}-${String(Number(m) + 1).padStart(2, '0')}`;
+    query = query
+      .gte('activation_date', `${year}-${m}-01`)
+      .lt('activation_date', `${nextMonth}-01`);
+  }
   if (filters.dateFrom) {
     query = query.gte('created_at', filters.dateFrom);
   }

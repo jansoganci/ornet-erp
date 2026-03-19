@@ -52,7 +52,7 @@
   },
   "actions": {
     "add": "Yeni SIM Kart Ekle",
-    "import": "Excel'den Yükle",
+    "import": "Excel ile toplu yükle",
     "edit": "Düzenle",
     "delete": "Sil",
     "activate": "Aktifleştir",
@@ -71,6 +71,7 @@
     "accountNo": "Hesap No",
     "costPrice": "Aylık Maliyet",
     "salePrice": "Aylık Satış Fiyatı",
+    "vatRate": "KDV Oranı (%)",
     "customerLabel": "Abone Adı",
     "notes": "Notlar",
     "placeholders": {
@@ -110,6 +111,7 @@
     "monthlyProfit": "Tahmini Aylık Kar"
   },
   "import": {
+    "pageTitle": "SIM kartlar — Excel ile toplu yükle",
     "uploadTitle": "Excel Dosyası Yükleyin",
     "uploadDescription": "SIM kart listesini içeren .xlsx veya .xls dosyasını sürükleyin veya seçin.",
     "selectFile": "Dosya Seç",
@@ -147,7 +149,8 @@
     "processing": "Excel dosyası işleniyor...",
     "andMoreRows": "... ve {{count}} satır daha",
     "failed": "İçe aktarma başarısız oldu",
-    "partialFailureWarning": "Bazı kayıtlar kaydedilmiş olabilir. Lütfen SIM kart listesini kontrol edin."
+    "partialFailureWarning": "Bazı kayıtlar kaydedilmiş olabilir. Lütfen SIM kart listesini kontrol edin.",
+    "goToList": "SIM kart listesine git"
   },
   "staticIp": {
     "title": "Statik IP",

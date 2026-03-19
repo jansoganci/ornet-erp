@@ -17,6 +17,8 @@ function isFlatItem(item) {
 const DEFAULT_GROUP_STATE = {
   planning: true,
   revenueInfra: true,
+  finance: true,
+  operations: true,
   settings: false, // Ayarlar default collapsed (less frequently used)
 };
 

@@ -67,6 +67,7 @@ export function SimCardFormPage() {
         account_no: simCard.account_no || '',
         cost_price: simCard.cost_price || 0,
         sale_price: simCard.sale_price || 0,
+        vat_rate: simCard.vat_rate ?? 20,
         currency: simCard.currency || 'TRY',
         notes: simCard.notes || '',
       });
@@ -309,6 +310,18 @@ export function SimCardFormPage() {
                   error={errors.sale_price?.message}
                   className="rounded-xl"
                   {...register('sale_price', { valueAsNumber: true })}
+                />
+
+                <Input
+                  label={t('simCards:form.vatRate')}
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                  error={errors.vat_rate?.message}
+                  className="rounded-xl"
+                  {...register('vat_rate')}
                 />
               </div>
               <Select

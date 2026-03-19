@@ -212,7 +212,7 @@ export function MaterialsListPage() {
               onClick={() => navigate('/materials/import')}
               leftIcon={<Upload className="w-4 h-4" />}
             >
-              {t('materials:import.title')}
+              {t('common:import.bulkImportButton')}
             </Button>
             <Button
               onClick={handleAdd}

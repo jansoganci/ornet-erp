@@ -38,22 +38,6 @@ export function useAssetsByCustomer(customerId) {
   });
 }
 
-export function useAssetsByWorkOrder(workOrderId) {
-  return useQuery({
-    queryKey: assetKeys.byWorkOrder(workOrderId),
-    queryFn: () => api.fetchAssetsByWorkOrder(workOrderId),
-    enabled: !!workOrderId,
-  });
-}
-
-export function useAssetHistory(assetId) {
-  return useQuery({
-    queryKey: assetKeys.history(assetId),
-    queryFn: () => api.fetchAssetHistory(assetId),
-    enabled: !!assetId,
-  });
-}
-
 // ─── Mutations ─────────────────────────────────────────────
 
 function invalidateAssetQueries(queryClient) {
@@ -84,7 +68,8 @@ export function useBulkCreateAssets() {
     mutationFn: api.bulkCreateAssets,
     onSuccess: (data) => {
       invalidateAssetQueries(queryClient);
-      toast.success(t('success.created') + ` (${data.length})`);
+      const count = data?.count ?? 0;
+      toast.success(t('success.created') + (count ? ` (${count})` : ''));
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'common.createFailed'));
@@ -98,22 +83,6 @@ export function useUpdateAsset() {
 
   return useMutation({
     mutationFn: ({ id, data }) => api.updateAsset(id, data),
-    onSuccess: () => {
-      invalidateAssetQueries(queryClient);
-      toast.success(t('success.updated'));
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'common.updateFailed'));
-    },
-  });
-}
-
-export function useRemoveAsset() {
-  const queryClient = useQueryClient();
-  const { t } = useTranslation('common');
-
-  return useMutation({
-    mutationFn: ({ id, ...opts }) => api.removeAsset(id, opts),
     onSuccess: () => {
       invalidateAssetQueries(queryClient);
       toast.success(t('success.updated'));
@@ -140,17 +109,19 @@ export function useDeleteAsset() {
   });
 }
 
-export function useLinkAssetToWorkOrder() {
+export function useImportSiteAssets() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation(['siteAssets', 'common']);
 
   return useMutation({
-    mutationFn: ({ workOrderId, assetId, action, notes }) =>
-      api.linkAssetToWorkOrder(workOrderId, assetId, action, notes),
-    onSuccess: () => {
+    mutationFn: api.bulkCreateAssets,
+    onSuccess: (data) => {
       invalidateAssetQueries(queryClient);
+      const count = data?.count ?? 0;
+      toast.success(t('siteAssets:import.success', { count }));
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, 'common.createFailed'));
+      toast.error(getErrorMessage(error, 'common.importFailed'));
     },
   });
 }

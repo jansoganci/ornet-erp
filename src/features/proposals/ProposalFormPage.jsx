@@ -103,6 +103,7 @@ export function ProposalFormPage() {
           customer_representative: proposal.customer_representative || '',
           completion_date: proposal.completion_date || '',
           discount_percent: proposal.discount_percent ?? null,
+          vat_rate: proposal.vat_rate ?? 20,
           terms_engineering: proposal.terms_engineering || '',
           terms_pricing: proposal.terms_pricing || '',
           terms_warranty: proposal.terms_warranty || '',
@@ -241,6 +242,16 @@ export function ProposalFormPage() {
                 label={t('proposals:form.fields.surveyDate')}
                 type="date"
                 {...register('survey_date')}
+              />
+              <Input
+                label={t('proposals:form.fields.vatRate')}
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                error={errors.vat_rate?.message}
+                {...register('vat_rate')}
               />
             </div>
 

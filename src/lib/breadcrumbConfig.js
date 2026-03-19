@@ -40,7 +40,7 @@ export function getBreadcrumbFromPath(pathname) {
     } else if (UUID_REGEX.test(seg)) {
       result.push({ labelKey: 'common:breadcrumb.detail', to: null });
     } else {
-      const { labelKey } = getFinanceLabel(prev, seg);
+      const { labelKey } = prev === 'subscriptions' ? getSubscriptionsLabel(seg) : getFinanceLabel(prev, seg);
       if (labelKey) result.push({ labelKey, to: isLast ? null : `/${accumulatedPath}` });
     }
   }
@@ -56,16 +56,24 @@ function getRootLabel(seg) {
     'daily-work': { labelKey: 'common:nav.dailyWork', to: '/daily-work' },
     'work-history': { labelKey: 'common:nav.workHistory', to: '/work-history' },
     materials: { labelKey: 'common:nav.materials', to: '/materials' },
-    tasks: { labelKey: 'common:nav.tasks', to: '/tasks' },
-    calendar: { labelKey: 'common:nav.calendar', to: '/calendar' },
     subscriptions: { labelKey: 'common:nav.subscriptions', to: '/subscriptions' },
     proposals: { labelKey: 'common:nav.proposals', to: '/proposals' },
     notifications: { labelKey: 'common:nav.notifications', to: '/notifications' },
     finance: { labelKey: 'common:nav.groups.finance', to: '/finance' },
     equipment: { labelKey: 'common:nav.equipment', to: '/equipment' },
     'sim-cards': { labelKey: 'simCards:title', to: '/sim-cards' },
+    operations: { labelKey: 'common:nav.operations', to: '/operations' },
   };
   return map[seg] ?? { labelKey: 'common:nav.dashboard', to: '/' };
+}
+
+function getSubscriptionsLabel(seg) {
+  const map = {
+    collection: { labelKey: 'subscriptions:tabs.collection', to: '/subscriptions/collection' },
+    'price-revision': { labelKey: 'common:breadcrumb.priceRevision', to: '/subscriptions/price-revision' },
+    new: { labelKey: 'common:breadcrumb.new', to: '/subscriptions/new' },
+  };
+  return map[seg] ?? { labelKey: null };
 }
 
 function getFinanceLabel(prev, seg) {

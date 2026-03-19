@@ -410,6 +410,7 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
               min={0}
               step="0.01"
               placeholder={t('finance:expense.placeholders.amount')}
+              hint={t('finance:expense.fields.amountHint')}
               error={errors.amount_try?.message}
               {...register('amount_try')}
             />

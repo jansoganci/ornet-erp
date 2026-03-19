@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Upload, AlertCircle, CheckCircle2, X, Save, Download } from 'lucide-react';
@@ -7,6 +7,7 @@ import { fetchExistingCustomerNames } from './api';
 import { useImportCustomersAndSites } from './hooks';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { PageContainer, PageHeader } from '../../components/layout';
+import { ImportInstructionCard, ImportResultSummary } from '../../components/import';
 import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { toast } from 'sonner';
@@ -42,21 +43,13 @@ export function CustomerImportPage() {
         setData(rows);
         setErrors(validationErrors);
 
-        const rowLevelErrors = validationErrors.filter((e) => e.rowIndex >= 0);
-        const rowsWithErrorsSet = new Set(rowLevelErrors.map((e) => e.rowIndex));
-        const validCount = rows.filter((_, i) => !rowsWithErrorsSet.has(i)).length;
-        const invalidCount = rowsWithErrorsSet.size;
-        const invalidRowsList = rowLevelErrors.map((e) => ({ rowNum: e.rowNum, field: e.field, message: e.message }));
-        console.log('[Import] Geçerli satır:', validCount, '| Hatalı satır:', invalidCount);
-        console.log('[Import] Hatalı satırlar:', invalidRowsList);
-
         // Check parsed company names against DB — runs while spinner is still showing
         const existingNames = await fetchExistingCustomerNames();
         const normalizedSet = new Set(existingNames.map((n) => normalizeForSearch(n)));
         setDuplicateNames(normalizedSet);
       } catch {
         setData([]);
-        setErrors([{ rowNum: 0, field: '_parse', message: 'Parse error', rowIndex: -1 }]);
+        setErrors([{ rowNum: 0, field: '_parse', message: 'PARSE_FAILED', rowIndex: -1 }]);
         setDuplicateNames(new Set());
       } finally {
         setIsParsing(false);
@@ -80,8 +73,7 @@ export function CustomerImportPage() {
         toast.success(t('customers:import.success', { created: result.created, skipped: result.skipped }));
         setTimeout(() => navigate('/customers'), 1500);
       }
-    } catch (err) {
-      console.error('[import] handleImport error', err);
+    } catch {
       setImportProgress(null);
     }
   };
@@ -124,6 +116,17 @@ export function CustomerImportPage() {
     ...new Set(data.filter(isDuplicateRow).map((r) => r.company_name)),
   ];
 
+  const instructionSteps = useMemo(
+    () => [
+      { title: t('common:import.stepDownload'), description: t('common:import.stepDownloadDesc') },
+      { title: t('common:import.stepFill'), description: t('common:import.stepFillDesc') },
+      { title: t('common:import.stepUpload'), description: t('common:import.stepUploadDesc') },
+      { title: t('common:import.stepReview'), description: t('common:import.stepReviewDesc') },
+      { title: t('common:import.stepImport'), description: t('common:import.stepImportDesc') },
+    ],
+    [t]
+  );
+
   if (importMutation.isError) {
     return (
       <PageContainer maxWidth="full">
@@ -138,41 +141,48 @@ export function CustomerImportPage() {
   return (
     <PageContainer maxWidth="full">
       <PageHeader
-        title={t('customers:import.title')}
+        title={t('customers:import.pageTitle')}
         breadcrumbs={[
           { label: t('common:nav.customers'), to: '/customers' },
-          { label: t('customers:import.title') },
+          { label: t('common:import.bulkImportButton') },
         ]}
       />
 
       <div className="mt-6 space-y-6">
         {data.length === 0 && !isParsing ? (
-          <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
-            <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
-              <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-              {t('customers:import.uploadTitle')}
-            </h3>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-              {t('customers:import.uploadDescription')}
-            </p>
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
+          <div className="space-y-6">
+            <ImportInstructionCard
+              title={t('common:import.instructionTitle')}
+              intro={t('common:import.instructionIntro')}
+              steps={instructionSteps}
             />
-            <div className="flex gap-3">
-              <Button onClick={() => fileInputRef.current?.click()}>
-                {t('customers:import.selectFile')}
-              </Button>
-              <Button variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
-                {t('customers:import.downloadTemplate')}
-              </Button>
-            </div>
-          </Card>
+            <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
+              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
+                <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+              </div>
+              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
+                {t('customers:import.uploadTitle')}
+              </h3>
+              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
+                {t('customers:import.uploadDescription')}
+              </p>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+              />
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button onClick={() => fileInputRef.current?.click()}>
+                  {t('customers:import.selectFile')}
+                </Button>
+                <Button variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
+                  {t('customers:import.downloadTemplate')}
+                </Button>
+              </div>
+            </Card>
+          </div>
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -250,6 +260,15 @@ export function CustomerImportPage() {
                   {t('customers:import.errors')}
                 </h4>
                 <ul className="text-sm text-red-700 dark:text-red-400 space-y-1 max-h-40 overflow-y-auto">
+                  {errors
+                    .filter((e) => e.rowIndex < 0)
+                    .map((err, i) => (
+                      <li key={`global-${i}`}>
+                        {t(`customers:import.errorMessages.${err.message}`, {
+                          defaultValue: t('common:import.fileReadFailed'),
+                        })}
+                      </li>
+                    ))}
                   {errors.filter((e) => e.rowIndex >= 0).map((err, i) => (
                     <li key={i}>
                       {t('customers:import.rowError', {
@@ -292,15 +311,15 @@ export function CustomerImportPage() {
                   <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
                     <tr>
                       <th className="px-4 py-3 font-medium">#</th>
-                      <th className="px-4 py-3 font-medium">Müşteri</th>
-                      <th className="px-4 py-3 font-medium">Abone Ünvanı</th>
-                      <th className="px-4 py-3 font-medium">Merkez</th>
-                      <th className="px-4 py-3 font-medium">ACC.</th>
-                      <th className="px-4 py-3 font-medium">Lokasyon</th>
-                      <th className="px-4 py-3 font-medium">İl / İlçe</th>
-                      <th className="px-4 py-3 font-medium">Bağlantı Tarihi</th>
+                      <th className="px-4 py-3 font-medium">{t('customers:import.previewColumns.customer')}</th>
+                      <th className="px-4 py-3 font-medium">{t('customers:import.previewColumns.subscriberTitle')}</th>
+                      <th className="px-4 py-3 font-medium">{t('customers:import.previewColumns.center')}</th>
+                      <th className="px-4 py-3 font-medium">{t('customers:import.previewColumns.accountNo')}</th>
+                      <th className="px-4 py-3 font-medium">{t('customers:import.previewColumns.location')}</th>
+                      <th className="px-4 py-3 font-medium">{t('customers:import.previewColumns.cityDistrict')}</th>
+                      <th className="px-4 py-3 font-medium">{t('customers:import.previewColumns.connectionDate')}</th>
                       {!importResult && duplicateNames.size > 0 && <th className="px-4 py-3 font-medium">{t('customers:import.duplicates.statusColumn')}</th>}
-                      {importResult && <th className="px-4 py-3 font-medium">Durum</th>}
+                      {importResult && <th className="px-4 py-3 font-medium">{t('customers:import.previewColumns.status')}</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
@@ -360,27 +379,28 @@ export function CustomerImportPage() {
             </Card>
 
             {importResult && (
-              <Card className="p-4 bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-700">
-                <p className="font-medium text-neutral-900 dark:text-neutral-50">
-                  {t('customers:import.resultSummary', {
-                    created: importResult.created,
-                    skipped: importResult.skipped,
-                    failed: importResult.failed,
-                  })}
-                </p>
-                {rowsWithErrors.size > 0 && (
-                  <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                    {t('customers:import.validationSkippedCount', { count: rowsWithErrors.size })}
-                  </p>
-                )}
+              <ImportResultSummary
+                variant={importResult.failed > 0 ? 'partial' : 'success'}
+                title={t('common:import.summaryTitle')}
+                stats={[
+                  { label: t('common:import.summaryCreated'), value: importResult.created },
+                  { label: t('common:import.summarySkipped'), value: importResult.skipped },
+                  { label: t('common:import.summaryFailed'), value: importResult.failed },
+                ]}
+                message={
+                  rowsWithErrors.size > 0
+                    ? t('customers:import.validationSkippedCount', { count: rowsWithErrors.size })
+                    : undefined
+                }
+              >
                 {importResult.errors?.length > 0 && (
-                  <ul className="mt-2 text-sm text-amber-700 dark:text-amber-400 space-y-1">
+                  <ul className="mt-2 text-sm text-amber-800 dark:text-amber-200/90 space-y-1">
                     {importResult.errors.map((e, i) => (
                       <li key={i}>{t('customers:import.resultRowError', { row: e.row, message: e.message })}</li>
                     ))}
                   </ul>
                 )}
-              </Card>
+              </ImportResultSummary>
             )}
           </div>
         )}

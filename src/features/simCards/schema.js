@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import i18n from '../../lib/i18n';
-import { currencyEnum } from '../../lib/zodHelpers';
+
+const toNumber = (val) => (val === '' || val === undefined || val === null ? undefined : Number(val));
 
 export const simCardSchema = z.object({
   phone_number: z.string().regex(
@@ -22,6 +23,7 @@ export const simCardSchema = z.object({
   sale_price: z.number().min(0).default(0),
   customer_label: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
+  vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),
 });
 
 export const simCardDefaultValues = {
@@ -40,4 +42,5 @@ export const simCardDefaultValues = {
   currency: 'TRY',
   customer_label: '',
   notes: '',
+  vat_rate: 20,
 };

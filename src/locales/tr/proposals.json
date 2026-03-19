@@ -90,6 +90,7 @@
       "customerRepresentative": "Müşteri Temsilcisi",
       "completionDate": "Bitiş Tarihi",
       "discountPercent": "İskonto Oranı (%)",
+      "vatRate": "KDV Oranı (%)",
       "termsEngineering": "Mühendislik Hizmetleri",
       "termsPricing": "Fiyatlandırma",
       "termsWarranty": "Garanti",

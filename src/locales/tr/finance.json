@@ -10,7 +10,8 @@
     "editTitle": "Gider Düzenle",
     "fields": {
       "date": "Tarih",
-      "amount": "Tutar (TRY)",
+      "amount": "Net Tutar (KDV Hariç)",
+      "amountHint": "Girilen tutar KDV hariç net tutardır. Faturalı işlemlerde KDV otomatik hesaplanır.",
       "category": "Kategori",
       "customer": "Müşteri",
       "source": "Kaynak",
@@ -21,7 +22,7 @@
     },
     "placeholders": {
       "date": "Tarih seçin",
-      "amount": "0",
+      "amount": "0 (KDV hariç)",
       "category": "Kategori seçin",
       "paymentMethod": "Ödeme yöntemi seçin",
       "description": "Opsiyonel açıklama"

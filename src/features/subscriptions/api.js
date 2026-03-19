@@ -309,7 +309,7 @@ export async function updateSubscription({ id, ...updateData }) {
   if (error) throw error;
 
   // Check if pricing changed — recalculate pending payment amounts atomically
-  const priceFields = ['base_price', 'sms_fee', 'line_fee', 'static_ip_fee', 'vat_rate'];
+  const priceFields = ['base_price', 'sms_fee', 'line_fee', 'static_ip_fee', 'sim_amount', 'vat_rate'];
   const priceChanged = priceFields.some(
     (field) => updateData[field] !== undefined && Number(updateData[field]) !== Number(current[field])
   );
@@ -325,6 +325,7 @@ export async function updateSubscription({ id, ...updateData }) {
       p_sms_fee:         Number(data.sms_fee),
       p_line_fee:        Number(data.line_fee),
       p_static_ip_fee:   Number(data.static_ip_fee),
+      p_sim_amount:      Number(data.sim_amount) || 0,
       p_vat_rate:        Number(data.vat_rate),
       p_cost:            Number(data.cost),
       p_old_prices: {
@@ -332,6 +333,7 @@ export async function updateSubscription({ id, ...updateData }) {
         sms_fee:       current.sms_fee,
         line_fee:      current.line_fee,
         static_ip_fee: current.static_ip_fee,
+        sim_amount:    current.sim_amount,
         vat_rate:      current.vat_rate,
       },
       p_user_id: user?.id || null,

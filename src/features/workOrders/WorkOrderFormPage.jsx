@@ -129,6 +129,7 @@ export function WorkOrderFormPage() {
       currency: workOrder.currency || 'TRY',
       items: items.length > 0 ? items : workOrderDefaultValues.items,
       materials_discount_percent: workOrder.materials_discount_percent ?? 0,
+      vat_rate: workOrder.vat_rate ?? 20,
     });
     if (workOrder.customer_id) setSelectedCustomerId(workOrder.customer_id);
   }, [workOrder, isEdit, reset]);
@@ -182,6 +183,7 @@ export function WorkOrderFormPage() {
           : [],
         items: data.items || [],
         materials_discount_percent: data.materials_discount_percent ?? 0,
+        vat_rate: data.vat_rate != null ? Number(data.vat_rate) : 20,
       };
 
       if (isEdit) {
@@ -373,6 +375,17 @@ export function WorkOrderFormPage() {
                 error={errors.amount?.message}
                 className="rounded-2xl"
                 {...register('amount')}
+              />
+              <Input
+                label={t('workOrders:form.fields.vatRate')}
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                error={errors.vat_rate?.message}
+                className="rounded-2xl"
+                {...register('vat_rate')}
               />
             </div>
           </div>

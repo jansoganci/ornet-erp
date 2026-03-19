@@ -93,8 +93,8 @@ export function CustomerDetailPage() {
       (wo) => !['completed', 'cancelled'].includes(wo.status)
     ).length,
     activeSimCards: (simCards || []).filter((s) => s.status === 'active').length,
-    faultyEquipment: (assets || []).filter((a) => a.status === 'faulty').length,
-  }), [customerSubscriptions, workOrders, simCards, assets]);
+    faultyEquipment: 0, // Legacy: new asset model has no status
+  }), [customerSubscriptions, workOrders, simCards]);
 
   // Monthly revenue — sum of active subscription subtotals (base + sms + line + static_ip)
   const monthlyRevenue = useMemo(
@@ -219,7 +219,7 @@ export function CustomerDetailPage() {
           locations: sites.length,
           workOrders: workOrders.length,
           simCards: simCards.length,
-          equipment: assets.filter((a) => a.status !== 'removed').length,
+          equipment: assets.length,
         }}
       />
 

@@ -1,7 +1,7 @@
 # CLAUDE.md - Ornet ERP Project Context
 
 > This file helps Claude understand the project context, architecture, and coding conventions.
-> Last updated: 2026-03-16
+> Last updated: 2026-03-19
 
 ---
 
@@ -26,10 +26,10 @@
 - Dashboard with metrics and currency widget
 - Authentication (login, register, password reset, email verification)
 - **Action Board** - Admin-only operational command center
-- **Subscription Management** - Monthly/yearly alarm and camera rental tracking with payment grid, pause/cancel, price revisions
-- **SIM Card Management** - 2500+ phone numbers in security devices (location, owner, revenue, status) with import and invoice analysis (Turkcell PDF parsing)
-- **Proposals/Quotes** - Offer generator with PDF export (@react-pdf/renderer) and work order bridge
-- **Finance Module** - Income, expenses, VAT tracking, exchange rates (TCMB), recurring expenses, P&L reports, CSV export
+- **Subscription Management** - Alarm and camera rental contracts with monthly/3-month/6-month/yearly billing, payment grid, pause/cancel, price revisions, dynamic VAT per subscription, SIM card linking, and auto finance transaction generation on payment
+- **SIM Card Management** - 2500+ phone numbers in security devices (location, owner, revenue, status) with import, invoice analysis (Turkcell PDF parsing), static IP tracking, and automated status sync (SIM status auto-updates when linked subscription is cancelled/paused)
+- **Proposals/Quotes** - Offer generator with PDF export (@react-pdf/renderer), work order bridge, and auto finance transaction on completion
+- **Finance Module** - Income, expenses, VAT tracking (dynamic `vat_rate`), exchange rates (TCMB), recurring expenses, P&L reports, CSV export. `financial_transactions` is the **single source of truth** for all financial reporting — subscription payments, proposal completions, and work order completions auto-create rows via DB triggers
 - **Notifications** - In-app notification center with triggered alerts and reminder form
 - **Site Assets** - Equipment tracking per customer location with bulk registration
 - **User Profile** - Profile management
@@ -462,16 +462,19 @@ const { t } = useTranslation('myNamespace');
 - `materials` - Material catalog
 - `tasks` - Task records
 - `profiles` - User profiles
-- `subscriptions` - Recurring subscription contracts
-- `subscription_payments` - Monthly payment records per subscription
-- `sim_cards` - SIM/data card inventory
+- `subscriptions` - Recurring subscription contracts (has `vat_rate`, `sim_card_id`, billing frequency)
+- `subscription_payments` - Monthly payment records per subscription (trigger creates `financial_transactions` on payment)
+- `sim_cards` - SIM/data card inventory (status auto-syncs with subscription lifecycle)
+- `sim_static_ips` - Static IP assignments per SIM card
 - `proposals` - Customer quotes/offers
 - `proposal_items` - Line items per proposal
 - `proposal_work_orders` - Junction: proposals ↔ work orders
-- `financial_transactions` - Income & expense ledger
+- `financial_transactions` - **Single source of truth** for income & expense ledger (populated by manual entry, subscription payment triggers, proposal/WO completion triggers, and recurring expense generation)
 - `expense_categories` - Expense classification
 - `exchange_rates` - TCMB currency rates (auto-fetched)
-- `recurring_expenses` - Scheduled repeating expenses
+- `recurring_expense_templates` - Scheduled repeating expense templates (generates `financial_transactions` rows)
+- `payment_methods` - Customer payment methods (card, bank transfer, etc.)
+- `audit_logs` - Change tracking for subscriptions, payments, price changes
 - `site_assets` - Equipment assigned to customer sites
 - `notifications` - In-app notification records
 
@@ -529,7 +532,16 @@ const { data } = await supabase
 
 ## Critical Rules
 
-> See [/docs/CODING-LESSONS.md](/docs/CODING-LESSONS.md) for 14 audit-derived coding rules with bad/good code examples (React Query invalidation, timezone-safe dates, auth guards, form wiring, and more).
+> See [/docs/CODING-LESSONS.md](/docs/CODING-LESSONS.md) for 18 audit-derived coding rules with bad/good code examples (React Query invalidation, timezone-safe dates, auth guards, form wiring, proposal/WO finance trigger flow, and more).
+
+### Finance Architecture Rules
+
+> See [/docs/archive/completed/finance-audit-report.md](/docs/archive/completed/finance-audit-report.md) for the full audit and [/docs/archive/completed/finance-fix-roadmap.md](/docs/archive/completed/finance-fix-roadmap.md) for the fix roadmap (Phases 1–4 implemented).
+
+1. **`financial_transactions` is the single source of truth** — All financial reporting (P&L, dashboard, VAT, income/expense pages) reads from `financial_transactions`. Subscription payments, proposal completions, and work order completions auto-create rows via DB triggers. Never query `subscription_payments` directly for financial aggregation.
+2. **Always use dynamic `vat_rate`** — Never hardcode `0.20` or `20` for VAT. Read `vat_rate` from the subscription, work order, or proposal record. The `vat_rate` column exists on `subscriptions`, `financial_transactions`, and `subscription_payments`.
+3. **Amount fields are always NET (KDV haric)** — `base_price`, `sms_fee`, `line_fee`, `static_ip_fee`, `sim_amount` on subscriptions are monthly NET amounts. VAT is calculated as `ROUND(subtotal * vat_rate / 100, 2)` and stored separately.
+4. **Never bypass the proposal/WO guard clause** — `auto_record_work_order_revenue` skips proposal-linked work orders (`IF NEW.proposal_id IS NOT NULL THEN RETURN NEW`). Revenue for those is handled by `auto_record_proposal_revenue`. See CODING-LESSONS.md Rule 18.
 
 ### ALWAYS Do
 

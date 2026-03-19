@@ -17,18 +17,15 @@ import {
   DateRangeFilter,
 } from '../../components/ui';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { formatCurrency, formatDate, getSubscriptionListSubtotal, getSubscriptionListTotalWithVat } from '../../lib/utils';
 import { useSubscriptionsPaginated, useSubscriptionStats, useCurrentProfile } from './hooks';
 import { KpiCard } from '../../components/ui';
 import { SubscriptionStatusBadge } from './components/SubscriptionStatusBadge';
 import { ComplianceAlert } from './components/ComplianceAlert';
-import { SubscriptionImportModal } from './components/SubscriptionImportModal';
-
 export function SubscriptionsListPage() {
   const { t } = useTranslation(['subscriptions', 'common']);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const searchFromUrl = searchParams.get('search') || '';
   const [localSearch, setLocalSearch] = useState(searchFromUrl);
@@ -255,11 +252,7 @@ export function SubscriptionsListPage() {
       minWidth: 100,
       maxWidth: 100,
       render: (_, row) => {
-        const toplamTutar =
-          (row.base_price ?? 0) +
-          (row.sim_amount ?? 0) +
-          (row.sms_fee ?? 0) +
-          (row.static_ip_fee ?? 0);
+        const toplamTutar = getSubscriptionListSubtotal(row);
         return (
           <span className="text-neutral-900 dark:text-neutral-50">
             {formatCurrency(toplamTutar)}
@@ -274,12 +267,7 @@ export function SubscriptionsListPage() {
       minWidth: 100,
       maxWidth: 100,
       render: (_, row) => {
-        const toplamTutar =
-          (row.base_price ?? 0) +
-          (row.sim_amount ?? 0) +
-          (row.sms_fee ?? 0) +
-          (row.static_ip_fee ?? 0);
-        const kdvDahilToplam = toplamTutar * 1.2;
+        const kdvDahilToplam = getSubscriptionListTotalWithVat(row);
         return (
           <span className="font-bold text-neutral-900 dark:text-neutral-100">
             {formatCurrency(kdvDahilToplam)}
@@ -323,10 +311,10 @@ export function SubscriptionsListPage() {
             )}
             <Button
               variant="outline"
-              onClick={() => setImportModalOpen(true)}
+              onClick={() => navigate('/subscriptions/import')}
               leftIcon={<FileSpreadsheet className="w-4 h-4" />}
             >
-              {t('subscriptions:import.title')}
+              {t('common:import.bulkImportButton')}
             </Button>
             <Button
               variant="primary"
@@ -526,7 +514,6 @@ export function SubscriptionsListPage() {
         </div>
       )}
 
-      <SubscriptionImportModal open={importModalOpen} onClose={() => setImportModalOpen(false)} />
     </PageContainer>
   );
 }

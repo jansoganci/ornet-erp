@@ -3,6 +3,9 @@
  * Returns categorized results and a summary object.
  */
 
+/** TRY overage threshold: invoice amount must exceed cost + this to flag as overage. */
+export const OVERAGE_THRESHOLD = 20;
+
 /**
  * Normalize a phone number to bare 10-digit format.
  * Handles: +90XXXXXXXXXX, 0XXXXXXXXXX, XXXXXXXXXX
@@ -23,7 +26,7 @@ function normalizePhone(raw) {
  */
 function isOverage(invoiceAmount, costPrice) {
   if (!costPrice || costPrice <= 0) return false;
-  return invoiceAmount > costPrice * 1.5 && invoiceAmount > costPrice + 20;
+  return invoiceAmount > costPrice * 1.5 && invoiceAmount > costPrice + OVERAGE_THRESHOLD;
 }
 
 /**
@@ -71,12 +74,13 @@ export function compareInvoiceToInventory(invoiceLines, simCards) {
     const simCard = inventoryMap.get(hatNo);
 
     if (simCard) {
-      const costPrice = simCard.cost_price || 0;
+      const hasUnknownCost = simCard.cost_price == null || simCard.cost_price === undefined;
+      const costPrice = hasUnknownCost ? null : (simCard.cost_price || 0);
       const salePrice = simCard.sale_price || 0;
-      const priceDiff = line.invoiceAmount - costPrice;
+      const priceDiff = hasUnknownCost ? null : line.invoiceAmount - costPrice;
       const profit = salePrice - line.invoiceAmount;
       const isLoss = profit < 0;
-      const hasOverage = isOverage(line.invoiceAmount, costPrice);
+      const hasOverage = hasUnknownCost ? false : isOverage(line.invoiceAmount, costPrice);
 
       matched.push({
         ...line,
@@ -87,6 +91,7 @@ export function compareInvoiceToInventory(invoiceLines, simCards) {
         profit,
         isLoss,
         isOverage: hasOverage,
+        hasUnknownCost,
         buyer: simCard.buyer?.company_name || null,
       });
     } else {
@@ -107,6 +112,7 @@ export function compareInvoiceToInventory(invoiceLines, simCards) {
   const totalProfit = matched.reduce((s, m) => s + m.profit, 0);
   const overageCount = matched.filter((m) => m.isOverage).length;
   const lossCount = matched.filter((m) => m.isLoss).length;
+  const unknownCostCount = matched.filter((m) => m.hasUnknownCost).length;
   const invoiceOnlyTotal = invoiceOnly.reduce((s, l) => s + l.invoiceAmount, 0);
 
   const summary = {
@@ -120,6 +126,7 @@ export function compareInvoiceToInventory(invoiceLines, simCards) {
     totalProfit,
     overageCount,
     lossCount,
+    unknownCostCount,
   };
 
   return { matched, invoiceOnly, inventoryOnly, summary, duplicateHatNos, unresolvableCards };

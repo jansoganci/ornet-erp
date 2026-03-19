@@ -1,11 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 import { Upload, AlertCircle, CheckCircle2, X, Save, Download } from 'lucide-react';
 import { useBulkUpsertMaterials } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
+import { ImportInstructionCard, ImportResultSummary } from '../../components/import';
+import { Button, Card, Spinner, ErrorState } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { toast } from 'sonner';
 
@@ -32,6 +33,7 @@ export function MaterialImportPage() {
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState([]);
   const [isParsing, setIsParsing] = useState(false);
+  const [importResult, setImportResult] = useState(null);
   const bulkUpsertMutation = useBulkUpsertMaterials();
 
   const handleFileUpload = (e) => {
@@ -39,6 +41,7 @@ export function MaterialImportPage() {
     if (!file) return;
 
     setIsParsing(true);
+    setImportResult(null);
     const reader = new FileReader();
 
     reader.onload = (event) => {
@@ -54,7 +57,7 @@ export function MaterialImportPage() {
         }
       } catch {
         toast.error(t('materials:import.parseError'));
-        setErrors([t('materials:import.parse')]);
+        setErrors([t('common:import.fileReadFailed')]);
       } finally {
         setIsParsing(false);
       }
@@ -105,13 +108,27 @@ export function MaterialImportPage() {
   const handleImport = async () => {
     if (data.length === 0) return;
 
+    setImportResult(null);
     try {
-      await bulkUpsertMutation.mutateAsync(data);
-      navigate('/materials');
+      const result = await bulkUpsertMutation.mutateAsync(data);
+      const created = result?.length ?? data.length;
+      setImportResult({ created, updated: 0 });
+      setTimeout(() => navigate('/materials'), 2500);
     } catch {
       // error handled by mutation onError
     }
   };
+
+  const instructionSteps = useMemo(
+    () => [
+      { title: t('common:import.stepDownload'), description: t('common:import.stepDownloadDesc') },
+      { title: t('common:import.stepFill'), description: t('common:import.stepFillDesc') },
+      { title: t('common:import.stepUpload'), description: t('common:import.stepUploadDesc') },
+      { title: t('common:import.stepReview'), description: t('common:import.stepReviewDesc') },
+      { title: t('common:import.stepImport'), description: t('common:import.stepImportDesc') },
+    ],
+    [t]
+  );
 
   if (bulkUpsertMutation.isError) {
     return (
@@ -127,53 +144,78 @@ export function MaterialImportPage() {
   const handleReset = () => {
     setData([]);
     setErrors([]);
+    setImportResult(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
     <PageContainer maxWidth="full">
       <PageHeader
-        title={t('materials:import.title')}
+        title={t('materials:import.pageTitle')}
         breadcrumbs={[
           { label: t('materials:title'), to: '/materials' },
-          { label: t('materials:import.title') },
+          { label: t('common:import.bulkImportButton') },
         ]}
       />
 
       <div className="mt-6 space-y-6">
         {data.length === 0 && !isParsing ? (
-          <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
-            <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
-              <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-              {t('materials:import.uploadTitle')}
-            </h3>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-              {t('materials:import.uploadHint')}
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                leftIcon={<Download className="w-4 h-4" />}
-                onClick={downloadTemplate}
-              >
-                {t('materials:import.downloadTemplate')}
-              </Button>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-              />
-              <Button onClick={() => fileInputRef.current?.click()}>
-                {t('materials:import.selectFile')}
-              </Button>
-            </div>
-          </Card>
+          <div className="space-y-6">
+            <ImportInstructionCard
+              title={t('common:import.instructionTitle')}
+              intro={t('common:import.instructionIntro')}
+              steps={instructionSteps}
+            />
+            <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
+              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
+                <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+              </div>
+              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
+                {t('materials:import.uploadTitle')}
+              </h3>
+              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
+                {t('materials:import.uploadHint')}
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button
+                  variant="outline"
+                  leftIcon={<Download className="w-4 h-4" />}
+                  onClick={downloadTemplate}
+                >
+                  {t('materials:import.downloadTemplate')}
+                </Button>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                />
+                <Button onClick={() => fileInputRef.current?.click()}>
+                  {t('materials:import.selectFile')}
+                </Button>
+              </div>
+            </Card>
+          </div>
         ) : (
           <div className="space-y-6">
+            {importResult && (
+              <ImportResultSummary
+                variant="success"
+                title={t('common:import.summaryTitle')}
+                stats={[
+                  { label: t('common:import.summaryCreated'), value: importResult.created },
+                  { label: t('common:import.summaryUpdated'), value: importResult.updated },
+                ]}
+                message={t('common:import.summarySuccess')}
+              >
+                <div className="mt-3">
+                  <Button variant="outline" size="sm" onClick={() => navigate('/materials')}>
+                    {t('materials:import.goToList')}
+                  </Button>
+                </div>
+              </ImportResultSummary>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -200,7 +242,7 @@ export function MaterialImportPage() {
                   onClick={handleImport}
                   loading={bulkUpsertMutation.isPending}
                   leftIcon={<Save className="w-4 h-4" />}
-                  disabled={data.length === 0}
+                  disabled={data.length === 0 || !!importResult}
                 >
                   {t('materials:import.startImport')}
                 </Button>
@@ -226,11 +268,11 @@ export function MaterialImportPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Kod</th>
-                      <th className="px-4 py-3 font-medium">Ad</th>
-                      <th className="px-4 py-3 font-medium">Kategori</th>
-                      <th className="px-4 py-3 font-medium">Birim</th>
-                      <th className="px-4 py-3 font-medium">Açıklama</th>
+                      <th className="px-4 py-3 font-medium">{t('materials:fields.code')}</th>
+                      <th className="px-4 py-3 font-medium">{t('materials:fields.name')}</th>
+                      <th className="px-4 py-3 font-medium">{t('materials:fields.category')}</th>
+                      <th className="px-4 py-3 font-medium">{t('materials:fields.unit')}</th>
+                      <th className="px-4 py-3 font-medium">{t('materials:fields.description')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">

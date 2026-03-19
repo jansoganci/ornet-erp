@@ -1,115 +1,97 @@
 {
-  "title": "Ekipman Envanteri",
-  "addButton": "Ekipman Ekle",
+  "title": "Varlık Takip Listesi",
+  "addButton": "Varlık Ekle",
   "empty": {
-    "title": "Ekipman Kaydı Yok",
+    "title": "Varlık Kaydı Yok",
     "description": "Bu lokasyonda kayıtlı ekipman bulunmuyor."
   },
-  "detail": {
-    "info": "Ekipman Bilgileri",
-    "serviceHistory": "Servis Geçmişi",
-    "serviceCount": "Toplam {{count}} servis kaydı",
-    "noHistory": "Henüz servis kaydı yok.",
-    "location": "Lokasyon",
-    "status": "Durum",
-    "actions": "İşlemler"
-  },
   "fields": {
-    "assetType": "Ekipman Tipi",
-    "brand": "Marka",
-    "model": "Model",
-    "serialNumber": "Seri Numarası",
-    "locationNote": "Konum Notu",
-    "installedAt": "Kurulum Tarihi",
-    "installedBy": "Kurulan İş Emri",
-    "warrantyExpires": "Garanti Bitiş",
-    "material": "Malzeme",
+    "customer": "Müşteri Adı",
     "site": "Lokasyon",
-    "ownership": "Mülkiyet",
-    "subscription": "Abonelik",
+    "siteAcc": "Lokasyon / ACC",
+    "equipmentName": "Ekipman Adı",
+    "materialName": "Malzeme/Ürün Adı",
+    "equipmentList": "Malzeme/Ürün Adetleri",
     "quantity": "Adet",
-    "notes": "Notlar"
+    "installationDate": "Kurulum Tarihi",
+    "subscriptionStatus": "Abonelik Durumu"
   },
-  "ownerships": {
-    "company_owned": "Kiralık",
-    "customer_owned": "Müşterinin Malı"
-  },
-  "placeholders": {
-    "serialNumber": "Ör: SN-12345",
-    "locationNote": "Ör: 2. kat koridor, ana giriş",
-    "brand": "Ör: DSC, Hikvision, Paradox",
-    "model": "Ör: LC-100-PI"
-  },
-  "types": {
-    "alarm_panel": "Alarm Paneli",
-    "keypad": "Tuş Takımı",
-    "motion_detector": "Hareket Dedektörü",
-    "door_contact": "Manyetik Kontak",
-    "smoke_detector": "Duman Dedektörü",
-    "siren_indoor": "İç Siren",
-    "siren_outdoor": "Dış Siren",
-    "camera_indoor": "İç Kamera",
-    "camera_outdoor": "Dış Kamera",
-    "dvr_nvr": "DVR / NVR",
-    "monitor": "Monitör",
-    "power_supply": "Güç Kaynağı",
-    "cable_run": "Kablo Hattı",
-    "access_reader": "Geçiş Okuyucu",
-    "other": "Diğer"
-  },
-  "statuses": {
+  "subscriptionStatus": {
     "active": "Aktif",
-    "removed": "Kaldırıldı",
-    "replaced": "Değiştirildi",
-    "faulty": "Arızalı"
+    "paused": "Duraklatıldı",
+    "cancelled": "İptal",
+    "none": "Yok"
+  },
+  "alert": {
+    "deviceRetrieval": "Cihaz Geri Alınmalı / Demontaj Gerekli"
   },
   "actions": {
-    "edit": "Düzenle",
-    "markFaulty": "Arızalı İşaretle",
-    "remove": "Kaldır",
-    "replace": "Değiştir",
-    "viewHistory": "Geçmişi Gör",
-    "linkAsset": "Ekipman Bağla"
-  },
-  "woActions": {
-    "installed": "Kurulum",
-    "serviced": "Servis",
-    "removed": "Kaldırma",
-    "replaced": "Değişim",
-    "inspected": "Muayene"
-  },
-    "bulkRegister": {
-    "title": "Toplu Ekipman Kaydı",
-    "cta": "Bu iş emrindeki malzemeleri ekipman olarak kaydedin",
-    "ctaButton": "Ekipman Kaydet",
-    "hint": "Her satır ayrı ekipman kaydı oluşturur. Seri numarası zorunlu değildir.",
-    "submitButton": "{{count}} Ekipman Kaydet",
-    "registered": "Kayıtlı Ekipman",
-    "addItem": "Satır Ekle",
-    "removeItem": "Sil",
-    "globalFields": "Genel Bilgiler",
-    "items": "Ekipman Listesi"
+    "viewSubscription": "Abonelik"
   },
   "filters": {
     "allSites": "Tüm Lokasyonlar",
     "allStatuses": "Tümü",
-    "allTypes": "Tümü",
-    "search": "Seri no, marka veya model ara...",
-    "status": "Durum",
-    "type": "Ekipman Tipi",
-    "ownership": "Mülkiyet",
-    "allOwnerships": "Tümü",
-    "selectYear": "Yıl Seç",
-    "selectMonth": "Ay Seç",
-    "allOwnerships": "Tüm Mülkiyetler",
-    "none": "Yok",
-    "selectSubscription": "Abonelik Seçin"
+    "search": "Müşteri, ACC veya ekipman ara...",
+    "subscriptionStatus": "Abonelik Durumu"
   },
-  "hints": {
-    "selectSiteFirst": "Abonelik seçmek için önce bir lokasyon seçmelisiniz."
+  "placeholders": {
+    "equipmentName": "Ör: Alarm Paneli, Kamera",
+    "materialName": "Ör: Alarm Paneli, Kamera",
+    "searchCustomer": "Müşteri ara..."
   },
+  "items": {
+    "sectionTitle": "Malzeme Listesi",
+    "addItem": "Yeni Malzeme Ekle",
+    "sequence": "Sıra",
+    "materialName": "Malzeme/Ürün Adı",
+    "quantity": "Adet"
+  },
+  "alertCancelled": "DİKKAT: Bu lokasyonun aboneliği iptal edilmiş. Cihaz geri alınmalı!",
   "section": {
-    "title": "Ekipman",
-    "siteCount": "{{count}} ekipman"
+    "title": "Varlıklar",
+    "sites": "lokasyon"
+  },
+  "import": {
+    "title": "Excel ile toplu yükle",
+    "pageTitle": "Varlık takibi — Excel ile toplu yükle",
+    "uploadTitle": "Excel dosyası yükleyin",
+    "uploadDescription": "Müşteri varlık verilerini toplu olarak içe aktarmak için Excel şablonunu indirip doldurun.",
+    "selectFile": "Dosya Seç",
+    "downloadTemplate": "Şablon İndir",
+    "importButton": "Excel ile toplu yükle",
+    "cancel": "İptal",
+    "startImport": "İçe Aktar",
+    "processing": "Dosya işleniyor...",
+    "validRows": "{{count}} geçerli satır",
+    "willImport": "içe aktarılacak",
+    "invalidRows": "{{count}} hatalı satır",
+    "unresolvedAcc": "{{count}} ACC bulunamadı",
+    "unresolvedWarning": "ACC eşleşmeyen satırlar",
+    "unresolvedDetail": "Bu ACC numaraları sistemde kayıtlı lokasyonda bulunamadı. İçe aktarma sırasında atlanacak.",
+    "errors": "Doğrulama Hataları",
+    "rowError": "Satır {{row}} ({{field}}): {{message}}",
+    "errorMessages": {
+      "required": "Zorunlu alan",
+      "invalid_quantity": "Geçersiz adet",
+      "invalid_date": "Geçersiz tarih",
+      "MAX_ROWS": "Maksimum satır sayısı aşıldı.",
+      "PARSE_FAILED": "Excel dosyası okunamadı. Şablonu kullanın veya dosya biçimini kontrol edin."
+    },
+    "previewColumns": {
+      "customer": "Müşteri",
+      "acc": "ACC",
+      "equipment": "Ekipman",
+      "quantity": "Adet",
+      "installationDate": "Kurulum Tarihi",
+      "status": "Durum"
+    },
+    "statusOk": "OK",
+    "statusInvalid": "Hatalı",
+    "statusUnresolved": "ACC yok",
+    "andMoreRows": "+{{count}} satır daha",
+    "resultSummary": "{{count}} varlık kaydı başarıyla içe aktarıldı.",
+    "resultSummaryWithSkipped": "{{imported}} satır başarıyla içe aktarıldı, {{skipped}} satır atlandı (Lokasyon ACC bulunamadı).",
+    "success": "{{count}} varlık kaydı içe aktarıldı.",
+    "noResolvedRows": "Hiçbir satır içe aktarılamadı. ACC numaralarını kontrol edin."
   }
 }

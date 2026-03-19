@@ -47,9 +47,11 @@ export async function recordPayment(paymentId, paymentData) {
       : 20;
   }
 
+  const paymentDate = paymentData.payment_date || new Date().toISOString().slice(0, 10);
+
   const { data, error } = await supabase.rpc('fn_record_payment', {
     p_payment_id:     paymentId,
-    p_payment_date:   paymentData.payment_date,
+    p_payment_date:   paymentDate,
     p_payment_method: paymentData.payment_method,
     p_should_invoice: shouldInvoice,
     p_vat_rate:       shouldInvoice ? vatRate : 0,

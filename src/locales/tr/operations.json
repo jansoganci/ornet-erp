@@ -1,0 +1,127 @@
+{
+  "title": "Operasyon Merkezi",
+  "tabs": {
+    "pool": "Talep Havuzu",
+    "calendar": "Takvim",
+    "insights": "Özet"
+  },
+  "quickEntry": {
+    "customerPlaceholder": "Müşteri ara...",
+    "sitePlaceholder": "Lokasyon seç...",
+    "descriptionPlaceholder": "Problem açıklaması...",
+    "hint": "↵ Enter ile kaydet"
+  },
+  "regions": {
+    "istanbul_europe": "İstanbul Avrupa",
+    "istanbul_anatolia": "İstanbul Anadolu",
+    "outside_istanbul": "İstanbul Dışı"
+  },
+  "contactStatus": {
+    "not_contacted": "Aranmadı",
+    "no_answer": "Cevap Yok",
+    "confirmed": "Onaylandı",
+    "cancelled": "İptal"
+  },
+  "status": {
+    "open": "Havuzda",
+    "scheduled": "Planlandı",
+    "completed": "Tamamlandı",
+    "failed": "Başarısız",
+    "cancelled": "İptal Edildi"
+  },
+  "priority": {
+    "low": "Düşük",
+    "normal": "Normal",
+    "high": "Yüksek",
+    "urgent": "Acil"
+  },
+  "workType": {
+    "survey": "Keşif",
+    "installation": "Montaj",
+    "service": "Servis",
+    "maintenance": "Bakım",
+    "other": "Diğer"
+  },
+  "actions": {
+    "schedule": "Planla",
+    "createWorkOrder": "İş Emri Oluştur",
+    "boomerang": "Yeniden Planla",
+    "callQueue": "Arama Sırası",
+    "cancel": "İptal Et",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "viewWorkOrder": "İş Emrine Git"
+  },
+  "callQueue": {
+    "title": "Arama Sırası",
+    "remaining": "{{count}} kişi kaldı",
+    "noAnswer": "Cevap Yok",
+    "busy": "Meşgul",
+    "confirmed": "Onaylandı",
+    "skip": "Atla",
+    "notePlaceholder": "Not ekle...",
+    "summary": "{{confirmed}} onaylandı, {{noAnswer}} cevap yok, {{cancelled}} iptal",
+    "complete": "Arama tamamlandı",
+    "empty": "Aranacak talep yok"
+  },
+  "insights": {
+    "inPool": "Havuzda",
+    "scheduled": "Planlandı",
+    "successRate": "Başarı Oranı",
+    "failed": "Başarısız",
+    "avgReschedules": "Ort. Yeniden Planlama",
+    "regionBreakdown": "Bölge Dağılımı",
+    "contactBreakdown": "İletişim Durumu",
+    "period": "Dönem",
+    "thisMonth": "Bu Ay",
+    "lastMonth": "Geçen Ay",
+    "thisQuarter": "Bu Çeyrek",
+    "totalRequests": "Toplam Talep"
+  },
+  "filters": {
+    "allRegions": "Tüm Bölgeler",
+    "allStatuses": "Tüm Durumlar",
+    "allPriorities": "Tüm Öncelikler",
+    "search": "Müşteri ara..."
+  },
+  "empty": {
+    "title": "Talep havuzu boş",
+    "description": "Yeni bir müşteri talebi eklemek için yukarıdaki hızlı giriş satırını kullanın."
+  },
+  "scheduler": {
+    "date": "Tarih",
+    "time": "Saat",
+    "workType": "İş Tipi",
+    "notes": "Notlar",
+    "create": "İş Emri Oluştur"
+  },
+  "failure": {
+    "title": "Başarısız İş Emri",
+    "reason": "Başarısızlık Nedeni",
+    "reasons": {
+      "customer_absent": "Müşteri yerinde değil",
+      "parts_needed": "Parça gerekli",
+      "access_denied": "Erişim engellendi",
+      "incomplete_work": "İş tamamlanamadı",
+      "other": "Diğer"
+    },
+    "rescheduleCount": "{{count}}. deneme"
+  },
+  "toast": {
+    "created": "Talep başarıyla oluşturuldu",
+    "updated": "Talep güncellendi",
+    "workOrderCreated": "İş emri oluşturuldu",
+    "boomeranged": "Talep havuza geri döndürüldü",
+    "cancelled": "Talep iptal edildi"
+  },
+  "delete": {
+    "title": "Talebi Sil",
+    "message": "Bu talebi silmek istediğinizden emin misiniz?",
+    "warning": "Bu işlem geri alınamaz."
+  },
+  "card": {
+    "attempt": "{{count}}. deneme",
+    "noSite": "Lokasyon belirtilmedi",
+    "createdBy": "Oluşturan: {{name}}"
+  }
+}

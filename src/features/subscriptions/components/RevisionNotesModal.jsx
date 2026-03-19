@@ -51,6 +51,10 @@ export function RevisionNotesModal({ open, onClose, subscription }) {
     ? [subscription.company_name, subscription.site_name].filter(Boolean).join(' — ')
     : '';
 
+  const setupNotes = subscription?.setup_notes?.trim();
+  const recordNotes = subscription?.notes?.trim();
+  const hasRecordNotes = Boolean(setupNotes || recordNotes);
+
   return (
     <Modal
       open={open}
@@ -66,6 +70,34 @@ export function RevisionNotesModal({ open, onClose, subscription }) {
       }
     >
       <div className="space-y-6">
+        {hasRecordNotes && (
+          <div className="rounded-lg border border-neutral-200 dark:border-[#262626] bg-neutral-50/50 dark:bg-neutral-900/30 p-4 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+              {t('subscriptions:priceRevision.notes.subscriptionRecordTitle')}
+            </h3>
+            {setupNotes && (
+              <div>
+                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+                  {t('subscriptions:priceRevision.notes.setupNotesSection')}
+                </p>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap break-words">
+                  {subscription.setup_notes}
+                </p>
+              </div>
+            )}
+            {recordNotes && (
+              <div>
+                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+                  {t('subscriptions:priceRevision.notes.generalNotesSection')}
+                </p>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap break-words">
+                  {subscription.notes}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Timeline */}
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-2">

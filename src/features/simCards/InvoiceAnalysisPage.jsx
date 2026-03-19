@@ -209,6 +209,20 @@ export function InvoiceAnalysisPage() {
               </div>
             )}
 
+            {comparison.summary?.unknownCostCount > 0 && (
+              <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
+                <AlertTriangle className="w-5 h-5 text-warning-600 dark:text-warning-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-warning-800 dark:text-warning-300 text-sm">
+                    {t('alerts.unknownCost', { count: comparison.summary.unknownCostCount })}
+                  </p>
+                  <p className="text-xs text-warning-700 dark:text-warning-400 mt-0.5">
+                    {t('alerts.unknownCostDescription')}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {comparison.duplicateHatNos.length > 0 && (
               <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
                 <AlertTriangle className="w-5 h-5 text-warning-600 dark:text-warning-400 shrink-0 mt-0.5" />

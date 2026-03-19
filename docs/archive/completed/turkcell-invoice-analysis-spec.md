@@ -187,4 +187,4 @@ External repo: https://github.com/jansoganci/turkcell-cost-clarity
 
 - `turkcell-invoice-analysis-vision.md` — Turkish vision summary
 - `turkcell-cost-clarity-vs-ornet-comparison.md` — Compatibility analysis
-- `analysis-turkcell-cost-clarity.md` — Turkcell Cost Clarity repo analysis
+- `./analysis-turkcell-cost-clarity.md` — Turkcell Cost Clarity repo analysis
