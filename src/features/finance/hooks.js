@@ -10,6 +10,7 @@ import {
   profitAndLossKeys,
   vatReportKeys,
   financeDashboardKeys,
+  dashboardV2Keys,
 } from './api';
 
 // Transactions
@@ -40,6 +41,7 @@ export function useCreateTransaction() {
       // computed reports — all three must stay in sync after any transaction change
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardV2Keys.all });
       queryClient.invalidateQueries({ queryKey: vatReportKeys.all });
       toast.success(t('success.created'));
     },
@@ -62,6 +64,7 @@ export function useUpdateTransaction() {
       // computed reports — all three must stay in sync after any transaction change
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardV2Keys.all });
       queryClient.invalidateQueries({ queryKey: vatReportKeys.all });
       toast.success(t('success.updated'));
     },
@@ -83,6 +86,7 @@ export function useDeleteTransaction() {
       // computed reports — all three must stay in sync after any transaction change
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardV2Keys.all });
       queryClient.invalidateQueries({ queryKey: vatReportKeys.all });
       toast.success(t('success.deleted'));
     },
@@ -269,5 +273,30 @@ export function useRecentTransactions(limit = 10) {
   return useQuery({
     queryKey: financeDashboardKeys.recentTransactions(limit),
     queryFn: () => api.fetchRecentTransactions(limit),
+  });
+}
+
+// Dashboard V2
+export function useChannelMetrics({ channel, year, month, viewMode = 'total' } = {}) {
+  return useQuery({
+    queryKey: dashboardV2Keys.channel(channel, year, month, viewMode),
+    queryFn: () => api.fetchChannelMetrics({ channel, year, month, viewMode }),
+    enabled: !!channel && !!year,
+  });
+}
+
+export function useOverviewTotals({ year, month, viewMode = 'total' } = {}) {
+  return useQuery({
+    queryKey: dashboardV2Keys.overview(year, month, viewMode),
+    queryFn: () => api.fetchOverviewTotals({ year, month, viewMode }),
+    enabled: !!year,
+  });
+}
+
+export function useGeneralExpenses({ year, month, viewMode = 'total' } = {}) {
+  return useQuery({
+    queryKey: dashboardV2Keys.generalExpenses(year, month, viewMode),
+    queryFn: () => api.fetchGeneralExpenses({ year, month, viewMode }),
+    enabled: !!year,
   });
 }

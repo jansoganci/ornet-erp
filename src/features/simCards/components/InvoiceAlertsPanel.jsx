@@ -75,7 +75,7 @@ function AlertTable({ rows, columns }) {
   );
 }
 
-export function InvoiceAlertsPanel({ invoiceOnly, overageLines, lossLines, inventoryOnly }) {
+export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, inventoryOnly }) {
   const { t } = useTranslation('invoiceAnalysis');
 
   const invoiceOnlyColumns = [
@@ -88,7 +88,7 @@ export function InvoiceAlertsPanel({ invoiceOnly, overageLines, lossLines, inven
     },
   ];
 
-  const overageColumns = [
+  const costIncreaseColumns = [
     { key: 'hatNo', label: t('table.hatNo') },
     { key: 'tariff', label: t('table.tariff') },
     {
@@ -185,12 +185,12 @@ export function InvoiceAlertsPanel({ invoiceOnly, overageLines, lossLines, inven
 
       <AlertSection
         emoji="🟡"
-        title={t('alerts.overage.title')}
-        description={t('alerts.overage.description')}
-        count={overageLines.length}
+        title={t('alerts.costIncrease.title')}
+        description={t('alerts.costIncrease.description')}
+        count={costIncreaseLines.length}
         defaultOpen={true}
       >
-        <AlertTable rows={overageLines} columns={overageColumns} />
+        <AlertTable rows={costIncreaseLines} columns={costIncreaseColumns} />
       </AlertSection>
 
       <AlertSection

@@ -42,7 +42,7 @@
 | 3.1 | **Customer Situation — Design** | ✅ Done | Medium | Audited and designed. |
 | 3.2 | **Database — customer_notes + health RPC** | ✅ Done | Medium | Implemented. |
 | 3.3 | **Feature Module — customerSituation/** | ✅ Done | Large | Implemented. |
-| 3.4 | **~~Kanban View Component~~** | 🔄 Deferred | Large | Deferred to post-launch. |
+| 3.4 | **~~Kanban View Component~~** | ✅ Done | Large | Deferred to post-launch. |
 
 ---
 
@@ -73,6 +73,11 @@
 
 > Important but not launch-blocking. Tackle after stable launch.
 
+**Completed from this list:**
+
+- **T8** — Owner-focused finance dashboard (tabbed channels, bar charts, KOBİ copy, no pie / no net-profit headline). Plan arşivlendi: `docs/archive/completed/FINANCE_DASHBOARD_V2_PLAN.md` — **2026-03-20**.
+- **T6** — Finance Fix Roadmap tamamlandı. Kaynak: `docs/archive/completed/finance-fix-roadmap.md` — **✅ Done (2026-03-21)**.
+
 | # | Task | Priority | Source |
 |---|------|----------|--------|
 | T1 | DB Schema Validation — `NOT NULL` + `CHECK` constraints | High | Old MASTER §4 |
@@ -80,10 +85,7 @@
 | T3 | Atomic Subscription Actions — `fn_pause_subscription` RPC | High | Old MASTER §4 |
 | T4 | Query Timeouts — `statement_timeout` | Medium | Old MASTER §4 |
 | T5 | DB Testing Foundation — pgTAP suite | Medium | Old MASTER §4 |
-| T6 | Finance Fix Roadmap — 15 tasks across 5 phases | Mixed | `docs/archive/completed/finance-fix-roadmap.md` |
 | T7 | Equipment Lifecycle — demount WO type, replacement reason, post-completion modal, asset history UI | Medium | Old MASTER §2 |
-| T8 | Advanced Finance Dashboard — P&L trends, segment charts | Medium | Old MASTER §5 |
-| T9 | Inventory Alerts — low stock notifications | Low | Old MASTER §5 |
 
 ---
 
@@ -123,3 +125,6 @@
 | 2026-03-19 | SIM Card export (2.3) already exists — only year/month bug to fix | 13-column XLSX export functional; fetchSimCards() missing year/month filter |
 | 2026-03-19 | Kanban (3.4) deferred to post-launch | No drag-drop library, no board schema, tasks use time-horizon — too risky for 1 week |
 | 2026-03-19 | Easy Payment (2.1): "Quick Pay" with defaults is the right approach | fn_record_payment only needs payment_date + payment_method; rest can default |
+| 2026-03-20 | T8 Finance Dashboard V2 shipped | Sekmeli kanallar, KOBİ dili, bar grafik; T8 technical-debt satırı kaldırıldı |
+| 2026-03-20 | T6 wording tightened | Kritik roadmap maddeleri çoğunlukla migrate edildi; T6 = kalan doğrulama / düşük öncelik |
+| 2026-03-21 | T6 Finance Fix Roadmap tamamlandı | Technical-debt tablosundan çıkarıldı; `finance-fix-roadmap.md` kapsamı kapatıldı |

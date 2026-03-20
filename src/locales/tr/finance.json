@@ -246,5 +246,56 @@
     "cogs": "Maliyet",
     "income": "Gelir",
     "expense": "Gider"
+  },
+  "dashboardV2": {
+    "title": "Finans Özeti",
+    "tabs": {
+      "overview": "Özet",
+      "work": "İşler",
+      "subscriptions": "Abonelikler",
+      "sim": "SIM Kartlar"
+    },
+    "filters": {
+      "year": "Yıl",
+      "month": "Ay",
+      "allMonths": "Tüm Yıl"
+    },
+    "overview": {
+      "totalRevenue": "Toplam gelir",
+      "totalExpenses": "Toplam gider",
+      "remaining": "Kalan",
+      "generalExpenses": "Genel Giderler",
+      "noExpenses": "Bu dönemde genel gider kaydı yok"
+    },
+    "work": {
+      "revenue": "İşlerden gelen gelir",
+      "costs": "Toplam iş maliyeti",
+      "grossMargin": "Brüt kâr marjı",
+      "chartTitle": "İşlerden aylık gelir",
+      "noData": "Bu dönemde iş geliri kaydı yok"
+    },
+    "subscriptions": {
+      "estimatedMonthly": "Abonelerden tahmini aylık gelir",
+      "perCustomer": "Müşteri başı abonelik geliri",
+      "grossMargin": "Brüt kâr marjı",
+      "chartTitle": "Aboneliklerden aylık gelir",
+      "hint": "Bu rakam şu anki aktif aboneliklerin toplamıdır.",
+      "noData": "Bu dönemde abonelik geliri yok"
+    },
+    "sim": {
+      "revenue": "SIM kartlardan gelen gelir",
+      "operatorCost": "Operatör gideri",
+      "grossMargin": "Brüt kâr marjı",
+      "chartTitle": "SIM kartlardan aylık gelir",
+      "noData": "Bu dönemde SIM kart geliri yok"
+    },
+    "chart": {
+      "revenue": "Gelir",
+      "costs": "Maliyet",
+      "expenses": "Gider"
+    },
+    "loading": "Veriler yükleniyor...",
+    "error": "Veriler yüklenirken bir hata oluştu.",
+    "noDataGeneral": "Seçilen dönemde veri bulunamadı."
   }
 }

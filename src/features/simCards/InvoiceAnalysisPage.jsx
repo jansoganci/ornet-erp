@@ -264,8 +264,8 @@ export function InvoiceAnalysisPage() {
                 variant="error"
               />
               <KpiCard
-                title={t('summary.overageCount')}
-                value={(comparison.summary?.overageCount ?? 0).toLocaleString('tr-TR')}
+                title={t('summary.costIncreaseCount')}
+                value={(comparison.summary?.costIncreaseCount ?? 0).toLocaleString('tr-TR')}
                 icon={Activity}
                 variant="warning"
               />
@@ -279,7 +279,7 @@ export function InvoiceAnalysisPage() {
 
             <InvoiceAlertsPanel
               invoiceOnly={comparison.invoiceOnly}
-              overageLines={comparison.matched.filter((m) => m.isOverage)}
+              costIncreaseLines={comparison.matched.filter((m) => m.isCostIncrease)}
               lossLines={comparison.matched.filter((m) => m.isLoss)}
               inventoryOnly={comparison.inventoryOnly}
             />

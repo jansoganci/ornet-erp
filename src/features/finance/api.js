@@ -504,3 +504,175 @@ export async function fetchExpenseByCategory({ period, viewMode = 'total' } = {}
     amount: Math.round(amount * 100) / 100,
   })).sort((a, b) => b.amount - a.amount);
 }
+
+// ============================================================================
+// Dashboard V2 — Channel-based metrics
+// ============================================================================
+
+export const dashboardV2Keys = {
+  all: ['finance_dashboard_v2'],
+  channel: (channel, year, month, viewMode) =>
+    [...dashboardV2Keys.all, 'channel', channel, year, month, viewMode],
+  overview: (year, month, viewMode) =>
+    [...dashboardV2Keys.all, 'overview', year, month, viewMode],
+  generalExpenses: (year, month, viewMode) =>
+    [...dashboardV2Keys.all, 'general_expenses', year, month, viewMode],
+};
+
+const CHANNEL_INCOME_TYPES = {
+  work: ['service', 'sale', 'installation', 'maintenance', 'other'],
+  subscriptions: ['subscription'],
+  sim: ['sim_rental'],
+};
+
+const CHANNEL_EXPENSE_TYPES = {
+  subscriptions: ['subscription_cogs'],
+  sim: ['sim_operator'],
+};
+
+// All expense source_types that belong to a specific channel (excluded from general expenses)
+const CHANNEL_SPECIFIC_EXPENSE_TYPES = ['subscription_cogs', 'sim_operator'];
+
+function buildPeriodFilter(year, month) {
+  if (month) return [`${year}-${String(month).padStart(2, '0')}`];
+  return Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
+}
+
+async function fetchPnlForPeriods(periods, viewMode) {
+  let query = supabase
+    .from('v_profit_and_loss')
+    .select('source_type, direction, period, amount_try, cogs_try, created_at')
+    .in('period', periods);
+
+  if (viewMode === 'official') {
+    query = query.eq('is_official', true);
+  } else if (viewMode === 'unofficial') {
+    query = query.eq('is_official', false);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchChannelMetrics({ channel, year, month, viewMode = 'total' }) {
+  const periods = buildPeriodFilter(year, month);
+  const rows = await fetchPnlForPeriods(periods, viewMode);
+
+  const incomeTypes = CHANNEL_INCOME_TYPES[channel];
+  const expenseTypes = CHANNEL_EXPENSE_TYPES[channel];
+
+  let revenue = 0;
+  let costs = 0;
+  const byMonth = {};
+
+  for (const p of periods) {
+    byMonth[p] = { period: p, revenue: 0, costs: 0 };
+  }
+
+  for (const row of rows) {
+    const st = row.source_type || '';
+    const amt = Number(row.amount_try) || 0;
+    const p = row.period;
+
+    if (incomeTypes && incomeTypes.includes(st) && row.direction === 'income') {
+      revenue += amt;
+      if (byMonth[p]) byMonth[p].revenue += amt;
+
+      // For work channel, costs come from cogs_try on income rows
+      if (channel === 'work') {
+        const cogs = Number(row.cogs_try) || 0;
+        costs += cogs;
+        if (byMonth[p]) byMonth[p].costs += cogs;
+      }
+    }
+
+    // For subscriptions and sim, costs come from expense rows
+    if (expenseTypes && expenseTypes.includes(st) && row.direction === 'expense') {
+      const absCost = Math.abs(amt);
+      costs += absCost;
+      if (byMonth[p]) byMonth[p].costs += absCost;
+    }
+  }
+
+  revenue = Math.round(revenue * 100) / 100;
+  costs = Math.round(costs * 100) / 100;
+  const grossMarginPct = revenue > 0
+    ? Math.round(((revenue - costs) / revenue) * 10000) / 100
+    : null;
+
+  const monthlyBreakdown = periods.map((p) => ({
+    period: p,
+    revenue: Math.round((byMonth[p]?.revenue || 0) * 100) / 100,
+    costs: Math.round((byMonth[p]?.costs || 0) * 100) / 100,
+  }));
+
+  return { revenue, costs, grossMarginPct, monthlyBreakdown };
+}
+
+export async function fetchOverviewTotals({ year, month, viewMode = 'total' }) {
+  const periods = buildPeriodFilter(year, month);
+  const rows = await fetchPnlForPeriods(periods, viewMode);
+
+  let totalRevenue = 0;
+  let totalExpenses = 0;
+
+  for (const row of rows) {
+    const amt = Number(row.amount_try) || 0;
+    if (row.direction === 'income') {
+      totalRevenue += amt;
+    } else if (row.direction === 'expense') {
+      totalExpenses += Math.abs(amt);
+    }
+  }
+
+  totalRevenue = Math.round(totalRevenue * 100) / 100;
+  totalExpenses = Math.round(totalExpenses * 100) / 100;
+  const remaining = Math.round((totalRevenue - totalExpenses) * 100) / 100;
+
+  return { totalRevenue, totalExpenses, remaining };
+}
+
+export async function fetchGeneralExpenses({ year, month, viewMode = 'total' }) {
+  const periods = buildPeriodFilter(year, month);
+
+  let query = supabase
+    .from('v_profit_and_loss')
+    .select('source_type, amount_try, created_at')
+    .eq('direction', 'expense')
+    .in('period', periods);
+
+  if (viewMode === 'official') {
+    query = query.eq('is_official', true);
+  } else if (viewMode === 'unofficial') {
+    query = query.eq('is_official', false);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const byCat = {};
+  let latestCreatedAt = {};
+
+  for (const row of data || []) {
+    const cat = row.source_type || 'other';
+    if (CHANNEL_SPECIFIC_EXPENSE_TYPES.includes(cat)) continue;
+
+    if (!byCat[cat]) byCat[cat] = 0;
+    byCat[cat] += Math.abs(Number(row.amount_try) || 0);
+
+    // Track latest created_at per category for sorting
+    const ts = row.created_at || '';
+    if (!latestCreatedAt[cat] || ts > latestCreatedAt[cat]) {
+      latestCreatedAt[cat] = ts;
+    }
+  }
+
+  return Object.entries(byCat)
+    .map(([category, amount]) => ({
+      category,
+      amount: Math.round(amount * 100) / 100,
+      latestAt: latestCreatedAt[category] || '',
+    }))
+    .sort((a, b) => b.latestAt.localeCompare(a.latestAt));
+}

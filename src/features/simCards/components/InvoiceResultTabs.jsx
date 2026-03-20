@@ -46,10 +46,10 @@ function ShowMoreButton({ remaining, onShow }) {
 
 function MatchedTable({ rows }) {
   const { t } = useTranslation('invoiceAnalysis');
-  const [showOverageOnly, setShowOverageOnly] = useState(false);
+  const [showCostIncreaseOnly, setShowCostIncreaseOnly] = useState(false);
   const [shown, setShown] = useState(PAGE_SIZE);
 
-  const filtered = showOverageOnly ? rows.filter((r) => r.isOverage) : rows;
+  const filtered = showCostIncreaseOnly ? rows.filter((r) => r.isCostIncrease) : rows;
   const visible = filtered.slice(0, shown);
   const remaining = filtered.length - shown;
 
@@ -63,11 +63,11 @@ function MatchedTable({ rows }) {
         <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
           <input
             type="checkbox"
-            checked={showOverageOnly}
-            onChange={(e) => { setShowOverageOnly(e.target.checked); setShown(PAGE_SIZE); }}
+            checked={showCostIncreaseOnly}
+            onChange={(e) => { setShowCostIncreaseOnly(e.target.checked); setShown(PAGE_SIZE); }}
             className="rounded border-neutral-300"
           />
-          <span className="text-neutral-700 dark:text-neutral-300">{t('filters.overageOnly')}</span>
+          <span className="text-neutral-700 dark:text-neutral-300">{t('filters.costIncreaseOnly')}</span>
         </label>
         <span className="text-xs text-neutral-400">{filtered.length} {t('table.lineUnit')}</span>
       </div>
@@ -84,7 +84,7 @@ function MatchedTable({ rows }) {
               <th className="px-4 py-3 text-right font-medium text-neutral-600 dark:text-neutral-400">{t('table.salePrice')}</th>
               <th className="px-4 py-3 text-right font-medium text-neutral-600 dark:text-neutral-400">{t('table.profitLoss')}</th>
               <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">{t('table.buyer')}</th>
-              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">{t('table.overage')}</th>
+              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">{t('table.costIncrease')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -106,9 +106,9 @@ function MatchedTable({ rows }) {
                 </td>
                 <td className="px-4 py-2 text-neutral-700 dark:text-neutral-300 max-w-[140px] truncate">{row.buyer || '—'}</td>
                 <td className="px-4 py-2 space-x-1">
-                  {row.isOverage && (
+                  {row.isCostIncrease && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
-                      {t('table.overage')}
+                      {t('table.costIncrease')}
                     </span>
                   )}
                   {row.hasUnknownCost && (
@@ -128,9 +128,9 @@ function MatchedTable({ rows }) {
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-xs font-semibold text-neutral-700 dark:text-neutral-300">{row.hatNo}</span>
               <span className="flex gap-1">
-                {row.isOverage && (
+                {row.isCostIncrease && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
-                    {t('table.overage')}
+                    {t('table.costIncrease')}
                   </span>
                 )}
                 {row.hasUnknownCost && (
