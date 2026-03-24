@@ -1,5 +1,6 @@
 {
   "title": "Tahsilat Masası",
+  "mobileTitle": "Tahsilat",
   "subtitle": "Bekleyen abonelik ödemelerini buradan takip edin ve tahsil edin.",
   "filters": {
     "allPeriods": "Tüm Dönemler",
@@ -15,6 +16,17 @@
     "collected": "Tahsil Edilmiş",
     "total": "Toplam"
   },
+  "summaryBar": {
+    "status": "Durum",
+    "pendingSub": "bekleyen ödeme",
+    "totalVolume": "Toplam Hacim"
+  },
+  "chips": {
+    "all": "Tümü",
+    "overdue": "Gecikmiş",
+    "thisMonth": "Bu Ay",
+    "lastMonth": "Geçen Ay"
+  },
   "columns": {
     "customer": "Müşteri",
     "site": "Lokasyon",
@@ -28,12 +40,21 @@
   },
   "actions": {
     "pay": "Öde",
+    "recordPayment": "Ödeme Al",
     "viewSubscription": "Aboneliğe Git"
   },
   "badges": {
     "overdue": "Gecikmiş",
     "currentMonth": "Bu Ay",
     "noInvoice": "Faturasız"
+  },
+  "status": {
+    "daysOverdue": "{{count}} gün gecikmiş",
+    "paid": "Ödendi"
+  },
+  "card": {
+    "period": "Dönem",
+    "periodLine": "Dönem: {{label}}"
   },
   "frequency": {
     "monthly": "Aylık",
@@ -43,7 +64,11 @@
   },
   "empty": {
     "title": "Bekleyen ödeme yok",
-    "description": "Seçili dönemde tahsil edilecek ödeme bulunmuyor."
+    "description": "Seçili dönemde tahsil edilecek ödeme bulunmuyor.",
+    "noOverdue": {
+      "title": "Gecikmiş ödeme yok",
+      "description": "Seçili filtreye göre gecikmiş tahsilat bulunmuyor."
+    }
   },
   "summary": "{{count}} bekleyen ödeme"
 }

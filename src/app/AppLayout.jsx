@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Outlet, NavLink, Link, useLocation } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '../lib/utils';
 import { getBreadcrumbFromPath } from '../lib/breadcrumbConfig';
 import { Sidebar } from '../components/layout/Sidebar';
@@ -16,6 +16,7 @@ import { IconButton } from '../components/ui';
 import { QuickEntryModal } from '../features/finance';
 import { NotificationBell } from '../features/notifications';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { MobileSidebarProvider } from '../contexts/MobileSidebarContext';
 
 export function AppLayout() {
   const { t } = useTranslation();
@@ -57,6 +58,7 @@ export function AppLayout() {
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const openMobileSidebarDrawer = useCallback(() => setIsSidebarOpen(true), []);
 
   const activeTopNavRoutes = getTopNavRoutes(canWrite);
   const topNavItems = visibleNavItems.filter(
@@ -180,7 +182,9 @@ export function AppLayout() {
           'max-lg:pb-[calc(5rem+env(safe-area-inset-bottom))]'
         )}>
           <ErrorBoundary>
-            <Outlet />
+            <MobileSidebarProvider openSidebar={openMobileSidebarDrawer}>
+              <Outlet />
+            </MobileSidebarProvider>
           </ErrorBoundary>
         </main>
 

@@ -36,6 +36,23 @@ export async function fetchMaterials(filters = {}) {
     query = query.lte('created_at', filters.dateTo + 'T23:59:59');
   }
 
+  const y = filters.year != null && filters.year !== '' ? parseInt(String(filters.year), 10) : NaN;
+  const m = filters.month != null && filters.month !== '' ? parseInt(String(filters.month), 10) : NaN;
+  if (!Number.isNaN(y) && !Number.isNaN(m) && m >= 1 && m <= 12) {
+    const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+    const end = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
+    query = query.gte('created_at', start.toISOString()).lte('created_at', end.toISOString());
+  } else if (!Number.isNaN(y)) {
+    query = query
+      .gte('created_at', `${y}-01-01T00:00:00.000Z`)
+      .lte('created_at', `${y}-12-31T23:59:59.999Z`);
+  } else if (!Number.isNaN(m) && m >= 1 && m <= 12) {
+    const cy = new Date().getFullYear();
+    const start = new Date(Date.UTC(cy, m - 1, 1, 0, 0, 0, 0));
+    const end = new Date(Date.UTC(cy, m, 0, 23, 59, 59, 999));
+    query = query.gte('created_at', start.toISOString()).lte('created_at', end.toISOString());
+  }
+
   const { data, error } = await query;
   if (error) throw error;
   return data;

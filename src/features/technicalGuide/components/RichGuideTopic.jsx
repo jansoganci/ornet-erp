@@ -1,10 +1,8 @@
-import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
-  ArrowRight,
+  Check,
   CheckCircle2,
-  ClipboardList,
   ListChecks,
   Lock,
   MapPin,
@@ -29,7 +27,6 @@ const PORT_ICONS = [Monitor, Smartphone, Video];
 export function RichGuideTopic({ content }) {
   const { t } = useTranslation('technicalGuide');
 
-  const storyLead = content.storyLead ?? '';
   const flowItemsRaw = content.flowItems;
   const flowLabelsFallback = content.flowLabels;
   const flowSafe =
@@ -58,24 +55,6 @@ export function RichGuideTopic({ content }) {
 
   return (
     <div className="space-y-10">
-      {storyLead ? (
-        <section
-          className={cn(
-            'rounded-2xl border border-primary-200/70 bg-gradient-to-br from-primary-50/90 to-white p-6 sm:p-8',
-            'dark:border-primary-900/50 dark:from-primary-950/40 dark:to-[#171717]'
-          )}
-        >
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
-              <ClipboardList className="h-5 w-5" aria-hidden />
-            </span>
-            <p className="min-w-0 text-base leading-relaxed text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
-              {storyLead}
-            </p>
-          </div>
-        </section>
-      ) : null}
-
       {highlightAlerts.length > 0 ? (
         <section className="space-y-3" aria-label={t('rich.goldenRulesTitle')}>
           <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200">
@@ -109,32 +88,95 @@ export function RichGuideTopic({ content }) {
       ) : null}
 
       {flowSafe.length > 0 && (
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 py-4 dark:border-[#262626] dark:bg-[#141414]">
-          <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-            {t('rich.flowCaption')}
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {flowSafe.map((item, i) => {
-              const label = typeof item === 'string' ? item : item.label;
-              const hint = typeof item === 'object' && item !== null && item.hint ? item.hint : '';
-              return (
-                <Fragment key={i}>
-                  {i > 0 && (
-                    <ArrowRight className="h-4 w-4 shrink-0 text-primary-500 dark:text-primary-400" aria-hidden />
-                  )}
-                  <div className="flex min-w-[6.5rem] flex-col items-center justify-center rounded-lg bg-white px-3 py-2 text-center shadow-sm dark:bg-[#1f1f1f]">
-                    <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">{label}</span>
-                    {hint ? (
-                      <span className="mt-0.5 text-[11px] font-medium leading-tight text-primary-600 dark:text-primary-400">
-                        {hint}
+        <>
+          {/* Mobile: compact vertical timeline (read-only, minimal height) */}
+          <section
+            className="md:hidden -mx-4 px-4 sm:-mx-6 sm:px-6"
+            aria-label={t('rich.flowCaption')}
+          >
+            <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-500">
+              {t('rich.flowCaption')}
+            </h3>
+            <ol className="m-0 list-none bg-neutral-100 p-0 dark:bg-[#0e0e0e]">
+              {flowSafe.map((item, i) => {
+                const label = typeof item === 'string' ? item : item.label;
+                const hint = typeof item === 'object' && item !== null && item.hint ? item.hint : '';
+                const isLast = i === flowSafe.length - 1;
+                return (
+                  <li key={i} className="flex items-stretch gap-3">
+                    <div className="flex w-7 shrink-0 flex-col items-center self-stretch">
+                      <span
+                        className={cn(
+                          'relative z-[1] flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                          'bg-neutral-300 text-[11px] font-bold leading-none text-neutral-900',
+                          'dark:bg-neutral-500 dark:text-neutral-950',
+                        )}
+                      >
+                        {isLast ? (
+                          <Check
+                            className="h-3.5 w-3.5 stroke-[2.5] text-neutral-900 dark:text-neutral-950"
+                            aria-hidden
+                          />
+                        ) : (
+                          <span className="tabular-nums">{i + 1}</span>
+                        )}
                       </span>
-                    ) : null}
-                  </div>
-                </Fragment>
-              );
-            })}
+                      {!isLast ? (
+                        <div
+                          className="mt-0 w-[2px] flex-1 min-h-[10px] self-center bg-neutral-300 dark:bg-[#262626]"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </div>
+                    <div
+                      className={cn(
+                        'min-w-0 flex-1 border-0 pb-2.5 pt-0.5 shadow-none',
+                        isLast ? 'pb-0' : '',
+                      )}
+                    >
+                      <p className="truncate text-sm font-bold leading-tight text-neutral-900 dark:text-white">
+                        {label}
+                      </p>
+                      {hint ? (
+                        <p className="mt-0.5 text-xs leading-snug text-neutral-600 dark:text-[#adaaaa]">
+                          {hint}
+                        </p>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+
+          {/* Tablet/desktop: card list without arrows */}
+          <div className="hidden md:block rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 py-4 dark:border-[#262626] dark:bg-[#1a1a1a]">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-300">
+              {t('rich.flowCaption')}
+            </p>
+            <ol className="m-0 flex list-none flex-col gap-3 p-0">
+              {flowSafe.map((item, i) => {
+                const label = typeof item === 'string' ? item : item.label;
+                const hint = typeof item === 'object' && item !== null && item.hint ? item.hint : '';
+                return (
+                  <li key={i}>
+                    <div className="flex w-full items-start gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 shadow-sm dark:border-[#333] dark:bg-[#262626]">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white dark:bg-primary-600">
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1 text-left">
+                        <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">{label}</span>
+                        {hint ? (
+                          <p className="mt-1 text-xs font-medium text-primary-700 dark:text-primary-300">{hint}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
-        </div>
+        </>
       )}
 
       <section className="space-y-4">
@@ -152,24 +194,24 @@ export function RichGuideTopic({ content }) {
             return (
               <li
                 key={index}
-                className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-[#262626] dark:bg-[#171717]"
+                className="relative overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-[#262626] dark:bg-[#1a1a1a]"
               >
                 <div className="flex flex-col gap-4 p-5 sm:flex-row sm:gap-6">
-                  <div className="flex shrink-0 items-start gap-3 sm:flex-col sm:items-center sm:text-center">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-primary-800 dark:bg-primary-950/50 dark:text-primary-200">
-                      <Icon className="h-6 w-6" aria-hidden />
+                  <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-center sm:text-center">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white shadow-md dark:bg-primary-600 dark:text-white">
+                      <span className="text-sm font-bold tabular-nums">{index + 1}</span>
                     </span>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-sm font-bold text-white dark:bg-neutral-100 dark:text-neutral-900">
-                      {index + 1}
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-100 text-primary-800 dark:bg-primary-950/50 dark:text-primary-200">
+                      <Icon className="h-5 w-5" aria-hidden />
                     </span>
                   </div>
                   <div className="min-w-0 flex-1 space-y-3">
-                    <h4 className="text-base font-semibold text-neutral-900 dark:text-neutral-50">{step.title}</h4>
+                    <h4 className="text-base font-bold text-neutral-900 dark:text-neutral-50">{step.title}</h4>
                     {bodyText ? (
                       <p className="text-neutral-700 dark:text-neutral-300">{bodyText}</p>
                     ) : null}
                     {hasRows ? (
-                      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50/80 dark:border-[#333] dark:bg-[#141414]">
+                      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50/80 dark:border-[#333] dark:bg-[#0e0e0e]">
                         {rows.map((row, ri) => (
                           <div
                             key={ri}
@@ -220,7 +262,7 @@ export function RichGuideTopic({ content }) {
                 <div
                   key={i}
                   className={cn(
-                    'flex flex-col rounded-2xl border p-5 shadow-sm',
+                    'flex flex-col rounded-xl border p-5 shadow-sm',
                     tone
                   )}
                 >
@@ -242,7 +284,7 @@ export function RichGuideTopic({ content }) {
       {forwardingTitle && forwardingBody ? (
         <section
           className={cn(
-            'rounded-2xl border border-neutral-200 bg-white p-6 dark:border-[#262626] dark:bg-[#171717]',
+            'rounded-xl border border-neutral-200 bg-white p-6 dark:border-[#262626] dark:bg-[#1a1a1a]',
             'shadow-sm'
           )}
         >
@@ -257,7 +299,7 @@ export function RichGuideTopic({ content }) {
       ) : null}
 
       {externalStaticTitle && externalStaticBody ? (
-        <section className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-6 dark:border-[#262626] dark:bg-[#171717]">
+        <section className="space-y-3 rounded-xl border border-neutral-200 bg-white p-6 dark:border-[#262626] dark:bg-[#1a1a1a]">
           <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-50">{externalStaticTitle}</h3>
           <p className="leading-relaxed text-neutral-700 dark:text-neutral-300">{externalStaticBody}</p>
           {externalStaticBridge ? (
@@ -271,7 +313,7 @@ export function RichGuideTopic({ content }) {
       {glossarySafe.length > 0 && (
         <section className="space-y-4">
           <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-50">{glossaryTitle}</h3>
-          <dl className="divide-y divide-neutral-200 rounded-2xl border border-neutral-200 dark:divide-[#262626] dark:border-[#262626]">
+          <dl className="divide-y divide-neutral-200 rounded-xl border border-neutral-200 dark:divide-[#262626] dark:border-[#262626] dark:bg-[#1a1a1a]">
             {glossarySafe.map((row, i) => (
               <div key={i} className="grid gap-1 px-4 py-4 sm:grid-cols-[minmax(0,0.35fr)_1fr] sm:gap-6">
                 <dt className="font-medium text-neutral-900 dark:text-neutral-100">{row.term}</dt>
@@ -288,7 +330,7 @@ export function RichGuideTopic({ content }) {
             <ListChecks className="h-5 w-5 text-primary-600 dark:text-primary-400" aria-hidden />
             <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-50">{checklistTitle}</h3>
           </div>
-          <ul className="space-y-3 rounded-2xl border border-neutral-200 bg-neutral-50/50 p-4 dark:border-[#262626] dark:bg-[#141414]">
+          <ul className="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 dark:border-[#262626] dark:bg-[#1a1a1a]">
             {checklistSafe.map((line, i) => (
               <li key={i} className="flex gap-3 text-neutral-800 dark:text-neutral-200">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />

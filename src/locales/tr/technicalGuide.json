@@ -6,11 +6,18 @@
     "alarm": "Alarm sistemleri"
   },
   "list": {
+    "mobileTitle": "Teknik Rehber",
     "emptyCategory": "Bu başlıkta henüz konu yok.",
-    "readMore": "Devamını oku"
+    "readMore": "Devamını oku",
+    "searchPlaceholder": "Rehber başlığı veya özetinde ara…",
+    "allCategories": "Tümü",
+    "noResults": "Aramanızla eşleşen rehber yok.",
+    "openMenu": "Menüyü aç"
   },
   "article": {
-    "backToList": "Teknik Rehbere dön"
+    "backToList": "Teknik Rehbere dön",
+    "backAria": "Teknik rehber listesine dön",
+    "readingProgress": "Okuma ilerlemesi"
   },
   "rich": {
     "flowCaption": "İş akışı (özet)",

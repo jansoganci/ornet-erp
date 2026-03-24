@@ -30,7 +30,7 @@ export function RecurringTemplateRow({ template, lastGenerated, onEdit, onToggle
       className="border-b border-neutral-100 dark:border-[#222] last:border-b-0 hover:bg-neutral-50 dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"
     >
       {/* Desktop row */}
-      <div className="hidden sm:grid sm:grid-cols-[3fr_2fr_1.5fr_1fr_1.5fr_1fr] gap-3 items-center px-4 py-3">
+      <div className="hidden md:grid md:grid-cols-[3fr_2fr_1.5fr_1fr_1.5fr_1fr] gap-3 items-center px-4 py-3">
         {/* Name + variable badge + last generated */}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -105,54 +105,52 @@ export function RecurringTemplateRow({ template, lastGenerated, onEdit, onToggle
       </div>
 
       {/* Mobile row */}
-      <div className="sm:hidden flex items-center gap-3 px-4 py-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
-              {template.name}
-            </span>
-            {template.is_variable && (
-              <Badge variant="warning" size="sm">
-                {t('badges.variable')}
-              </Badge>
-            )}
-          </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            {categoryName} · {t('templates.dayPrefix')} {template.day_of_month}{t('templates.daySuffix')}
-            {lastGenerated && (
-              <span className="text-neutral-400 dark:text-neutral-500">
-                {' · '}{t('templates.lastGenerated', { date: formatLastGenerated(lastGenerated) })}
+      <div className="md:hidden bg-white dark:bg-[#1a1a1a] p-4 active:bg-neutral-50 dark:active:bg-[#262626]">
+        <div className="flex justify-between items-start mb-2">
+          <div className="min-w-0 flex-1 mr-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-bold text-neutral-900 dark:text-neutral-50 truncate">
+                {template.name}
               </span>
-            )}
-          </p>
-        </div>
-
-        <div className="text-right flex-shrink-0 mr-1">
-          <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-50 tabular-nums">
+              {template.is_variable && (
+                <Badge variant="warning" size="sm">
+                  {t('badges.variable')}
+                </Badge>
+              )}
+              {!template.is_active && (
+                <Badge variant="secondary" size="sm">{t('status.paused')}</Badge>
+              )}
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              {categoryName} · {t('templates.dayPrefix')} {template.day_of_month}{t('templates.daySuffix')}
+            </p>
+          </div>
+          <span className="text-red-400 font-bold text-lg shrink-0 tabular-nums">
             {formatCurrency(template.amount)}
+            {template.is_variable && <span className="text-neutral-400 text-sm">~</span>}
           </span>
         </div>
-
-        <div className="flex items-center gap-0.5 flex-shrink-0" onClick={stopPropagation}>
-          <IconButton
-            icon={Pencil}
-            size="sm"
-            variant="ghost"
-            onClick={(e) => { e.stopPropagation(); onEdit(template); }}
-          />
-          <IconButton
-            icon={template.is_active ? Pause : Play}
-            size="sm"
-            variant="ghost"
-            onClick={(e) => { e.stopPropagation(); onToggleActive(template); }}
-          />
-          <IconButton
-            icon={Trash2}
-            size="sm"
-            variant="ghost"
-            className="text-error-500 hover:text-error-600"
-            onClick={(e) => { e.stopPropagation(); onDelete(template); }}
-          />
+        <div className="flex items-center justify-between mt-3">
+          <p className="text-[0.625rem] text-neutral-400 dark:text-neutral-500">
+            {lastGenerated
+              ? t('templates.lastGenerated', { date: formatLastGenerated(lastGenerated) })
+              : t('templates.neverGenerated')}
+          </p>
+          <div className="flex items-center gap-0.5" onClick={stopPropagation}>
+            <IconButton
+              icon={template.is_active ? Pause : Play}
+              size="sm"
+              variant="ghost"
+              onClick={(e) => { e.stopPropagation(); onToggleActive(template); }}
+            />
+            <IconButton
+              icon={Trash2}
+              size="sm"
+              variant="ghost"
+              className="text-error-500 hover:text-error-600"
+              onClick={(e) => { e.stopPropagation(); onDelete(template); }}
+            />
+          </div>
         </div>
       </div>
     </div>

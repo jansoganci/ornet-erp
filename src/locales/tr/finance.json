@@ -170,6 +170,19 @@
     "office_supplies": "Kırtasiye / Ofis",
     "subscription_cogs": "Abonelik Maliyeti"
   },
+  "mobile": {
+    "filterButton": "Filtrele",
+    "thisMonth": "Bu Ay",
+    "noDescription": "Açıklama yok",
+    "perTransaction": "İşlem başına",
+    "addForm": "Form Ekle",
+    "lastUpdated": "Son Güncelleme",
+    "latestRate": "Güncel Kur",
+    "monthlyTotal": "Aylık Toplam",
+    "activeCount": "Aktif Şablon",
+    "pausedCount": "Pasif",
+    "nextDay": "Sonraki Ödeme"
+  },
   "grouped": {
     "viewToggle": "Görünüm",
     "listLabel": "Liste",
@@ -249,6 +262,17 @@
   },
   "dashboardV2": {
     "title": "Finans Özeti",
+    "mobileTitle": "Finans",
+    "mobile": {
+      "cashFlow": "Nakit Akışı",
+      "viewAll": "Tümünü Gör",
+      "efficient": "Verimli",
+      "loss": "Zarar",
+      "netProfit": "Net Kar",
+      "margin": "Marj",
+      "income": "Gelir",
+      "expense": "Gider"
+    },
     "tabs": {
       "overview": "Özet",
       "work": "İşler",

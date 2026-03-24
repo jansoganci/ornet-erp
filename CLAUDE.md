@@ -586,6 +586,17 @@ const { data } = await supabase
 9. **Don't create pages without mobile responsiveness** - Always responsive
 10. **Don't forget loading/error/empty states** - Handle all cases
 
+### Clarification Behavior
+
+When a request is ambiguous, ask exactly **ONE** clarifying question — the single most important one that unblocks progress. Make reasonable assumptions for everything else and state them. Do not ask multiple questions in sequence. Priority for the one question:
+
+1. **Data source** — Which table/API does this touch?
+2. **Scope** — CRUD vs. single page vs. component?
+3. **Role restriction** — Who can access this?
+4. **Module placement** — Which feature folder does this belong in?
+
+If the answer is inferrable from context (e.g., the user is already working in a specific feature), skip the question and proceed.
+
 ---
 
 ## File Naming Conventions

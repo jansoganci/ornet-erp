@@ -1,6 +1,7 @@
 {
   "title": "Malzeme Listesi",
   "list": {
+    "mobileTitle": "Malzemeler",
     "addButton": "Yeni Malzeme Ekle",
     "searchPlaceholder": "Kod veya isim ile ara...",
     "noMaterials": "Henüz malzeme eklenmemiş.",
@@ -75,7 +76,19 @@
     "category": "Kategori",
     "status": "Durum",
     "selectYear": "Yıl Seç",
-    "selectMonth": "Ay Seç"
+    "selectMonth": "Ay Seç",
+    "period": "Dönem",
+    "allPeriods": "Tüm dönem",
+    "periodPanelTitle": "Yıl ve ay"
+  },
+  "kpi": {
+    "total": "Toplam",
+    "active": "Aktif",
+    "filtered": "Sonuç",
+    "categories": "Kategori"
+  },
+  "mobile": {
+    "openMenu": "Menüyü aç"
   },
   "usage": {
     "title": "Kullanım Geçmişi",
