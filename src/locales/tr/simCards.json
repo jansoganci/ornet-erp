@@ -156,6 +156,15 @@
     "buyerNotFound": "Satır {{row}}: Alıcı \"{{name}}\" bulunamadı.",
     "skippedDuplicates": "{{count}} satır atlandı (hat no veya IMSI zaten kayıtlı).",
     "allSkippedDuplicates": "Tüm {{count}} satır zaten mevcut; içe aktarım yapılmadı.",
+    "partialImportWithSkips": "{{created}} kayıt eklendi. {{skipped}} satır atlandı — detay aşağıda.",
+    "skippedRowsTitle": "Atlanan satırlar",
+    "skippedReasonColumn": "Neden",
+    "skipReason": {
+      "existing_phone": "Hat numarası sistemde zaten kayıtlı.",
+      "duplicate_import_phone": "Bu Excel’de aynı hat numarası yukarıda geçiyor.",
+      "existing_imsi": "IMSI sistemde zaten kayıtlı.",
+      "duplicate_import_imsi": "Bu Excel’de aynı IMSI yukarıda geçiyor."
+    },
     "processing": "Excel dosyası işleniyor...",
     "andMoreRows": "... ve {{count}} satır daha",
     "failed": "İçe aktarma başarısız oldu",

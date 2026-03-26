@@ -73,7 +73,6 @@ export function SimCardImportPage() {
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState([]);
   const [isParsing, setIsParsing] = useState(false);
-  const [skippedCount, setSkippedCount] = useState(0);
   const [importResult, setImportResult] = useState(null);
   const bulkCreateMutation = useBulkCreateSimCards();
   const createProviderMutation = useCreateProviderCompany();
@@ -83,7 +82,6 @@ export function SimCardImportPage() {
     if (!file) return;
 
     setIsParsing(true);
-    setSkippedCount(0);
     setImportResult(null);
     const reader = new FileReader();
 
@@ -242,24 +240,43 @@ export function SimCardImportPage() {
 
       const seenPhones = new Set();
       const seenImsis = new Set();
-      const filtered = toInsert.filter((row) => {
+      const filtered = [];
+      const skippedDetails = [];
+
+      for (const row of toInsert) {
         const phone = (row.phone_number || '').trim().toLowerCase();
         const imsi = (row.imsi || '').trim();
-        if (existingPhones.has(phone) || seenPhones.has(phone)) return false;
-        if (imsi && (existingImsis.has(imsi) || seenImsis.has(imsi))) return false;
+        const displayPhone = (row.phone_number || '').trim();
+
+        if (existingPhones.has(phone)) {
+          skippedDetails.push({ phone: displayPhone, imsi: imsi || null, reason: 'existing_phone' });
+          continue;
+        }
+        if (seenPhones.has(phone)) {
+          skippedDetails.push({ phone: displayPhone, imsi: imsi || null, reason: 'duplicate_import_phone' });
+          continue;
+        }
+        if (imsi && existingImsis.has(imsi)) {
+          skippedDetails.push({ phone: displayPhone, imsi, reason: 'existing_imsi' });
+          continue;
+        }
+        if (imsi && seenImsis.has(imsi)) {
+          skippedDetails.push({ phone: displayPhone, imsi, reason: 'duplicate_import_imsi' });
+          continue;
+        }
+
         seenPhones.add(phone);
         if (imsi) seenImsis.add(imsi);
-        return true;
-      });
-      const skipped = toInsert.length - filtered.length;
-      setSkippedCount(skipped);
+        filtered.push(row);
+      }
+
+      const skipped = skippedDetails.length;
 
       if (filtered.length > 0) {
         await bulkCreateMutation.mutateAsync(filtered);
-        setImportResult({ created: filtered.length, skipped });
-        setTimeout(() => navigate('/sim-cards'), 2500);
+        setImportResult({ created: filtered.length, skipped, skippedDetails });
       } else if (skipped > 0) {
-        setImportResult({ created: 0, skipped });
+        setImportResult({ created: 0, skipped, skippedDetails });
       }
     } catch {
       toast.error(t('simCards:import.failed'));
@@ -292,7 +309,6 @@ export function SimCardImportPage() {
   const handleReset = () => {
     setData([]);
     setErrors([]);
-    setSkippedCount(0);
     setImportResult(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -394,7 +410,7 @@ export function SimCardImportPage() {
           <div className="space-y-6">
             {importResult && (
               <ImportResultSummary
-                variant={importResult.created === 0 && importResult.skipped > 0 ? 'partial' : 'success'}
+                variant={importResult.skipped > 0 ? 'partial' : 'success'}
                 title={t('common:import.summaryTitle')}
                 stats={[
                   { label: t('common:import.summaryCreated'), value: importResult.created },
@@ -403,11 +419,47 @@ export function SimCardImportPage() {
                 message={
                   importResult.created === 0 && importResult.skipped > 0
                     ? t('simCards:import.allSkippedDuplicates', { count: importResult.skipped })
-                    : t('common:import.summarySuccess')
+                    : importResult.created > 0 && importResult.skipped > 0
+                      ? t('simCards:import.partialImportWithSkips', {
+                          created: importResult.created,
+                          skipped: importResult.skipped,
+                        })
+                      : t('common:import.summarySuccess')
                 }
               >
-                <div className="mt-3">
-                  <Button variant="outline" size="sm" onClick={() => navigate('/sim-cards')}>
+                {importResult.skippedDetails?.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h5 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                      {t('simCards:import.skippedRowsTitle')}
+                    </h5>
+                    <div className="max-h-56 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+                      <table className="w-full text-left text-sm">
+                        <thead className="sticky top-0 bg-neutral-100 dark:bg-neutral-800/80">
+                          <tr>
+                            <th className="px-3 py-2 font-medium">{t('simCards:list.columns.phoneNumber')}</th>
+                            <th className="px-3 py-2 font-medium">{t('simCards:list.columns.imsi')}</th>
+                            <th className="px-3 py-2 font-medium">{t('simCards:import.skippedReasonColumn')}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                          {importResult.skippedDetails.map((row, i) => (
+                            <tr key={i} className="bg-white/80 dark:bg-[#171717]/80">
+                              <td className="px-3 py-2 font-medium tabular-nums">{row.phone || '—'}</td>
+                              <td className="px-3 py-2 tabular-nums text-neutral-700 dark:text-neutral-300">
+                                {row.imsi || '—'}
+                              </td>
+                              <td className="px-3 py-2 text-neutral-700 dark:text-neutral-300">
+                                {t(`simCards:import.skipReason.${row.reason}`)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-4">
+                  <Button variant="primary" size="sm" onClick={() => navigate('/sim-cards')}>
                     {t('simCards:import.goToList')}
                   </Button>
                 </div>
@@ -424,11 +476,6 @@ export function SimCardImportPage() {
                     <AlertCircle className="w-5 h-5 text-red-500" />
                     <span className="font-medium text-red-600">{t('simCards:import.invalidRows', { count: errors.length })}</span>
                   </div>
-                )}
-                {!importResult && skippedCount > 0 && (
-                  <span className="text-sm text-amber-600 dark:text-amber-400">
-                    {t('simCards:import.skippedDuplicates', { count: skippedCount })}
-                  </span>
                 )}
               </div>
               <div className="flex gap-2">
