@@ -89,7 +89,7 @@ export function WorkOrdersListPage() {
     pageSize,
   } = useWorkOrdersPaginated(filters, page);
 
-  const handleSearch = (value) => setLocalSearch(value);
+  const handleSearch = (value) => setLocalSearch(value ?? '');
 
   const handleFilterChange = (key, value) => {
     setSearchParams(prev => {

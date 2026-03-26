@@ -314,3 +314,22 @@ export const paymentStatusVariant = {
   skipped: 'info',
   write_off: 'warning',
 };
+
+/**
+ * Strip characters unsafe for download filenames (Windows/macOS).
+ * @param {string|null|undefined} name - Base name without extension
+ * @returns {string} - Non-empty sanitized name
+ */
+export function sanitizeDownloadFileName(name) {
+  if (name == null || String(name).trim() === '') return 'teklif';
+  const noControls = [...String(name)]
+    .filter((c) => c.charCodeAt(0) >= 32)
+    .join('');
+  const cleaned = noControls
+    .replace(/[\\/:*?"<>|]+/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 200);
+  return cleaned || 'teklif';
+}

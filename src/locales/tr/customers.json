@@ -180,6 +180,7 @@
     "siteCount": "{{count}} Lokasyon",
     "fields": {
       "accountNo": "Hesap No",
+      "location": "Lokasyon",
       "alarmCenter": "Alarm Merkezi",
       "siteName": "Lokasyon Adı",
       "address": "Adres",

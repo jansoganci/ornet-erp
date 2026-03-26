@@ -21,6 +21,7 @@
       "selectYear": "Yıl Seç",
       "selectMonth": "Ay Seç",
       "status": "Durum",
+      "serviceType": "Hizmet Türü",
       "type": "Ödeme Türü",
       "overduePayments": "Gecikmiş Ödemeler"
     },
@@ -42,6 +43,7 @@
       "startDate": "Başlangıç",
       "billingFrequency": "Ödeme Sıklığı",
       "monthly": "Aylık",
+      "lineTl": "Hat TL",
       "simTl": "SIM TL",
       "totalAmount": "Toplam TL",
       "totalAmountCalc": "Toplam Tutar (TL)",

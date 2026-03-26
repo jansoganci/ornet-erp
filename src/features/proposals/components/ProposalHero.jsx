@@ -12,12 +12,25 @@ import {
   CheckCircle2,
   XCircle,
   Receipt,
+  Plus,
+  MapPin,
+  Info,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Button, IconButton } from '../../../components/ui';
-import { formatDate, formatCurrency } from '../../../lib/utils';
+import { cn, formatDate, formatCurrency } from '../../../lib/utils';
 import { ProposalStatusBadge } from './ProposalStatusBadge';
+
+function customerInitials(name) {
+  if (!name || !String(name).trim()) return '?';
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  const s = parts[0];
+  return (s.length >= 2 ? s.slice(0, 2) : s).toUpperCase();
+}
 
 export function ProposalHero({
   proposal,
@@ -30,6 +43,7 @@ export function ProposalHero({
   isExporting,
   onFlowAction,
   onFaturalandir,
+  onCreateWorkOrder,
   flowLoading,
 }) {
   const { t } = useTranslation(['proposals', 'common']);
@@ -38,6 +52,9 @@ export function ProposalHero({
   const currency = proposal.currency ?? 'USD';
   const completedCount = linkedWorkOrders.filter((wo) => wo.status === 'completed').length;
   const totalCount = linkedWorkOrders.length;
+  const openWorkOrdersCount = linkedWorkOrders.filter(
+    (wo) => wo.status !== 'completed' && wo.status !== 'cancelled'
+  ).length;
   const workOrdersStr =
     totalCount > 0
       ? t('proposals:detail.workOrderCount', { completed: completedCount, total: totalCount })
@@ -55,9 +72,9 @@ export function ProposalHero({
     ? formatDate(proposal.accepted_at || proposal.rejected_at || proposal.sent_at)
     : '—';
 
-  const subtitle = [proposal.customer_company_name || proposal.company_name, proposal.site_name]
-    .filter(Boolean)
-    .join(' → ') || '—';
+  const customerDisplayName =
+    proposal.customer_company_name || proposal.company_name || '—';
+  const siteDisplayName = proposal.site_name?.trim() || '';
 
   return (
     <div className="space-y-4">
@@ -103,6 +120,29 @@ export function ProposalHero({
               </Button>
             </>
           )}
+          {(status === 'accepted' || status === 'completed') && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              leftIcon={
+                proposal?.site_id ? (
+                  <Plus className="w-4 h-4" />
+                ) : (
+                  <MapPin className="w-4 h-4" />
+                )
+              }
+              disabled={!proposal?.site_id && !proposal?.customer_id}
+              title={
+                !proposal?.site_id && proposal?.customer_id
+                  ? t('proposals:detail.addSiteAndWorkOrder')
+                  : undefined
+              }
+              onClick={() => onCreateWorkOrder?.()}
+            >
+              {t('proposals:detail.actions.createWorkOrder')}
+            </Button>
+          )}
           {status === 'accepted' && (
             <Button
               size="sm"
@@ -120,7 +160,7 @@ export function ProposalHero({
               leftIcon={<Receipt className="w-4 h-4" />}
               onClick={onFaturalandir}
             >
-              {t('proposals:detail.actions.faturalandir')}
+              {t('proposals:detail.actions.bill')}
             </Button>
           )}
           <Button
@@ -151,6 +191,15 @@ export function ProposalHero({
         </div>
       </div>
 
+      {(status === 'accepted' || status === 'completed') && openWorkOrdersCount > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-neutral-200/80 dark:border-[#333] bg-neutral-50/70 dark:bg-[#1a1a1a]/80 px-3 py-2">
+          <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" aria-hidden />
+          <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+            {t('proposals:detail.openWorkOrdersHint', { count: openWorkOrdersCount })}
+          </p>
+        </div>
+      )}
+
       {/* Hero Card */}
       <div className="rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] p-5 shadow-sm">
         {/* Identity row */}
@@ -167,21 +216,58 @@ export function ProposalHero({
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 font-mono truncate">
                   {proposal.proposal_no || '—'}
                 </p>
-                {proposal.customer_id ? (
-                  <Link
-                    to={`/customers/${proposal.customer_id}`}
-                    className="text-sm text-neutral-600 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 mt-0.5 truncate block transition-colors"
-                  >
-                    {subtitle}
-                  </Link>
-                ) : (
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
-                    {subtitle}
-                  </p>
-                )}
               </div>
               <div className="flex items-center flex-shrink-0">
                 <ProposalStatusBadge status={proposal.status} size="sm" />
+              </div>
+            </div>
+
+            <div
+              className={cn(
+                'mt-4 flex gap-3 rounded-xl border border-neutral-200/90 dark:border-[#333]',
+                'bg-neutral-50/90 dark:bg-[#141414] p-4'
+              )}
+            >
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-950/50 text-sm font-bold text-primary-800 dark:text-primary-200"
+                aria-hidden
+              >
+                {customerInitials(customerDisplayName)}
+              </div>
+              <div className="min-w-0 flex-1 space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                    {t('proposals:detail.customerCard.customerLabel')}
+                  </p>
+                  {proposal.customer_id ? (
+                    <Link
+                      to={`/customers/${proposal.customer_id}`}
+                      className="mt-0.5 block text-lg font-semibold leading-snug text-neutral-900 dark:text-neutral-50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate"
+                      title={t('proposals:detail.customerCard.viewCustomer')}
+                    >
+                      {customerDisplayName}
+                    </Link>
+                  ) : (
+                    <p className="mt-0.5 text-lg font-semibold leading-snug text-neutral-900 dark:text-neutral-50 truncate">
+                      {customerDisplayName}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                    {t('proposals:detail.customerCard.locationLabel')}
+                  </p>
+                  <p
+                    className={cn(
+                      'mt-0.5 text-base leading-snug',
+                      siteDisplayName
+                        ? 'text-neutral-800 dark:text-neutral-200'
+                        : 'text-neutral-400 dark:text-neutral-500 italic'
+                    )}
+                  >
+                    {siteDisplayName || t('proposals:detail.customerCard.noLocation')}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

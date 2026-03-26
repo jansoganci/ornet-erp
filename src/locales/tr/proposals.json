@@ -39,6 +39,13 @@
     "workOrders": "İş Emirleri",
     "workOrderCount": "{{completed}}/{{total}} Tamamlandı",
     "noWorkOrders": "Henüz iş emri eklenmedi.",
+    "customerCard": {
+      "customerLabel": "Müşteri",
+      "locationLabel": "Lokasyon",
+      "noLocation": "Lokasyon seçilmedi",
+      "viewCustomer": "Müşteri kartına git"
+    },
+    "openWorkOrdersHint": "{{count}} iş emri henüz tamamlanmadı. Montaj tek seferde bitmeyebilir; gerekirse ek iş emri oluşturabilirsiniz.",
     "addWorkOrder": "İş Emri Ekle",
     "addSiteAndWorkOrder": "Lokasyon Ekle ve İş Emri Oluştur",
     "addWorkOrderNoSite": "Lokasyon gerekli",
@@ -59,6 +66,7 @@
       "reject": "Reddet",
       "cancel": "İptal Et",
       "markComplete": "Montaj Tamamlandı",
+      "createWorkOrder": "İş emri oluştur",
       "bill": "Faturalandır",
       "duplicate": "Kopyala"
     },
@@ -90,17 +98,6 @@
       "general": "Genel Bilgiler",
       "services": "Hizmetler",
       "review": "Önizleme"
-    },
-    "serviceChips": {
-      "title": "Hızlı Hizmet Ekle",
-      "cctv": "CCTV",
-      "alarm": "Alarm",
-      "maintenance": "Bakım",
-      "accessControl": "Geçiş Kontrol",
-      "fireDetection": "Yangın Algılama",
-      "intercom": "İnterkom",
-      "networkCabling": "Ağ Kablolama",
-      "barriers": "Bariyerler"
     },
     "preview": {
       "title": "Canlı Önizleme",
@@ -219,6 +216,10 @@
       "total": "Toplam ($)"
     },
     "grandTotal": "Genel Toplam",
-    "exportError": "PDF oluşturulurken bir hata oluştu"
+    "exportError": "PDF oluşturulurken bir hata oluştu",
+    "filenameModalTitle": "PDF dosya adı",
+    "filenameLabel": "Dosya adı",
+    "filenameHint": "Uzantı yazmayın; .pdf otomatik eklenir.",
+    "downloadButton": "İndir"
   }
 }

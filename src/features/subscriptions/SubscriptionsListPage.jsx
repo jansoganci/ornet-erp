@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, CreditCard, Filter, Tag, TrendingUp, TrendingDown, Minus, Users, Pause, AlertTriangle, FileSpreadsheet, Receipt, Wallet, Building2, Calendar, ChevronLeft, ChevronRight, X, PauseCircle } from 'lucide-react';
+import { Plus, CreditCard, Tag, TrendingUp, TrendingDown, Minus, Users, Pause, AlertTriangle, FileSpreadsheet, Receipt, Wallet, Building2, Calendar, ChevronLeft, ChevronRight, X, PauseCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
@@ -22,6 +22,7 @@ import { useSubscriptionsPaginated, useSubscriptionStats, useCurrentProfile } fr
 import { KpiCard } from '../../components/ui';
 import { SubscriptionStatusBadge } from './components/SubscriptionStatusBadge';
 import { ComplianceAlert } from './components/ComplianceAlert';
+import { SERVICE_TYPES } from './schema';
 export function SubscriptionsListPage() {
   const { t } = useTranslation(['subscriptions', 'common']);
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ export function SubscriptionsListPage() {
   const [localSearch, setLocalSearch] = useState(searchFromUrl);
   const debouncedSearch = useDebouncedValue(localSearch, 300);
   const status = searchParams.get('status') || 'all';
+  const serviceType = searchParams.get('service_type') || 'all';
   const billingFrequency = searchParams.get('billing_frequency') || 'all';
   const yearParam = searchParams.get('year') || '';
   const monthParam = searchParams.get('month') || '';
@@ -57,6 +59,7 @@ export function SubscriptionsListPage() {
   const filters = {
     search: debouncedSearch,
     status,
+    service_type: serviceType === 'all' ? undefined : serviceType,
     billing_frequency: billingFrequency === 'all' ? undefined : billingFrequency,
     year: yearParam || undefined,
     month: monthParam || undefined,
@@ -91,7 +94,7 @@ export function SubscriptionsListPage() {
   const mrrTrend = getTrend(Number(stats?.mrr) || 0, Number(stats?.mrr_previous_month) || 0);
   const activeTrend = getTrend(stats?.active_count ?? 0, stats?.active_count_previous_month ?? 0);
 
-  const handleSearch = (value) => setLocalSearch(value);
+  const handleSearch = (value) => setLocalSearch(value ?? '');
 
   const handleFilterChange = (key, value) => {
     setSearchParams((prev) => {
@@ -143,6 +146,11 @@ export function SubscriptionsListPage() {
     { value: '3_month', label: t('subscriptions:form.fields.3_month') },
     { value: '6_month', label: t('subscriptions:form.fields.6_month') },
     { value: 'yearly', label: t('subscriptions:form.fields.yearly') },
+  ];
+
+  const serviceTypeOptions = [
+    { value: 'all', label: t('common:filters.all') },
+    ...SERVICE_TYPES.map((v) => ({ value: v, label: t(`subscriptions:serviceTypes.${v}`) })),
   ];
 
   const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString());
@@ -229,6 +237,18 @@ export function SubscriptionsListPage() {
       maxWidth: 100,
       render: (value) => (
         <span className="font-bold text-neutral-900 dark:text-neutral-100">
+          {formatCurrency(value ?? 0)}
+        </span>
+      ),
+    },
+    {
+      header: t('subscriptions:list.columns.lineTl'),
+      accessor: 'line_fee',
+      align: 'right',
+      minWidth: 100,
+      maxWidth: 100,
+      render: (value) => (
+        <span className="text-neutral-900 dark:text-neutral-50">
           {formatCurrency(value ?? 0)}
         </span>
       ),
@@ -514,6 +534,14 @@ export function SubscriptionsListPage() {
             </button>
           ))}
         </div>
+        <ListboxSelect
+          className="w-full"
+          options={serviceTypeOptions}
+          value={serviceType}
+          onChange={(v) => handleFilterChange('service_type', v)}
+          placeholder={t('subscriptions:list.filters.serviceType')}
+          size="sm"
+        />
       </div>
 
       {/* Desktop Filters — hidden on mobile */}
@@ -547,7 +575,6 @@ export function SubscriptionsListPage() {
                 value={status}
                 onChange={(v) => handleFilterChange('status', v)}
                 placeholder={t('subscriptions:list.filters.status')}
-                leftIcon={<Filter className="w-4 h-4" />}
                 size="sm"
               />
             </div>
@@ -557,7 +584,15 @@ export function SubscriptionsListPage() {
                 value={billingFrequency}
                 onChange={(v) => handleFilterChange('billing_frequency', v)}
                 placeholder={t('subscriptions:list.filters.billingFrequency')}
-                leftIcon={<Calendar className="w-4 h-4" />}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:flex-1 min-w-[12rem] md:min-w-0 md:w-56 lg:w-60">
+              <ListboxSelect
+                options={serviceTypeOptions}
+                value={serviceType}
+                onChange={(v) => handleFilterChange('service_type', v)}
+                placeholder={t('subscriptions:list.filters.serviceType')}
                 size="sm"
               />
             </div>

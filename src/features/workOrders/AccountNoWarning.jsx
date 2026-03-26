@@ -1,12 +1,13 @@
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { AlertCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { cn } from '../../lib/utils';
 
 export function AccountNoWarning({ 
   workType, 
   accountNo, 
-  onAddAccountNo 
+  onAddAccountNo,
+  addAccountDisabled = false,
 }) {
   const { t } = useTranslation(['workOrders', 'common']);
   
@@ -55,7 +56,10 @@ export function AccountNoWarning({
       </div>
 
       <Button
+        type="button"
         size="sm"
+        disabled={addAccountDisabled}
+        title={addAccountDisabled ? t('workOrders:form.hints.addAccountNoNeedCustomer') : undefined}
         onClick={onAddAccountNo}
         className={cn(
           "font-bold px-4 py-2 rounded-xl transition-all active:scale-95 shadow-sm",

@@ -28,8 +28,8 @@ export function ProposalItemsEditor({
 
   const watchItems = watch('items') || [];
   const discountPercent = Number(watch('discount_percent')) || 0;
-  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(watchItems, discountPercent);
-  const totalCosts = calcTotalCosts(watchItems);
+  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(watchItems, discountPercent, currency);
+  const totalCosts = calcTotalCosts(watchItems, currency);
   const netProfit = grandTotal - totalCosts;
 
   const handleAddItem = () => {

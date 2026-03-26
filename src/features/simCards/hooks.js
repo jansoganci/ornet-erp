@@ -139,6 +139,23 @@ export function useDeleteSimCard() {
   });
 }
 
+export function useCancelSimCard() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation(['common', 'errors']);
+
+  return useMutation({
+    mutationFn: api.cancelSimCard,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: simCardKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: [...simCardKeys.all, 'financial-stats'] });
+      toast.success(t('success.updated'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'simCards.updateFailed'));
+    },
+  });
+}
+
 export function useSimCardHistory(id) {
   return useQuery({
     queryKey: simCardKeys.history(id),

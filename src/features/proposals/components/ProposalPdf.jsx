@@ -8,7 +8,11 @@ import {
   Font,
 } from '@react-pdf/renderer';
 import { getCurrencySymbol } from '../../../lib/utils';
-import { calcProposalTotals } from '../../../lib/proposalCalc';
+import {
+  calcProposalTotals,
+  resolveProposalItemLineTotal,
+  resolveProposalItemUnitPrice,
+} from '../../../lib/proposalCalc';
 import i18n from '../../../lib/i18n';
 
 Font.register({
@@ -290,7 +294,11 @@ export function ProposalPdf({ proposal, items }) {
   const currency = prop.currency ?? 'USD';
   const symbol = getCurrencySymbol(currency);
   const itemList = Array.isArray(items) ? items : [];
-  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(itemList, prop.discount_percent);
+  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(
+    itemList,
+    prop.discount_percent,
+    currency
+  );
   const discountPercent = safeNum(prop.discount_percent, 0);
   const proposalDate = formatTurkishDate(prop.proposal_date || prop.created_at);
 
@@ -357,9 +365,7 @@ export function ProposalPdf({ proposal, items }) {
             <Text style={[styles.colTotal, styles.headerText]}>Toplam ({symbol})</Text>
           </View>
           {itemList.map((item, index) => {
-            const lineTotal = safeNum(
-              item.line_total ?? item.total_usd ?? (safeNum(item.quantity) * safeNum(item.unit_price ?? item.unit_price_usd))
-            );
+            const lineTotal = safeNum(resolveProposalItemLineTotal(item, currency));
             const materialDesc = item.materials?.description ? safeStr(item.materials.description) : '';
             return (
               <View key={item.id || index} style={styles.tableRow}>
@@ -374,7 +380,9 @@ export function ProposalPdf({ proposal, items }) {
                 </View>
                 <Text style={styles.colQty}>{safeNum(item.quantity)}</Text>
                 <Text style={styles.colUnit}>{safeStr(item.unit) || 'adet'}</Text>
-                <Text style={styles.colUnitPrice}>{formatByCurrency(item.unit_price ?? item.unit_price_usd, currency)}</Text>
+                <Text style={styles.colUnitPrice}>
+                  {formatByCurrency(resolveProposalItemUnitPrice(item, currency), currency)}
+                </Text>
                 <Text style={styles.colTotal}>{formatByCurrency(lineTotal, currency)}</Text>
               </View>
             );

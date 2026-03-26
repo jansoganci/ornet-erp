@@ -1,4 +1,11 @@
 {
+  "tabs": {
+    "active": "Aktif",
+    "cancelled": "İptal Edilenler"
+  },
+  "messages": {
+    "cancelConfirmation": "{{number}} nolu hat iptal edilecektir. Emin misiniz?"
+  },
   "title": "SIM Kart Yönetimi",
   "list": {
     "title": "SIM Kart Listesi",
@@ -35,7 +42,22 @@
       "operator": "Operatör",
       "provider": "Ana Şirket",
       "selectYear": "Yıl Seç",
-      "selectMonth": "Ay Seç"
+      "selectMonth": "Ay Seç",
+      "activationRangeHint": "Aktivasyon tarihi (başlangıç ve bitiş ayı dahil)",
+      "periodStartHeading": "Başlangıç Dönemi",
+      "periodEndHeading": "Bitiş Dönemi",
+      "periodBoundaryEmpty": "Ay ve yıl seçin",
+      "rangeFrom": "Başlangıç",
+      "rangeTo": "Bitiş",
+      "moreFilters": "Ana şirket ve tarih aralığı",
+      "clearAdvanced": "Bu filtreleri temizle",
+      "advancedFilters": "Gelişmiş filtreler",
+      "activationPeriod": "Aktivasyon dönemi",
+      "activationPeriodPick": "Dönem seçin",
+      "activationPeriodSummary": "{{from}} – {{to}}",
+      "clearAll": "Filtreleri temizle",
+      "clearPeriod": "Temizle",
+      "periodOrderError": "Bitiş dönemi başlangıç döneminden önce olamaz"
     },
     "quickEdit": "Hızlı Düzenleme",
     "unassigned": "Atama Bekliyor"
@@ -56,6 +78,7 @@
     "import": "Excel ile toplu yükle",
     "edit": "Düzenle",
     "delete": "Sil",
+    "cancel": "İptal Et",
     "activate": "Aktifleştir",
     "deactivate": "İnaktife Çek",
     "makeAvailable": "Boşa Çıkar"

@@ -34,8 +34,10 @@ export const Input = forwardRef(function Input(
   },
   ref
 ) {
+  const isValueControlled = Object.prototype.hasOwnProperty.call(props, 'value');
+  const { value, ...restProps } = props;
   const generatedId = useId();
-  const inputId = props.id || generatedId;
+  const inputId = restProps.id || generatedId;
   const errorId = error ? `${inputId}-error` : undefined;
   const hintId = hint && !error ? `${inputId}-hint` : undefined;
 
@@ -79,7 +81,8 @@ export const Input = forwardRef(function Input(
             disabled && 'bg-neutral-100 dark:bg-[#262626] cursor-not-allowed text-neutral-500 dark:text-neutral-400',
             className
           )}
-          {...props}
+          {...restProps}
+          {...(isValueControlled ? { value: value ?? '' } : {})}
         />
         {RightIcon && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">

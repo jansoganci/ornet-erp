@@ -1,9 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
-import { Plus, Download, Filter, Edit2, Trash2, FileSpreadsheet, Pencil, Cpu as SimIcon, Calendar, ChevronLeft, ChevronRight, Package, CheckCircle2, TrendingUp, CreditCard, ArrowLeft, Search, MapPin, Smartphone } from 'lucide-react';
-import { useSimCardsPaginated, useDeleteSimCard, useUpdateSimCard, useSimFinancialStats, useProviderCompanies } from './hooks';
+import {
+  Plus,
+  Download,
+  Filter,
+  Edit2,
+  Trash2,
+  FileSpreadsheet,
+  Pencil,
+  Cpu as SimIcon,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Package,
+  CheckCircle2,
+  TrendingUp,
+  CreditCard,
+  ArrowLeft,
+  MapPin,
+  RotateCcw,
+} from 'lucide-react';
+import { useSimCardsPaginated, useUpdateSimCard, useSimFinancialStats, useProviderCompanies, useCancelSimCard } from './hooks';
 import { fetchSimCards } from './api';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { PageContainer, PageHeader } from '../../components/layout';
@@ -11,7 +31,6 @@ import {
   Button,
   SearchInput,
   ListboxSelect,
-  Card,
   Badge,
   EmptyState,
   Skeleton,
@@ -19,20 +38,40 @@ import {
   Table,
   IconButton,
   Modal,
-  DateRangeFilter,
   KpiCard,
 } from '../../components/ui';
 import { formatCurrency, formatDate, cn } from '../../lib/utils';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { QuickStatusSelect } from './components/QuickStatusSelect';
 
+/** Uniform trigger height in SIM list filter controls (matches `SearchInput` / `Input` sm). */
+const SIM_FILTER_LISTBOX_TRIGGER = 'h-10 min-h-[2.5rem] md:h-10';
+
 export function SimCardsListPage() {
   const { t } = useTranslation(['simCards', 'common']);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [quickEditMode, setQuickEditMode] = useState(false);
-  const [simToDelete, setSimToDelete] = useState(null);
+  const [simToCancel, setSimToCancel] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
+  const [advancedFiltersExpanded, setAdvancedFiltersExpanded] = useState(() => {
+    const op = searchParams.get('operator') || 'all';
+    const prov = searchParams.get('provider') || 'all';
+    const y1 = searchParams.get('afy') || 'all';
+    const m1 = searchParams.get('afm') || 'all';
+    const y2 = searchParams.get('aty') || 'all';
+    const m2 = searchParams.get('atm') || 'all';
+    return (
+      (prov && prov !== 'all') ||
+      (op && op !== 'all') ||
+      y1 !== 'all' ||
+      m1 !== 'all' ||
+      y2 !== 'all' ||
+      m2 !== 'all'
+    );
+  });
+  const activeTab = searchParams.get('tab') || 'active';
 
   const searchFromUrl = searchParams.get('search') || '';
   const [localSearch, setLocalSearch] = useState(searchFromUrl);
@@ -40,9 +79,127 @@ export function SimCardsListPage() {
   const statusFilter = searchParams.get('status') || 'all';
   const operatorFilter = searchParams.get('operator') || 'all';
   const providerFilter = searchParams.get('provider') || 'all';
-  const yearParam = searchParams.get('year') || '';
-  const monthParam = searchParams.get('month') || '';
+  const afy = searchParams.get('afy') || 'all';
+  const afm = searchParams.get('afm') || 'all';
+  const aty = searchParams.get('aty') || 'all';
+  const atm = searchParams.get('atm') || 'all';
   const page = Number(searchParams.get('page') || '0');
+
+  const handleTabChange = (tab) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      next.delete('status'); // Clear status filter when changing tabs
+      next.delete('page');
+      return next;
+    });
+  };
+
+  const hasAdvancedSimFilters =
+    (providerFilter && providerFilter !== 'all') ||
+    (operatorFilter && operatorFilter !== 'all') ||
+    afy !== 'all' ||
+    afm !== 'all' ||
+    aty !== 'all' ||
+    atm !== 'all';
+
+  const hasActiveSimFilters = useMemo(() => {
+    const q = (localSearch && localSearch.trim()) || (searchFromUrl && searchFromUrl.trim());
+    return Boolean(
+      q ||
+        statusFilter !== 'all' ||
+        operatorFilter !== 'all' ||
+        providerFilter !== 'all' ||
+        afy !== 'all' ||
+        afm !== 'all' ||
+        aty !== 'all' ||
+        atm !== 'all'
+    );
+  }, [
+    localSearch,
+    searchFromUrl,
+    statusFilter,
+    operatorFilter,
+    providerFilter,
+    afy,
+    afm,
+    aty,
+    atm,
+  ]);
+
+  const monthSelectOptions = useMemo(
+    () => [
+      { value: 'all', label: t('list.filters.all') },
+      ...Object.entries(t('notifications:months', { returnObjects: true })).map(([val, label]) => ({
+        value: val,
+        label,
+      })),
+    ],
+    [t],
+  );
+
+  const yearSelectOptions = useMemo(
+    () => [
+      { value: 'all', label: t('list.filters.all') },
+      ...Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString()).map((y) => ({
+        value: y,
+        label: y,
+      })),
+    ],
+    [t],
+  );
+
+  const periodStartDisplay = useMemo(() => {
+    if (!afm || afm === 'all' || !afy || afy === 'all') return null;
+    const mo = monthSelectOptions.find((o) => String(o.value) === String(afm));
+    const monthLabel = mo?.label ?? String(afm);
+    return `${monthLabel} ${afy}`;
+  }, [afm, afy, monthSelectOptions]);
+
+  const periodEndDisplay = useMemo(() => {
+    if (!atm || atm === 'all' || !aty || aty === 'all') return null;
+    const mo = monthSelectOptions.find((o) => String(o.value) === String(atm));
+    const monthLabel = mo?.label ?? String(atm);
+    return `${monthLabel} ${aty}`;
+  }, [atm, aty, monthSelectOptions]);
+
+  const activationPeriodSummary = useMemo(() => {
+    if (periodStartDisplay && periodEndDisplay) {
+      return t('list.filters.activationPeriodSummary', { from: periodStartDisplay, to: periodEndDisplay });
+    }
+    if (periodStartDisplay || periodEndDisplay) {
+      return [periodStartDisplay, periodEndDisplay].filter(Boolean).join(' – ');
+    }
+    return null;
+  }, [periodStartDisplay, periodEndDisplay, t]);
+
+  const hasActivationPeriodSet = afy !== 'all' || afm !== 'all' || aty !== 'all' || atm !== 'all';
+
+  const periodOrderError = useMemo(() => {
+    if (afy === 'all' || afm === 'all' || aty === 'all' || atm === 'all') return false;
+    const start = new Date(Number(afy), Number(afm) - 1, 1);
+    const end = new Date(Number(aty), Number(atm) - 1, 1);
+    return end < start;
+  }, [afy, afm, aty, atm]);
+
+  // Legacy ?year=&month= links → inclusive month range on both ends
+  useEffect(() => {
+    const y = searchParams.get('year');
+    const m = searchParams.get('month');
+    if (!y || y === 'all' || !m || m === 'all') return;
+    if (searchParams.get('afy')) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('afy', y);
+      next.set('afm', String(Number(m)));
+      next.set('aty', y);
+      next.set('atm', String(Number(m)));
+      next.delete('year');
+      next.delete('month');
+      next.delete('page');
+      return next;
+    });
+  }, [searchParams, setSearchParams]);
 
   // Sync local search from URL
   useEffect(() => {
@@ -70,6 +227,42 @@ export function SimCardsListPage() {
     });
   };
 
+  const handleActivationRangeChange = (key, value) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('page');
+      if (!value || value === 'all') next.delete(key);
+      else next.set(key, value);
+      return next;
+    });
+  };
+
+  const clearActivationPeriod = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      ['afy', 'afm', 'aty', 'atm'].forEach((k) => next.delete(k));
+      next.delete('page');
+      return next;
+    });
+  };
+
+  const clearAllSimListFilters = () => {
+    setLocalSearch('');
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('search');
+      next.delete('status');
+      next.delete('operator');
+      next.delete('provider');
+      next.delete('afy');
+      next.delete('afm');
+      next.delete('aty');
+      next.delete('atm');
+      next.delete('page');
+      return next;
+    });
+  };
+
   const handlePageChange = (newPage) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -81,12 +274,23 @@ export function SimCardsListPage() {
 
   const filters = {
     search: debouncedSearch || undefined,
-    status: statusFilter,
+    status: activeTab === 'cancelled' ? 'cancelled' : (statusFilter !== 'all' ? statusFilter : undefined),
     operator: operatorFilter,
     provider_company_id: providerFilter,
-    year: yearParam || undefined,
-    month: monthParam || undefined,
+    activationFromYear: afy !== 'all' ? afy : undefined,
+    activationFromMonth: afm !== 'all' ? afm : undefined,
+    activationToYear: aty !== 'all' ? aty : undefined,
+    activationToMonth: atm !== 'all' ? atm : undefined,
   };
+
+  // If activeTab is 'active' and statusFilter is 'all', we need to exclude 'cancelled'
+  // But the current API fetchSimCardsPaginated only supports eq('status', filters.status)
+  // Let's check api.js again to see if we can exclude.
+  // Actually, we can just filter out cancelled if status is all and tab is active.
+  // But wait, the API fetchSimCardsPaginated uses .eq('status', filters.status) if filters.status is set.
+  // If we don't set status, it fetches all.
+  // We might need to adjust api.js to support excluding a status or handle it here.
+  // For now, let's assume we want to show everything except cancelled in 'active' tab when status is 'all'.
 
   const {
     data: simCards,
@@ -100,7 +304,7 @@ export function SimCardsListPage() {
   } = useSimCardsPaginated(filters, page);
   const { data: simStats } = useSimFinancialStats();
   const { data: providerCompanies } = useProviderCompanies();
-  const deleteSimMutation = useDeleteSimCard();
+  const cancelSimMutation = useCancelSimCard();
   const updateSimCardMutation = useUpdateSimCard();
 
   const handleAdd = () => navigate('/sim-cards/new');
@@ -114,7 +318,12 @@ export function SimCardsListPage() {
       const all = await fetchSimCards(filters);
       if (!all?.length) return;
 
-      const exportData = all.map(sim => ({
+      const exportData = all.filter(sim => {
+        if (activeTab === 'active' && statusFilter === 'all') {
+          return sim.status !== 'cancelled';
+        }
+        return true;
+      }).map(sim => ({
         [t('list.columns.provider')]: sim.provider_company?.name || '-',
         [t('list.columns.phoneNumber')]: sim.phone_number,
         [t('list.columns.imsi')]: sim.imsi || '-',
@@ -139,18 +348,18 @@ export function SimCardsListPage() {
     }
   };
 
-  const handleDelete = (row) => {
-    setSimToDelete(row);
+  const handleCancel = (row) => {
+    setSimToCancel(row);
   };
 
-  const confirmDelete = async () => {
-    if (!simToDelete) return;
+  const confirmCancel = async () => {
+    if (!simToCancel) return;
     try {
-      await deleteSimMutation.mutateAsync(simToDelete.id);
+      await cancelSimMutation.mutateAsync(simToCancel.id);
     } catch {
       // error handled by mutation onError
     } finally {
-      setSimToDelete(null);
+      setSimToCancel(null);
     }
   };
 
@@ -326,21 +535,110 @@ export function SimCardsListPage() {
             onClick={() => handleEdit(row.id)}
             aria-label={t('actions.edit')}
           />
-          <IconButton
-            icon={Trash2}
-            size="sm"
-            variant="ghost"
-            onClick={() => handleDelete(row)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-900/20"
-            aria-label={t('actions.delete')}
-          />
+          {row.status !== 'cancelled' && (
+            <IconButton
+              icon={Trash2}
+              size="sm"
+              variant="ghost"
+              onClick={() => handleCancel(row)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-900/20"
+              aria-label={t('actions.cancel')}
+            />
+          )}
         </div>
       ),
     },
   ];
 
+  const activationPeriodBoundaryFields = (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Başlangıç Dönemi */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          {t('list.filters.periodStartHeading')}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <ListboxSelect
+            value={afm}
+            onChange={(v) => handleActivationRangeChange('afm', v)}
+            options={monthSelectOptions}
+            placeholder={t('list.filters.selectMonth')}
+            size="sm"
+            triggerClassName={SIM_FILTER_LISTBOX_TRIGGER}
+          />
+          <ListboxSelect
+            value={afy}
+            onChange={(v) => handleActivationRangeChange('afy', v)}
+            options={yearSelectOptions}
+            placeholder={t('list.filters.selectYear')}
+            size="sm"
+            triggerClassName={SIM_FILTER_LISTBOX_TRIGGER}
+          />
+        </div>
+      </div>
+      {/* Bitiş Dönemi */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          {t('list.filters.periodEndHeading')}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <ListboxSelect
+            value={atm}
+            onChange={(v) => handleActivationRangeChange('atm', v)}
+            options={monthSelectOptions}
+            placeholder={t('list.filters.selectMonth')}
+            size="sm"
+            triggerClassName={SIM_FILTER_LISTBOX_TRIGGER}
+          />
+          <ListboxSelect
+            value={aty}
+            onChange={(v) => handleActivationRangeChange('aty', v)}
+            options={yearSelectOptions}
+            placeholder={t('list.filters.selectYear')}
+            size="sm"
+            triggerClassName={SIM_FILTER_LISTBOX_TRIGGER}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <PageContainer maxWidth="full" className="space-y-6">
+      {/* Tabs */}
+      <div className="flex border-b border-neutral-200 dark:border-neutral-800">
+        <button
+          type="button"
+          onClick={() => handleTabChange('active')}
+          className={cn(
+            'px-6 py-3 text-sm font-medium transition-colors relative',
+            activeTab === 'active'
+              ? 'text-primary-600 dark:text-primary-400'
+              : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
+          )}
+        >
+          {t('tabs.active')}
+          {activeTab === 'active' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-400" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('cancelled')}
+          className={cn(
+            'px-6 py-3 text-sm font-medium transition-colors relative',
+            activeTab === 'cancelled'
+              ? 'text-primary-600 dark:text-primary-400'
+              : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
+          )}
+        >
+          {t('tabs.cancelled')}
+          {activeTab === 'cancelled' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-400" />
+          )}
+        </button>
+      </div>
+
       {/* Mobile Sticky Header — md:hidden */}
       <div className="md:hidden sticky top-0 z-30 -mx-4 -mt-6 px-4 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-neutral-200/60 dark:border-[#262626]">
         <div className="flex items-center justify-between h-14">
@@ -368,22 +666,29 @@ export function SimCardsListPage() {
 
       {/* Mobile Search Bar — md:hidden */}
       <div className="md:hidden">
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-          <input
-            type="text"
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder={t('list.searchPlaceholder')}
-            className="w-full h-12 pl-11 pr-4 rounded-xl border-none bg-neutral-100 dark:bg-[#1f1f1f] text-neutral-900 dark:text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm focus:ring-1 focus:ring-primary-500 transition-all"
-          />
-        </div>
+        <input
+          type="text"
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
+          placeholder={t('list.searchPlaceholder')}
+          className="w-full h-12 px-4 rounded-xl border-none bg-neutral-100 dark:bg-[#1f1f1f] text-neutral-900 dark:text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm text-center sm:text-left focus:ring-1 focus:ring-primary-500 transition-all"
+        />
       </div>
 
       {/* Mobile Filter Chips — md:hidden */}
       <div className="md:hidden flex overflow-x-auto scrollbar-hide -mx-4 px-4 gap-2">
         {[
-          { label: t('list.filters.all'), isActive: statusFilter === 'all' && operatorFilter === 'all', onClick: () => { handleFilterChange('status', 'all'); handleFilterChange('operator', 'all'); } },
+          {
+            label: t('list.filters.all'),
+            isActive:
+              statusFilter === 'all' &&
+              operatorFilter === 'all' &&
+              providerFilter === 'all' &&
+              !hasAdvancedSimFilters &&
+              !(localSearch && localSearch.trim()) &&
+              !(searchFromUrl && searchFromUrl.trim()),
+            onClick: clearAllSimListFilters,
+          },
           { label: t('list.filters.active'), isActive: statusFilter === 'active', onClick: () => { handleFilterChange('operator', 'all'); handleFilterChange('status', 'active'); } },
           { label: t('list.filters.available'), isActive: statusFilter === 'available', onClick: () => { handleFilterChange('operator', 'all'); handleFilterChange('status', 'available'); } },
           { label: t('list.filters.cancelled'), isActive: statusFilter === 'cancelled', onClick: () => { handleFilterChange('operator', 'all'); handleFilterChange('status', 'cancelled'); } },
@@ -405,6 +710,28 @@ export function SimCardsListPage() {
             {chip.label}
           </button>
         ))}
+      </div>
+
+      <div className="md:hidden -mx-4 px-4">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-center"
+          size="sm"
+          leftIcon={<Filter className="w-4 h-4" />}
+          onClick={() => setFiltersModalOpen(true)}
+          aria-label={t('list.filters.moreFilters')}
+        >
+          <span className="flex items-center gap-2">
+            {t('list.filters.moreFilters')}
+            {hasAdvancedSimFilters ? (
+              <span
+                className="shrink-0 w-2 h-2 rounded-full bg-primary-600 dark:bg-primary-400"
+                aria-hidden
+              />
+            ) : null}
+          </span>
+        </Button>
       </div>
 
       {/* Desktop PageHeader — hidden on mobile */}
@@ -520,101 +847,152 @@ export function SimCardsListPage() {
         />
       </div>
 
-      <Card className="hidden md:block p-3 border-neutral-200/60 dark:border-neutral-800/60">
-        <div className="flex flex-col lg:flex-row items-end gap-3">
-          <div className="flex-1 min-w-[200px] w-full">
-            <SearchInput
-              value={localSearch}
-              onChange={(v) => setLocalSearch(v)}
-              placeholder={t('list.searchPlaceholder')}
-              className="w-full"
-              size="sm"
-            />
-          </div>
+      {/* Desktop filter bar — primary row + collapsible advanced */}
+      <div className="hidden md:block w-full max-w-[1920px] mx-auto">
+        <div className="rounded-2xl border border-neutral-200/80 dark:border-neutral-800/90 bg-white dark:bg-[#171717] shadow-sm p-4 sm:p-5 lg:p-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-6 min-w-0">
+            <div className="flex min-w-0 flex-1 flex-col gap-4 lg:flex-row lg:items-end lg:gap-4 xl:max-w-[min(100%,52rem)]">
+              <div className="min-w-0 flex-1 w-full">
+                <SearchInput
+                  minimal
+                  value={localSearch}
+                  onChange={(v) => setLocalSearch(v ?? '')}
+                  placeholder={t('list.searchPlaceholder')}
+                  className="w-full"
+                  size="sm"
+                />
+              </div>
+              <div className="w-full shrink-0 sm:max-md:w-full lg:w-44 xl:w-48">
+                <ListboxSelect
+                  value={statusFilter}
+                  onChange={(v) => handleFilterChange('status', v)}
+                  options={[
+                    { value: 'all', label: t('list.filters.all') },
+                    { value: 'available', label: t('list.filters.available') },
+                    { value: 'active', label: t('list.filters.active') },
+                    { value: 'subscription', label: t('list.filters.subscription') },
+                    { value: 'cancelled', label: t('list.filters.cancelled') },
+                  ]}
+                  placeholder={t('list.filters.status')}
+                  size="sm"
+                  triggerClassName={SIM_FILTER_LISTBOX_TRIGGER}
+                />
+              </div>
+            </div>
 
-          <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
-            <div className="w-full sm:flex-1 md:w-40">
-              <ListboxSelect
-                value={statusFilter}
-                onChange={(v) => handleFilterChange('status', v)}
-                options={[
-                  { value: 'all', label: t('list.filters.all') },
-                  { value: 'available', label: t('list.filters.available') },
-                  { value: 'active', label: t('list.filters.active') },
-                  { value: 'subscription', label: t('list.filters.subscription') },
-                  { value: 'cancelled', label: t('list.filters.cancelled') }
-                ]}
-                placeholder={t('list.filters.status')}
-                leftIcon={<Filter className="w-4 h-4" />}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-40">
-              <ListboxSelect
-                value={operatorFilter}
-                onChange={(v) => handleFilterChange('operator', v)}
-                options={[
-                  { value: 'all', label: t('list.filters.allOperators') },
-                  { value: 'TURKCELL', label: t('operators.TURKCELL') },
-                  { value: 'VODAFONE', label: t('operators.VODAFONE') },
-                  { value: 'TURK_TELEKOM', label: t('operators.TURK_TELEKOM') },
-                ]}
-                placeholder={t('list.filters.operator')}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-40">
-              <ListboxSelect
-                value={providerFilter}
-                onChange={(v) => handleFilterChange('provider_company_id', v)}
-                options={[
-                  { value: 'all', label: t('list.filters.all') },
-                  ...(providerCompanies || []).map((p) => ({ value: p.id, label: p.name })),
-                ]}
-                placeholder={t('list.filters.provider')}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-32">
-              <ListboxSelect
-                value={yearParam || 'all'}
-                onChange={(v) => handleFilterChange('year', v)}
-                options={[
-                  { value: 'all', label: t('list.filters.all') },
-                  ...Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString()).map(y => ({ value: y, label: y }))
-                ]}
-                placeholder={t('list.filters.selectYear')}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-36">
-              <ListboxSelect
-                value={monthParam || 'all'}
-                onChange={(v) => handleFilterChange('month', v)}
-                options={[
-                  { value: 'all', label: t('list.filters.all') },
-                  ...Object.entries(t('notifications:months', { returnObjects: true })).map(([val, label]) => ({
-                    value: val,
-                    label,
-                  })),
-                ]}
-                placeholder={t('list.filters.selectMonth')}
-                size="sm"
-              />
-            </div>
-            <div className="flex items-center pb-0.5">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3 xl:shrink-0 xl:ml-auto">
+              {hasActiveSimFilters ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-neutral-600 dark:text-neutral-300"
+                  onClick={clearAllSimListFilters}
+                  leftIcon={<RotateCcw className="w-4 h-4" />}
+                >
+                  {t('list.filters.clearAll')}
+                </Button>
+              ) : null}
               <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-expanded={advancedFiltersExpanded}
+                onClick={() => setAdvancedFiltersExpanded((v) => !v)}
+                leftIcon={<Filter className="w-4 h-4" />}
+                rightIcon={
+                  <ChevronDown
+                    className={cn('w-4 h-4 transition-transform duration-200', advancedFiltersExpanded && 'rotate-180')}
+                  />
+                }
+              >
+                <span className="inline-flex items-center gap-2">
+                  {t('list.filters.advancedFilters')}
+                  {hasAdvancedSimFilters ? (
+                    <span
+                      className="h-2 w-2 rounded-full bg-primary-600 dark:bg-primary-400"
+                      aria-hidden
+                    />
+                  ) : null}
+                </span>
+              </Button>
+              <Button
+                type="button"
                 variant={quickEditMode ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => setQuickEditMode(!quickEditMode)}
                 leftIcon={<Pencil className="w-4 h-4" />}
+                className="shrink-0"
               >
                 {t('list.quickEdit')}
               </Button>
             </div>
           </div>
+
+          {advancedFiltersExpanded ? (
+            <div className="mt-5 pt-5 border-t border-neutral-200/90 dark:border-neutral-800/90">
+              <div className="grid grid-cols-1 gap-5 lg:gap-6 xl:grid-cols-12 xl:items-start">
+                <div className="xl:col-span-3 min-w-0">
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                    {t('list.filters.operator')}
+                  </p>
+                  <ListboxSelect
+                    value={operatorFilter}
+                    onChange={(v) => handleFilterChange('operator', v)}
+                    options={[
+                      { value: 'all', label: t('list.filters.allOperators') },
+                      { value: 'TURKCELL', label: t('operators.TURKCELL') },
+                      { value: 'VODAFONE', label: t('operators.VODAFONE') },
+                      { value: 'TURK_TELEKOM', label: t('operators.TURK_TELEKOM') },
+                    ]}
+                    placeholder={t('list.filters.operator')}
+                    size="sm"
+                    triggerClassName={SIM_FILTER_LISTBOX_TRIGGER}
+                  />
+                </div>
+                <div className="xl:col-span-4 min-w-0">
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                    {t('list.filters.provider')}
+                  </p>
+                  <ListboxSelect
+                    value={providerFilter}
+                    onChange={(v) => handleFilterChange('provider_company_id', v)}
+                    options={[
+                      { value: 'all', label: t('list.filters.all') },
+                      ...(providerCompanies || []).map((p) => ({ value: p.id, label: p.name })),
+                    ]}
+                    placeholder={t('list.filters.provider')}
+                    size="sm"
+                    triggerClassName={SIM_FILTER_LISTBOX_TRIGGER}
+                  />
+                </div>
+                <div className="xl:col-span-12 min-w-0">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                      {t('list.filters.activationPeriod')}
+                    </p>
+                    {hasActivationPeriodSet && (
+                      <button
+                        type="button"
+                        onClick={clearActivationPeriod}
+                        className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                      >
+                        {t('list.filters.clearPeriod')}
+                      </button>
+                    )}
+                  </div>
+                  {periodOrderError && (
+                    <p className="mb-2 text-xs text-red-600 dark:text-red-400">
+                      {t('list.filters.periodOrderError')}
+                    </p>
+                  )}
+                  {activationPeriodBoundaryFields}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
-      </Card>
+      </div>
 
       {totalCount === 0 && !isFetching ? (
         <EmptyState
@@ -780,32 +1158,96 @@ export function SimCardsListPage() {
         </>
       )}
       <Modal
-        open={!!simToDelete}
-        onClose={() => setSimToDelete(null)}
-        title={t('delete.title')}
+        open={filtersModalOpen}
+        onClose={() => setFiltersModalOpen(false)}
+        title={t('list.filters.advancedFilters')}
+        size="lg"
+        footer={
+          <div className="flex flex-col-reverse sm:flex-row gap-2 w-full">
+            {hasActiveSimFilters ? (
+              <Button
+                variant="ghost"
+                className="flex-1"
+                onClick={() => {
+                  clearAllSimListFilters();
+                  setFiltersModalOpen(false);
+                }}
+                leftIcon={<RotateCcw className="w-4 h-4" />}
+              >
+                {t('list.filters.clearAll')}
+              </Button>
+            ) : null}
+            <Button variant="primary" className="flex-1" onClick={() => setFiltersModalOpen(false)}>
+              {t('common:actions.close')}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-300">
+              {t('list.filters.provider')}
+            </p>
+            <ListboxSelect
+              value={providerFilter}
+              onChange={(v) => handleFilterChange('provider_company_id', v)}
+              options={[
+                { value: 'all', label: t('list.filters.all') },
+                ...(providerCompanies || []).map((p) => ({ value: p.id, label: p.name })),
+              ]}
+              placeholder={t('list.filters.provider')}
+              size="sm"
+              triggerClassName={SIM_FILTER_LISTBOX_TRIGGER}
+            />
+          </div>
+          <div className="rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/80 dark:bg-[#141414] p-4 sm:p-5 space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-300 mb-1">
+                {t('list.filters.activationPeriod')}
+              </p>
+              {activationPeriodSummary ? (
+                <p className="text-sm font-semibold text-primary-700 dark:text-primary-300">
+                  {activationPeriodSummary}
+                </p>
+              ) : (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {t('list.filters.activationPeriodPick')}
+                </p>
+              )}
+              <p className="mt-2 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+                {t('list.filters.activationRangeHint')}
+              </p>
+            </div>
+            {activationPeriodBoundaryFields}
+          </div>
+        </div>
+      </Modal>
+      <Modal
+        open={!!simToCancel}
+        onClose={() => setSimToCancel(null)}
+        title={t('actions.cancel')}
         size="sm"
         footer={
           <div className="flex gap-3 w-full">
             <Button
               variant="ghost"
-              onClick={() => setSimToDelete(null)}
+              onClick={() => setSimToCancel(null)}
               className="flex-1"
             >
               {t('common:actions.cancel')}
             </Button>
             <Button
               variant="danger"
-              onClick={confirmDelete}
-              loading={deleteSimMutation.isPending}
+              onClick={confirmCancel}
+              loading={cancelSimMutation.isPending}
               className="flex-1"
             >
-              {t('common:actions.delete')}
+              {t('actions.cancel')}
             </Button>
           </div>
         }
       >
-        <p>{t('delete.message', { phoneNumber: simToDelete?.phone_number })}</p>
-        <p className="mt-2 text-sm text-error-600 font-bold">{t('delete.warning')}</p>
+        <p>{t('messages.cancelConfirmation', { number: simToCancel?.phone_number })}</p>
       </Modal>
     </PageContainer>
   );

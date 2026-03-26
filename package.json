@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "deploy": "vite build && wrangler pages deploy dist",
+    "deploy:prod": "vite build && wrangler pages deploy dist --project-name=ornet-erp",
     "lint": "eslint .",
     "preview": "vite preview"
   },

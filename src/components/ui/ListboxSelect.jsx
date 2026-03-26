@@ -17,6 +17,7 @@ import { cn } from '../../lib/utils';
  * @param {string} [props.error]
  * @param {boolean} [props.disabled]
  * @param {string} [props.className]
+ * @param {string} [props.triggerClassName] - Extra classes merged onto the trigger button (e.g. fixed height in toolbars)
  */
 const sizes = {
   sm: 'h-10 md:h-8 text-base md:text-sm pl-3 pr-10',
@@ -35,6 +36,7 @@ export function ListboxSelect({
   error,
   disabled,
   className,
+  triggerClassName,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -94,7 +96,8 @@ export function ListboxSelect({
           error
             ? 'border-error-500 focus-visible:border-error-500 focus-visible:ring-error-500/20'
             : 'border-neutral-300 dark:border-[#262626] focus-visible:ring-primary-600/20',
-          disabled && 'bg-neutral-100 dark:bg-[#262626] cursor-not-allowed opacity-60'
+          disabled && 'bg-neutral-100 dark:bg-[#262626] cursor-not-allowed opacity-60',
+          triggerClassName
         )}
       >
         <span className="truncate">{displayText}</span>

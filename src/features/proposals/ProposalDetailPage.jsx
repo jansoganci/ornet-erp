@@ -5,17 +5,20 @@ import {
   FileText,
   StickyNote,
   ClipboardList,
-  Plus,
   Unlink,
   CheckCircle2,
   Download,
   Receipt,
-  MapPin,
   Copy,
 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { toast } from 'sonner';
-import { calcProposalTotals, calcTotalCosts } from '../../lib/proposalCalc';
+import {
+  calcProposalTotals,
+  calcTotalCosts,
+  resolveProposalItemLineTotal,
+  resolveProposalItemUnitPrice,
+} from '../../lib/proposalCalc';
 import { PageContainer } from '../../components/layout';
 import {
   Button,
@@ -24,8 +27,10 @@ import {
   Skeleton,
   ErrorState,
   Modal,
+  Input,
 } from '../../components/ui';
-import { formatDate, formatCurrency, workOrderStatusVariant } from '../../lib/utils';
+import { formatDate, formatCurrency, workOrderStatusVariant, sanitizeDownloadFileName } from '../../lib/utils';
+import { buildDefaultProposalPdfFilename } from './proposalPdfFilename';
 import {
   useProposal,
   useProposalItems,
@@ -78,6 +83,8 @@ export function ProposalDetailPage() {
   const [unlinkWoId, setUnlinkWoId] = useState(null);
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
   const [showCreateWOModal, setShowCreateWOModal] = useState(false);
+  const [showPdfFilenameModal, setShowPdfFilenameModal] = useState(false);
+  const [pdfFilename, setPdfFilename] = useState('');
 
   const { data: proposal, isLoading, error, refetch } = useProposal(id);
   const { data: items = [] } = useProposalItems(id);
@@ -105,9 +112,13 @@ export function ProposalDetailPage() {
   }
 
   const currency = proposal.currency ?? 'USD';
-  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(items, proposal.discount_percent);
+  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(
+    items,
+    proposal.discount_percent,
+    currency
+  );
   const discountPercent = Number(proposal.discount_percent) || 0;
-  const totalCosts = calcTotalCosts(items);
+  const totalCosts = calcTotalCosts(items, currency);
   const netProfit = grandTotal - totalCosts;
 
   const handleStatusChange = (newStatus) => {
@@ -123,14 +134,21 @@ export function ProposalDetailPage() {
     });
   };
 
-  const handleDownloadPdf = async () => {
+  const handleOpenPdfFilenameModal = () => {
+    setPdfFilename(buildDefaultProposalPdfFilename(proposal));
+    setShowPdfFilenameModal(true);
+  };
+
+  const handleConfirmPdfDownload = async () => {
+    const baseName = sanitizeDownloadFileName(pdfFilename.trim().replace(/\.pdf$/i, ''));
+    setShowPdfFilenameModal(false);
     setIsExporting(true);
     try {
       const blob = await pdf(<ProposalPdf proposal={proposal} items={items} />).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${proposal.proposal_no || 'teklif'}.pdf`;
+      link.download = `${baseName}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -155,6 +173,11 @@ export function ProposalDetailPage() {
     navigate(`/work-orders/new?${params.toString()}`);
   };
 
+  const handleCreateWorkOrderClick = () => {
+    if (proposal.site_id) setShowCreateWOModal(true);
+    else if (proposal.customer_id) setShowAddSiteModal(true);
+  };
+
   return (
     <PageContainer maxWidth="full" padding="default" className="space-y-5 pb-24">
       {/* Hero */}
@@ -165,10 +188,11 @@ export function ProposalDetailPage() {
         linkedWorkOrders={linkedWorkOrders}
         onEdit={handleEdit}
         onDelete={() => setShowDeleteConfirm(true)}
-        onDownloadPdf={handleDownloadPdf}
+        onDownloadPdf={handleOpenPdfFilenameModal}
         isExporting={isExporting}
         onFlowAction={setConfirmAction}
         onFaturalandir={() => setShowFaturalandirModal(true)}
+        onCreateWorkOrder={handleCreateWorkOrderClick}
         flowLoading={statusMutation.isPending}
       />
 
@@ -191,11 +215,7 @@ export function ProposalDetailPage() {
           ) : (
             <div className="space-y-3">
               {items.map((item, index) => {
-                const lineTotal = Number(
-                  item.line_total ??
-                    item.total_usd ??
-                    ((Number(item.quantity) * Number(item.unit_price ?? item.unit_price_usd)) || 0)
-                );
+                const lineTotal = resolveProposalItemLineTotal(item, currency);
                 return (
                   <div
                     key={item.id || index}
@@ -210,7 +230,7 @@ export function ProposalDetailPage() {
                       </p>
                       {item.quantity > 1 && (
                         <p className="text-xs text-neutral-400 mt-0.5">
-                          @ {formatCurrency(item.unit_price ?? item.unit_price_usd, currency)}
+                          @ {formatCurrency(resolveProposalItemUnitPrice(item, currency), currency)}
                         </p>
                       )}
                     </div>
@@ -268,40 +288,18 @@ export function ProposalDetailPage() {
       {/* Bağlı İş Emirleri */}
       {(proposal.status === 'accepted' || proposal.status === 'completed') && (
         <Card className="overflow-hidden">
-          <div className="bg-neutral-50 dark:bg-[#1a1a1a] px-6 py-4 border-b border-neutral-200 dark:border-[#262626] flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <ClipboardList className="w-4 h-4 text-primary-600" />
-              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
-                {t('proposals:detail.workOrders')}
-              </h3>
-              {linkedWorkOrders.length > 0 && (
-                <Badge variant="default" size="sm">
-                  {t('proposals:detail.workOrderCount', {
-                    completed: linkedWorkOrders.filter((wo) => wo.status === 'completed').length,
-                    total: linkedWorkOrders.length,
-                  })}
-                </Badge>
-              )}
-            </div>
-            {proposal.site_id ? (
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<Plus className="w-3.5 h-3.5" />}
-                onClick={() => setShowCreateWOModal(true)}
-              >
-                {t('proposals:detail.addWorkOrder')}
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<MapPin className="w-3.5 h-3.5" />}
-                disabled={!proposal.customer_id}
-                onClick={() => setShowAddSiteModal(true)}
-              >
-                {t('proposals:detail.addSiteAndWorkOrder')}
-              </Button>
+          <div className="bg-neutral-50 dark:bg-[#1a1a1a] px-6 py-4 border-b border-neutral-200 dark:border-[#262626] flex items-center gap-2">
+            <ClipboardList className="w-4 h-4 text-primary-600" />
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+              {t('proposals:detail.workOrders')}
+            </h3>
+            {linkedWorkOrders.length > 0 && (
+              <Badge variant="default" size="sm">
+                {t('proposals:detail.workOrderCount', {
+                  completed: linkedWorkOrders.filter((wo) => wo.status === 'completed').length,
+                  total: linkedWorkOrders.length,
+                })}
+              </Badge>
             )}
           </div>
           <div className="p-6">
@@ -435,7 +433,7 @@ export function ProposalDetailPage() {
               variant="outline"
               className="flex-1"
               leftIcon={<Download className="w-4 h-4" />}
-              onClick={handleDownloadPdf}
+              onClick={handleOpenPdfFilenameModal}
               loading={isExporting}
             >
               {t('proposals:detail.actions.downloadPdf')}
@@ -450,7 +448,7 @@ export function ProposalDetailPage() {
               leftIcon={<Receipt className="w-4 h-4" />}
               onClick={() => setShowFaturalandirModal(true)}
             >
-              {t('proposals:detail.actions.faturalandir')}
+              {t('proposals:detail.actions.bill')}
             </Button>
             <Button variant="outline" className="flex-1" onClick={handleEdit}>
               {t('proposals:detail.actions.edit')}
@@ -459,7 +457,7 @@ export function ProposalDetailPage() {
               variant="outline"
               className="flex-1"
               leftIcon={<Download className="w-4 h-4" />}
-              onClick={handleDownloadPdf}
+              onClick={handleOpenPdfFilenameModal}
               loading={isExporting}
             >
               {t('proposals:detail.actions.downloadPdf')}
@@ -475,7 +473,7 @@ export function ProposalDetailPage() {
               variant="outline"
               className="flex-1"
               leftIcon={<Download className="w-4 h-4" />}
-              onClick={handleDownloadPdf}
+              onClick={handleOpenPdfFilenameModal}
               loading={isExporting}
             >
               {t('proposals:detail.actions.downloadPdf')}
@@ -528,6 +526,37 @@ export function ProposalDetailPage() {
         </p>
       </Modal>
 
+      <Modal
+        open={showPdfFilenameModal}
+        onClose={() => setShowPdfFilenameModal(false)}
+        title={t('proposals:pdf.filenameModalTitle')}
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowPdfFilenameModal(false)}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button variant="primary" onClick={handleConfirmPdfDownload} loading={isExporting}>
+              {t('proposals:pdf.downloadButton')}
+            </Button>
+          </>
+        }
+      >
+        <Input
+          label={t('proposals:pdf.filenameLabel')}
+          hint={t('proposals:pdf.filenameHint')}
+          value={pdfFilename}
+          onChange={(e) => setPdfFilename(e.target.value)}
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleConfirmPdfDownload();
+            }
+          }}
+        />
+      </Modal>
+
       {/* Delete Confirm Modal */}
       <Modal
         open={showDeleteConfirm}
@@ -557,7 +586,7 @@ export function ProposalDetailPage() {
       <Modal
         open={showFaturalandirModal}
         onClose={() => setShowFaturalandirModal(false)}
-        title={t('proposals:detail.actions.faturalandir')}
+        title={t('proposals:detail.actions.bill')}
         footer={
           <Button variant="primary" onClick={() => setShowFaturalandirModal(false)}>
             {tCommon('actions.close')}

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, X, Calendar, Clock, FileText, AlertTriangle } from 'lucide-react';
-import { cn, getCurrencySymbol } from '../../lib/utils';
+import { cn } from '../../lib/utils';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { 
   Button, 
@@ -15,7 +15,7 @@ import {
   Textarea,
   FormSkeleton
 } from '../../components/ui';
-import { workOrderSchema, workOrderDefaultValues, WORK_TYPES, CURRENCIES } from './schema';
+import { workOrderSchema, workOrderDefaultValues, WORK_TYPES } from './schema';
 import { useWorkOrder, useCreateWorkOrder, useUpdateWorkOrder } from './hooks';
 import { CustomerSiteSelector } from './CustomerSiteSelector';
 import { WorkerSelector } from './WorkerSelector';
@@ -23,9 +23,28 @@ import { WorkOrderFormHero } from './components/WorkOrderFormHero';
 import { WorkOrderItemsEditor } from './components/WorkOrderItemsEditor';
 import { AccountNoWarning } from './AccountNoWarning';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
-import { useSite } from '../customerSites/hooks';
+import { useSite, useSitesByCustomer } from '../customerSites/hooks';
 import { useLinkWorkOrder } from '../proposals/hooks';
+import { resolveProposalItemUnitPrice } from '../../lib/proposalCalc';
 import { toast } from 'sonner';
+
+/** First leaf `message` in RHF FieldErrors (e.g. items[0].description). */
+function firstFormErrorMessage(err) {
+  if (err == null || typeof err !== 'object') return null;
+  if (typeof err.message === 'string' && err.message) return err.message;
+  if (Array.isArray(err)) {
+    for (const item of err) {
+      const m = firstFormErrorMessage(item);
+      if (m) return m;
+    }
+    return null;
+  }
+  for (const key of Object.keys(err)) {
+    const m = firstFormErrorMessage(err[key]);
+    if (m) return m;
+  }
+  return null;
+}
 
 export function WorkOrderFormPage() {
   const { id } = useParams();
@@ -36,6 +55,8 @@ export function WorkOrderFormPage() {
   const isEdit = !!id;
 
   const [showSiteModal, setShowSiteModal] = useState(false);
+  /** 'new-site' = always create; 'account-no' = edit current site if selected, else create for customer */
+  const [siteModalIntent, setSiteModalIntent] = useState(null);
 
   const { data: workOrder, isLoading: isWorkOrderLoading } = useWorkOrder(id);
   const createMutation = useCreateWorkOrder();
@@ -56,6 +77,8 @@ export function WorkOrderFormPage() {
     watch,
     setValue,
     setError,
+    clearErrors,
+    trigger,
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(workOrderSchema),
@@ -64,7 +87,8 @@ export function WorkOrderFormPage() {
 
   const selectedSiteId = watch('site_id');
   const workType = watch('work_type');
-  const selectedCurrency = watch('currency') ?? 'TRY';
+  /** Line-item display currency (TRY default; preserved on edit via reset). */
+  const lineCurrency = watch('currency') ?? 'TRY';
   const { data: siteData } = useSite(selectedSiteId);
 
   // When switching TO survey: clear the blank default row (if it's the only item and still empty).
@@ -86,18 +110,31 @@ export function WorkOrderFormPage() {
     } else if (prev === 'survey' && currentItems.length === 0) {
       setValue('items', [{ description: '', quantity: 1, unit: 'adet', unit_price: 0, material_id: null, cost: null }]);
     }
-  }, [workType, setValue, watch]);
+    void trigger('site_id');
+  }, [workType, setValue, watch, trigger]);
 
   // Prefill from URL params
   useEffect(() => {
     if (!isEdit) {
-      if (prefilledSiteId) setValue('site_id', prefilledSiteId);
+      if (prefilledSiteId) setValue('site_id', prefilledSiteId, { shouldValidate: false });
       if (prefilledDate) setValue('scheduled_date', prefilledDate);
       if (prefilledTime) setValue('scheduled_time', prefilledTime);
     }
   }, [isEdit, prefilledSiteId, prefilledDate, prefilledTime, setValue]);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState(prefilledCustomerId);
+  const { data: customerSites = [], isLoading: isCustomerSitesLoading } = useSitesByCustomer(selectedCustomerId);
+
+  // Auto-select the only site when a customer has exactly one location (no validation until pick/submit elsewhere).
+  useEffect(() => {
+    if (!selectedCustomerId) return;
+    if (isCustomerSitesLoading) return;
+    if (customerSites.length !== 1) return;
+    const onlyId = customerSites[0].id;
+    if (selectedSiteId === onlyId) return;
+    if (selectedSiteId && customerSites.some((s) => s.id === selectedSiteId)) return;
+    setValue('site_id', onlyId, { shouldValidate: false, shouldDirty: true });
+  }, [selectedCustomerId, customerSites, isCustomerSitesLoading, selectedSiteId, setValue]);
 
   // Populate form when editing
   useEffect(() => {
@@ -105,11 +142,12 @@ export function WorkOrderFormPage() {
     if (!workOrder) return;
     const siteId = workOrder.site_id ?? '';
     const assignedTo = Array.isArray(workOrder.assigned_to) ? workOrder.assigned_to : [];
-    const items = (workOrder.work_order_materials || []).map(wom => ({
+    const woCurrency = workOrder.currency || 'TRY';
+    const items = (workOrder.work_order_materials || []).map((wom) => ({
       description: wom.description || wom.materials?.name || '',
       quantity: parseFloat(wom.quantity) || 1,
       unit: wom.unit || 'adet',
-      unit_price: wom.unit_price ?? wom.unit_price_usd ?? 0,
+      unit_price: resolveProposalItemUnitPrice(wom, woCurrency),
       cost: wom.cost ?? wom.cost_usd ?? null,
       material_id: wom.material_id || null,
     }));
@@ -125,7 +163,6 @@ export function WorkOrderFormPage() {
       assigned_to: assignedTo,
       description: workOrder.description || '',
       notes: workOrder.notes || '',
-      amount: workOrder.amount ?? '',
       currency: workOrder.currency || 'TRY',
       items: items.length > 0 ? items : workOrderDefaultValues.items,
       materials_discount_percent: workOrder.materials_discount_percent ?? 0,
@@ -142,13 +179,6 @@ export function WorkOrderFormPage() {
   }, [prefilledCustomerId]);
 
   const onSubmit = async (data) => {
-    const hasAccountNo = siteData?.account_no != null && String(siteData.account_no).trim() !== '';
-    if (['service', 'maintenance'].includes(data.work_type) && !hasAccountNo) {
-      setError('site_id', { type: 'manual', message: t('workOrders:validation.accountNoRequired') });
-      toast.error(t('workOrders:validation.accountNoRequired'));
-      return;
-    }
-
     try {
       const cleanValue = (val) => {
         if (val === '' || val === undefined) return null;
@@ -156,10 +186,19 @@ export function WorkOrderFormPage() {
         return val;
       };
 
-      const finalSiteId = data.site_id || selectedSiteId || (isEdit && workOrder?.site_id) || '';
-      if (!finalSiteId) {
+      const rawSiteId = data.site_id || selectedSiteId || (isEdit && workOrder?.site_id) || '';
+      const finalSiteId = rawSiteId === '' ? null : rawSiteId;
+
+      if (data.work_type !== 'survey' && !finalSiteId) {
         setError('site_id', { type: 'manual', message: t('workOrders:validation.siteRequired') });
         toast.error(t('workOrders:validation.siteRequired'));
+        return;
+      }
+
+      const hasAccountNo = siteData?.account_no != null && String(siteData.account_no).trim() !== '';
+      if (['service', 'maintenance'].includes(data.work_type) && finalSiteId && !hasAccountNo) {
+        setError('site_id', { type: 'manual', message: t('workOrders:validation.accountNoRequired') });
+        toast.error(t('workOrders:validation.accountNoRequired'));
         return;
       }
 
@@ -169,6 +208,7 @@ export function WorkOrderFormPage() {
         status: data.status || 'pending',
         priority: data.priority || 'normal',
         currency: data.currency || 'TRY',
+        amount: null,
         // Optional fields - convert empty strings to null
         form_no: cleanValue(data.form_no),
         work_type_other: (data.work_type === 'other' && data.work_type_other?.trim()) ? data.work_type_other.trim() : null,
@@ -176,7 +216,6 @@ export function WorkOrderFormPage() {
         scheduled_time: cleanValue(data.scheduled_time),
         description: cleanValue(data.description),
         notes: cleanValue(data.notes),
-        amount: data.amount != null ? parseFloat(data.amount) : null,
         // assigned_to: ensure it's always an array of UUIDs (empty array is valid for UUID[])
         assigned_to: Array.isArray(data.assigned_to) && data.assigned_to.length > 0
           ? data.assigned_to.filter(uid => uid)
@@ -208,8 +247,9 @@ export function WorkOrderFormPage() {
     }
   };
 
-  const onInvalid = () => {
-    toast.error(t('workOrders:validation.fillRequired'));
+  const onInvalid = (formErrors) => {
+    const specific = firstFormErrorMessage(formErrors);
+    toast.error(specific || t('workOrders:validation.fillRequired'));
   };
 
   if (isEdit && isWorkOrderLoading) {
@@ -238,22 +278,33 @@ export function WorkOrderFormPage() {
         className="space-y-8"
         id="work-order-form"
       >
-        {/* Hidden input to register site_id with react-hook-form */}
-        <input type="hidden" {...register('site_id')} />
-
         {/* 1. Customer & Site Selection */}
         <Card className="rounded-[2rem] p-4 sm:p-6 lg:p-8 overflow-visible border-neutral-200/60 dark:border-[#262626] shadow-sm">
-          <CustomerSiteSelector
-            selectedCustomerId={selectedCustomerId}
-            selectedSiteId={selectedSiteId}
-            onCustomerChange={(cid) => {
-              setSelectedCustomerId(cid || '');
-              setValue('site_id', '', { shouldValidate: true });
-            }}
-            onSiteChange={(sid) => setValue('site_id', sid, { shouldValidate: true })}
-            onAddNewCustomer={() => navigate('/customers/new')}
-            onAddNewSite={() => setShowSiteModal(true)}
-            error={errors.site_id?.message}
+          <Controller
+            name="site_id"
+            control={control}
+            render={({ field, fieldState }) => (
+              <CustomerSiteSelector
+                selectedCustomerId={selectedCustomerId}
+                selectedSiteId={field.value ?? ''}
+                onCustomerChange={(cid) => {
+                  setSelectedCustomerId(cid || '');
+                  field.onChange('');
+                  clearErrors('site_id');
+                }}
+                onSiteChange={(sid) => {
+                  field.onChange(sid ?? '');
+                  clearErrors('site_id');
+                  if (sid) void trigger('site_id');
+                }}
+                onAddNewCustomer={() => navigate('/customers/new')}
+                onAddNewSite={() => {
+                  setSiteModalIntent('new-site');
+                  setShowSiteModal(true);
+                }}
+                error={fieldState.error?.message}
+              />
+            )}
           />
         </Card>
 
@@ -328,7 +379,11 @@ export function WorkOrderFormPage() {
             <AccountNoWarning 
               workType={workType} 
               accountNo={siteData?.account_no}
-              onAddAccountNo={() => setShowSiteModal(true)}
+              addAccountDisabled={!selectedCustomerId}
+              onAddAccountNo={() => {
+                setSiteModalIntent('account-no');
+                setShowSiteModal(true);
+              }}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -359,23 +414,7 @@ export function WorkOrderFormPage() {
               {...register('description')}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-neutral-100 dark:border-[#262626]">
-              <Select
-                label={t('common:fields.currency')}
-                options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
-                error={errors.currency?.message}
-                className="rounded-2xl"
-                {...register('currency')}
-              />
-              <Input
-                label={t('common:fields.amount')}
-                type="number"
-                step="0.01"
-                rightIcon={<span className="text-neutral-400 font-bold">{getCurrencySymbol(selectedCurrency)}</span>}
-                error={errors.amount?.message}
-                className="rounded-2xl"
-                {...register('amount')}
-              />
+            <div className="pt-4 border-t border-neutral-100 dark:border-[#262626] max-w-md">
               <Input
                 label={t('workOrders:form.fields.vatRate')}
                 type="number"
@@ -399,7 +438,7 @@ export function WorkOrderFormPage() {
             errors={errors}
             watch={watch}
             setValue={setValue}
-            currency={selectedCurrency}
+            currency={lineCurrency}
             workType={workType}
           />
         </Card>
@@ -468,9 +507,28 @@ export function WorkOrderFormPage() {
 
       <SiteFormModal
         open={showSiteModal}
-        onClose={() => setShowSiteModal(false)}
-        customerId={selectedCustomerId || siteData?.customer_id || prefilledCustomerId}
-        site={null}
+        onClose={() => {
+          setShowSiteModal(false);
+          setSiteModalIntent(null);
+        }}
+        customerId={
+          selectedCustomerId ||
+          siteData?.customer_id ||
+          prefilledCustomerId ||
+          ''
+        }
+        site={
+          siteModalIntent === 'account-no' && selectedSiteId && siteData
+            ? siteData
+            : null
+        }
+        onSuccess={(newSite) => {
+          if (newSite?.id) {
+            setValue('site_id', newSite.id, { shouldValidate: true, shouldDirty: true });
+            clearErrors('site_id');
+            void trigger('site_id');
+          }
+        }}
       />
     </PageContainer>
   );

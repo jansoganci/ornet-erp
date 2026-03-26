@@ -21,6 +21,7 @@ import {
   Banknote,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { localizeNotificationTitle } from '../../../lib/workOrderNotificationTitle';
 import { Badge } from '../../../components/ui/Badge';
 
 /**
@@ -89,7 +90,12 @@ export function NotificationItem({
   isResolved = false,
 }) {
   const { t } = useTranslation('notifications');
+  const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
+
+  const displayTitle = localizeNotificationTitle(title, entity_type, (key) =>
+    tCommon(`workType.${key}`)
+  );
 
   const config = ICON_MAP[notification_type] ?? { Icon: FileText, bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-400' };
   const { Icon, bg, text } = config;
@@ -121,7 +127,7 @@ export function NotificationItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 truncate">
-              {title}
+              {displayTitle}
             </p>
             <Badge variant="default" size="sm" className="flex-shrink-0 font-normal">
               {t('types.' + notification_type)}

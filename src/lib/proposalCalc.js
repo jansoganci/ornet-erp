@@ -2,7 +2,73 @@
  * Shared calculation engine for Proposals.
  * All amounts are VAT-exclusive (KDV hariç).
  * Used by: ProposalItemsEditor, ProposalDetailPage, ProposalPdf, ProposalLivePreview.
+ *
+ * proposal_items (and work_order_materials with the same split) store amounts in two columns:
+ * `unit_price` / `unit_price_usd` — only the column matching the parent row's `currency` is filled;
+ * the other is set to 0. Using `??` is wrong because 0 is a valid stored value.
  */
+
+/**
+ * Resolve a dual-currency field (local vs USD columns) for the parent's currency.
+ * @param {Record<string, unknown>} item
+ * @param {string} [parentCurrency]
+ * @param {string} localKey
+ * @param {string} usdKey
+ * @returns {number}
+ */
+function resolveDualCurrencyAmount(item, parentCurrency, localKey, usdKey) {
+  const cur = (parentCurrency || 'USD').toUpperCase();
+  const localVal = item[localKey];
+  const usdVal = item[usdKey];
+  if (cur === 'USD') {
+    const u = Number(usdVal);
+    if (Number.isFinite(u)) return u;
+    const l = Number(localVal);
+    return Number.isFinite(l) ? l : 0;
+  }
+  const l = Number(localVal);
+  if (Number.isFinite(l)) return l;
+  const u = Number(usdVal);
+  return Number.isFinite(u) ? u : 0;
+}
+
+/**
+ * Unit price in the proposal/work order's currency (handles `unit_price` + `unit_price_usd` split).
+ * @param {object} item — proposal line or work_order_materials row
+ * @param {string} [targetCurrency] — same as proposals.currency / work_orders.currency (e.g. TRY, USD)
+ * @returns {number}
+ */
+export function resolveProposalItemUnitPrice(item, targetCurrency = 'USD') {
+  return resolveDualCurrencyAmount(item, targetCurrency, 'unit_price', 'unit_price_usd');
+}
+
+/**
+ * Internal per-unit cost in the parent's currency (`cost` + `cost_usd` split).
+ * @param {object} item
+ * @param {string} [targetCurrency]
+ * @returns {number}
+ */
+export function resolveProposalItemCost(item, targetCurrency = 'USD') {
+  return resolveDualCurrencyAmount(item, targetCurrency, 'cost', 'cost_usd');
+}
+
+/**
+ * Line total for a stored proposal item (prefers generated `line_total` / `total_usd` when valid).
+ * @param {object} item
+ * @param {string} [proposalCurrency]
+ * @returns {number}
+ */
+export function resolveProposalItemLineTotal(item, proposalCurrency = 'USD') {
+  const cur = (proposalCurrency || 'USD').toUpperCase();
+  if (cur === 'USD') {
+    const totalUsd = Number(item.total_usd);
+    if (Number.isFinite(totalUsd)) return totalUsd;
+    return calcItemLineTotal(item.quantity, resolveProposalItemUnitPrice(item, 'USD'));
+  }
+  const lineTotal = Number(item.line_total);
+  if (Number.isFinite(lineTotal)) return lineTotal;
+  return calcItemLineTotal(item.quantity, resolveProposalItemUnitPrice(item, cur));
+}
 
 /**
  * Calculate a single line item total.
@@ -16,16 +82,14 @@ export function calcItemLineTotal(quantity, unitPrice) {
 
 /**
  * Calculate proposal totals from items and discount.
- * @param {Array<{quantity: number, unit_price?: number, unit_price_usd?: number, line_total?: number, total_usd?: number, cost?: number, cost_usd?: number}>} items
+ * @param {Array<object>} items
  * @param {number} [discountPercent=0]
+ * @param {string} [proposalCurrency] — must match proposals.currency for correct line totals from DB
  * @returns {{ subtotal: number, discountAmount: number, grandTotal: number }}
  */
-export function calcProposalTotals(items = [], discountPercent = 0) {
+export function calcProposalTotals(items = [], discountPercent = 0, proposalCurrency = 'USD') {
   const subtotal = items.reduce((sum, item) => {
-    const lineTotal = Number(item.line_total) ||
-      Number(item.total_usd) ||
-      calcItemLineTotal(item.quantity, item.unit_price ?? item.unit_price_usd);
-    return sum + lineTotal;
+    return sum + resolveProposalItemLineTotal(item, proposalCurrency);
   }, 0);
 
   const pct = Math.min(Math.max(Number(discountPercent) || 0, 0), 100);
@@ -37,14 +101,15 @@ export function calcProposalTotals(items = [], discountPercent = 0) {
 
 /**
  * Calculate total internal costs from items.
- * @param {Array<{quantity: number, cost?: number, cost_usd?: number, product_cost?: number, labor_cost?: number, shipping_cost?: number, material_cost?: number, misc_cost?: number}>} items
+ * @param {Array<object>} items
+ * @param {string} [proposalCurrency]
  * @returns {number}
  */
-export function calcTotalCosts(items = []) {
+export function calcTotalCosts(items = [], proposalCurrency = 'USD') {
   return items.reduce((sum, item) => {
     const qty = Number(item.quantity) || 0;
-    const cost = Number(item.cost ?? item.cost_usd);
-    if (!isNaN(cost) && cost > 0) return sum + cost * qty;
+    const cost = resolveProposalItemCost(item, proposalCurrency);
+    if (!Number.isNaN(cost) && cost > 0) return sum + cost * qty;
 
     const breakdown =
       (Number(item.product_cost) || 0) +

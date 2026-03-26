@@ -1,23 +1,13 @@
 import { z } from 'zod';
 import i18n from '../../lib/i18n';
-import { isoDateStringOptional, currencyEnum } from '../../lib/zodHelpers';
 
 const toNumber = (val) => (val === '' || val === undefined || val === null ? undefined : Number(val));
-
-const isoDateSchema = z.string().regex(
-  /^\d{4}-\d{2}-\d{2}$/,
-  'Geçerli bir tarih giriniz (YYYY-AA-GG)'
-);
-const timeSchema = z.string().regex(
-  /^([01]\d|2[0-3]):[0-5]\d$/,
-  'Geçerli bir saat giriniz (SS:DD)'
-);
 
 export const WORK_TYPES = ['survey', 'installation', 'service', 'maintenance', 'other'];
 export const CURRENCIES = ['TRY', 'USD'];
 
 export const workOrderSchema = z.object({
-  site_id: z.string().min(1, i18n.t('errors:validation.required')).uuid(),
+  site_id: z.union([z.literal(''), z.string().uuid()]),
   form_no: z.string().optional().or(z.literal('')),
   work_type: z.enum(WORK_TYPES),
   work_type_other: z.string().max(30).optional().or(z.literal('')),
@@ -26,7 +16,8 @@ export const workOrderSchema = z.object({
   assigned_to: z.array(z.string()).min(0).max(3, i18n.t('workOrders:validation.assignedToMax')),
   description: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
-  amount: z.preprocess((val) => (val === '' ? undefined : Number(val)), z.number({ invalid_type_error: i18n.t('errors:validation.invalidNumber') }).optional()),
+  /** Stored for API/list; not edited in form — revenue from line items or DB trigger. */
+  currency: z.enum(CURRENCIES).default('TRY'),
   items: z.array(z.object({
     description: z.string().min(1, i18n.t('errors:validation.required')),
     quantity: z.coerce.number().positive(),
@@ -56,6 +47,14 @@ export const workOrderSchema = z.object({
 }, {
   message: i18n.t('errors:validation.required'),
   path: ['items'],
+}).superRefine((data, ctx) => {
+  if (data.work_type !== 'survey' && (!data.site_id || data.site_id === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['site_id'],
+      message: i18n.t('errors:validation.required'),
+    });
+  }
 });
 
 export const workOrderDefaultValues = {
@@ -70,7 +69,6 @@ export const workOrderDefaultValues = {
   assigned_to: [],
   description: '',
   notes: '',
-  amount: '',
   currency: 'TRY',
   items: [
     { description: '', quantity: 1, unit: 'adet', unit_price: 0, material_id: null, cost: null },

@@ -1,7 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { FileText } from 'lucide-react';
 import { cn, formatCurrency } from '../../../lib/utils';
-import { calcProposalTotals } from '../../../lib/proposalCalc';
+import {
+  calcProposalTotals,
+  resolveProposalItemLineTotal,
+  resolveProposalItemUnitPrice,
+} from '../../../lib/proposalCalc';
 
 function formatPreviewDate(dateStr) {
   if (!dateStr) return '';
@@ -30,7 +34,7 @@ export function ProposalLivePreview({
     currency = 'USD',
   } = watchedValues;
 
-  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(items, discount_percent);
+  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(items, discount_percent, currency);
   const vatAmount = Math.round(grandTotal * (Number(vat_rate) || 0) / 100 * 100) / 100;
   const totalWithVat = grandTotal + vatAmount;
   const discountPct = Number(discount_percent) || 0;
@@ -152,8 +156,8 @@ export function ProposalLivePreview({
               <tbody>
                 {items.map((item, i) => {
                   const qty = Number(item.quantity) || 0;
-                  const price = Number(item.unit_price) || 0;
-                  const lineTotal = qty * price;
+                  const price = resolveProposalItemUnitPrice(item, currency);
+                  const lineTotal = resolveProposalItemLineTotal(item, currency);
                   return (
                     <tr key={i} className="border-b border-neutral-50 dark:border-neutral-800/50">
                       <td className="py-1 text-neutral-400">{i + 1}</td>

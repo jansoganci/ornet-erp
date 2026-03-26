@@ -41,7 +41,6 @@ import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { ProposalItemsEditor } from './components/ProposalItemsEditor';
 import { ProposalStepper } from './components/ProposalStepper';
 import { ProposalLivePreview } from './components/ProposalLivePreview';
-import { ServiceChips } from './components/ServiceChips';
 
 export function ProposalFormPage() {
   const { id } = useParams();
@@ -179,28 +178,6 @@ export function ProposalFormPage() {
 
   const handleNext = () => goToStep(currentStep + 1);
   const handlePrev = () => goToStep(currentStep - 1);
-
-  const handleAddServiceItems = useCallback(
-    (newItems) => {
-      newItems.forEach((row) => {
-        appendProposalItem({
-          description: row.description ?? '',
-          quantity: Number(row.quantity) > 0 ? Number(row.quantity) : 1,
-          unit: row.unit || 'adet',
-          unit_price: Number(row.unit_price) >= 0 ? Number(row.unit_price) : 0,
-          material_id: row.material_id && row.material_id !== '' ? row.material_id : null,
-          cost: null,
-          margin_percent: null,
-          product_cost: null,
-          labor_cost: null,
-          shipping_cost: null,
-          material_cost: null,
-          misc_cost: null,
-        });
-      });
-    },
-    [appendProposalItem],
-  );
 
   const onSubmit = async (data, { skipNavigate = false } = {}) => {
     try {
@@ -396,11 +373,6 @@ export function ProposalFormPage() {
               {/* ===== STEP 1: Services / Items ===== */}
               {currentStep === 1 && (
                 <>
-                  {/* Service Chips */}
-                  <Card className="p-4">
-                    <ServiceChips onAddItems={handleAddServiceItems} />
-                  </Card>
-
                   {/* Items Editor */}
                   <Card className="p-6">
                     <ProposalItemsEditor

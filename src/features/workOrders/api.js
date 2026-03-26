@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
+import { resolveProposalItemCost, resolveProposalItemUnitPrice } from '../../lib/proposalCalc';
 
 export async function fetchWorkOrders(filters = {}) {
   let query = supabase
@@ -229,6 +230,8 @@ export async function createWorkOrderFromProposal({
 
   if (error) throw error;
 
+  const rowCurrency = currency || 'TRY';
+
   if (items && items.length > 0) {
     const materialRows = items.map((item, index) => ({
       work_order_id: created.id,
@@ -236,8 +239,11 @@ export async function createWorkOrderFromProposal({
       description: item.description ?? '',
       quantity: item.quantity ?? 1,
       unit: item.unit || 'adet',
-      unit_price: item.unit_price ?? item.unit_price_usd ?? 0,
-      cost: item.cost ?? item.cost_usd ?? null,
+      unit_price: resolveProposalItemUnitPrice(item, rowCurrency),
+      cost:
+        item.cost == null && item.cost_usd == null
+          ? null
+          : resolveProposalItemCost(item, rowCurrency),
       material_id: item.material_id || null,
     }));
     const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);

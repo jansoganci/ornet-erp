@@ -21,6 +21,7 @@ import {
   Info,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { localizeNotificationTitle } from '../../../lib/workOrderNotificationTitle';
 
 // ─── Icon + color mapping per notification type ─────────────
 
@@ -72,7 +73,12 @@ export function NotificationFeedCard({
   isResolved = false,
 }) {
   const { t } = useTranslation('notifications');
+  const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
+
+  const displayTitle = localizeNotificationTitle(title, entity_type, (key) =>
+    tCommon(`workType.${key}`)
+  );
 
   const isUnread = !isResolved && notification_source === 'stored' && !resolved_at;
   const config = ICON_MAP[notification_type] ?? DEFAULT_ICON;
@@ -124,7 +130,7 @@ export function NotificationFeedCard({
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start mb-1 gap-2">
           <h3 className={cn('text-sm truncate', isUnread ? 'font-bold text-neutral-900 dark:text-neutral-50' : 'font-medium text-neutral-700 dark:text-neutral-300')}>
-            {title}
+            {displayTitle}
           </h3>
           <span className={cn(
             'text-[10px] font-medium whitespace-nowrap flex-shrink-0 uppercase tracking-wide',

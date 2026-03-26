@@ -152,7 +152,8 @@
     "hints": {
       "description": "Müşteriye iletilecek iş detayı",
       "notes": "Sadece ekibiniz görebilir, müşteriye iletilmez",
-      "materialsOptional": "Keşif iş emirleri için malzeme eklenmesi zorunlu değildir"
+      "materialsOptional": "Keşif iş emirleri için malzeme eklenmesi zorunlu değildir",
+      "addAccountNoNeedCustomer": "Önce müşteri seçin"
     },
     "success": {
       "created": "İş emri başarıyla oluşturuldu",

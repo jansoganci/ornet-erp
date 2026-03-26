@@ -1,6 +1,35 @@
 import { supabase } from '../../lib/supabase';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
+/**
+ * Inclusive activation_date range from calendar month corners (YYYY-MM-DD).
+ * @returns {{ start: string, end: string } | null}
+ */
+export function resolveActivationMonthRangeBounds(afy, afm, aty, atm) {
+  if (!afy || afy === 'all' || !afm || afm === 'all' || !aty || aty === 'all' || !atm || atm === 'all') {
+    return null;
+  }
+  const fy = Number(afy);
+  const fm = Number(afm);
+  const ty = Number(aty);
+  const tm = Number(atm);
+  if ([fy, fm, ty, tm].some((n) => Number.isNaN(n))) return null;
+  if (fm < 1 || fm > 12 || tm < 1 || tm > 12) return null;
+
+  let fromYm = `${fy}-${String(fm).padStart(2, '0')}`;
+  let toYm = `${ty}-${String(tm).padStart(2, '0')}`;
+  if (fromYm > toYm) {
+    [fromYm, toYm] = [toYm, fromYm];
+  }
+
+  const [y2, m2] = toYm.split('-').map(Number);
+  const start = `${fromYm}-01`;
+  const lastDay = new Date(y2, m2, 0).getDate();
+  const end = `${y2}-${String(m2).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  return { start, end };
+}
+
 const SIM_CARD_SELECT = `
   *,
   customers:customer_id (company_name),
@@ -22,6 +51,9 @@ export async function fetchSimCards(filters = {}) {
   }
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);
+  } else if (!filters.status || filters.status === 'all') {
+    // Default: exclude cancelled if no specific status filter is applied
+    query = query.neq('status', 'cancelled');
   }
   if (filters.operator && filters.operator !== 'all') {
     query = query.eq('operator', filters.operator);
@@ -29,20 +61,14 @@ export async function fetchSimCards(filters = {}) {
   if (filters.provider_company_id && filters.provider_company_id !== 'all') {
     query = query.eq('provider_company_id', filters.provider_company_id);
   }
-  if (filters.year && filters.year !== 'all') {
-    query = query
-      .gte('activation_date', `${filters.year}-01-01`)
-      .lte('activation_date', `${filters.year}-12-31`);
-  }
-  if (filters.month && filters.month !== 'all') {
-    const m = String(filters.month).padStart(2, '0');
-    const year = filters.year && filters.year !== 'all' ? filters.year : new Date().getFullYear();
-    const nextMonth = Number(m) === 12
-      ? `${Number(year) + 1}-01`
-      : `${year}-${String(Number(m) + 1).padStart(2, '0')}`;
-    query = query
-      .gte('activation_date', `${year}-${m}-01`)
-      .lt('activation_date', `${nextMonth}-01`);
+  const activationRange = resolveActivationMonthRangeBounds(
+    filters.activationFromYear,
+    filters.activationFromMonth,
+    filters.activationToYear,
+    filters.activationToMonth,
+  );
+  if (activationRange) {
+    query = query.gte('activation_date', activationRange.start).lte('activation_date', activationRange.end);
   }
   if (filters.dateFrom) {
     query = query.gte('created_at', filters.dateFrom);
@@ -74,6 +100,9 @@ export async function fetchSimCardsPaginated(filters = {}, page = 0, pageSize = 
   }
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);
+  } else if (!filters.status || filters.status === 'all') {
+    // Default: exclude cancelled if no specific status filter is applied
+    query = query.neq('status', 'cancelled');
   }
   if (filters.operator && filters.operator !== 'all') {
     query = query.eq('operator', filters.operator);
@@ -81,20 +110,16 @@ export async function fetchSimCardsPaginated(filters = {}, page = 0, pageSize = 
   if (filters.provider_company_id && filters.provider_company_id !== 'all') {
     query = query.eq('provider_company_id', filters.provider_company_id);
   }
-  if (filters.year && filters.year !== 'all') {
+  const activationRangePaginated = resolveActivationMonthRangeBounds(
+    filters.activationFromYear,
+    filters.activationFromMonth,
+    filters.activationToYear,
+    filters.activationToMonth,
+  );
+  if (activationRangePaginated) {
     query = query
-      .gte('activation_date', `${filters.year}-01-01`)
-      .lte('activation_date', `${filters.year}-12-31`);
-  }
-  if (filters.month && filters.month !== 'all') {
-    const m = String(filters.month).padStart(2, '0');
-    const year = filters.year && filters.year !== 'all' ? filters.year : new Date().getFullYear();
-    const nextMonth = Number(m) === 12
-      ? `${Number(year) + 1}-01`
-      : `${year}-${String(Number(m) + 1).padStart(2, '0')}`;
-    query = query
-      .gte('activation_date', `${year}-${m}-01`)
-      .lt('activation_date', `${nextMonth}-01`);
+      .gte('activation_date', activationRangePaginated.start)
+      .lte('activation_date', activationRangePaginated.end);
   }
 
   const from = page * pageSize;
@@ -146,6 +171,21 @@ export async function updateSimCard({ id, ...updates }) {
 export async function deleteSimCard(id) {
   const { error } = await supabase.rpc('soft_delete_sim_card', { sim_card_id: id });
   if (error) throw error;
+}
+
+export async function cancelSimCard(id) {
+  const { data, error } = await supabase
+    .from('sim_cards')
+    .update({
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchSimCardHistory(simCardId) {
