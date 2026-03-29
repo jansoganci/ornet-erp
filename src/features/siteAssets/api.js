@@ -14,12 +14,17 @@ export const assetKeys = {
 
 const ASSET_DETAIL_VIEW = 'site_assets_detail';
 
+/**
+ * Targeted selection for asset list views to improve performance.
+ */
+export const ASSET_LIST_SELECT = 'id, site_id, customer_id, equipment_name, quantity, installation_date, company_name, site_name, account_no, subscription_id, subscription_status';
+
 // ─── List / Filter ─────────────────────────────────────────
 
 export async function fetchAssets(filters = {}) {
   let query = supabase
     .from(ASSET_DETAIL_VIEW)
-    .select('*')
+    .select(ASSET_LIST_SELECT)
     .order('company_name', { ascending: true })
     .order('site_name', { ascending: true })
     .order('equipment_name', { ascending: true });
@@ -58,7 +63,7 @@ export async function fetchAssets(filters = {}) {
 export async function fetchAsset(id) {
   const { data, error } = await supabase
     .from(ASSET_DETAIL_VIEW)
-    .select('*')
+    .select(ASSET_LIST_SELECT + ', site_address')
     .eq('id', id)
     .single();
 

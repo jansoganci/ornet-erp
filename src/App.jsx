@@ -1,9 +1,19 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, RouterProvider, Route, Navigate } from 'react-router-dom';
+import { Spinner } from './components/ui/Spinner';
 import { Providers } from './app/providers';
 import { ProtectedRoute } from './app/ProtectedRoute';
 import { AuthRoute } from './app/AuthRoute';
 import { AppLayout } from './app/AppLayout';
 import { useRole } from './lib/roles';
+
+function PageFallback() {
+  return (
+    <div className="flex justify-center items-center py-24">
+      <Spinner size="lg" />
+    </div>
+  );
+}
 
 function RoleRoute({ children }) {
   const { canWrite, role } = useRole();
@@ -49,8 +59,12 @@ import {
   SimCardsListPage,
   SimCardFormPage,
   SimCardImportPage,
-  InvoiceAnalysisPage,
 } from './features/simCards';
+
+// Lazy-loaded heavy pages — kept out of the main bundle
+const InvoiceAnalysisPage = lazy(() =>
+  import('./features/simCards/InvoiceAnalysisPage').then((m) => ({ default: m.InvoiceAnalysisPage }))
+);
 import {
   ProposalsListPage,
   ProposalDetailPage,
@@ -148,7 +162,7 @@ const router = createBrowserRouter(
         <Route path="sim-cards" element={<RoleRoute><SimCardsListPage /></RoleRoute>} />
         <Route path="sim-cards/new" element={<RoleRoute><SimCardFormPage /></RoleRoute>} />
         <Route path="sim-cards/import" element={<RoleRoute><SimCardImportPage /></RoleRoute>} />
-        <Route path="sim-cards/invoice-analysis" element={<RoleRoute><InvoiceAnalysisPage /></RoleRoute>} />
+        <Route path="sim-cards/invoice-analysis" element={<RoleRoute><Suspense fallback={<PageFallback />}><InvoiceAnalysisPage /></Suspense></RoleRoute>} />
         <Route path="sim-cards/:id/edit" element={<RoleRoute><SimCardFormPage /></RoleRoute>} />
       </Route>
 

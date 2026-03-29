@@ -11,10 +11,15 @@ export const siteKeys = {
   byAccountNo: (accountNo) => [...siteKeys.all, 'accountNo', accountNo],
 };
 
+/**
+ * Targeted selection for site list views to improve performance.
+ */
+export const SITE_LIST_SELECT = 'id, customer_id, account_no, site_name, city, district, created_at, customers ( company_name, subscriber_title )';
+
 export async function fetchSitesByCustomer(customerId) {
   const { data, error } = await supabase
     .from('customer_sites')
-    .select('*')
+    .select('id, account_no, site_name, city, district')
     .is('deleted_at', null)
     .eq('customer_id', customerId)
     .order('site_name', { ascending: true });
@@ -27,7 +32,7 @@ export async function fetchSiteByAccountNo(accountNo) {
   if (!accountNo) return null;
   const { data, error } = await supabase
     .from('customer_sites')
-    .select('*, customers(*)')
+    .select('*, customers ( id, company_name, phone )')
     .is('deleted_at', null)
     .eq('account_no', accountNo)
     .maybeSingle();
@@ -39,7 +44,7 @@ export async function fetchSiteByAccountNo(accountNo) {
 export async function fetchSite(id) {
   const { data, error } = await supabase
     .from('customer_sites')
-    .select('*, customers(*)')
+    .select('*, customers ( id, company_name, phone )')
     .is('deleted_at', null)
     .eq('id', id)
     .single();
@@ -91,7 +96,7 @@ export async function fetchAllSites({ search = '' } = {}) {
 
   const { data, error } = await supabase
     .from('customer_sites')
-    .select('*, customers(company_name, subscriber_title)')
+    .select(SITE_LIST_SELECT)
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
   if (error) throw error;

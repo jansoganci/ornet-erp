@@ -23,6 +23,7 @@ export function useServiceRequests(filters) {
   return useQuery({
     queryKey: serviceRequestKeys.list(filters),
     queryFn: () => fetchServiceRequests(filters),
+    staleTime: 60_000, // Pool status and contact status change frequently
   });
 }
 

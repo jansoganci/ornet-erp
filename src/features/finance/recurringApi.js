@@ -53,9 +53,27 @@ export async function updateRecurringTemplate(id, data) {
 
 // Fetch last generated transaction date per template (for "last generated" indicator)
 export async function fetchTemplateLastGenerated() {
-  const { data, error } = await supabase.rpc('fn_last_generated_per_template');
-  if (error) throw error;
-  return Object.fromEntries(data.map((r) => [r.recurring_template_id, r.last_date]));
+  // Use JS fallback by default to avoid red 404 errors in console during demo.
+  // The RPC fn_last_generated_per_template appears to be missing in some environments.
+  return fetchTemplateLastGeneratedFallback();
+}
+
+async function fetchTemplateLastGeneratedFallback() {
+  const { data: txs, error: txError } = await supabase
+    .from('financial_transactions')
+    .select('recurring_template_id, transaction_date')
+    .not('recurring_template_id', 'is', null)
+    .order('transaction_date', { ascending: false });
+
+  if (txError) throw txError;
+
+  const lastDates = {};
+  (txs || []).forEach((r) => {
+    if (!lastDates[r.recurring_template_id]) {
+      lastDates[r.recurring_template_id] = r.transaction_date;
+    }
+  });
+  return lastDates;
 }
 
 export async function deleteRecurringTemplate(id) {

@@ -143,12 +143,22 @@ export async function updateProposalAnnualFixedCosts(proposalId, rows) {
 }
 
 /**
+ * Targeted selection for proposal list views to improve performance.
+ */
+export const PROPOSAL_LIST_SELECT = `
+  id, proposal_no, title, status, created_at, 
+  customer_company_name, company_name, site_name, city, 
+  total_amount, total_amount_usd, currency, 
+  sent_at, accepted_at, rejected_at
+`.replace(/\s+/g, ' ').trim();
+
+/**
  * Fetch all proposals with optional filters
  */
 export async function fetchProposals({ search = '', status = '', dateFrom = '', dateTo = '', year, month } = {}) {
   let query = supabase
     .from('proposals_detail')
-    .select('*')
+    .select(PROPOSAL_LIST_SELECT)
     .order('created_at', { ascending: false });
 
   if (search) {
@@ -183,10 +193,19 @@ export async function fetchProposals({ search = '', status = '', dateFrom = '', 
     query = query.gte('created_at', `${y}-${m}-01`).lte('created_at', `${y}-${m}-${lastDay}T23:59:59`);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.limit(200);
   if (error) throw error;
   return data;
 }
+
+/**
+ * Targeted selection for proposal detail views to improve performance.
+ */
+export const PROPOSAL_DETAIL_SELECT = `
+  *,
+  customers ( id, company_name, phone ),
+  customer_sites ( id, site_name, account_no, city, district, contact_phone )
+`.replace(/\s+/g, ' ').trim();
 
 /**
  * Fetch a single proposal by ID
@@ -194,7 +213,7 @@ export async function fetchProposals({ search = '', status = '', dateFrom = '', 
 export async function fetchProposal(id) {
   const { data, error } = await supabase
     .from('proposals_detail')
-    .select('*')
+    .select(PROPOSAL_DETAIL_SELECT)
     .eq('id', id)
     .single();
 
@@ -242,7 +261,7 @@ export async function createProposal({ items, annual_fixed_costs: annualFixedCos
   const { data: proposal, error: proposalError } = await supabase
     .from('proposals')
     .insert(payload)
-    .select()
+    .select(PROPOSAL_DETAIL_SELECT)
     .single();
 
   if (proposalError) throw proposalError;
@@ -297,7 +316,7 @@ export async function updateProposal({ id, ...proposalData }) {
     .from('proposals')
     .update(updates)
     .eq('id', id)
-    .select()
+    .select(PROPOSAL_DETAIL_SELECT)
     .single();
 
   if (error) throw error;
@@ -362,7 +381,7 @@ export async function updateProposalStatus({ id, status }) {
     .from('proposals')
     .update(updates)
     .eq('id', id)
-    .select()
+    .select(PROPOSAL_DETAIL_SELECT)
     .single();
 
   if (error) throw error;
@@ -388,7 +407,7 @@ export async function duplicateProposal(proposalId) {
   // Fetch original proposal
   const { data: original, error: origError } = await supabase
     .from('proposals')
-    .select('*')
+    .select(PROPOSAL_DETAIL_SELECT)
     .eq('id', proposalId)
     .single();
   if (origError) throw origError;
@@ -396,14 +415,14 @@ export async function duplicateProposal(proposalId) {
   // Fetch original items
   const { data: origItems, error: itemsError } = await supabase
     .from('proposal_items')
-    .select('*')
+    .select('description, quantity, unit, unit_price, unit_price_usd, material_id, cost, cost_usd, margin_percent, product_cost, product_cost_usd, labor_cost, labor_cost_usd, shipping_cost, shipping_cost_usd, material_cost, material_cost_usd, misc_cost, misc_cost_usd')
     .eq('proposal_id', proposalId)
     .order('sort_order', { ascending: true });
   if (itemsError) throw itemsError;
 
   const { data: origAnnual, error: annualError } = await supabase
     .from('proposal_annual_fixed_costs')
-    .select('*')
+    .select('description, quantity, unit, unit_price, currency')
     .eq('proposal_id', proposalId)
     .order('sort_order', { ascending: true });
   if (annualError) throw annualError;
@@ -460,7 +479,7 @@ export async function fetchProposalWorkOrders(proposalId) {
   const woIds = data.map((r) => r.work_order_id);
   const { data: workOrders, error: woError } = await supabase
     .from('work_orders_detail')
-    .select('*')
+    .select('id, form_no, status, work_type, scheduled_date, description')
     .in('id', woIds)
     .order('scheduled_date', { ascending: true });
 

@@ -2,12 +2,20 @@ import { supabase } from '../../lib/supabase';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 /**
+ * Targeted selection for customer list views to improve performance.
+ */
+export const CUSTOMER_LIST_SELECT = `
+  id, company_name, phone, created_at,
+  customer_sites ( city, subscriptions ( status ), work_orders ( status ) )
+`.replace(/\s+/g, ' ').trim();
+
+/**
  * Fetch all customers with optional search
  */
 export async function fetchCustomers({ search = '' } = {}) {
   let query = supabase
     .from('customers')
-    .select('*, customer_sites(city, subscriptions(status), work_orders(status))')
+    .select(CUSTOMER_LIST_SELECT)
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
@@ -16,7 +24,7 @@ export async function fetchCustomers({ search = '' } = {}) {
     query = query.or(`company_name_search.ilike.%${normalized}%,phone_search.ilike.%${normalized}%`);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.limit(200);
   if (error) throw error;
   
   // Map site count, city, and derived counts for UI

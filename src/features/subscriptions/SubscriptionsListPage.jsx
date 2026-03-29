@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Plus, CreditCard, Tag, TrendingUp, TrendingDown, Minus, Users, Pause, AlertTriangle, FileSpreadsheet, Receipt, Wallet, Building2, Calendar, ChevronLeft, ChevronRight, X, PauseCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
@@ -18,7 +19,8 @@ import {
 } from '../../components/ui';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { formatCurrency, formatDate, getSubscriptionListSubtotal, getSubscriptionListTotalWithVat } from '../../lib/utils';
-import { useSubscriptionsPaginated, useSubscriptionStats, useCurrentProfile } from './hooks';
+import { useSubscriptionsPaginated, useSubscriptionStats, useCurrentProfile, subscriptionKeys } from './hooks';
+import { fetchSubscription } from './api';
 import { KpiCard } from '../../components/ui';
 import { SubscriptionStatusBadge } from './components/SubscriptionStatusBadge';
 import { ComplianceAlert } from './components/ComplianceAlert';
@@ -26,6 +28,7 @@ import { SERVICE_TYPES } from './schema';
 export function SubscriptionsListPage() {
   const { t } = useTranslation(['subscriptions', 'common']);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const searchFromUrl = searchParams.get('search') || '';
@@ -95,6 +98,14 @@ export function SubscriptionsListPage() {
   const activeTrend = getTrend(stats?.active_count ?? 0, stats?.active_count_previous_month ?? 0);
 
   const handleSearch = (value) => setLocalSearch(value ?? '');
+
+  const handleRowHover = useCallback((row) => {
+    queryClient.prefetchQuery({
+      queryKey: subscriptionKeys.detail(row.id),
+      queryFn: () => fetchSubscription(row.id),
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [queryClient]);
 
   const handleFilterChange = (key, value) => {
     setSearchParams((prev) => {
@@ -739,6 +750,7 @@ export function SubscriptionsListPage() {
               columns={columns}
               data={subscriptions}
               onRowClick={(row) => navigate(`/subscriptions/${row.id}`)}
+              onRowMouseEnter={handleRowHover}
               className="border-none"
             />
             {totalCount > 0 && (

@@ -1,12 +1,17 @@
 import { supabase } from '../../lib/supabase';
 
 /**
+ * Targeted selection for static IP records to improve performance.
+ */
+export const STATIC_IP_SELECT = 'id, sim_card_id, ip_address, activated_at, cancelled_at, notes, created_at, created_by';
+
+/**
  * Fetch the currently active static IP for a SIM card (cancelled_at IS NULL)
  */
 export async function fetchActiveStaticIp(simCardId) {
   const { data, error } = await supabase
     .from('sim_static_ips')
-    .select('*')
+    .select(STATIC_IP_SELECT)
     .eq('sim_card_id', simCardId)
     .is('cancelled_at', null)
     .maybeSingle();
@@ -21,7 +26,7 @@ export async function fetchActiveStaticIp(simCardId) {
 export async function fetchStaticIpHistory(simCardId) {
   const { data, error } = await supabase
     .from('sim_static_ips')
-    .select('*')
+    .select(STATIC_IP_SELECT)
     .eq('sim_card_id', simCardId)
     .order('activated_at', { ascending: false });
 

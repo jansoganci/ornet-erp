@@ -41,6 +41,7 @@ export function useWorkOrders(filters) {
   return useQuery({
     queryKey: workOrderKeys.list(filters),
     queryFn: () => api.fetchWorkOrders(filters),
+    staleTime: 60_000, // Work order statuses change frequently
   });
 }
 
@@ -51,6 +52,7 @@ export function useWorkOrdersPaginated(filters = {}, page = 0) {
     queryKey: [...workOrderKeys.list(filters), 'paginated', page],
     queryFn: () => api.fetchWorkOrdersPaginated(filters, page, WO_PAGE_SIZE),
     placeholderData: keepPreviousData,
+    staleTime: 60_000, // Work order statuses change frequently
   });
 
   const count = query.data?.count ?? 0;

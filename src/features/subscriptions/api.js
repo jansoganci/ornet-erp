@@ -37,12 +37,24 @@ async function insertAuditLog(tableName, recordId, action, oldValues, newValues,
 }
 
 /**
+ * Narrowed selection for subscription list views to improve performance.
+ * Includes all columns used in SubscriptionsListPage, PriceRevisionPage, and Excel export.
+ */
+export const SUBSCRIPTION_LIST_SELECT = `
+  id, status, company_name, site_name, account_no, city, 
+  service_type, start_date, billing_frequency, base_price, 
+  line_fee, sim_amount, cost, vat_rate, created_at, 
+  site_id, customer_id, managed_by, official_invoice, 
+  sms_fee, static_ip_fee, notes, setup_notes
+`.replace(/\s+/g, ' ').trim();
+
+/**
  * Fetch all subscriptions with filters (uses subscriptions_detail view)
  */
 export async function fetchSubscriptions(filters = {}) {
   let query = supabase
     .from('subscriptions_detail')
-    .select('*');
+    .select(SUBSCRIPTION_LIST_SELECT);
 
   if (filters.search) {
     const normalized = normalizeForSearch(filters.search);
@@ -80,7 +92,7 @@ export async function fetchSubscriptions(filters = {}) {
 
   const { data, error } = await query
     .order('created_at', { ascending: false })
-    .limit(500); // Safety cap — prevents full-table scan on subscriptions_detail (6-table JOIN)
+    .limit(200); // Safety guard — prevents full-table scan on subscriptions_detail (6-table JOIN)
 
   if (error) throw error;
 
@@ -99,7 +111,7 @@ export async function fetchSubscriptions(filters = {}) {
 export async function fetchSubscriptionsPaginated(filters = {}, page = 0, pageSize = 50) {
   let query = supabase
     .from('subscriptions_detail')
-    .select('*', { count: 'exact' });
+    .select(SUBSCRIPTION_LIST_SELECT, { count: 'exact' });
 
   if (filters.search) {
     const normalized = normalizeForSearch(filters.search);

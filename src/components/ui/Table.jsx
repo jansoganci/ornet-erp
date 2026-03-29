@@ -8,6 +8,7 @@ export function Table({
   data = [],
   keyExtractor,
   onRowClick,
+  onRowMouseEnter,
   loading = false,
   emptyMessage,
   emptyState,
@@ -96,6 +97,7 @@ export function Table({
                 key={getKey(item, rowIndex)}
                 variant={onRowClick ? 'interactive' : 'default'}
                 onClick={onRowClick ? () => onRowClick(item) : undefined}
+                onMouseEnter={onRowMouseEnter ? () => onRowMouseEnter(item) : undefined}
                 className={cn(
                   'p-3 md:p-4',
                   typeof rowClassName === 'function' ? rowClassName(item, rowIndex) : rowClassName
@@ -178,6 +180,7 @@ export function Table({
                 <tr
                   key={getKey(item, rowIndex)}
                   onClick={onRowClick ? () => onRowClick(item) : undefined}
+                  onMouseEnter={onRowMouseEnter ? () => onRowMouseEnter(item) : undefined}
                   className={cn(
                     'transition-all duration-200',
                     onRowClick && 'cursor-pointer hover:bg-neutral-50 dark:hover:bg-[#262626]',

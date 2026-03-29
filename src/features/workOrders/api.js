@@ -2,10 +2,43 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { resolveProposalItemCost, resolveProposalItemUnitPrice } from '../../lib/proposalCalc';
 
+/** Subset of work_orders_detail for list/calendar/combobox/scoped lists (keeps UI fields used in those surfaces). */
+export const WO_LIST_SELECT = [
+  'id',
+  'site_id',
+  'form_no',
+  'work_type',
+  'status',
+  'priority',
+  'scheduled_date',
+  'scheduled_time',
+  'description',
+  'amount',
+  'currency',
+  'assigned_workers',
+  'account_no',
+  'site_name',
+  'site_address',
+  'city',
+  'district',
+  'company_name',
+].join(',');
+
+/** Full selection for work order detail view. */
+export const WO_DETAIL_SELECT = `
+  *,
+  work_order_materials (
+    *,
+    materials ( code, name, description, unit )
+  )
+`.replace(/\s+/g, ' ').trim();
+
+const WO_LIST_FETCH_LIMIT = 150;
+
 export async function fetchWorkOrders(filters = {}) {
   let query = supabase
     .from('work_orders_detail')
-    .select('*');
+    .select(WO_LIST_SELECT);
 
   if (filters.search) {
     const normalized = normalizeForSearch(filters.search);
@@ -16,8 +49,9 @@ export async function fetchWorkOrders(filters = {}) {
     query = query.eq('status', filters.status);
   }
 
-  if (filters.work_type && filters.work_type !== 'all') {
-    query = query.eq('work_type', filters.work_type);
+  const workType = filters.work_type ?? filters.type;
+  if (workType && workType !== 'all') {
+    query = query.eq('work_type', workType);
   }
 
   if (filters.priority && filters.priority !== 'all') {
@@ -34,7 +68,8 @@ export async function fetchWorkOrders(filters = {}) {
 
   const { data, error } = await query
     .order('scheduled_date', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(WO_LIST_FETCH_LIMIT);
 
   if (error) throw error;
   return data;
@@ -43,7 +78,7 @@ export async function fetchWorkOrders(filters = {}) {
 export async function fetchWorkOrdersPaginated(filters = {}, page = 0, pageSize = 50) {
   let query = supabase
     .from('work_orders_detail')
-    .select('*', { count: 'exact' });
+    .select(WO_LIST_SELECT, { count: 'exact' });
 
   if (filters.search) {
     const normalized = normalizeForSearch(filters.search);
@@ -54,8 +89,9 @@ export async function fetchWorkOrdersPaginated(filters = {}, page = 0, pageSize 
     query = query.eq('status', filters.status);
   }
 
-  if (filters.work_type && filters.work_type !== 'all') {
-    query = query.eq('work_type', filters.work_type);
+  const paginatedWorkType = filters.work_type ?? filters.type;
+  if (paginatedWorkType && paginatedWorkType !== 'all') {
+    query = query.eq('work_type', paginatedWorkType);
   }
 
   if (filters.priority && filters.priority !== 'all') {
@@ -102,7 +138,7 @@ export async function fetchWorkOrdersPaginated(filters = {}, page = 0, pageSize 
 export async function fetchWorkOrder(id) {
   const { data, error } = await supabase
     .from('work_orders_detail')
-    .select('*, work_order_materials(*, materials(code, name, description, unit))')
+    .select(WO_DETAIL_SELECT)
     .eq('id', id)
     .order('sort_order', { ascending: true, foreignTable: 'work_order_materials' })
     .single();
@@ -338,9 +374,10 @@ export async function fetchWorkOrderMaterials(workOrderId) {
 export async function fetchWorkOrdersBySite(siteId) {
   const { data, error } = await supabase
     .from('work_orders_detail')
-    .select('*')
+    .select(WO_LIST_SELECT)
     .eq('site_id', siteId)
-    .order('scheduled_date', { ascending: false });
+    .order('scheduled_date', { ascending: false })
+    .limit(WO_LIST_FETCH_LIMIT);
 
   if (error) throw error;
   return data;
@@ -349,9 +386,10 @@ export async function fetchWorkOrdersBySite(siteId) {
 export async function fetchWorkOrdersByCustomer(customerId) {
   const { data, error } = await supabase
     .from('work_orders_detail')
-    .select('*')
+    .select(WO_LIST_SELECT)
     .eq('customer_id', customerId)
-    .order('scheduled_date', { ascending: false });
+    .order('scheduled_date', { ascending: false })
+    .limit(WO_LIST_FETCH_LIMIT);
 
   if (error) throw error;
   return data;

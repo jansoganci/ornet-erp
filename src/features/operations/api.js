@@ -12,21 +12,21 @@ export const serviceRequestKeys = {
 
 // Lightweight SELECT for operations pool (list view) — only columns displayed on cards
 const POOL_SELECT = `
-  id, customer_id, site_id, request_type, description, status, contact_status, 
+  id, customer_id, site_id, work_type, description, status, contact_status, 
   priority, created_at, created_by, work_order_id,
-  customers:customer_id ( id, company_name, phone ),
-  customer_sites:site_id ( id, site_name, account_no, city, district, contact_phone ),
-  profiles:created_by ( full_name ),
-  work_orders:work_order_id ( id, form_no, status )
+  customers ( id, company_name, phone ),
+  customer_sites ( id, site_name, account_no, city, district, contact_phone ),
+  profiles!created_by ( full_name ),
+  work_orders ( id, form_no, status )
 `;
 
 // Full SELECT for detail view — includes all fields
 const REQUEST_DETAIL_SELECT = `
   *,
-  customers:customer_id ( id, company_name, phone ),
-  customer_sites:site_id ( id, site_name, account_no, city, district, contact_phone ),
-  profiles:created_by ( full_name ),
-  work_orders:work_order_id ( id, form_no, status )
+  customers ( id, company_name, phone ),
+  customer_sites ( id, site_name, account_no, city, district, contact_phone ),
+  profiles!created_by ( full_name ),
+  work_orders ( id, form_no, status )
 `;
 
 /**

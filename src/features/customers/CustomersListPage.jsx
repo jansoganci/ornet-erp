@@ -1,17 +1,22 @@
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, MapPin, Upload, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSearchInput } from '../../hooks/useSearchInput';
 import { useAllSites } from '../customerSites/hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, SearchInput, Table, EmptyState, ErrorState } from '../../components/ui';
 import { useRole } from '../../lib/roles';
+import { fetchCustomer } from './api';
+import { customerKeys } from './hooks';
 
 export function CustomersListPage() {
   const { t } = useTranslation(['customers', 'common']);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { canWrite } = useRole();
   const { search, setSearch, debouncedSearch } = useSearchInput({ debounceMs: 300 });
 
@@ -20,6 +25,15 @@ export function CustomersListPage() {
   const handleRowClick = (site) => {
     navigate(`/customers/${site.customer_id}`);
   };
+
+  const handleRowHover = useCallback((site) => {
+    if (!site.customer_id) return;
+    queryClient.prefetchQuery({
+      queryKey: customerKeys.detail(site.customer_id),
+      queryFn: () => fetchCustomer(site.customer_id),
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [queryClient]);
 
   const handleAddCustomer = () => {
     navigate('/customers/new');
@@ -198,6 +212,7 @@ export function CustomersListPage() {
           data={sites || []}
           loading={isLoading}
           onRowClick={handleRowClick}
+          onRowMouseEnter={handleRowHover}
           emptyState={
             <EmptyState
               icon={debouncedSearch ? null : MapPin}

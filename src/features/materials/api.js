@@ -12,10 +12,15 @@ export const materialKeys = {
   categories: () => [...materialKeys.all, 'categories'],
 };
 
+/**
+ * Targeted selection for material list views to improve performance.
+ */
+export const MATERIAL_LIST_SELECT = 'id, code, name, description, unit, category, is_active, created_at';
+
 export async function fetchMaterials(filters = {}) {
   let query = supabase
     .from('materials')
-    .select('*')
+    .select(MATERIAL_LIST_SELECT)
     .is('deleted_at', null)
     .order('name', { ascending: true });
 
@@ -61,7 +66,7 @@ export async function fetchMaterials(filters = {}) {
 export async function fetchActiveMaterials() {
   const { data, error } = await supabase
     .from('materials')
-    .select('*')
+    .select(MATERIAL_LIST_SELECT)
     .is('deleted_at', null)
     .eq('is_active', true)
     .order('name', { ascending: true });

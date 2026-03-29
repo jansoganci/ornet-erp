@@ -1,12 +1,17 @@
 import { supabase } from '../../lib/supabase';
 
 /**
+ * Targeted selection for payment methods to improve performance.
+ */
+export const PAYMENT_METHOD_SELECT = 'id, customer_id, method_type, bank_name, card_last4, is_default, is_active, created_at';
+
+/**
  * Fetch active payment methods for a customer
  */
 export async function fetchPaymentMethods(customerId) {
   const { data, error } = await supabase
     .from('payment_methods')
-    .select('*')
+    .select(PAYMENT_METHOD_SELECT)
     .eq('customer_id', customerId)
     .eq('is_active', true)
     .order('is_default', { ascending: false })

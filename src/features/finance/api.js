@@ -44,6 +44,7 @@ export const financeDashboardKeys = {
 export function getLastNMonths(n) {
   const periods = [];
   const d = new Date();
+  d.setDate(1); // Set to 1st to avoid month-end rollover issues (e.g. March 31 -> Feb 31 -> March 3)
   for (let i = 0; i < n; i++) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -177,10 +178,15 @@ export async function deleteTransaction(id) {
 }
 
 // expense_categories
+/**
+ * Targeted selection for expense categories to improve performance.
+ */
+export const CATEGORY_SELECT = 'id, name_tr, code, is_active, sort_order';
+
 export async function fetchCategories(filters = {}) {
   let query = supabase
     .from('expense_categories')
-    .select('*')
+    .select(CATEGORY_SELECT)
     .order('sort_order', { ascending: true })
     .order('code', { ascending: true });
 
@@ -226,10 +232,15 @@ export async function deleteExpenseCategory(id) {
 }
 
 // exchange_rates
+/**
+ * Targeted selection for exchange rates to improve performance.
+ */
+export const RATE_SELECT = 'id, currency, rate_date, buy_rate, sell_rate, effective_rate';
+
 export async function fetchRates(filters = {}) {
   let query = supabase
     .from('exchange_rates')
-    .select('*')
+    .select(RATE_SELECT)
     .order('rate_date', { ascending: false });
 
   if (filters.currency) {
@@ -270,7 +281,7 @@ export async function deleteRate(id) {
 export async function getLatestRate(currency = 'USD') {
   const { data, error } = await supabase
     .from('exchange_rates')
-    .select('*')
+    .select(RATE_SELECT)
     .eq('currency', currency)
     .order('rate_date', { ascending: false })
     .limit(1)
