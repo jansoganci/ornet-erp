@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { isToday, isYesterday, parseISO } from 'date-fns';
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Spinner, ErrorState, EmptyState } from '../../components/ui';
 import { cn } from '../../lib/utils';
-import { useActiveNotifications, useResolveNotification, useMarkAllAsResolved } from './hooks';
+import { useActiveNotifications, useResolvedNotifications, useResolveNotification, useMarkAllAsResolved } from './hooks';
 import { NotificationFeedCard } from './components/NotificationFeedCard';
 import { NotificationSidebar } from './components/NotificationSidebar';
 
@@ -91,17 +91,17 @@ function TabButton({ active, onClick, children, count }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'px-5 py-2 rounded-lg text-sm font-semibold transition-all',
+        'px-4 py-2 text-sm font-medium rounded-lg transition-colors min-h-[44px]',
         active
-          ? 'bg-blue-600 text-white shadow-sm'
-          : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+          ? 'bg-primary-600 text-white'
+          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
       )}
     >
-      {children}
+      {children}{' '}
       {count > 0 && (
         <span className={cn(
-          'ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full',
-          active ? 'bg-white/20 text-white' : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'
+          'ml-1 text-xs px-1.5 py-0.5 rounded-full',
+          active ? 'bg-white/20' : 'bg-neutral-200 dark:bg-neutral-700'
         )}>
           {count}
         </span>
@@ -117,28 +117,54 @@ export function NotificationsCenterPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(1);
+  const [accumulatedActive, setAccumulatedActive] = useState([]);
+  const [resolvedPage, setResolvedPage] = useState(1);
+  const [accumulatedResolved, setAccumulatedResolved] = useState([]);
 
-  const { data: allNotifications, isLoading, error, refetch } = useActiveNotifications(page);
+  const { data: pageData, isLoading, error, refetch } = useActiveNotifications(page);
+  const { data: resolvedPageData, isLoading: resolvedLoading, error: resolvedError, refetch: resolvedRefetch } = useResolvedNotifications(resolvedPage);
   const { mutate: resolve } = useResolveNotification();
   const markAllMutation = useMarkAllAsResolved();
 
+  // Accumulate active notifications across pages; page 1 always replaces
+  useEffect(() => {
+    if (!pageData) return;
+    setAccumulatedActive((prev) => (page === 1 ? pageData : [...prev, ...pageData]));
+  }, [pageData, page]);
+
+  // Accumulate resolved notifications across pages; page 1 always replaces
+  useEffect(() => {
+    if (!resolvedPageData) return;
+    setAccumulatedResolved((prev) => (resolvedPage === 1 ? resolvedPageData : [...prev, ...resolvedPageData]));
+  }, [resolvedPageData, resolvedPage]);
+
+  // Reset both feeds when tab changes so the user sees fresh data on return
+  useEffect(() => {
+    setPage(1);
+    setAccumulatedActive([]);
+    setResolvedPage(1);
+    setAccumulatedResolved([]);
+  }, [activeTab]);
+
+  // Show "Load Older" only when the last page was full (pageSize = 20)
+  const activeHasMore = pageData?.length === 20;
+  const resolvedHasMore = resolvedPageData?.length === 20;
+
   // Filter by tab
   const filteredNotifications = useMemo(() => {
-    if (!allNotifications) return [];
-    if (activeTab === 'all') return allNotifications;
-    return allNotifications.filter((n) => getCategory(n.notification_type) === activeTab);
-  }, [allNotifications, activeTab]);
+    if (activeTab === 'all') return accumulatedActive;
+    return accumulatedActive.filter((n) => getCategory(n.notification_type) === activeTab);
+  }, [accumulatedActive, activeTab]);
 
   // Category counts
   const counts = useMemo(() => {
-    if (!allNotifications) return { all: 0, alerts: 0, system: 0, activity: 0 };
-    const result = { all: allNotifications.length, alerts: 0, system: 0, activity: 0 };
-    for (const n of allNotifications) {
+    const result = { all: accumulatedActive.length, alerts: 0, system: 0, activity: 0 };
+    for (const n of accumulatedActive) {
       const cat = getCategory(n.notification_type);
       result[cat]++;
     }
     return result;
-  }, [allNotifications]);
+  }, [accumulatedActive]);
 
   // Date-grouped feed
   const dateGroups = useMemo(
@@ -147,20 +173,25 @@ export function NotificationsCenterPage() {
   );
 
   const handleResolve = useCallback((id) => {
-    resolve(id);
+    resolve(id, {
+      onSuccess: () => {
+        setPage(1);
+        setAccumulatedActive([]);
+      },
+    });
   }, [resolve]);
 
   const handleMarkAllRead = useCallback(() => {
     markAllMutation.mutate(undefined, {
-      onSuccess: () => toast.success(t('common:success.updated')),
+      onSuccess: () => {
+        setPage(1);
+        setAccumulatedActive([]);
+        toast.success(t('common:success.updated'));
+      },
     });
   }, [markAllMutation, t]);
 
-  const handleLoadOlder = () => {
-    setPage((p) => p + 1);
-  };
-
-  const hasStoredUnresolved = allNotifications?.some(
+  const hasStoredUnresolved = accumulatedActive.some(
     (n) => n.notification_source === 'stored' && !n.resolved_at
   );
 
@@ -195,7 +226,7 @@ export function NotificationsCenterPage() {
 
       {/* Tabs */}
       <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-[#131313] rounded-xl">
+        <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-[#171717] rounded-xl">
           <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} count={counts.all}>
             {t('notifications:tabs.all')}
           </TabButton>
@@ -208,6 +239,9 @@ export function NotificationsCenterPage() {
           <TabButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} count={counts.activity}>
             {t('notifications:tabs.activity')}
           </TabButton>
+          <TabButton active={activeTab === 'resolved'} onClick={() => setActiveTab('resolved')}>
+            {t('notifications:tabs.resolved')}
+          </TabButton>
         </div>
       </div>
 
@@ -215,56 +249,97 @@ export function NotificationsCenterPage() {
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Feed */}
         <div className="lg:col-span-8">
-          {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Spinner size="lg" />
-            </div>
-          ) : filteredNotifications.length === 0 ? (
-            <EmptyState
-              title={t('notifications:empty.title')}
-              description={t('notifications:empty.undone')}
-            />
-          ) : (
-            <div className="space-y-3">
-              {dateGroups.map((group) => (
-                <div key={group.label}>
-                  {/* Date Header */}
-                  <div className="pt-4 pb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
-                      {group.label}
-                    </span>
-                  </div>
-                  {/* Cards */}
-                  <div className="space-y-3">
-                    {group.items.map((n, idx) => (
-                      <NotificationFeedCard
-                        key={n.notification_id || `${n.notification_type}-${n.entity_id}-${idx}`}
-                        {...n}
-                        onResolve={handleResolve}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              {/* Load Older */}
-              <div className="flex justify-center pt-6 pb-2">
-                <button
-                  type="button"
-                  onClick={handleLoadOlder}
-                  className="text-sm font-bold text-neutral-500 hover:text-blue-500 transition-colors flex items-center gap-2"
-                >
-                  {t('notifications:actions.loadOlder')}
-                  <ChevronDown className="w-4 h-4" />
-                </button>
+          {activeTab === 'resolved' ? (
+            /* ── Resolved / History Feed ── */
+            resolvedLoading ? (
+              <div className="flex justify-center py-16">
+                <Spinner size="lg" />
               </div>
-            </div>
+            ) : resolvedError ? (
+              <ErrorState message={t('notifications:error.loadFailed')} onRetry={resolvedRefetch} />
+            ) : !accumulatedResolved.length ? (
+              <EmptyState
+                title={t('notifications:resolved.emptyTitle')}
+                description={t('notifications:resolved.emptyDescription')}
+              />
+            ) : (
+              <div className="space-y-3">
+                {accumulatedResolved.map((n) => (
+                  <NotificationFeedCard
+                    key={n.notification_id}
+                    {...n}
+                    isResolved={true}
+                  />
+                ))}
+                {resolvedHasMore && (
+                  <div className="flex justify-center pt-6 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setResolvedPage((p) => p + 1)}
+                      className="text-sm font-bold text-neutral-500 hover:text-primary-500 transition-colors flex items-center gap-2"
+                    >
+                      {t('notifications:actions.loadOlder')}
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          ) : (
+            /* ── Active Feed ── */
+            isLoading ? (
+              <div className="flex justify-center py-16">
+                <Spinner size="lg" />
+              </div>
+            ) : filteredNotifications.length === 0 ? (
+              <EmptyState
+                title={t('notifications:empty.title')}
+                description={t('notifications:empty.undone')}
+              />
+            ) : (
+              <div className="space-y-3">
+                {dateGroups.map((group) => (
+                  <div key={group.label}>
+                    {/* Date Header */}
+                    <div className="pt-4 pb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                        {group.label}
+                      </span>
+                    </div>
+                    {/* Cards */}
+                    <div className="space-y-3">
+                      {group.items.map((n, idx) => (
+                        <NotificationFeedCard
+                          key={n.notification_id || `${n.notification_type}-${n.entity_id}-${idx}`}
+                          {...n}
+                          onResolve={handleResolve}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Load Older */}
+                {activeHasMore && (
+                  <div className="flex justify-center pt-6 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => p + 1)}
+                      className="text-sm font-bold text-neutral-500 hover:text-primary-500 transition-colors flex items-center gap-2"
+                    >
+                      {t('notifications:actions.loadOlder')}
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
           )}
         </div>
 
         {/* Right: Sidebar */}
         <div className="lg:col-span-4">
-          <NotificationSidebar notifications={allNotifications} loading={isLoading} />
+          <NotificationSidebar notifications={accumulatedActive} loading={isLoading} />
         </div>
       </div>
 
@@ -274,7 +349,7 @@ export function NotificationsCenterPage() {
         onClick={() => navigate('/work-orders/new')}
         className={cn(
           'fixed bottom-6 right-6 h-14 w-14 rounded-full',
-          'bg-blue-600 text-white shadow-lg',
+          'bg-primary-600 text-white shadow-lg',
           'flex items-center justify-center',
           'transition-all hover:scale-110 active:scale-95',
           'z-50 group'
@@ -282,7 +357,7 @@ export function NotificationsCenterPage() {
         aria-label={t('notifications:actions.newIncident')}
       >
         <Plus className="w-6 h-6" />
-        <span className="absolute right-full mr-3 bg-white dark:bg-[#201f1f] text-neutral-900 dark:text-neutral-100 text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-neutral-200 dark:border-neutral-700 pointer-events-none">
+        <span className="absolute right-full mr-3 bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-100 text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-neutral-200 dark:border-neutral-700 pointer-events-none">
           {t('notifications:actions.newIncident')}
         </span>
       </button>

@@ -20,18 +20,19 @@ import {
 } from './api';
 import { importSubscriptionsFromRows } from './importApi';
 import {
-  fetchPaymentsBySubscription,
+  fetchSubscriptionYearSchedule,
+  fetchPendingPaymentsCount,
   recordPayment,
   revertWriteOff,
   fetchOverdueInvoices,
   fetchSubscriptionStats,
-  ensurePaymentsForYear,
 } from './paymentsApi';
 import {
   profitAndLossKeys,
   financeDashboardKeys,
   transactionKeys,
 } from '../finance/api';
+import { collectionKeys } from '../finance/collectionApi';
 import {
   fetchPaymentMethods,
   createPaymentMethod,
@@ -47,7 +48,7 @@ export const subscriptionKeys = {
   listByCustomer: (customerId) => [...subscriptionKeys.lists(), 'customer', customerId],
   details: () => [...subscriptionKeys.all, 'detail'],
   detail: (id) => [...subscriptionKeys.details(), id],
-  payments: (id) => [...subscriptionKeys.detail(id), 'payments'],
+  schedule: (id, year) => [...subscriptionKeys.detail(id), 'schedule', year],
   revisionNotes: (id) => [...subscriptionKeys.detail(id), 'revisionNotes'],
   stats: () => [...subscriptionKeys.all, 'stats'],
   overdueInvoices: () => [...subscriptionKeys.all, 'overdueInvoices'],
@@ -254,10 +255,28 @@ export function useCreateRevisionNote() {
 // Payment hooks
 // ============================================================================
 
-export function useSubscriptionPayments(subscriptionId) {
+/**
+ * Fetch the year billing schedule via get_subscription_year_schedule().
+ * Returns real rows (paid/pending/etc.) merged with projected virtual rows,
+ * all scoped to the requested calendar year.
+ */
+export function useSubscriptionYearSchedule(subscriptionId, year) {
   return useQuery({
-    queryKey: subscriptionKeys.payments(subscriptionId),
-    queryFn: () => fetchPaymentsBySubscription(subscriptionId),
+    queryKey: subscriptionKeys.schedule(subscriptionId, year),
+    queryFn: () => fetchSubscriptionYearSchedule(subscriptionId, year),
+    enabled: !!subscriptionId && !!year,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * Returns the count of real pending subscription_payments rows.
+ * Used by CancelSubscriptionModal to warn the user before cancellation.
+ */
+export function usePendingPaymentsCount(subscriptionId) {
+  return useQuery({
+    queryKey: [...subscriptionKeys.detail(subscriptionId), 'pendingCount'],
+    queryFn: () => fetchPendingPaymentsCount(subscriptionId),
     enabled: !!subscriptionId,
   });
 }
@@ -268,9 +287,10 @@ export function useRecordPayment() {
 
   return useMutation({
     mutationFn: ({ paymentId, data }) => recordPayment(paymentId, data),
-    onSuccess: (data) => {
+    onSuccess: () => {
+      // subscriptionKeys.all covers the year schedule and all related queries
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
-      queryClient.invalidateQueries({ queryKey: subscriptionKeys.payments(data.subscription_id) });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.all });
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
@@ -298,22 +318,6 @@ export function useRevertWriteOff() {
   });
 }
 
-export function useEnsurePaymentsForYear() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ subscriptionId, year }) =>
-      ensurePaymentsForYear(subscriptionId, year),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: subscriptionKeys.payments(variables.subscriptionId),
-      });
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'common.updateFailed'));
-    },
-  });
-}
 
 export function useOverdueInvoices() {
   return useQuery({

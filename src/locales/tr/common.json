@@ -101,7 +101,8 @@
   },
   "currencies": {
     "TRY": "TRY (₺)",
-    "USD": "USD ($)"
+    "USD": "USD ($)",
+    "EUR": "EUR (€)"
   },
   "deleteConfirm": "Silinsin mi?",
   "noResults": "Sonuç bulunamadı",

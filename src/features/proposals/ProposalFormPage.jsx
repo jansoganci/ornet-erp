@@ -13,6 +13,8 @@ import {
   ChevronUp,
   ArrowLeft,
   ArrowRight,
+  CalendarClock,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer, PageHeader } from '../../components/layout';
@@ -25,20 +27,24 @@ import {
   Spinner,
   FormSkeleton,
   UnsavedChangesModal,
+  Modal,
 } from '../../components/ui';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { proposalSchema, proposalDefaultValues, CURRENCIES } from './schema';
 import {
   useProposal,
   useProposalItems,
+  useProposalAnnualFixedCosts,
   useCreateProposal,
   useUpdateProposal,
   useUpdateProposalItems,
+  useUpdateProposalAnnualFixedCosts,
 } from './hooks';
 import { useCustomer } from '../customers/hooks';
 import { CustomerSiteSelector } from '../workOrders/CustomerSiteSelector';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { ProposalItemsEditor } from './components/ProposalItemsEditor';
+import { ProposalAnnualFixedCostsEditor } from './components/ProposalAnnualFixedCostsEditor';
 import { ProposalStepper } from './components/ProposalStepper';
 import { ProposalLivePreview } from './components/ProposalLivePreview';
 
@@ -52,16 +58,20 @@ export function ProposalFormPage() {
   const [showSiteModal, setShowSiteModal] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [termsOpen, setTermsOpen] = useState(false);
+  const [annualFixedOpen, setAnnualFixedOpen] = useState(true);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
 
   const { data: proposal, isLoading: isProposalLoading } = useProposal(id);
   const { data: existingItems = [], isLoading: isItemsLoading } = useProposalItems(id);
+  const { data: existingAnnualFixed = [], isLoading: isAnnualFixedLoading } = useProposalAnnualFixedCosts(id);
   const { data: selectedCustomer } = useCustomer(selectedCustomerId);
   const createMutation = useCreateProposal();
   const updateMutation = useUpdateProposal();
   const updateItemsMutation = useUpdateProposalItems();
+  const updateAnnualFixedMutation = useUpdateProposalAnnualFixedCosts();
 
   const {
     register,
@@ -83,6 +93,12 @@ export function ProposalFormPage() {
     remove: removeProposalItem,
   } = useFieldArray({ control, name: 'items' });
 
+  const {
+    fields: annualFixedFields,
+    append: appendAnnualFixed,
+    remove: removeAnnualFixed,
+  } = useFieldArray({ control, name: 'annual_fixed_costs' });
+
   const justSavedRef = useRef(false);
   const blocker = useUnsavedChanges({
     isDirty: hasInitialized && isDirty,
@@ -97,7 +113,7 @@ export function ProposalFormPage() {
   // Populate form when editing
   useEffect(() => {
     if (isEdit) {
-      if (proposal && !isProposalLoading && !isItemsLoading) {
+      if (proposal && !isProposalLoading && !isItemsLoading && !isAnnualFixedLoading) {
         const items = existingItems.length > 0
           ? existingItems.map((item) => ({
               description: item.description || '',
@@ -114,6 +130,17 @@ export function ProposalFormPage() {
               misc_cost: item.misc_cost ?? item.misc_cost_usd ?? null,
             }))
           : proposalDefaultValues.items;
+
+        const annual_fixed_costs =
+          existingAnnualFixed.length > 0
+            ? existingAnnualFixed.map((row) => ({
+                description: row.description || '',
+                quantity: row.quantity ?? 1,
+                unit: row.unit || 'adet',
+                unit_price: Number(row.unit_price) || 0,
+                currency: row.currency || 'TRY',
+              }))
+            : [];
 
         reset({
           site_id: proposal.site_id || '',
@@ -135,6 +162,7 @@ export function ProposalFormPage() {
           terms_other: proposal.terms_other || '',
           terms_attachments: proposal.terms_attachments || '',
           items,
+          annual_fixed_costs,
         });
 
         setSelectedCustomerId(proposal.customer_id ?? '');
@@ -146,7 +174,16 @@ export function ProposalFormPage() {
     } else {
       setHasInitialized(true);
     }
-  }, [isEdit, proposal, existingItems, isProposalLoading, isItemsLoading, reset]);
+  }, [
+    isEdit,
+    proposal,
+    existingItems,
+    existingAnnualFixed,
+    isProposalLoading,
+    isItemsLoading,
+    isAnnualFixedLoading,
+    reset,
+  ]);
 
   const validateStep = useCallback(async (step) => {
     if (step === 0) {
@@ -154,7 +191,7 @@ export function ProposalFormPage() {
       return valid;
     }
     if (step === 1) {
-      const valid = await trigger(['items', 'discount_percent']);
+      const valid = await trigger(['items', 'discount_percent', 'annual_fixed_costs']);
       return valid;
     }
     return true;
@@ -181,19 +218,27 @@ export function ProposalFormPage() {
 
   const onSubmit = async (data, { skipNavigate = false } = {}) => {
     try {
-      const { items, ...proposalData } = data;
+      const { items, annual_fixed_costs: annualFixedCosts, ...proposalData } = data;
       const proposalPayload = { ...proposalData, company_name: null };
 
       if (isEdit) {
         await updateMutation.mutateAsync({ id, ...proposalPayload });
         await updateItemsMutation.mutateAsync({ proposalId: id, items });
+        await updateAnnualFixedMutation.mutateAsync({
+          proposalId: id,
+          rows: annualFixedCosts ?? [],
+        });
         reset(data);
         if (!skipNavigate) {
           justSavedRef.current = true;
           navigate(`/proposals/${id}`);
         }
       } else {
-        const newProposal = await createMutation.mutateAsync({ ...proposalPayload, items });
+        const newProposal = await createMutation.mutateAsync({
+          ...proposalPayload,
+          items,
+          annual_fixed_costs: annualFixedCosts ?? [],
+        });
         reset(data);
         if (!skipNavigate) {
           justSavedRef.current = true;
@@ -210,7 +255,7 @@ export function ProposalFormPage() {
     if (formErrors.site_id) {
       toast.error(t('errors:validation.required'));
       setCurrentStep(0);
-    } else if (formErrors.items) {
+    } else if (formErrors.items || formErrors.annual_fixed_costs) {
       toast.error(t('common:validation.required'));
       setCurrentStep(1);
     }
@@ -228,7 +273,7 @@ export function ProposalFormPage() {
     return result;
   };
 
-  if (isEdit && (isProposalLoading || isItemsLoading)) {
+  if (isEdit && (isProposalLoading || isItemsLoading || isAnnualFixedLoading)) {
     return <FormSkeleton />;
   }
 
@@ -254,11 +299,7 @@ export function ProposalFormPage() {
         onSubmit={handleSubmit(onSubmit, onInvalid)}
         className="mt-4"
       >
-        {/* 12-col grid: form (7) + preview (5) — preview hidden on step 2 (review is full-width) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left column — Form */}
-          <div className={currentStep === 2 ? 'lg:col-span-12' : 'lg:col-span-7'}>
-            <div className="space-y-6">
+        <div className="space-y-6">
 
               {/* ===== STEP 0: Genel Bilgiler ===== */}
               {currentStep === 0 && (
@@ -388,6 +429,35 @@ export function ProposalFormPage() {
                     />
                   </Card>
 
+                  <Card className="p-6">
+                    <button
+                      type="button"
+                      className="flex items-center justify-between w-full text-left"
+                      onClick={() => setAnnualFixedOpen((o) => !o)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="w-5 h-5 text-primary-600 shrink-0" />
+                        <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
+                          {t('proposals:annualFixed.cardTitle')}
+                        </h3>
+                      </div>
+                      {annualFixedOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </button>
+                    {annualFixedOpen && (
+                      <div className="mt-4">
+                        <ProposalAnnualFixedCostsEditor
+                          control={control}
+                          register={register}
+                          errors={errors}
+                          watch={watch}
+                          fields={annualFixedFields}
+                          append={appendAnnualFixed}
+                          remove={removeAnnualFixed}
+                        />
+                      </div>
+                    )}
+                  </Card>
+
                   {/* Terms (collapsible) */}
                   <Card className="p-6">
                     <button
@@ -488,18 +558,6 @@ export function ProposalFormPage() {
                   </Card>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Right column — Live Preview (steps 0 & 1 only, desktop) */}
-          {currentStep < 2 && (
-            <div className="hidden lg:block lg:col-span-5">
-              <ProposalLivePreview
-                watchedValues={watchedValues}
-                customerCompanyName={selectedCustomer?.company_name ?? ''}
-              />
-            </div>
-          )}
         </div>
 
         {/* Step Navigation + Action Bar */}
@@ -528,7 +586,16 @@ export function ProposalFormPage() {
               </Button>
             )}
           </div>
-          <div className="flex gap-3 flex-1 justify-end">
+          <div className="flex gap-3 flex-1 justify-end flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowPreviewModal(true)}
+              leftIcon={<Eye className="w-4 h-4" />}
+              className="flex-1 lg:flex-none"
+            >
+              {t('proposals:form.preview.openButton')}
+            </Button>
             {currentStep < 2 && (
               <Button
                 type="button"
@@ -543,7 +610,13 @@ export function ProposalFormPage() {
             {currentStep === 2 && (
               <Button
                 type="submit"
-                loading={isSubmitting || createMutation.isPending || updateMutation.isPending || updateItemsMutation.isPending}
+                loading={
+                  isSubmitting ||
+                  createMutation.isPending ||
+                  updateMutation.isPending ||
+                  updateItemsMutation.isPending ||
+                  updateAnnualFixedMutation.isPending
+                }
                 className="flex-1 lg:flex-none"
                 leftIcon={<Save className="w-4 h-4" />}
               >
@@ -562,6 +635,18 @@ export function ProposalFormPage() {
       />
 
       <UnsavedChangesModal blocker={blocker} onSave={handleSaveAndLeave} />
+
+      <Modal
+        open={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        title={t('proposals:form.preview.title')}
+        size="xl"
+      >
+        <ProposalLivePreview
+          watchedValues={watchedValues}
+          customerCompanyName={selectedCustomer?.company_name ?? ''}
+        />
+      </Modal>
     </PageContainer>
   );
 }

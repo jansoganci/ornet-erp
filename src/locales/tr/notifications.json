@@ -9,7 +9,13 @@
     "all": "Tümü",
     "alerts": "Uyarılar",
     "system": "Sistem",
-    "activity": "Aktivite"
+    "activity": "Aktivite",
+    "resolved": "Geçmiş"
+  },
+  "resolved": {
+    "emptyTitle": "Geçmiş bildirim yok",
+    "emptyDescription": "Tamamlanan ve kapatılan bildirimler burada görünür",
+    "completedAt": "{{time}} tamamlandı"
   },
   "dateHeaders": {
     "today": "Bugün",
@@ -67,7 +73,8 @@
     "retry": "Tekrar Dene",
     "markAllRead": "Tümünü Okundu İşaretle",
     "loadOlder": "Daha eski bildirimleri yükle",
-    "newIncident": "Yeni İş Emri"
+    "newIncident": "Yeni İş Emri",
+    "completeReminder": "Tamamla"
   },
   "sidebar": {
     "health": "Bildirim Durumu",

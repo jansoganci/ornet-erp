@@ -79,6 +79,69 @@ function lineTotalForProposalItem(item) {
   return toFiniteNumber(item.quantity, 1) * toFiniteNumber(item.unit_price, 0);
 }
 
+const ANNUAL_FIXED_CURRENCIES = new Set(['TRY', 'USD', 'EUR']);
+
+function normalizeAnnualFixedCurrency(value) {
+  const c = String(value ?? 'TRY').toUpperCase();
+  return ANNUAL_FIXED_CURRENCIES.has(c) ? c : 'TRY';
+}
+
+/** Rows to persist: non-empty description after trim. */
+export function filterPersistableAnnualFixedRows(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((row) => String(row?.description ?? '').trim().length > 0);
+}
+
+function buildAnnualFixedInsertRow(proposalId, item, sortOrder) {
+  const qty = toFiniteNumber(item.quantity, 1);
+  const quantity = qty > 0 ? qty : 1;
+  const unitPrice = toFiniteNumber(item.unit_price, 0);
+  const description = String(item.description ?? '').trim() || '—';
+  const unit = String(item.unit ?? 'adet').trim() || 'adet';
+  const currency = normalizeAnnualFixedCurrency(item.currency);
+
+  return {
+    proposal_id: proposalId,
+    sort_order: sortOrder,
+    description,
+    quantity,
+    unit,
+    unit_price: unitPrice,
+    currency,
+  };
+}
+
+export async function fetchProposalAnnualFixedCosts(proposalId) {
+  const { data, error } = await supabase
+    .from('proposal_annual_fixed_costs')
+    .select('*')
+    .eq('proposal_id', proposalId)
+    .order('sort_order', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function updateProposalAnnualFixedCosts(proposalId, rows) {
+  const { error: deleteError } = await supabase
+    .from('proposal_annual_fixed_costs')
+    .delete()
+    .eq('proposal_id', proposalId);
+
+  if (deleteError) throw deleteError;
+
+  const toInsert = filterPersistableAnnualFixedRows(rows || []);
+  if (toInsert.length > 0) {
+    const payload = toInsert.map((row, index) =>
+      buildAnnualFixedInsertRow(proposalId, row, index),
+    );
+    const { error: insertError } = await supabase.from('proposal_annual_fixed_costs').insert(payload);
+    if (insertError) throw insertError;
+  }
+
+  return { success: true };
+}
+
 /**
  * Fetch all proposals with optional filters
  */
@@ -156,7 +219,7 @@ export async function fetchProposalItems(proposalId) {
 /**
  * Create a new proposal with items
  */
-export async function createProposal({ items, ...proposalData }) {
+export async function createProposal({ items, annual_fixed_costs: annualFixedCosts, ...proposalData }) {
   // Generate proposal number
   const { data: noResult, error: noError } = await supabase.rpc('generate_proposal_no');
   if (noError) throw noError;
@@ -208,6 +271,15 @@ export async function createProposal({ items, ...proposalData }) {
       .eq('id', proposal.id);
 
     if (updateError) throw updateError;
+  }
+
+  const annualRows = filterPersistableAnnualFixedRows(annualFixedCosts);
+  if (annualRows.length > 0) {
+    const annualPayload = annualRows.map((row, index) =>
+      buildAnnualFixedInsertRow(proposal.id, row, index),
+    );
+    const { error: annualError } = await supabase.from('proposal_annual_fixed_costs').insert(annualPayload);
+    if (annualError) throw annualError;
   }
 
   return proposal;
@@ -329,6 +401,13 @@ export async function duplicateProposal(proposalId) {
     .order('sort_order', { ascending: true });
   if (itemsError) throw itemsError;
 
+  const { data: origAnnual, error: annualError } = await supabase
+    .from('proposal_annual_fixed_costs')
+    .select('*')
+    .eq('proposal_id', proposalId)
+    .order('sort_order', { ascending: true });
+  if (annualError) throw annualError;
+
   // Map items to createProposal format
   const currency = original.currency || 'USD';
   const items = (origItems || []).map((item) => ({
@@ -346,6 +425,14 @@ export async function duplicateProposal(proposalId) {
     misc_cost: currency === 'USD' ? item.misc_cost_usd : item.misc_cost,
   }));
 
+  const annual_fixed_costs = (origAnnual || []).map((row) => ({
+    description: row.description,
+    quantity: row.quantity,
+    unit: row.unit || 'adet',
+    unit_price: Number(row.unit_price) || 0,
+    currency: normalizeAnnualFixedCurrency(row.currency),
+  }));
+
   // Strip fields that shouldn't be copied
   const {
     id: _id, proposal_no: _no, created_at: _ca, updated_at: _ua,
@@ -354,7 +441,7 @@ export async function duplicateProposal(proposalId) {
     ...copyData
   } = original;
 
-  return createProposal({ ...copyData, items });
+  return createProposal({ ...copyData, items, annual_fixed_costs });
 }
 
 /**

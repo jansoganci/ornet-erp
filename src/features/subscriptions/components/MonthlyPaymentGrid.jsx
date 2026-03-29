@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, X, Minus, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, X, Minus, Circle, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Card, Spinner } from '../../../components/ui';
 import { formatCurrency, cn } from '../../../lib/utils';
 import { PaymentRecordModal } from './PaymentRecordModal';
-import { useEnsurePaymentsForYear } from '../hooks';
+import { useSubscriptionYearSchedule } from '../hooks';
 
 const statusConfig = {
   paid: {
@@ -42,6 +42,15 @@ const statusConfig = {
     iconColor: 'text-warning-600 dark:text-warning-400',
     textColor: 'text-warning-700 dark:text-warning-300 line-through',
   },
+  // Virtual rows returned by get_subscription_year_schedule() for months
+  // that have no real DB row yet.  Read-only — clicking does nothing.
+  projected: {
+    bg: 'bg-transparent dark:bg-transparent',
+    border: 'border-dashed border-neutral-200 dark:border-neutral-800',
+    icon: Clock,
+    iconColor: 'text-neutral-300 dark:text-neutral-700',
+    textColor: 'text-neutral-400 dark:text-neutral-600 italic',
+  },
 };
 
 function getMonthIndex(paymentMonth) {
@@ -49,47 +58,25 @@ function getMonthIndex(paymentMonth) {
   return new Date(paymentMonth).getMonth();
 }
 
-function getPaymentYear(paymentMonth) {
-  if (!paymentMonth) return 0;
-  return new Date(paymentMonth).getFullYear();
-}
-
-export function MonthlyPaymentGrid({ subscriptionId, payments = [], subscriptionStatus, className }) {
+export function MonthlyPaymentGrid({ subscriptionId, subscriptionStatus, className }) {
   const { t } = useTranslation(['subscriptions', 'common']);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
-  const ensurePaymentsMutation = useEnsurePaymentsForYear();
-  const lastAttemptedYearRef = useRef(null);
-
-  const filteredPayments = payments.filter(
-    (p) => p.payment_month && getPaymentYear(p.payment_month) === selectedYear
-  );
-
-  useEffect(() => {
-    if (
-      !subscriptionId ||
-      subscriptionStatus === 'cancelled' ||
-      filteredPayments.length > 0 ||
-      ensurePaymentsMutation.isPending ||
-      lastAttemptedYearRef.current === selectedYear
-    ) {
-      return;
-    }
-    lastAttemptedYearRef.current = selectedYear;
-    ensurePaymentsMutation.mutate({ subscriptionId, year: selectedYear });
-  }, [selectedYear, filteredPayments.length, subscriptionId, subscriptionStatus]);
+  const { data: schedule = [], isLoading } = useSubscriptionYearSchedule(subscriptionId, selectedYear);
 
   const handleCellClick = (payment) => {
+    // Projected rows have no real DB row — clicking opens nothing.
+    // Paid rows are read-only.  Only actionable statuses open the modal.
     if (['pending', 'failed', 'write_off'].includes(payment.status)) {
       setSelectedPayment(payment);
     }
   };
 
-  const paidPayments = filteredPayments.filter((p) => p.status === 'paid');
-  const pendingPayments = filteredPayments.filter((p) => p.status === 'pending');
-  const paidTotal = paidPayments.reduce((sum, p) => sum + Number(p.total_amount || 0), 0);
-  const pendingTotal = pendingPayments.reduce((sum, p) => sum + Number(p.total_amount || 0), 0);
+  const paidRows    = schedule.filter((p) => p.status === 'paid');
+  const pendingRows = schedule.filter((p) => p.status === 'pending');
+  const paidTotal    = paidRows.reduce((sum, p) => sum + Number(p.total_amount || 0), 0);
+  const pendingTotal = pendingRows.reduce((sum, p) => sum + Number(p.total_amount || 0), 0);
 
   return (
     <Card className={cn('overflow-hidden', className)}>
@@ -119,53 +106,58 @@ export function MonthlyPaymentGrid({ subscriptionId, payments = [], subscription
           </button>
         </div>
       </div>
+
       <div className="p-4">
-        {ensurePaymentsMutation.isPending && filteredPayments.length === 0 ? (
+        {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-neutral-500 dark:text-neutral-400">
             <Spinner size="lg" />
-            <p className="text-sm">{t('subscriptions:paymentGrid.generating')}</p>
+            <p className="text-sm">{t('subscriptions:paymentGrid.loading')}</p>
+          </div>
+        ) : schedule.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-sm text-neutral-400 dark:text-neutral-500">
+            {t('subscriptions:paymentGrid.noData')}
           </div>
         ) : (
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-          {filteredPayments.map((payment) => {
-            const monthIdx = getMonthIndex(payment.payment_month);
-            const config = statusConfig[payment.status] || statusConfig.pending;
-            const Icon = config.icon;
-            const isClickable = ['pending', 'failed', 'write_off'].includes(payment.status);
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+            {schedule.map((payment) => {
+              const monthIdx  = getMonthIndex(payment.payment_month);
+              const config    = statusConfig[payment.status] ?? statusConfig.pending;
+              const Icon      = config.icon;
+              const isClickable = ['pending', 'failed', 'write_off'].includes(payment.status);
 
-            return (
-              <button
-                key={payment.id}
-                type="button"
-                onClick={() => handleCellClick(payment)}
-                disabled={!isClickable}
-                className={cn(
-                  'relative flex flex-col items-center rounded-xl border p-3 min-h-[56px] transition-all',
-                  config.bg,
-                  config.border,
-                  isClickable
-                    ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'
-                    : 'cursor-default'
-                )}
-              >
-                <span className={cn('text-xs font-bold uppercase tracking-wider', config.textColor)}>
-                  {t('common:monthsShort.' + monthIdx)}
-                </span>
-                <Icon className={cn('w-4 h-4 my-1', config.iconColor)} />
-                <span className={cn('text-[10px] font-medium', config.textColor)}>
-                  {formatCurrency(payment.total_amount)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+              return (
+                <button
+                  key={payment.id ?? String(payment.payment_month)}
+                  type="button"
+                  onClick={() => handleCellClick(payment)}
+                  disabled={!isClickable}
+                  className={cn(
+                    'relative flex flex-col items-center rounded-xl border p-3 min-h-[56px] transition-all',
+                    config.bg,
+                    config.border,
+                    isClickable
+                      ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98]'
+                      : 'cursor-default'
+                  )}
+                >
+                  <span className={cn('text-xs font-bold uppercase tracking-wider', config.textColor)}>
+                    {t('common:monthsShort.' + monthIdx)}
+                  </span>
+                  <Icon className={cn('w-4 h-4 my-1', config.iconColor)} />
+                  <span className={cn('text-[10px] font-medium', config.textColor)}>
+                    {formatCurrency(payment.total_amount)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         )}
 
         {/* Summary row */}
         <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800 grid grid-cols-2 gap-4">
           <div className="text-center">
             <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
-              {t('payment.statuses.paid')} ({paidPayments.length})
+              {t('payment.statuses.paid')} ({paidRows.length})
             </p>
             <p className="text-sm font-bold text-success-600 dark:text-success-400">
               {formatCurrency(paidTotal)}
@@ -173,7 +165,7 @@ export function MonthlyPaymentGrid({ subscriptionId, payments = [], subscription
           </div>
           <div className="text-center">
             <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
-              {t('payment.statuses.pending')} ({pendingPayments.length})
+              {t('payment.statuses.pending')} ({pendingRows.length})
             </p>
             <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400">
               {formatCurrency(pendingTotal)}

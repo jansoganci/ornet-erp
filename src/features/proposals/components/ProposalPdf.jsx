@@ -12,6 +12,8 @@ import {
   calcProposalTotals,
   resolveProposalItemLineTotal,
   resolveProposalItemUnitPrice,
+  calcAnnualFixedLineTotal,
+  sumAnnualFixedCostsByCurrency,
 } from '../../../lib/proposalCalc';
 import i18n from '../../../lib/i18n';
 
@@ -49,12 +51,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   logoWrap: {
-    width: 270,
-    height: 112,
+    width: 189,
+    height: 78,
   },
   logo: {
-    width: 270,
-    height: 112,
+    width: 189,
+    height: 78,
     objectFit: 'contain',
   },
   certWrap: {
@@ -66,32 +68,41 @@ const styles = StyleSheet.create({
     height: 50,
     objectFit: 'contain',
   },
-  headerGridWrap: {
+  headerTable: {
     width: '100%',
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d4d4d4',
     marginBottom: 10,
   },
-  headerGrid: {
+  headerTableRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 0,
-    width: '90%',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d4d4d4',
   },
-  headerGridHalf: {
-    width: '50%',
+  headerTableRowLast: {
+    flexDirection: 'row',
+  },
+  headerCell: {
+    flex: 1,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRightWidth: 1,
+    borderRightColor: '#d4d4d4',
+  },
+  headerCellLast: {
+    flex: 1,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+  },
+  headerCellLabel: {
+    fontSize: 8,
+    color: '#737373',
     marginBottom: 2,
   },
-  headerGridLabel: {
-    fontSize: 9,
-    color: '#737373',
-    marginBottom: 0,
-    lineHeight: 1.1,
-  },
-  headerGridValue: {
+  headerCellValue: {
     fontSize: 10,
     fontWeight: 600,
     color: '#1a1a1a',
-    lineHeight: 1.15,
   },
   divider: {
     borderBottomWidth: 1,
@@ -279,21 +290,20 @@ function safeNum(val, fallback = 0) {
   return Number.isNaN(n) ? fallback : n;
 }
 
-function HeaderField({ label, value }) {
-  if (!safeStr(value)) return null;
-  return (
-    <View style={styles.headerGridHalf}>
-      <Text style={styles.headerGridLabel}>{label}</Text>
-      <Text style={styles.headerGridValue}>{safeStr(value)}</Text>
-    </View>
-  );
-}
 
-export function ProposalPdf({ proposal, items }) {
+export function ProposalPdf({
+  proposal,
+  items,
+  annualFixedCosts = [],
+  logoSrc = null,
+  certSrc = null,
+}) {
   const prop = proposal || {};
   const currency = prop.currency ?? 'USD';
   const symbol = getCurrencySymbol(currency);
   const itemList = Array.isArray(items) ? items : [];
+  const annualList = Array.isArray(annualFixedCosts) ? annualFixedCosts : [];
+  const annualSubtotals = sumAnnualFixedCostsByCurrency(annualList);
   const { subtotal, discountAmount, grandTotal } = calcProposalTotals(
     itemList,
     prop.discount_percent,
@@ -302,45 +312,64 @@ export function ProposalPdf({ proposal, items }) {
   const discountPercent = safeNum(prop.discount_percent, 0);
   const proposalDate = formatTurkishDate(prop.proposal_date || prop.created_at);
 
+  const headerRows = [
+    {
+      left: safeStr(prop.customer_company_name) || safeStr(prop.company_name),
+      right: prop.survey_date ? formatTurkishDate(prop.survey_date) : '',
+      labelL: i18n.t('proposals:pdf.headerLabels.companyName'),
+      labelR: i18n.t('proposals:pdf.headerLabels.surveyDate'),
+    },
+    {
+      left: safeStr(prop.authorized_person),
+      right: proposalDate,
+      labelL: i18n.t('proposals:pdf.headerLabels.authorizedPerson'),
+      labelR: i18n.t('proposals:pdf.headerLabels.proposalDate'),
+    },
+    {
+      left: safeStr(prop.title),
+      right: prop.installation_date ? formatTurkishDate(prop.installation_date) : '',
+      labelL: i18n.t('proposals:pdf.headerLabels.title'),
+      labelR: i18n.t('proposals:pdf.headerLabels.installationDate'),
+    },
+    {
+      left: safeStr(prop.customer_representative),
+      right: prop.completion_date ? formatTurkishDate(prop.completion_date) : '',
+      labelL: i18n.t('proposals:pdf.headerLabels.customerRepresentative'),
+      labelR: i18n.t('proposals:pdf.headerLabels.completionDate'),
+    },
+  ].filter((r) => r.left || r.right);
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Logo (top-left) and Certifications (top-right) */}
         <View style={styles.topRow}>
           <View style={styles.logoWrap}>
-            <Image src="/ornet.logo.png" style={styles.logo} />
+            {logoSrc ? <Image src={logoSrc} style={styles.logo} /> : null}
           </View>
           <View style={styles.certWrap}>
-            <Image src="/falan.png" style={styles.cert} />
+            {certSrc ? <Image src={certSrc} style={styles.cert} /> : null}
           </View>
         </View>
 
-        {/* Header grid: 8 fields (centered) */}
-        <View style={styles.headerGridWrap}>
-          <View style={styles.headerGrid}>
-            <HeaderField
-              label={i18n.t('proposals:pdf.headerLabels.companyName')}
-              value={safeStr(prop.customer_company_name) || safeStr(prop.company_name)}
-            />
-            <HeaderField label={i18n.t('proposals:pdf.headerLabels.surveyDate')} value={prop.survey_date ? formatTurkishDate(prop.survey_date) : ''} />
-            <HeaderField label={i18n.t('proposals:pdf.headerLabels.authorizedPerson')} value={prop.authorized_person} />
-            <HeaderField label={i18n.t('proposals:pdf.headerLabels.proposalDate')} value={proposalDate} />
-            <HeaderField label={i18n.t('proposals:pdf.headerLabels.title')} value={prop.title} />
-            <HeaderField label={i18n.t('proposals:pdf.headerLabels.installationDate')} value={prop.installation_date ? formatTurkishDate(prop.installation_date) : ''} />
-            <HeaderField label={i18n.t('proposals:pdf.headerLabels.customerRepresentative')} value={prop.customer_representative} />
-            <HeaderField label={i18n.t('proposals:pdf.headerLabels.completionDate')} value={prop.completion_date ? formatTurkishDate(prop.completion_date) : ''} />
-          </View>
-        </View>
-
-        {/* Customer / site (optional) */}
-        {(safeStr(prop.customer_company_name) || safeStr(prop.site_name)) && (
-          <View style={{ marginBottom: 8 }}>
-            {safeStr(prop.customer_company_name) && (
-              <Text style={{ fontSize: 11, fontWeight: 600, color: '#404040' }}>{safeStr(prop.customer_company_name)}</Text>
-            )}
-            {safeStr(prop.site_name) && (
-              <Text style={{ fontSize: 10, color: '#737373', marginTop: 2 }}>{safeStr(prop.site_name)}</Text>
-            )}
+        {/* Header table: 4 rows × 2 columns */}
+        {headerRows.length > 0 && (
+          <View style={styles.headerTable}>
+            {headerRows.map((r, i) => {
+              const isLast = i === headerRows.length - 1;
+              return (
+                <View key={i} style={isLast ? styles.headerTableRowLast : styles.headerTableRow}>
+                  <View style={styles.headerCell}>
+                    <Text style={styles.headerCellLabel}>{r.labelL}</Text>
+                    <Text style={styles.headerCellValue}>{r.left}</Text>
+                  </View>
+                  <View style={styles.headerCellLast}>
+                    <Text style={styles.headerCellLabel}>{r.labelR}</Text>
+                    <Text style={styles.headerCellValue}>{r.right}</Text>
+                  </View>
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -412,6 +441,57 @@ export function ProposalPdf({ proposal, items }) {
             </View>
           </View>
         </View>
+
+        {/* Annual fixed costs (informational) */}
+        {annualList.length > 0 && (
+          <View>
+            <View style={styles.divider} />
+            <Text style={styles.sectionTitle}>
+              {i18n.t('proposals:pdf.annualFixedTitle')}
+            </Text>
+            <View style={styles.table}>
+              <View style={styles.tableHeader}>
+                <Text style={[styles.colSira, styles.headerText]}>{i18n.t('proposals:items.sequence')}</Text>
+                <Text style={[styles.colDescription, styles.headerText]}>
+                  {i18n.t('proposals:annualFixed.description')}
+                </Text>
+                <Text style={[styles.colQty, styles.headerText]}>{i18n.t('proposals:items.quantity')}</Text>
+                <Text style={[styles.colUnit, styles.headerText]}>{i18n.t('proposals:items.unit')}</Text>
+                <Text style={[styles.colUnitPrice, styles.headerText]}>{i18n.t('proposals:items.unitPrice')}</Text>
+                <Text style={[styles.colTotal, styles.headerText]}>{i18n.t('proposals:items.total')}</Text>
+              </View>
+              {annualList.map((row, index) => {
+                const rowCur = (row.currency || 'TRY').toUpperCase();
+                const lineTotal = calcAnnualFixedLineTotal(row.quantity, row.unit_price);
+                return (
+                  <View key={row.id || index} style={styles.tableRow}>
+                    <Text style={styles.colSira}>{index + 1}</Text>
+                    <Text style={styles.colDescription}>{safeStr(row.description)}</Text>
+                    <Text style={styles.colQty}>{safeNum(row.quantity)}</Text>
+                    <Text style={styles.colUnit}>{safeStr(row.unit) || 'adet'}</Text>
+                    <Text style={styles.colUnitPrice}>
+                      {formatByCurrency(safeNum(row.unit_price, 0), rowCur)}
+                    </Text>
+                    <Text style={styles.colTotal}>{formatByCurrency(lineTotal, rowCur)}</Text>
+                  </View>
+                );
+              })}
+              <View style={styles.totalsBlock}>
+                {Object.entries(annualSubtotals).map(([cur, sum]) => (
+                  <View key={cur} style={styles.totalLine}>
+                    <Text style={styles.totalLineLabel}>
+                      {i18n.t('proposals:pdf.annualFixedSubtotal', { currency: cur })}
+                    </Text>
+                    <Text style={styles.totalLineValue}>{formatByCurrency(sum, cur)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+            <Text style={[styles.termsBody, { marginTop: 8 }]}>
+              {i18n.t('proposals:pdf.annualFixedDisclaimer')}
+            </Text>
+          </View>
+        )}
 
         {/* Terms sections */}
         {(safeStr(prop.terms_engineering) || safeStr(prop.terms_pricing) || safeStr(prop.terms_warranty) || safeStr(prop.terms_other) || safeStr(prop.terms_attachments)) && (

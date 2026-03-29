@@ -31,6 +31,7 @@ export function useNotificationBadge() {
     queryFn: fetchBadgeCount,
     enabled: isSupabaseConfigured,
     refetchInterval: 60000,
+    staleTime: 60 * 1000, // 1 minute — realtime data needs fresher cache
   });
 }
 
@@ -39,6 +40,7 @@ export function useActiveNotifications(page = 1, filters = {}) {
     queryKey: [...notificationKeys.list(page), filters],
     queryFn: () => fetchActiveNotifications(page, 20, filters),
     enabled: isSupabaseConfigured,
+    staleTime: 60 * 1000, // 1 minute — realtime data needs fresher cache
   });
 }
 
@@ -47,6 +49,7 @@ export function useResolvedNotifications(page = 1, filters = {}) {
     queryKey: [...notificationKeys.resolved(page), filters],
     queryFn: () => fetchResolvedNotifications(page, 20, filters),
     enabled: isSupabaseConfigured,
+    staleTime: 60 * 1000, // 1 minute — realtime data needs fresher cache
   });
 }
 
@@ -124,6 +127,7 @@ export function useReminders() {
     queryKey: notificationKeys.reminders(),
     queryFn: fetchReminders,
     enabled: isSupabaseConfigured,
+    staleTime: 60 * 1000, // 1 minute — realtime data needs fresher cache
   });
 }
 

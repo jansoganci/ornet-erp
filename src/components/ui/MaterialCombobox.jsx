@@ -176,7 +176,7 @@ export function MaterialCombobox({
       )}
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#171717] border border-neutral-200 dark:border-[#262626] rounded-lg shadow-xl max-h-60 flex flex-col overflow-hidden">
+        <div className="absolute z-50 left-0 top-full mt-1 min-w-[320px] w-max max-w-[min(90vw,40rem)] bg-white dark:bg-[#171717] border border-neutral-200 dark:border-[#262626] rounded-lg shadow-xl max-h-60 flex flex-col overflow-hidden">
           <div className="overflow-y-auto flex-1 py-1">
             {isLoading ? (
               <div className="p-3 flex justify-center">

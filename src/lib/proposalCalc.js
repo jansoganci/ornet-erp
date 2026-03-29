@@ -1,7 +1,8 @@
 /**
  * Shared calculation engine for Proposals.
  * All amounts are VAT-exclusive (KDV hariç).
- * Used by: ProposalItemsEditor, ProposalDetailPage, ProposalPdf, ProposalLivePreview.
+ * Used by: ProposalItemsEditor, ProposalAnnualFixedCostsEditor, ProposalDetailPage,
+ * ProposalPdf, ProposalLivePreview.
  *
  * proposal_items (and work_order_materials with the same split) store amounts in two columns:
  * `unit_price` / `unit_price_usd` — only the column matching the parent row's `currency` is filled;
@@ -119,4 +120,33 @@ export function calcTotalCosts(items = [], proposalCurrency = 'USD') {
       (Number(item.misc_cost) || 0);
     return sum + breakdown * qty;
   }, 0);
+}
+
+/** Annual fixed-cost line (informational; per-row currency). */
+export function calcAnnualFixedLineTotal(quantity, unitPrice) {
+  return calcItemLineTotal(quantity, unitPrice);
+}
+
+const ANNUAL_FIXED_CURRENCY_ORDER = ['TRY', 'USD', 'EUR'];
+
+/**
+ * Sum annual fixed rows by currency (non-zero totals only).
+ * @param {Array<{ quantity?: unknown, unit_price?: unknown, currency?: string }>} rows
+ * @returns {Record<string, number>}
+ */
+export function sumAnnualFixedCostsByCurrency(rows = []) {
+  const sums = {};
+  for (const row of rows) {
+    const cur = (row.currency || 'TRY').toUpperCase();
+    const line = calcAnnualFixedLineTotal(row.quantity, row.unit_price);
+    if (!Number.isFinite(line) || line === 0) continue;
+    sums[cur] = (sums[cur] || 0) + line;
+  }
+  const ordered = ANNUAL_FIXED_CURRENCY_ORDER.filter(
+    (c) => sums[c] != null && sums[c] !== 0,
+  ).map((c) => [c, sums[c]]);
+  const extras = Object.entries(sums).filter(
+    ([c, v]) => !ANNUAL_FIXED_CURRENCY_ORDER.includes(c) && v != null && v !== 0,
+  );
+  return Object.fromEntries([...ordered, ...extras]);
 }

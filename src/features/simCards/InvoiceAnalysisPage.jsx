@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileSearch, UploadCloud, RefreshCw, AlertTriangle, FileText, DollarSign, CheckCircle2, AlertCircle, TrendingUp, Activity } from 'lucide-react';
+import { FileSearch, UploadCloud, RefreshCw, AlertTriangle, AlertCircle, TrendingUp, TrendingDown, Smartphone, Receipt, CheckCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Card, Spinner, ErrorState, KpiCard } from '../../components/ui';
 import { parseTurkcellPdf } from './utils/parseTurkcellPdf';
@@ -79,10 +79,8 @@ export function InvoiceAnalysisPage() {
     }
   };
 
-  // Derive invoice period from filename (e.g. "TURKCELL GPRS HATLAR MART 26.pdf" → "MART 26")
-  const periodLabel = invoiceFileName
-    ? invoiceFileName.replace(/\.pdf$/i, '').trim()
-    : '';
+  // Derive invoice period from the PDF's own Fatura Tarihi field
+  const periodLabel = parseResult?.invoiceDate ?? '';
 
   return (
     <PageContainer maxWidth="full">
@@ -178,6 +176,42 @@ export function InvoiceAnalysisPage() {
           />
 
           <div className="mt-6">
+            {/* Invoice header metadata */}
+            {(parseResult.invoiceNo || parseResult.invoiceDate || parseResult.paymentDate) && (
+              <div className="mb-4 flex flex-wrap gap-x-6 gap-y-1 px-4 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700 text-sm text-neutral-600 dark:text-neutral-400">
+                {parseResult.invoiceNo && (
+                  <span>
+                    <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('invoice.no')}: </span>
+                    {parseResult.invoiceNo}
+                  </span>
+                )}
+                {parseResult.invoiceDate && (
+                  <span>
+                    <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('invoice.date')}: </span>
+                    {parseResult.invoiceDate}
+                  </span>
+                )}
+                {parseResult.paymentDate && (
+                  <span>
+                    <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('invoice.paymentDate')}: </span>
+                    {parseResult.paymentDate}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Fix 3: Parse integrity warning */}
+            {parseResult.parseWarning && (
+              <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800">
+                <AlertTriangle className="w-5 h-5 text-error-600 dark:text-error-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-error-800 dark:text-error-300 text-sm">
+                    {t('errors.integrityWarning')}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {parseResult.parseErrors.length > 0 && (
               <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
                 <AlertTriangle className="w-5 h-5 text-warning-600 dark:text-warning-400 shrink-0 mt-0.5" />
@@ -238,44 +272,53 @@ export function InvoiceAnalysisPage() {
               </div>
             )}
 
-            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-6">
-              <KpiCard
-                title={t('summary.totalLines')}
-                value={(comparison.summary?.totalLines ?? 0).toLocaleString('tr-TR')}
-                icon={FileText}
-                variant="default"
-              />
-              <KpiCard
-                title={t('summary.totalAmount')}
-                value={formatCurrency(parseResult.totalInvoiceAmount ?? comparison.summary?.totalInvoiceAmount ?? 0)}
-                icon={DollarSign}
-                variant="info"
-              />
-              <KpiCard
-                title={t('summary.matched')}
-                value={(comparison.summary?.matchedCount ?? 0).toLocaleString('tr-TR')}
-                icon={CheckCircle2}
-                variant="success"
-              />
-              <KpiCard
-                title={t('summary.invoiceOnly')}
-                value={(comparison.summary?.invoiceOnlyCount ?? 0).toLocaleString('tr-TR')}
-                icon={AlertCircle}
-                variant="error"
-              />
-              <KpiCard
-                title={t('summary.costIncreaseCount')}
-                value={(comparison.summary?.costIncreaseCount ?? 0).toLocaleString('tr-TR')}
-                icon={Activity}
-                variant="warning"
-              />
-              <KpiCard
-                title={t('summary.estimatedProfitLoss')}
-                value={formatCurrency(comparison.summary?.totalProfit ?? 0)}
-                icon={TrendingUp}
-                variant={(comparison.summary?.totalProfit ?? 0) >= 0 ? 'success' : 'error'}
-              />
-            </div>
+            {(() => {
+              const totalProfit = comparison.summary?.totalProfit ?? 0;
+              return (
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-6">
+                  <KpiCard
+                    title={t('summary.totalLines')}
+                    value={(comparison.summary?.totalLines ?? 0).toLocaleString('tr-TR')}
+                    icon={Smartphone}
+                    variant="default"
+                  />
+                  <KpiCard
+                    title={t('summary.totalAmount')}
+                    value={formatCurrency(parseResult.totalInvoiceAmount ?? comparison.summary?.totalInvoiceAmount ?? 0)}
+                    icon={Receipt}
+                    variant="default"
+                  />
+                  <KpiCard
+                    title={t('summary.matched')}
+                    value={(comparison.summary?.matchedCount ?? 0).toLocaleString('tr-TR')}
+                    icon={CheckCircle}
+                    variant="default"
+                  />
+                  <KpiCard
+                    title={t('summary.invoiceOnly')}
+                    value={(comparison.summary?.invoiceOnlyCount ?? 0).toLocaleString('tr-TR')}
+                    icon={AlertCircle}
+                    variant="default"
+                  />
+                  <KpiCard
+                    title={t('summary.costIncreaseCount')}
+                    value={(comparison.summary?.costIncreaseCount ?? 0).toLocaleString('tr-TR')}
+                    icon={TrendingUp}
+                    variant="default"
+                  />
+                  <KpiCard
+                    title={t('summary.estimatedProfitLoss')}
+                    value={
+                      <span className={totalProfit < 0 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
+                        {formatCurrency(totalProfit)}
+                      </span>
+                    }
+                    icon={totalProfit < 0 ? TrendingDown : TrendingUp}
+                    variant="default"
+                  />
+                </div>
+              );
+            })()}
 
             <InvoiceAlertsPanel
               invoiceOnly={comparison.invoiceOnly}

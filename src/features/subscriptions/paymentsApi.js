@@ -2,17 +2,22 @@ import { supabase } from '../../lib/supabase';
 import i18next from 'i18next';
 
 /**
- * Fetch all payment records for a subscription, ordered by month
+ * Fetch the full billing schedule for a subscription in a given year.
+ * Calls get_subscription_year_schedule() — a pure-read RPC that merges real
+ * subscription_payments rows with projected (virtual) rows for months not yet
+ * generated.  Projected rows carry status = 'projected' and payment_id = null.
+ *
+ * Maps payment_id → id so downstream components (PaymentRecordModal etc.)
+ * that expect a .id field continue to work without changes.
  */
-export async function fetchPaymentsBySubscription(subscriptionId) {
-  const { data, error } = await supabase
-    .from('subscription_payments')
-    .select('*')
-    .eq('subscription_id', subscriptionId)
-    .order('payment_month', { ascending: true });
+export async function fetchSubscriptionYearSchedule(subscriptionId, year) {
+  const { data, error } = await supabase.rpc('get_subscription_year_schedule', {
+    p_subscription_id: subscriptionId,
+    p_year: year,
+  });
 
   if (error) throw error;
-  return data;
+  return (data || []).map((row) => ({ ...row, id: row.payment_id }));
 }
 
 /**
@@ -92,6 +97,21 @@ export async function revertWriteOff(paymentId) {
 }
 
 /**
+ * Count pending payments for a single subscription.
+ * Uses a HEAD-only request — no rows transferred, just the count.
+ * Used by CancelSubscriptionModal to warn before cancellation.
+ */
+export async function fetchPendingPaymentsCount(subscriptionId) {
+  const { count, error } = await supabase
+    .from('subscription_payments')
+    .select('*', { count: 'exact', head: true })
+    .eq('subscription_id', subscriptionId)
+    .eq('status', 'pending');
+  if (error) throw error;
+  return count ?? 0;
+}
+
+/**
  * Get overdue invoices (paid >7 days without invoice, where should_invoice=true)
  */
 export async function fetchOverdueInvoices() {
@@ -109,16 +129,3 @@ export async function fetchSubscriptionStats() {
   return data;
 }
 
-/**
- * Ensure payment rows exist for a given year (on-demand generation).
- * Called when user navigates to a year with no payments in the grid.
- * Returns the count of rows inserted.
- */
-export async function ensurePaymentsForYear(subscriptionId, year) {
-  const { data, error } = await supabase.rpc('ensure_payments_for_year', {
-    p_subscription_id: subscriptionId,
-    p_year: year,
-  });
-  if (error) throw error;
-  return data ?? 0;
-}

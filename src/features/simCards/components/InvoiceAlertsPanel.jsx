@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, Badge } from '../../../components/ui';
+import { cn } from '../../../lib/utils';
 import { formatCurrency } from '../../../lib/utils';
 
-function AlertSection({ emoji, title, description, count, defaultOpen, children }) {
+const SEVERITY_BAR = {
+  error:   'bg-error-500',
+  warning: 'bg-warning-400',
+  info:    'bg-info-400',
+};
+
+function AlertSection({ severity = 'info', title, description, count, defaultOpen, children }) {
   const [open, setOpen] = useState(defaultOpen);
 
   if (count === 0) return null;
@@ -15,22 +22,21 @@ function AlertSection({ emoji, title, description, count, defaultOpen, children 
         className="w-full flex items-center justify-between p-4 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
         onClick={() => setOpen((v) => !v)}
       >
-        <div className="flex items-center gap-3">
-          <span className="text-xl">{emoji}</span>
-          <div>
-            <p className="font-semibold text-neutral-900 dark:text-neutral-50">
-              {title}{' '}
-              <span className="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-200 dark:bg-neutral-700 text-xs font-bold">
-                {count}
-              </span>
+        <div className="flex items-start gap-3 min-w-0">
+          {/* Severity indicator bar */}
+          <div className={cn('w-1 self-stretch rounded-full flex-shrink-0 mt-0.5', SEVERITY_BAR[severity])} />
+          <div className="min-w-0">
+            <p className="font-semibold text-neutral-900 dark:text-neutral-50 flex items-center gap-2 flex-wrap">
+              {title}
+              <Badge size="sm" variant="default">{count}</Badge>
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{description}</p>
           </div>
         </div>
         {open ? (
-          <ChevronUp className="w-5 h-5 text-neutral-400 shrink-0" />
+          <ChevronUp className="w-5 h-5 text-neutral-400 shrink-0 ml-2" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-neutral-400 shrink-0" />
+          <ChevronDown className="w-5 h-5 text-neutral-400 shrink-0 ml-2" />
         )}
       </button>
 
@@ -107,7 +113,7 @@ export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, 
     },
     {
       key: 'priceDiff',
-      label: 'Fark',
+      label: t('table.diff'),
       render: (row) => row.hasUnknownCost ? (
         <span className="text-neutral-400 dark:text-neutral-500">—</span>
       ) : (
@@ -172,9 +178,9 @@ export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, 
   ];
 
   return (
-    <div className="space-y-3 mb-6">
+    <div className="space-y-2 mb-6">
       <AlertSection
-        emoji="🔴"
+        severity="error"
         title={t('alerts.invoiceOnly.title')}
         description={t('alerts.invoiceOnly.description')}
         count={invoiceOnly.length}
@@ -184,7 +190,7 @@ export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, 
       </AlertSection>
 
       <AlertSection
-        emoji="🟡"
+        severity="warning"
         title={t('alerts.costIncrease.title')}
         description={t('alerts.costIncrease.description')}
         count={costIncreaseLines.length}
@@ -194,7 +200,7 @@ export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, 
       </AlertSection>
 
       <AlertSection
-        emoji="🔴"
+        severity="error"
         title={t('alerts.loss.title')}
         description={t('alerts.loss.description')}
         count={lossLines.length}
@@ -204,7 +210,7 @@ export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, 
       </AlertSection>
 
       <AlertSection
-        emoji="🔵"
+        severity="info"
         title={t('alerts.inventoryOnly.title')}
         description={t('alerts.inventoryOnly.description')}
         count={inventoryOnly.length}

@@ -191,7 +191,7 @@ export function NotificationDropdown({ isOpen, onClose, total }) {
       </div>
 
       {/* Footer */}
-      <div className="p-2 border-t border-neutral-200 dark:border-[#262626] bg-neutral-50/50 dark:bg-neutral-900/20">
+      <div className="p-2 border-t border-neutral-200 dark:border-[#262626] bg-neutral-50/50 dark:bg-neutral-900">
         <Link
           to="/notifications"
           onClick={onClose}

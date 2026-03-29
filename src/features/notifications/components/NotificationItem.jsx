@@ -2,27 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import {
-  Wrench,
-  AlertTriangle,
-  Clock,
-  FileText,
-  FileWarning,
-  FileCheck,
-  XCircle,
-  PauseCircle,
-  CreditCard,
-  RefreshCw,
-  UserPlus,
-  CheckSquare,
-  BellRing,
-  Check,
-  Smartphone,
-  Banknote,
-} from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { localizeNotificationTitle } from '../../../lib/workOrderNotificationTitle';
 import { Badge } from '../../../components/ui/Badge';
+import { ICON_MAP, DEFAULT_ICON, getRoute } from '../utils';
 
 /**
  * NotificationItem - Single notification row
@@ -33,47 +17,6 @@ import { Badge } from '../../../components/ui/Badge';
  *
  * @param {Object} props - Props from v_active_notifications
  */
-const ICON_MAP = {
-  open_work_order: { Icon: Wrench, bg: 'bg-info-100 dark:bg-info-900/40', text: 'text-info-600 dark:text-info-400' },
-  overdue_work_order: { Icon: AlertTriangle, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
-  today_not_started: { Icon: Clock, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
-  proposal_awaiting_response: { Icon: FileText, bg: 'bg-info-100 dark:bg-info-900/40', text: 'text-info-600 dark:text-info-400' },
-  proposal_no_response_2d: { Icon: FileWarning, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
-  proposal_approved_no_wo: { Icon: FileCheck, bg: 'bg-success-100 dark:bg-success-900/40', text: 'text-success-600 dark:text-success-400' },
-  subscription_cancelled: { Icon: XCircle, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
-  subscription_paused: { Icon: PauseCircle, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
-  payment_due_soon: { Icon: CreditCard, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
-  renewal_due_soon: { Icon: RefreshCw, bg: 'bg-info-100 dark:bg-info-900/40', text: 'text-info-600 dark:text-info-400' },
-  work_order_assigned: { Icon: UserPlus, bg: 'bg-primary-100 dark:bg-primary-900/40', text: 'text-primary-600 dark:text-primary-400' },
-  task_due_soon: { Icon: CheckSquare, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
-  user_reminder: { Icon: BellRing, bg: 'bg-primary-100 dark:bg-primary-900/40', text: 'text-primary-600 dark:text-primary-400' },
-  sim_card_cancelled: { Icon: Smartphone, bg: 'bg-error-100 dark:bg-error-900/40', text: 'text-error-600 dark:text-error-400' },
-  pending_payments_summary: { Icon: Banknote, bg: 'bg-warning-100 dark:bg-warning-900/40', text: 'text-warning-600 dark:text-warning-400' },
-};
-
-function getRoute(entityType, entityId, notificationType) {
-  // pending_payments_summary → Collection Desk
-  if (notificationType === 'pending_payments_summary') return '/subscriptions/collection';
-  if (entityType === 'subscription' && !entityId) return '/subscriptions';
-  if (!entityId && entityType !== 'task') return null;
-  
-  switch (entityType) {
-    case 'work_order':
-      return `/work-orders/${entityId}`;
-    case 'proposal':
-      return `/proposals/${entityId}`;
-    case 'subscription':
-      return entityId ? `/subscriptions/${entityId}` : '/subscriptions';
-    case 'task':
-      return '/tasks';
-    case 'sim_card':
-      return `/sim-cards/${entityId}/edit`;
-    case 'reminder':
-      return null;
-    default:
-      return null;
-  }
-}
 
 export function NotificationItem({
   notification_type,
@@ -97,7 +40,7 @@ export function NotificationItem({
     tCommon(`workType.${key}`)
   );
 
-  const config = ICON_MAP[notification_type] ?? { Icon: FileText, bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-400' };
+  const config = ICON_MAP[notification_type] ?? DEFAULT_ICON;
   const { Icon, bg, text } = config;
 
   const timestamp = isResolved ? resolved_at : created_at;
@@ -112,11 +55,11 @@ export function NotificationItem({
   };
 
   return (
-    <div className="border-b border-neutral-100 dark:border-[#1f1f1f] last:border-b-0">
+    <div className="border-b border-neutral-100 dark:border-[#262626] last:border-b-0">
       <button
         type="button"
         role="menuitem"
-        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-[#1a1a1a] transition-colors text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-600"
+        className="w-full flex items-start gap-3 px-4 py-3 min-h-[44px] hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-600"
         onClick={handleClick}
       >
         <div className="flex-shrink-0 mt-0.5">

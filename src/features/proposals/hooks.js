@@ -6,9 +6,11 @@ import {
   fetchProposals,
   fetchProposal,
   fetchProposalItems,
+  fetchProposalAnnualFixedCosts,
   createProposal,
   updateProposal,
   updateProposalItems,
+  updateProposalAnnualFixedCosts,
   updateProposalStatus,
   deleteProposal,
   duplicateProposal,
@@ -24,6 +26,7 @@ export const proposalKeys = {
   details: () => [...proposalKeys.all, 'detail'],
   detail: (id) => [...proposalKeys.details(), id],
   items: (id) => [...proposalKeys.all, 'items', id],
+  annualFixed: (id) => [...proposalKeys.all, 'annualFixed', id],
   workOrders: (id) => [...proposalKeys.all, 'workOrders', id],
 };
 
@@ -46,6 +49,14 @@ export function useProposalItems(proposalId) {
   return useQuery({
     queryKey: proposalKeys.items(proposalId),
     queryFn: () => fetchProposalItems(proposalId),
+    enabled: !!proposalId,
+  });
+}
+
+export function useProposalAnnualFixedCosts(proposalId) {
+  return useQuery({
+    queryKey: proposalKeys.annualFixed(proposalId),
+    queryFn: () => fetchProposalAnnualFixedCosts(proposalId),
     enabled: !!proposalId,
   });
 }
@@ -90,6 +101,22 @@ export function useUpdateProposalItems() {
     mutationFn: ({ proposalId, items }) => updateProposalItems(proposalId, items),
     onSuccess: (_, { proposalId }) => {
       queryClient.invalidateQueries({ queryKey: proposalKeys.items(proposalId) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.detail(proposalId) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.updateFailed'));
+    },
+  });
+}
+
+export function useUpdateProposalAnnualFixedCosts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ proposalId, rows }) => updateProposalAnnualFixedCosts(proposalId, rows),
+    onSuccess: (_, { proposalId }) => {
+      queryClient.invalidateQueries({ queryKey: proposalKeys.annualFixed(proposalId) });
       queryClient.invalidateQueries({ queryKey: proposalKeys.detail(proposalId) });
       queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
     },

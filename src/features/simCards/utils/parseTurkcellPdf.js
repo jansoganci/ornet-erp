@@ -3,7 +3,13 @@
  * Extracts hat (line) data from the "Fatura Notu" section.
  *
  * Each line in the PDF follows the pattern:
- *   F2-{hatNo}?{tariff}#{invoiceAmount}${kdv}+{oiv}!{total}
+ *   F2-{hatNo}?{tariff}#{FATURA_TUTARI}${ÖDENECEK_TUTAR}+{KDV}!{ÖİV}
+ *
+ * Field mapping:
+ *   # → invoiceAmount   (FATURA TUTARI — total per-line charge, basis for cost comparison)
+ *   $ → payableAmount   (ÖDENECEK TUTAR — same as invoiceAmount; informational duplicate)
+ *   + → kdvAmount       (KDV per line — portion already included in invoiceAmount)
+ *   ! → oivAmount       (ÖİV per line — portion already included in invoiceAmount)
  */
 
 import * as pdfjsLib from 'pdfjs-dist';
@@ -15,8 +21,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 /**
- * Line regex: F2-{10 digits}?{tariff}#{amount}${kdv}+{oiv}!{total}
- * Captures: hatNo, tariff, invoiceAmount, kdv, oiv, total
+ * Line regex: F2-{10 digits}?{tariff}#{invoiceAmount}${payableAmount}+{kdvAmount}!{oivAmount}
  */
 const LINE_REGEX = /F2-(\d{10})\?([^#]*)#([\d.,]+)\$([\d.,]+)\+([\d.,]+)!([\d.,]+)/g;
 
@@ -47,10 +52,15 @@ function parseCurrencySafe(str) {
  * Parse a Turkcell invoice PDF file.
  * @param {File} file - PDF file selected by user
  * @returns {Promise<{
+ *   invoiceNo: string|null,
+ *   invoiceDate: string|null,
+ *   paymentDate: string|null,
+ *   grandTotal: number,
  *   lines: Array,
  *   totalInvoiceAmount: number,
  *   tariffBreakdown: Map<string, {count: number, total: number}>,
- *   parseErrors: string[]
+ *   parseErrors: string[],
+ *   parseWarning: boolean
  * }>}
  */
 export async function parseTurkcellPdf(file) {
@@ -60,6 +70,7 @@ export async function parseTurkcellPdf(file) {
   const lines = [];
   const parseErrors = [];
   const tariffBreakdown = new Map();
+  let fullText = '';
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     try {
@@ -68,29 +79,30 @@ export async function parseTurkcellPdf(file) {
 
       // Join all text items on this page with a space
       const pageText = textContent.items.map((item) => item.str).join(' ');
+      fullText += ' ' + pageText;
 
-      // Apply regex globally to find all hat lines
+      // Apply regex globally to find all hat lines on this page
       let match;
       LINE_REGEX.lastIndex = 0;
       while ((match = LINE_REGEX.exec(pageText)) !== null) {
-        const [, hatNo, tariff, invoiceAmountStr, kdvStr, oivStr, totalStr] = match;
+        const [, hatNo, tariff, invoiceAmountStr, payableAmountStr, kdvAmountStr, oivAmountStr] = match;
 
         const invoiceAmount = parseCurrencySafe(invoiceAmountStr);
-        const kdv = parseCurrencySafe(kdvStr);
-        const oiv = parseCurrencySafe(oivStr);
-        const total = parseCurrencySafe(totalStr);
-        const tariffClean = tariff.trim();
+        const payableAmount = parseCurrencySafe(payableAmountStr);
+        const kdvAmount    = parseCurrencySafe(kdvAmountStr);
+        const oivAmount    = parseCurrencySafe(oivAmountStr);
+        const tariffClean  = tariff.trim();
 
         lines.push({
           hatNo,
           tariff: tariffClean,
           invoiceAmount,
-          kdv,
-          oiv,
-          total,
+          payableAmount,
+          kdvAmount,
+          oivAmount,
         });
 
-        // Accumulate tariff breakdown
+        // Accumulate tariff breakdown by invoiceAmount (cost comparison basis)
         const existing = tariffBreakdown.get(tariffClean) || { count: 0, total: 0 };
         tariffBreakdown.set(tariffClean, {
           count: existing.count + 1,
@@ -102,13 +114,48 @@ export async function parseTurkcellPdf(file) {
     }
   }
 
-  // Total invoice amount = sum of all invoiceAmount fields
+  // ── Fix 2: Extract invoice header fields from full text ──────────────────
+
+  const invoiceNoMatch    = fullText.match(/Fatura No[:\s]+([\d]{10,20})/);
+  const invoiceDateMatch  = fullText.match(/Fatura Tarihi[:\s]+(\d{2}\.\d{2}\.\d{4})/);
+  const paymentDateMatch  = fullText.match(/Ödeme Tarihi[:\s]+(\d{2}\.\d{2}\.\d{4})/);
+  const grandTotalMatch   = fullText.match(/Ödenecek Tutar[:\s]+([\d.,]+)/);
+
+  const invoiceNo   = invoiceNoMatch   ? invoiceNoMatch[1]   : null;
+  const invoiceDate = invoiceDateMatch ? invoiceDateMatch[1] : null;
+  const paymentDate = paymentDateMatch ? paymentDateMatch[1] : null;
+  const grandTotal  = grandTotalMatch  ? parseCurrencySafe(grandTotalMatch[1]) : 0;
+
+  // Total invoice amount = sum of all per-line invoiceAmount fields
   const totalInvoiceAmount = lines.reduce((sum, l) => sum + l.invoiceAmount, 0);
 
+  // ── Fix 3: Parse integrity check ────────────────────────────────────────
+  // Sum of per-line payableAmounts should approximate the cover-page grand total.
+  // A discrepancy > 1 TL indicates missed pages or a parsing failure.
+
+  let parseWarning = false;
+
+  if (grandTotal > 0) {
+    const linesPayableTotal = lines.reduce((sum, l) => sum + l.payableAmount, 0);
+    const diff = Math.abs(linesPayableTotal - grandTotal);
+
+    if (diff > 1) {
+      parseErrors.push(
+        `Parse bütünlük hatası: Satır toplamı ${linesPayableTotal.toFixed(2)} TL, fatura toplamı ${grandTotal.toFixed(2)} TL. Bazı sayfalar okunamıyor olabilir.`
+      );
+      parseWarning = true;
+    }
+  }
+
   return {
+    invoiceNo,
+    invoiceDate,
+    paymentDate,
+    grandTotal,
     lines,
     totalInvoiceAmount,
     tariffBreakdown,
     parseErrors,
+    parseWarning,
   };
 }

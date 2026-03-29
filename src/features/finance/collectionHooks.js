@@ -39,10 +39,8 @@ export function useCollectionRecordPayment() {
       // Invalidate collection desk
       queryClient.invalidateQueries({ queryKey: collectionKeys.all });
       // Invalidate subscription caches
+      // subscriptionKeys.all covers the year schedule and all related caches
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
-      if (data?.subscription_id) {
-        queryClient.invalidateQueries({ queryKey: subscriptionKeys.payments(data.subscription_id) });
-      }
       // Invalidate finance caches
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });

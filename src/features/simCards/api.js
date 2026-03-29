@@ -77,7 +77,9 @@ export async function fetchSimCards(filters = {}) {
     query = query.lte('created_at', filters.dateTo + 'T23:59:59');
   }
 
-  query = query.order('created_at', { ascending: false });
+  query = query
+    .order('created_at', { ascending: false })
+    .limit(2500); // Safety cap — 2500+ SIM cards; use fetchSimCardsPaginated() for paginated views
 
   const { data, error } = await query;
   if (error) throw error;

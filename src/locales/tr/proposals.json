@@ -32,6 +32,7 @@
   },
   "detail": {
     "title": "Teklif Detayı",
+    "annualFixed": "Yıllık Sabit Giderler",
     "items": "Malzemeler",
     "total": "Toplam",
     "scopeOfWork": "İş Kapsamı",
@@ -100,6 +101,7 @@
       "review": "Önizleme"
     },
     "preview": {
+      "openButton": "Önizleme",
       "title": "Canlı Önizleme",
       "companyLabel": "Firma",
       "projectLabel": "Proje",
@@ -142,6 +144,16 @@
       "postAcceptanceDates": "Müşteri onayı sonrası doldurulacak tarihler",
       "terms": "Şartlar ve Koşullar"
     }
+  },
+  "annualFixed": {
+    "cardTitle": "Yıllık Sabit Giderler",
+    "sectionTitle": "Yıllık Sabit Giderler",
+    "description": "Açıklama",
+    "hint": "SIM kart, izleme merkezi veya yazılım lisansı gibi yıllık giderleri müşteriye bilgi amaçlı ekleyin. Teklif toplamına dahil edilmez.",
+    "empty": "Henüz satır yok. \"Satır ekle\" ile başlayın.",
+    "addRow": "Satır ekle",
+    "removeRow": "Satırı sil",
+    "subtotalForCurrency": "Ara toplam ({{currency}})"
   },
   "items": {
     "description": "Açıklama",
@@ -220,6 +232,9 @@
     "filenameModalTitle": "PDF dosya adı",
     "filenameLabel": "Dosya adı",
     "filenameHint": "Uzantı yazmayın; .pdf otomatik eklenir.",
-    "downloadButton": "İndir"
+    "downloadButton": "İndir",
+    "annualFixedTitle": "YILLIK SABİT GİDERLER",
+    "annualFixedSubtotal": "Ara Toplam ({{currency}})",
+    "annualFixedDisclaimer": "Teklif KDV dahil değildir. Yukarıdaki yıllık giderler bilgi amaçlıdır."
   }
 }

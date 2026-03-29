@@ -301,13 +301,37 @@ export async function fetchRecentTransactions(limit = 10) {
   return data || [];
 }
 
-// v_profit_and_loss
+// v_profit_and_loss — ReportsPage export + P&L table
+const PL_SELECT = 'period, period_date, source_type, direction, amount_try, cogs_try, output_vat, input_vat, original_currency, created_at';
+
 export async function fetchProfitAndLoss(period, viewMode = 'total') {
   let query = supabase
     .from('v_profit_and_loss')
-    .select('*')
+    .select(PL_SELECT)
     .order('period_date', { ascending: false })
     .order('created_at', { ascending: false });
+
+  if (period) {
+    query = query.eq('period', period);
+  }
+  if (viewMode === 'official') {
+    query = query.eq('is_official', true);
+  } else if (viewMode === 'unofficial') {
+    query = query.eq('is_official', false);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+// Lightweight version for dashboard KPIs — only the 6 columns the aggregation reads
+const PL_SUMMARY_SELECT = 'source_type, direction, amount_try, cogs_try, output_vat, input_vat';
+
+async function fetchProfitAndLossSummary(period, viewMode = 'total') {
+  let query = supabase
+    .from('v_profit_and_loss')
+    .select(PL_SUMMARY_SELECT);
 
   if (period) {
     query = query.eq('period', period);
@@ -369,7 +393,7 @@ export async function fetchVatReport({ period, viewMode = 'total', periodType = 
 export async function fetchFinanceDashboardKpis({ period, viewMode = 'total' } = {}) {
   const [statsRes, plRes] = await Promise.all([
     supabase.rpc('get_subscription_stats'),
-    fetchProfitAndLoss(period || null, viewMode),
+    fetchProfitAndLossSummary(period || null, viewMode),
   ]);
   if (statsRes.error) throw statsRes.error;
 

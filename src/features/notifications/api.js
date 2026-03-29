@@ -74,6 +74,10 @@ export async function resolveNotification(id) {
 }
 
 export async function markAllStoredAsResolved() {
+  // No target_role filter is intentional: this is a system-wide "clear all" action.
+  // The RLS policy restricts execution to admin/accountant roles only. In this
+  // single-team deployment there is at most one admin and one accountant; resolving
+  // all unread notifications for both roles simultaneously is acceptable behavior.
   const { error } = await supabase
     .from('notifications')
     .update({ resolved_at: new Date().toISOString() })

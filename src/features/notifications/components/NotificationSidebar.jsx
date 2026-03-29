@@ -72,11 +72,11 @@ function HealthCard({ notifications }) {
         <div>
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('sidebar.storedNotifications')}</span>
-            <span className="text-sm font-bold text-blue-500">{stats.storedCount}</span>
+            <span className="text-sm font-bold text-primary-500">{stats.storedCount}</span>
           </div>
           <div className="w-full bg-neutral-100 dark:bg-neutral-800 h-1 rounded-full overflow-hidden">
             <div
-              className="bg-blue-500 h-full rounded-full transition-all duration-500"
+              className="bg-primary-500 h-full rounded-full transition-all duration-500"
               style={{ width: `${Math.min((stats.storedCount / 30) * 100, 100)}%` }}
             />
           </div>

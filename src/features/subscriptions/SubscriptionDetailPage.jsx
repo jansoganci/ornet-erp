@@ -31,8 +31,8 @@ import {
 import { cn, formatDate } from '../../lib/utils';
 import {
   useSubscription,
-  useSubscriptionPayments,
   useSubscriptionsBySite,
+  usePendingPaymentsCount,
   useCurrentProfile,
   useReactivateSubscription,
   useRevisionNotes,
@@ -100,7 +100,6 @@ export function SubscriptionDetailPage() {
   };
 
   const { data: subscription, isLoading, error, refetch } = useSubscription(id);
-  const { data: payments = [] } = useSubscriptionPayments(id);
   const { data: revisionNotes = [], isLoading: revisionNotesLoading } = useRevisionNotes(id);
   const { data: siteSubscriptions = [] } = useSubscriptionsBySite(subscription?.site_id);
   const { data: currentProfile } = useCurrentProfile();
@@ -109,7 +108,7 @@ export function SubscriptionDetailPage() {
   const { data: siteAssets = [] } = useAssetsBySite(subscription?.site_id);
 
   const isAdmin = currentProfile?.role === 'admin';
-  const pendingPaymentsCount = payments.filter((p) => p.status === 'pending').length;
+  const { data: pendingPaymentsCount = 0 } = usePendingPaymentsCount(id);
   const otherServicesAtSite = (siteSubscriptions || []).filter((s) => s.id !== id);
 
   if (isLoading) return <DetailSkeleton />;
@@ -676,7 +675,6 @@ export function SubscriptionDetailPage() {
         <div className="min-h-0 lg:col-span-2">
           <MonthlyPaymentGrid
             subscriptionId={id}
-            payments={payments}
             subscriptionStatus={subscription.status}
             className={SURFACE_CARD}
           />

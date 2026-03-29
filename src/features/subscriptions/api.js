@@ -79,7 +79,8 @@ export async function fetchSubscriptions(filters = {}) {
   }
 
   const { data, error } = await query
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(500); // Safety cap — prevents full-table scan on subscriptions_detail (6-table JOIN)
 
   if (error) throw error;
 
@@ -175,7 +176,8 @@ export async function fetchSubscriptionsByCustomer(customerId) {
     .from('subscriptions_detail')
     .select('*')
     .eq('customer_id', customerId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(50); // Customer typically has 1-10 subscriptions; safety cap
 
   if (error) throw error;
   return data ?? [];

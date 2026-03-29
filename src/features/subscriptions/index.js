@@ -19,7 +19,7 @@ export {
   usePauseSubscription,
   useCancelSubscription,
   useReactivateSubscription,
-  useSubscriptionPayments,
+  useSubscriptionYearSchedule,
   useRecordPayment,
   useOverdueInvoices,
   useSubscriptionStats,

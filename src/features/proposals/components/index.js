@@ -4,5 +4,6 @@ export { ProposalSiteCard } from './ProposalSiteCard';
 export { ProposalStatusActions } from './ProposalStatusActions';
 export { ProposalPdf } from './ProposalPdf';
 export { ProposalItemsEditor } from './ProposalItemsEditor';
+export { ProposalAnnualFixedCostsEditor } from './ProposalAnnualFixedCostsEditor';
 export { ProposalStatusBadge } from './ProposalStatusBadge';
 export { CreateWorkOrderFromProposalModal } from './CreateWorkOrderFromProposalModal';

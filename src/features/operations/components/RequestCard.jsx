@@ -99,7 +99,7 @@ export function RequestCard({ request, onCancel, onDelete }) {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <ContactStatusBadge status={request.contact_status} />
+            <ContactStatusBadge requestId={request.id} status={request.contact_status} />
             {isConfirmed && !showScheduler && (
               <button
                 type="button"

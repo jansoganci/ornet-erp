@@ -5,9 +5,10 @@ import { Toaster } from 'sonner';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false, // ERP users switch tabs constantly
       retry: 1,
-      refetchOnWindowFocus: false,
     },
   },
 });

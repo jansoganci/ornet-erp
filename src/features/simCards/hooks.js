@@ -40,6 +40,7 @@ export function useCreateProviderCompany() {
   });
 }
 
+// Non-paginated hook — limited to 2500 rows. Use useSimCardsPaginated() for list pages.
 export function useSimCards(filters = {}) {
   return useQuery({
     queryKey: simCardKeys.list(filters),

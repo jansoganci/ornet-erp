@@ -5,7 +5,10 @@ import {
   calcProposalTotals,
   resolveProposalItemLineTotal,
   resolveProposalItemUnitPrice,
+  calcAnnualFixedLineTotal,
+  sumAnnualFixedCostsByCurrency,
 } from '../../../lib/proposalCalc';
+import { filterPersistableAnnualFixedRows } from '../api';
 
 function formatPreviewDate(dateStr) {
   if (!dateStr) return '';
@@ -32,7 +35,11 @@ export function ProposalLivePreview({
     discount_percent = 0,
     vat_rate = 0,
     currency = 'USD',
+    annual_fixed_costs = [],
   } = watchedValues;
+
+  const annualRows = filterPersistableAnnualFixedRows(annual_fixed_costs);
+  const annualSubtotals = sumAnnualFixedCostsByCurrency(annualRows);
 
   const { subtotal, discountAmount, grandTotal } = calcProposalTotals(items, discount_percent, currency);
   const vatAmount = Math.round(grandTotal * (Number(vat_rate) || 0) / 100 * 100) / 100;
@@ -208,6 +215,55 @@ export function ProposalLivePreview({
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {annualRows.length > 0 && (
+          <div className="px-5 py-3 border-t border-neutral-100 dark:border-neutral-800">
+            <p className="text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wide mb-2">
+              {t('annualFixed.sectionTitle')}
+            </p>
+            <table className="w-full text-[10px]">
+              <thead>
+                <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                  <th className="text-left py-1 font-semibold text-neutral-500 w-5">#</th>
+                  <th className="text-left py-1 font-semibold text-neutral-500">{t('annualFixed.description')}</th>
+                  <th className="text-center py-1 font-semibold text-neutral-500 w-8">{t('items.quantity')}</th>
+                  <th className="text-right py-1 font-semibold text-neutral-500 w-14">{t('items.total')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {annualRows.map((row, i) => {
+                  const rowCur = row.currency || 'TRY';
+                  const lineTotal = calcAnnualFixedLineTotal(row.quantity, row.unit_price);
+                  return (
+                    <tr key={i} className="border-b border-neutral-50 dark:border-neutral-800/50">
+                      <td className="py-1 text-neutral-400">{i + 1}</td>
+                      <td className="py-1 text-neutral-800 dark:text-neutral-200 truncate max-w-[100px]">
+                        {row.description || '—'}
+                      </td>
+                      <td className="py-1 text-center text-neutral-600">{Number(row.quantity) || 0}</td>
+                      <td className="py-1 text-right font-medium">
+                        {formatCurrency(lineTotal, rowCur)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="mt-2 space-y-0.5 text-[10px]">
+              {Object.entries(annualSubtotals).map(([cur, sum]) => (
+                <div key={cur} className="flex justify-between text-neutral-600 dark:text-neutral-400">
+                  <span>{t('annualFixed.subtotalForCurrency', { currency: cur })}</span>
+                  <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                    {formatCurrency(sum, cur)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[9px] text-neutral-500 dark:text-neutral-400 italic mt-2 leading-snug">
+              {t('pdf.annualFixedDisclaimer')}
+            </p>
           </div>
         )}
 

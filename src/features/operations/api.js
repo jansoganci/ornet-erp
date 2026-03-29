@@ -10,6 +10,17 @@ export const serviceRequestKeys = {
   stats: (filters) => [...serviceRequestKeys.all, 'stats', filters],
 };
 
+// Lightweight SELECT for operations pool (list view) — only columns displayed on cards
+const POOL_SELECT = `
+  id, customer_id, site_id, request_type, description, status, contact_status, 
+  priority, created_at, created_by, work_order_id,
+  customers:customer_id ( id, company_name, phone ),
+  customer_sites:site_id ( id, site_name, account_no, city, district, contact_phone ),
+  profiles:created_by ( full_name ),
+  work_orders:work_order_id ( id, form_no, status )
+`;
+
+// Full SELECT for detail view — includes all fields
 const REQUEST_DETAIL_SELECT = `
   *,
   customers:customer_id ( id, company_name, phone ),
@@ -25,7 +36,7 @@ const REQUEST_DETAIL_SELECT = `
 export async function fetchServiceRequests(filters = {}) {
   let query = supabase
     .from('service_requests')
-    .select(REQUEST_DETAIL_SELECT)
+    .select(POOL_SELECT)
     .is('deleted_at', null);
 
   // Status filter (default: open)
@@ -55,7 +66,9 @@ export async function fetchServiceRequests(filters = {}) {
     query = query.ilike('customers.company_name', `%${filters.search}%`);
   }
 
-  query = query.order('created_at', { ascending: false });
+  query = query
+    .order('created_at', { ascending: false })
+    .range(0, 99); // Safety cap — add proper pagination if list exceeds 100 rows
 
   const { data, error } = await query;
   if (error) throw error;

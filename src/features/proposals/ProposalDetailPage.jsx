@@ -18,7 +18,10 @@ import {
   calcTotalCosts,
   resolveProposalItemLineTotal,
   resolveProposalItemUnitPrice,
+  calcAnnualFixedLineTotal,
+  sumAnnualFixedCostsByCurrency,
 } from '../../lib/proposalCalc';
+import { filterPersistableAnnualFixedRows } from './api';
 import { PageContainer } from '../../components/layout';
 import {
   Button,
@@ -34,6 +37,7 @@ import { buildDefaultProposalPdfFilename } from './proposalPdfFilename';
 import {
   useProposal,
   useProposalItems,
+  useProposalAnnualFixedCosts,
   useUpdateProposalStatus,
   useDeleteProposal,
   useDuplicateProposal,
@@ -47,6 +51,35 @@ import { ProposalSummaryCard } from './components/ProposalSummaryCard';
 import { CreateWorkOrderFromProposalModal } from './components/CreateWorkOrderFromProposalModal';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useUpdateProposal } from './hooks';
+
+/**
+ * Public folder image for PDF.
+ * Returns a base64 data URI so @react-pdf/renderer never needs to make a
+ * second internal network request (which was causing toBlob() to throw for
+ * large images). Returns null if the file is missing — ProposalPdf handles
+ * null gracefully by skipping the <Image> element.
+ */
+async function resolveProposalPdfPublicImage(relativePath) {
+  const path = relativePath.replace(/^\//, '');
+  const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin).href;
+  const url = new URL(path, base).href;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const ct = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (ct && !ct.startsWith('image/')) return null;
+    const buffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const CHUNK = 8192;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    return `data:${ct};base64,${btoa(binary)}`;
+  } catch {
+    return null;
+  }
+}
 
 function DetailSkeleton() {
   return (
@@ -88,6 +121,8 @@ export function ProposalDetailPage() {
 
   const { data: proposal, isLoading, error, refetch } = useProposal(id);
   const { data: items = [] } = useProposalItems(id);
+  const { data: annualFixedRaw = [] } = useProposalAnnualFixedCosts(id);
+  const annualFixedCostsPdf = filterPersistableAnnualFixedRows(annualFixedRaw);
   const { data: linkedWorkOrders = [] } = useProposalWorkOrders(id);
   const statusMutation = useUpdateProposalStatus();
   const deleteMutation = useDeleteProposal();
@@ -144,7 +179,19 @@ export function ProposalDetailPage() {
     setShowPdfFilenameModal(false);
     setIsExporting(true);
     try {
-      const blob = await pdf(<ProposalPdf proposal={proposal} items={items} />).toBlob();
+      const [logoSrc, certSrc] = await Promise.all([
+        resolveProposalPdfPublicImage('ornet.logo.png'),
+        resolveProposalPdfPublicImage('falan.png'),
+      ]);
+      const blob = await pdf(
+        <ProposalPdf
+          proposal={proposal}
+          items={items}
+          annualFixedCosts={annualFixedCostsPdf}
+          logoSrc={logoSrc}
+          certSrc={certSrc}
+        />,
+      ).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -153,7 +200,8 @@ export function ProposalDetailPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch {
+    } catch (err) {
+      console.error('[PDF export]', err);
       toast.error(t('pdf.exportError'));
     } finally {
       setIsExporting(false);
@@ -269,6 +317,56 @@ export function ProposalDetailPage() {
           )}
         </div>
       </Card>
+
+      {annualFixedCostsPdf.length > 0 && (
+        <Card className="overflow-hidden">
+          <div className="bg-neutral-50 dark:bg-[#1a1a1a] px-6 py-4 border-b border-neutral-200 dark:border-[#262626]">
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+              {t('proposals:detail.annualFixed')}
+            </h3>
+          </div>
+          <div className="p-6 space-y-3">
+            {annualFixedCostsPdf.map((row, index) => {
+              const rowCur = row.currency || 'TRY';
+              const lineTotal = calcAnnualFixedLineTotal(row.quantity, row.unit_price);
+              return (
+                <div
+                  key={row.id || index}
+                  className="flex items-start justify-between py-2 border-b border-neutral-100 dark:border-[#1a1a1a] last:border-0"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-neutral-900 dark:text-neutral-100">
+                      {row.quantity > 1 && (
+                        <span className="font-mono text-neutral-500 mr-1">{row.quantity}x</span>
+                      )}
+                      {row.description}
+                    </p>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      {row.unit || 'adet'} · {rowCur}
+                    </p>
+                  </div>
+                  <span className="font-semibold text-neutral-900 dark:text-neutral-100 ml-4 whitespace-nowrap">
+                    {formatCurrency(lineTotal, rowCur)}
+                  </span>
+                </div>
+              );
+            })}
+            <div className="pt-3 border-t border-neutral-200 dark:border-[#262626] space-y-1">
+              {Object.entries(sumAnnualFixedCostsByCurrency(annualFixedCostsPdf)).map(([cur, sum]) => (
+                <div key={cur} className="flex justify-between text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400">
+                    {t('proposals:annualFixed.subtotalForCurrency', { currency: cur })}
+                  </span>
+                  <span className="font-semibold">{formatCurrency(sum, cur)}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 italic pt-2">
+              {t('proposals:pdf.annualFixedDisclaimer')}
+            </p>
+          </div>
+        </Card>
+      )}
 
       {/* İş Kapsamı */}
       {proposal.scope_of_work && (

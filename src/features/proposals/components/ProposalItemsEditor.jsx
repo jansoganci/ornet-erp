@@ -33,20 +33,23 @@ export function ProposalItemsEditor({
   const netProfit = grandTotal - totalCosts;
 
   const handleAddItem = () => {
-    append({
-      description: '',
-      quantity: 1,
-      unit: 'adet',
-      unit_price: 0,
-      material_id: null,
-      cost: null,
-      margin_percent: null,
-      product_cost: null,
-      labor_cost: null,
-      shipping_cost: null,
-      material_cost: null,
-      misc_cost: null,
-    });
+    append(
+      {
+        description: '',
+        quantity: 1,
+        unit: 'adet',
+        unit_price: 0,
+        material_id: null,
+        cost: null,
+        margin_percent: null,
+        product_cost: null,
+        labor_cost: null,
+        shipping_cost: null,
+        material_cost: null,
+        misc_cost: null,
+      },
+      { shouldFocus: false },
+    );
   };
 
   const unitOptions = UNIT_OPTIONS.map((u) => ({

@@ -234,7 +234,8 @@
   "paymentGrid": {
     "prevYear": "Önceki yıl",
     "nextYear": "Sonraki yıl",
-    "generating": "Ödemeler yükleniyor..."
+    "loading": "Takvim yükleniyor...",
+    "noData": "Bu yıl için ödeme takvimi bulunamadı."
   },
   "payment": {
     "title": "Ödeme Takvimi",
@@ -243,6 +244,7 @@
       "pending": "Bekliyor",
       "paid": "Ödendi",
       "failed": "Başarısız",
+      "projected": "Planlanan",
       "skipped": "Atlandı",
       "write_off": "Silindi"
     },

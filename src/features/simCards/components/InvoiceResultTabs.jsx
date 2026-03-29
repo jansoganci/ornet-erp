@@ -200,8 +200,8 @@ function InvoiceOnlyTable({ rows }) {
                 <td className="px-4 py-2 font-mono text-xs text-neutral-700 dark:text-neutral-300">{row.hatNo}</td>
                 <td className="px-4 py-2 text-neutral-800 dark:text-neutral-200 max-w-[200px] truncate">{row.tariff}</td>
                 <td className="px-4 py-2 text-right text-neutral-800 dark:text-neutral-200">{formatCurrency(row.invoiceAmount)}</td>
-                <td className="px-4 py-2 text-right text-neutral-500">{formatCurrency(row.kdv)}</td>
-                <td className="px-4 py-2 text-right text-neutral-500">{formatCurrency(row.oiv)}</td>
+                <td className="px-4 py-2 text-right text-neutral-500">{formatCurrency(row.kdvAmount)}</td>
+                <td className="px-4 py-2 text-right text-neutral-500">{formatCurrency(row.oivAmount)}</td>
               </tr>
             ))}
           </tbody>
@@ -219,8 +219,8 @@ function InvoiceOnlyTable({ rows }) {
               <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(row.invoiceAmount)}</span>
             </div>
             <div className="flex items-center justify-between text-xs text-neutral-500">
-              <span>{t('table.kdv')}: {formatCurrency(row.kdv)}</span>
-              <span>{t('table.oiv')}: {formatCurrency(row.oiv)}</span>
+              <span>{t('table.kdv')}: {formatCurrency(row.kdvAmount)}</span>
+              <span>{t('table.oiv')}: {formatCurrency(row.oivAmount)}</span>
             </div>
           </div>
         ))}

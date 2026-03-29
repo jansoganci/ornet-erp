@@ -8,29 +8,29 @@
     "accept": ".pdf"
   },
   "summary": {
-    "totalLines": "Toplam Hat",
-    "totalAmount": "Fatura Toplamı",
-    "matched": "Eşleşen Hat",
-    "invoiceOnly": "Kayıt Dışı Hat",
-    "costIncreaseCount": "Maliyet Artışı",
-    "estimatedProfitLoss": "Tahmini Kar/Zarar"
+    "totalLines": "Faturadaki Hat Sayısı",
+    "totalAmount": "Ödenecek Tutar",
+    "matched": "Sistemde Kayıtlı",
+    "invoiceOnly": "Sistemde Kayıtsız",
+    "costIncreaseCount": "Fiyat Sapması",
+    "estimatedProfitLoss": "Tahmini Zarar"
   },
   "alerts": {
     "invoiceOnly": {
-      "title": "Kayıt Dışı Hatlar",
-      "description": "Faturada var ama envanterde kayıtlı olmayan hatlar. Bu hatlar için ödeme yapılıyor ancak takip edilmiyor."
+      "title": "Faturada Olan, Sistemde Olmayan Hatlar",
+      "description": "Bu telefon numaraları faturada görünüyor ama SIM kart envanterinizde kayıtlı değil. Ödemesi yapılıyor ancak takip edilmiyor."
     },
     "costIncrease": {
-      "title": "Maliyet Artışı Tespit Edilenler",
-      "description": "Fatura tutarı kayıtlı maliyet fiyatını 1 TL veya daha fazla aşan hatlar. Maliyet güncellenmesi gerekebilir."
+      "title": "Beklenenden Fazla Ücretlendirilen Hatlar",
+      "description": "Bu hatların fatura tutarı, sisteminizde kayıtlı birim maliyetten 1 TL veya daha fazla yüksek."
     },
     "loss": {
-      "title": "Zararlı Hatlar",
-      "description": "Satış fiyatı fatura tutarından düşük olan hatlar. Bu hatlar doğrudan zarar yaratıyor."
+      "title": "Maliyeti Satış Fiyatını Aşan Hatlar",
+      "description": "Bu hatlarda Turkcell'e ödenen tutar, müşteriden alınan ücretin üzerinde. Doğrudan zarar oluşuyor."
     },
     "inventoryOnly": {
-      "title": "Faturasız Envanter",
-      "description": "Envanterde kayıtlı ama bu faturada görünmeyen Turkcell hatlar."
+      "title": "Sistemde Kayıtlı Ama Faturada Görünmeyen Hatlar",
+      "description": "Bu Turkcell hatları SIM kart envanterinizde kayıtlı, ancak bu faturada herhangi bir ücret görünmüyor."
     },
     "unknownCost": "{{count}} hat için maliyet girilmemiş",
     "unknownCostDescription": "Bu hatların kar/zarar hesaplaması doğru olsa da; maliyet fiyatı girilmediği için fark analizi yapılamıyor. SIM kart kayıtlarına maliyet girin."
@@ -52,6 +52,7 @@
     "status": "Durum",
     "buyer": "Alıcı",
     "costIncrease": "Maliyet Artışı",
+    "diff": "Fark",
     "lineUnit": "hat",
     "unknownCost": "Maliyet Girilmemiş"
   },
@@ -68,13 +69,17 @@
   "errors": {
     "parseFailed": "PDF okunamadı. Lütfen geçerli bir Turkcell fatura dosyası yükleyin.",
     "noLinesFound": "PDF'de hat verisi bulunamadı. Fatura formatı desteklenmiyor olabilir.",
-    "fetchFailed": "Envanter verileri alınamadı. Lütfen tekrar deneyin."
+    "fetchFailed": "Envanter verileri alınamadı. Lütfen tekrar deneyin.",
+    "integrityWarning": "Fatura bütünlük uyarısı: Satır toplamları fatura kapak sayfasındaki toplam ile uyuşmuyor. Bazı sayfalar okunamıyor olabilir — sonuçlar eksik olabilir."
   },
   "reset": "Yeni Fatura Yükle",
   "loading": {
     "inventory": "Envanter yükleniyor..."
   },
   "invoice": {
-    "period": "Fatura Dönemi"
+    "period": "Fatura Dönemi",
+    "no": "Fatura No",
+    "date": "Fatura Tarihi",
+    "paymentDate": "Ödeme Tarihi"
   }
 }

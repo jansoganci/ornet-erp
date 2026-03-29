@@ -5,7 +5,12 @@ const optionalNum = () => z.coerce.number().min(0).optional().nullable();
 const optionalStr = () => z.string().optional().or(z.literal(''));
 const toNumber = (val) => (val === '' || val === undefined || val === null ? undefined : Number(val));
 
+const annualQtyPreprocess = (val) =>
+  val === '' || val === null || val === undefined ? 1 : val;
+
 export const CURRENCIES = ['TRY', 'USD'];
+
+export const ANNUAL_FIXED_COST_CURRENCIES = ['TRY', 'USD', 'EUR'];
 
 export const proposalItemSchema = z.object({
   description: z.string().min(1, i18n.t('errors:validation.required')),
@@ -25,6 +30,17 @@ export const proposalItemSchema = z.object({
   shipping_cost: optionalNum(),
   material_cost: optionalNum(),
   misc_cost: optionalNum(),
+});
+
+export const annualFixedCostRowSchema = z.object({
+  description: z.string(),
+  quantity: z.preprocess(annualQtyPreprocess, z.coerce.number().positive()),
+  unit: z.string().default('adet'),
+  unit_price: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? 0 : val),
+    z.coerce.number().min(0),
+  ),
+  currency: z.enum(['TRY', 'USD', 'EUR']).default('TRY'),
 });
 
 export const proposalSchema = z.object({
@@ -47,6 +63,37 @@ export const proposalSchema = z.object({
   customer_representative: optionalStr(),
   completion_date: optionalStr(),
   items: z.array(proposalItemSchema).min(1, i18n.t('errors:validation.required')),
+  annual_fixed_costs: z.array(annualFixedCostRowSchema).default([]),
+}).superRefine((data, ctx) => {
+  const annual = data.annual_fixed_costs ?? [];
+  annual.forEach((row, i) => {
+    const desc = String(row.description ?? '').trim();
+    const price = Number(row.unit_price) || 0;
+    const qty = Number(row.quantity);
+
+    if (!desc) {
+      const blankRow =
+        price === 0 &&
+        Number.isFinite(qty) &&
+        qty === 1;
+      if (!blankRow) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['annual_fixed_costs', i, 'description'],
+          message: i18n.t('errors:validation.required'),
+        });
+      }
+      return;
+    }
+
+    if (!Number.isFinite(qty) || qty <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['annual_fixed_costs', i, 'quantity'],
+        message: i18n.t('errors:validation.required'),
+      });
+    }
+  });
 });
 
 const defaultItem = {
@@ -104,4 +151,5 @@ export const proposalDefaultValues = {
   terms_attachments: defaultTermsAttachments,
   vat_rate: 0,
   items: [defaultItem],
+  annual_fixed_costs: [],
 };

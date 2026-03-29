@@ -76,7 +76,9 @@
     "thisMonth": "Bu Ay",
     "lastMonth": "Geçen Ay",
     "thisQuarter": "Bu Çeyrek",
-    "totalRequests": "Toplam Talep"
+    "totalRequests": "Toplam Talep",
+    "generalStats": "Genel İstatistikler",
+    "periodBreakdown": "Dönem Sonuçları"
   },
   "filters": {
     "allRegions": "Tüm Bölgeler",
