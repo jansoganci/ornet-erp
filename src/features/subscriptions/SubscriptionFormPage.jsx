@@ -77,6 +77,7 @@ export function SubscriptionFormPage() {
   const lineFee = watch('line_fee');
   const staticIpFee = watch('static_ip_fee');
   const vatRate = watch('vat_rate');
+  const officialInvoice = watch('official_invoice');
   const selectedCurrency = watch('currency') || 'TRY';
 
   const { data: siteData } = useSite(selectedSiteId);
@@ -168,10 +169,10 @@ export function SubscriptionFormPage() {
     const sif = Number(staticIpFee) || 0;
     const vr = Number(vatRate) || 0;
     const subtotal = bp + sf + lf + sif;
-    const vatAmount = Math.round(subtotal * vr / 100 * 100) / 100;
+    const vatAmount = officialInvoice ? Math.round(subtotal * vr / 100 * 100) / 100 : 0;
     const total = subtotal + vatAmount;
     return { subtotal, vatAmount, total };
-  }, [basePrice, smsFee, lineFee, staticIpFee, vatRate]);
+  }, [basePrice, smsFee, lineFee, staticIpFee, vatRate, officialInvoice]);
 
   const profileOptions = [
     { value: '', label: t('subscriptions:form.placeholders.selectPerson') },

@@ -183,6 +183,7 @@
       "location": "Lokasyon",
       "alarmCenter": "Alarm Merkezi",
       "siteName": "Lokasyon Adı",
+      "siteType": "Lokasyon Tipi",
       "address": "Adres",
       "city": "Şehir",
       "district": "İlçe",
@@ -193,9 +194,14 @@
       "notes": "Notlar",
       "isActive": "Aktif"
     },
+    "siteTypes": {
+      "residential": "Konut",
+      "business": "İş yeri"
+    },
     "placeholders": {
       "accountNo": "Örn: 123456",
       "siteName": "Örn: Merkez Şube",
+      "siteType": "Seçiniz (opsiyonel)",
       "address": "Tam adres (isteğe bağlı - sonra eklenebilir)",
       "contactName": "Yetkili kişi adı",
       "contactPhone": "0555 123 4567",

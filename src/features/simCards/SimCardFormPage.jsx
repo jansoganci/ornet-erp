@@ -84,7 +84,7 @@ export function SimCardFormPage() {
         account_no: simCard.account_no || '',
         cost_price: simCard.cost_price || 0,
         sale_price: simCard.sale_price || 0,
-        vat_rate: simCard.vat_rate ?? 20,
+        vat_rate: simCard.vat_rate ?? 0,
         currency: simCard.currency || 'TRY',
         notes: simCard.notes || '',
       });

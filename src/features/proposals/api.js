@@ -202,9 +202,7 @@ export async function fetchProposals({ search = '', status = '', dateFrom = '', 
  * Targeted selection for proposal detail views to improve performance.
  */
 export const PROPOSAL_DETAIL_SELECT = `
-  *,
-  customers ( id, company_name, phone ),
-  customer_sites ( id, site_name, account_no, city, district, contact_phone )
+  *
 `.replace(/\s+/g, ' ').trim();
 
 /**

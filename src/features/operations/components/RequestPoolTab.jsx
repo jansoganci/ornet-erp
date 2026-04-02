@@ -6,7 +6,8 @@ import { Spinner } from '../../../components/ui/Spinner';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { ErrorState } from '../../../components/ui/ErrorState';
 import { Button } from '../../../components/ui/Button';
-import { useOperationsItems, useDeleteOperationsItem } from '../hooks';
+import { useOperationsItems, useDeleteOperationsItem, useCloseOperationsItem } from '../hooks';
+import { CloseOutcomeModal } from './CloseOutcomeModal';
 import { REGIONS, CONTACT_STATUSES, PRIORITIES } from '../schema';
 import { QuickEntryRow } from './QuickEntryRow';
 import { RequestCard } from './RequestCard';
@@ -19,9 +20,12 @@ export function RequestPoolTab() {
   const [contactFilter, setContactFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [showCallQueue, setShowCallQueue] = useState(false);
+  /** Lifted from RequestCard so the modal is not unmounted when the list re-renders / refetches. */
+  const [closeOutcomeItemId, setCloseOutcomeItemId] = useState(null);
+  const closeOutcomeMutation = useCloseOperationsItem();
 
   const filters = useMemo(() => ({
-    status: 'open',
+    statusIn: ['open', 'scheduled'],
     region: regionFilter,
     contactStatus: contactFilter,
     priority: priorityFilter,
@@ -102,6 +106,7 @@ export function RequestPoolTab() {
               key={request.id}
               request={request}
               onDelete={handleDelete}
+              onOpenCloseOutcome={() => setCloseOutcomeItemId(request.id)}
             />
           ))}
         </div>
@@ -114,6 +119,21 @@ export function RequestPoolTab() {
           onClose={() => setShowCallQueue(false)}
         />
       )}
+
+      <CloseOutcomeModal
+        open={closeOutcomeItemId != null}
+        onClose={() => setCloseOutcomeItemId(null)}
+        onConfirm={async ({ outcomeType, contactNotes }) => {
+          if (!closeOutcomeItemId) return false;
+          await closeOutcomeMutation.mutateAsync({
+            id: closeOutcomeItemId,
+            outcomeType,
+            contactNotes,
+          });
+          setCloseOutcomeItemId(null);
+        }}
+        isSubmitting={closeOutcomeMutation.isPending}
+      />
     </div>
   );
 }

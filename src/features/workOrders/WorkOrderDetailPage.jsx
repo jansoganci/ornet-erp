@@ -109,6 +109,8 @@ export function WorkOrderDetailPage() {
   };
 
   const handleEdit = () => navigate(`/work-orders/${id}/edit`);
+  const canStartWork = ['pending', 'scheduled'].includes(workOrder.status);
+  const canCompleteWork = workOrder.status === 'in_progress';
 
   const items = workOrder.work_order_materials || [];
   const discountPercent = Number(workOrder.materials_discount_percent) || 0;
@@ -387,12 +389,12 @@ export function WorkOrderDetailPage() {
 
       {/* Mobile FAB */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white/80 dark:bg-[#171717]/80 backdrop-blur-md border-t border-neutral-200 dark:border-[#262626] z-50 flex gap-3 lg:hidden">
-        {workOrder.status === 'pending' && (
+        {canStartWork && (
           <Button className="flex-1" onClick={() => setStatusToUpdate('in_progress')}>
             {t('workOrders:actions.start')}
           </Button>
         )}
-        {workOrder.status === 'in_progress' && (
+        {canCompleteWork && (
           <Button
             className="flex-1"
             variant="success"

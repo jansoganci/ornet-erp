@@ -9,6 +9,7 @@ export const materialSchema = z.object({
   unit: z.enum([
     'adet', 'boy', 'paket', 'metre', 'mm', 'V', 'A', 'W',
     'MHz', 'TB', 'MP', 'port', 'kanal', 'inç', 'rpm', 'bölge',
+    'set', 'takim',
   ]).default('adet'),
   is_active: z.boolean().default(true),
 });

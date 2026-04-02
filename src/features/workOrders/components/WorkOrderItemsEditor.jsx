@@ -5,6 +5,7 @@ import { Plus, Trash2, Package } from 'lucide-react';
 import { Button, Input, MaterialCombobox } from '../../../components/ui';
 import { cn, getCurrencySymbol, formatCurrency } from '../../../lib/utils';
 import { calcVatTevkifatSummary } from '../../../lib/proposalCalc';
+import { normalizeWorkOrderItemUnit } from '../schema';
 
 const UNIT_OPTIONS = [
   { value: 'adet', labelKey: 'items.units.adet' },
@@ -139,7 +140,7 @@ export function WorkOrderItemsEditor({
                     onMaterialSelect={(payload) => {
                       setValue(`items.${index}.description`, payload.description, { shouldValidate: true });
                       setValue(`items.${index}.material_id`, payload.material_id ?? null);
-                      if (payload.unit) setValue(`items.${index}.unit`, payload.unit);
+                      setValue(`items.${index}.unit`, normalizeWorkOrderItemUnit(payload.unit));
                     }}
                     onDescriptionChange={(val) => {
                       setValue(`items.${index}.description`, val, { shouldValidate: true });
@@ -319,7 +320,7 @@ export function WorkOrderItemsEditor({
                   onMaterialSelect={(payload) => {
                     setValue(`items.${index}.description`, payload.description, { shouldValidate: true });
                     setValue(`items.${index}.material_id`, payload.material_id ?? null);
-                    if (payload.unit) setValue(`items.${index}.unit`, payload.unit);
+                    setValue(`items.${index}.unit`, normalizeWorkOrderItemUnit(payload.unit));
                   }}
                   onDescriptionChange={(val) => {
                     setValue(`items.${index}.description`, val, { shouldValidate: true });

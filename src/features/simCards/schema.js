@@ -23,7 +23,7 @@ export const simCardSchema = z.object({
   sale_price: z.number().min(0).default(0),
   customer_label: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
-  vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),
+  vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(0)),
 });
 
 export const simCardDefaultValues = {
@@ -42,5 +42,5 @@ export const simCardDefaultValues = {
   currency: 'TRY',
   customer_label: '',
   notes: '',
-  vat_rate: 20,
+  vat_rate: 0,
 };

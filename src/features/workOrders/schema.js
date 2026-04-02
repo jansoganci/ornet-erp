@@ -6,6 +6,30 @@ const toNumber = (val) => (val === '' || val === undefined || val === null ? und
 export const WORK_TYPES = ['survey', 'installation', 'service', 'maintenance', 'other'];
 export const CURRENCIES = ['TRY', 'USD'];
 
+/** Must match `proposalItemSchema.unit` and the shared unit dropdown in line-item editors. */
+export const WORK_ORDER_ITEM_UNITS = [
+  'adet', 'boy', 'paket', 'metre', 'mm', 'V', 'A', 'W',
+  'MHz', 'TB', 'MP', 'port', 'kanal', 'inç', 'rpm', 'bölge',
+  'set', 'takim',
+];
+
+const workOrderItemUnitEnum = z.enum(WORK_ORDER_ITEM_UNITS);
+
+/**
+ * Canonical work order / proposal line-item unit (trim, case-insensitive match, unknown → adet).
+ * Keeps Zod happy when materials DB has mixed case or legacy import values.
+ */
+export function normalizeWorkOrderItemUnit(val) {
+  if (val === '' || val === undefined || val === null) return 'adet';
+  const s = String(val).trim();
+  if (!s) return 'adet';
+  const lower = s.toLowerCase();
+  for (const u of WORK_ORDER_ITEM_UNITS) {
+    if (u.toLowerCase() === lower) return u;
+  }
+  return 'adet';
+}
+
 export const workOrderSchema = z.object({
   site_id: z.union([z.literal(''), z.string().uuid()]),
   form_no: z.string().optional().or(z.literal('')),
@@ -21,10 +45,7 @@ export const workOrderSchema = z.object({
   items: z.array(z.object({
     description: z.string().min(1, i18n.t('errors:validation.required')),
     quantity: z.coerce.number().positive(),
-    unit: z.enum([
-      'adet', 'boy', 'paket', 'metre', 'mm', 'V', 'A', 'W',
-      'MHz', 'TB', 'MP', 'port', 'kanal', 'inç', 'rpm', 'bölge',
-    ]).default('adet'),
+    unit: z.preprocess(normalizeWorkOrderItemUnit, workOrderItemUnitEnum),
     unit_price: z.coerce.number().min(0),
     material_id: z.string().uuid().optional().nullable().or(z.literal('')),
     cost: z.coerce.number().min(0).optional().nullable(),

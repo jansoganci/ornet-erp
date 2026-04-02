@@ -5,6 +5,7 @@ import { getErrorMessage } from '../../lib/errorHandler';
 import * as api from './api';
 import { siteKeys } from '../customerSites/api';
 import { customerKeys } from '../customers/hooks';
+import { operationsApi } from '../operations/api';
 
 export const workOrderKeys = {
   all: ['workOrders'],
@@ -29,6 +30,7 @@ export function useUpdateWorkOrderStatus() {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.detail(data.id) });
       queryClient.invalidateQueries({ queryKey: workOrderKeys.auditLogs(data.id) });
       queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: operationsApi.keys.all });
       toast.success(t('success.statusUpdated'));
     },
     onError: (error) => {
@@ -157,12 +159,16 @@ export function useUpdateWorkOrder() {
   
   return useMutation({
     mutationFn: api.updateWorkOrder,
-    onSuccess: (_, { id }) => {
+    onSuccess: (_, variables) => {
+      const { id } = variables;
       queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
       queryClient.invalidateQueries({ queryKey: workOrderKeys.auditLogs(id) });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
       queryClient.invalidateQueries({ queryKey: workOrderKeys.materials(id) });
+      if (variables?.status === 'completed' || variables?.status === 'cancelled') {
+        queryClient.invalidateQueries({ queryKey: operationsApi.keys.all });
+      }
       toast.success(t('success.updated'));
     },
     onError: (error) => {

@@ -14,12 +14,12 @@ export const siteKeys = {
 /**
  * Targeted selection for site list views to improve performance.
  */
-export const SITE_LIST_SELECT = 'id, customer_id, account_no, site_name, city, district, created_at, customers ( company_name, subscriber_title )';
+export const SITE_LIST_SELECT = 'id, customer_id, account_no, site_name, site_type, city, district, created_at, customers ( company_name, subscriber_title )';
 
 export async function fetchSitesByCustomer(customerId) {
   const { data, error } = await supabase
     .from('customer_sites')
-    .select('id, account_no, site_name, city, district')
+    .select('*')
     .is('deleted_at', null)
     .eq('customer_id', customerId)
     .order('site_name', { ascending: true });

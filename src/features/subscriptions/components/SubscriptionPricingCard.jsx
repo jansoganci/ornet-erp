@@ -16,7 +16,9 @@ export function SubscriptionPricingCard({ subscription, isAdmin = false, classNa
   const staticIpCost = Number(subscription.static_ip_cost) || 0;
 
   const subtotal = basePrice + smsFee + lineFee + staticIpFee + simAmount;
-  const vatAmount = Math.round(subtotal * vatRate / 100 * 100) / 100;
+  const vatAmount = subscription.official_invoice !== false
+    ? Math.round(subtotal * vatRate / 100 * 100) / 100
+    : 0;
   const total = subtotal + vatAmount;
   const profit = subtotal - cost - staticIpCost;
 

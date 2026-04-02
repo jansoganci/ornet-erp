@@ -319,6 +319,19 @@ export function SubscriptionsListPage() {
       ),
     },
     {
+      header: t('subscriptions:list.columns.officialInvoice'),
+      accessor: 'official_invoice',
+      minWidth: 130,
+      maxWidth: 130,
+      render: (value) => (
+        <Badge variant={value !== false ? 'info' : 'outline'} size="sm">
+          {value !== false
+            ? t('subscriptions:detail.officialInvoiceResmi')
+            : t('subscriptions:detail.officialInvoiceGayri')}
+        </Badge>
+      ),
+    },
+    {
       header: t('subscriptions:list.columns.status'),
       accessor: 'status',
       render: (value) => <SubscriptionStatusBadge status={value} />,
@@ -650,7 +663,7 @@ export function SubscriptionsListPage() {
           </div>
           {/* Desktop skeleton */}
           <div className="hidden md:block mt-6">
-            <TableSkeleton cols={8} />
+            <TableSkeleton cols={9} />
           </div>
         </>
       ) : error ? (

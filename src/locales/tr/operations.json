@@ -3,7 +3,8 @@
   "tabs": {
     "pool": "Operasyon",
     "calendar": "Takvim",
-    "insights": "Özet"
+    "insights": "Özet",
+    "archive": "Arşiv"
   },
   "calendarLegend": {
     "workOrders": "İş Emirleri",
@@ -81,7 +82,7 @@
     "callQueue": "Arama Sırası",
     "cancel": "İptal Et",
     "addToDailyPlan": "Günlük Plana Ekle",
-    "closeWithOutcome": "Sonuç ile Kapat",
+    "closeWithOutcome": "Açık İşi Sonuçlandır",
     "delete": "Sil",
     "edit": "Düzenle",
     "viewWorkOrder": "İş Emrine Git",
@@ -89,15 +90,16 @@
     "createProposal": "Teklif Oluştur"
   },
   "closeOutcome": {
-    "title": "Kapanış Sonucu Seç",
-    "confirm": "Kapat",
-    "outcomeLabel": "Sonuç",
+    "title": "Kapanış Kategorisini Seçin",
+    "confirm": "Açık İşi Kapat",
+    "outcomeLabel": "Kapatma Nedeni / Sonuç",
     "notesLabel": "Not",
     "notesPlaceholder": "İsteğe bağlı kapanış notu...",
     "options": {
-      "remote_resolved": "Uzaktan çözüldü",
-      "closed_no_action": "İşlem gerektirmedi",
-      "cancelled": "Müşteri iptal etti"
+      "field_resolved": "Servis Verildi",
+      "remote_resolved": "Uzaktan Destek ile Çözüldü",
+      "closed_no_action": "İşlem Gerektirmeden Kapatıldı",
+      "cancelled": "İptal Edildi"
     }
   },
   "addToPlan": {
@@ -196,6 +198,22 @@
     "title": "Talep havuzu boş",
     "description": "Yeni bir müşteri talebi eklemek için yukarıdaki hızlı giriş satırını kullanın."
   },
+  "archive": {
+    "empty": {
+      "title": "Arşivde kayıt yok",
+      "description": "Tamamlanan, kapatılan veya başarısız işlemler burada listelenir."
+    }
+  },
+  "outcome": {
+    "work_order": "İş Emrine Döndü",
+    "proposal": "Teklife Döndü",
+    "field_resolved": "Servis Verildi",
+    "remote_resolved": "Uzaktan Çözüldü",
+    "closed_no_action": "İşlem Gerekmedi",
+    "cancelled": "Müşteri İptali",
+    "completed_via_work_order": "İş Emri ile Tamamlandı",
+    "work_order_cancelled": "İş Emri İptal Edildi"
+  },
   "scheduler": {
     "date": "Tarih",
     "time": "Saat",
@@ -231,6 +249,7 @@
       "deleted": "Plan maddesi silindi"
     },
     "outcome": {
+      "field_resolved": "Açık iş servis verilerek kapatıldı",
       "remote_resolved": "Talep uzaktan çözüldü",
       "closed_no_action": "Talep işlem gerekmiyor olarak kapatıldı",
       "cancelled": "Talep müşteri iptali olarak kapatıldı",
@@ -245,6 +264,7 @@
   "card": {
     "attempt": "{{count}}. deneme",
     "noSite": "Lokasyon belirtilmedi",
+    "workOrderLinked": "İş Emri",
     "createdBy": "Oluşturan: {{name}}"
   }
 }

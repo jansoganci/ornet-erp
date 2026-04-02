@@ -51,6 +51,7 @@
       "vat": "KDV (%20)",
       "vatIncluded": "KDV Dahil",
       "cost": "Maliyet",
+      "officialInvoice": "Faturalı mı?",
       "status": "Durum"
     }
   },

@@ -5,12 +5,14 @@ export function WorkOrderStatusActions({ workOrder, setStatusToUpdate }) {
   const { t } = useTranslation(['workOrders', 'common']);
   const status = workOrder?.status;
   const isCompletedOrCancelled = ['completed', 'cancelled'].includes(status);
+  const canStartWork = ['pending', 'scheduled'].includes(status);
+  const canCompleteWork = status === 'in_progress';
 
   if (isCompletedOrCancelled) return null;
 
   return (
     <div className="hidden lg:flex items-center gap-3 p-4 rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717]">
-      {status === 'pending' && (
+      {canStartWork && (
         <Button
           className="flex-1 max-w-xs"
           onClick={() => setStatusToUpdate('in_progress')}
@@ -19,7 +21,7 @@ export function WorkOrderStatusActions({ workOrder, setStatusToUpdate }) {
         </Button>
       )}
 
-      {status === 'in_progress' && (
+      {canCompleteWork && (
         <Button
           variant="success"
           className="flex-1 max-w-xs"

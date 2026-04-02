@@ -6,7 +6,16 @@ const t = (key) => i18n.t(key);
 export const REGIONS = ['istanbul_europe', 'istanbul_anatolia', 'outside_istanbul'];
 export const CONTACT_STATUSES = ['not_contacted', 'no_answer', 'confirmed', 'cancelled'];
 export const ITEM_STATUSES = ['open', 'scheduled', 'completed', 'failed', 'closed'];
-export const OUTCOME_TYPES = ['work_order', 'proposal', 'remote_resolved', 'closed_no_action', 'cancelled'];
+export const OUTCOME_TYPES = [
+  'work_order',
+  'proposal',
+  'remote_resolved',
+  'closed_no_action',
+  'cancelled',
+  'completed_via_work_order',
+  'work_order_cancelled',
+  'field_resolved',
+];
 export const PLAN_ITEM_TYPES = ['field_work', 'office', 'proposal', 'finance', 'other'];
 export const PLAN_ITEM_STATUSES = ['pending', 'done', 'not_done'];
 export const WORK_TYPES = ['survey', 'installation', 'service', 'maintenance', 'other'];

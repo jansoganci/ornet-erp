@@ -16,7 +16,7 @@ import {
   FormSkeleton,
   Modal,
 } from '../../components/ui';
-import { workOrderSchema, workOrderDefaultValues, WORK_TYPES } from './schema';
+import { workOrderSchema, workOrderDefaultValues, WORK_TYPES, normalizeWorkOrderItemUnit } from './schema';
 import { useWorkOrder, useCreateWorkOrder, useUpdateWorkOrder } from './hooks';
 import { CustomerSiteSelector } from './CustomerSiteSelector';
 import { WorkerSelector } from './WorkerSelector';
@@ -26,6 +26,7 @@ import { AccountNoWarning } from './AccountNoWarning';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useSite, useSitesByCustomer } from '../customerSites/hooks';
 import { useLinkWorkOrder } from '../proposals/hooks';
+import { updateOperationsItem } from '../operations/api';
 import { useFinanceSettings, useLatestRate } from '../finance/hooks';
 import { resolveProposalItemUnitPrice, calcVatTevkifatSummary } from '../../lib/proposalCalc';
 import { toast } from 'sonner';
@@ -74,6 +75,9 @@ export function WorkOrderFormPage() {
   const prefilledDate = searchParams.get('date') || '';
   const prefilledTime = searchParams.get('time') || '';
   const prefilledProposalId = searchParams.get('proposalId') || '';
+  const prefilledDescription = searchParams.get('description') || '';
+  const prefilledSourceItemId = searchParams.get('sourceItemId') || '';
+  const prefilledStatus = searchParams.get('status') || '';
 
   const {
     register,
@@ -135,8 +139,10 @@ export function WorkOrderFormPage() {
       if (prefilledSiteId) setValue('site_id', prefilledSiteId, { shouldValidate: false });
       if (prefilledDate) setValue('scheduled_date', prefilledDate);
       if (prefilledTime) setValue('scheduled_time', prefilledTime);
+      if (prefilledDescription) setValue('description', prefilledDescription);
+      if (prefilledStatus) setValue('status', prefilledStatus);
     }
-  }, [isEdit, prefilledSiteId, prefilledDate, prefilledTime, setValue]);
+  }, [isEdit, prefilledSiteId, prefilledDate, prefilledTime, prefilledDescription, prefilledStatus, setValue]);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState(prefilledCustomerId);
   const { data: customerSites = [], isLoading: isCustomerSitesLoading } = useSitesByCustomer(selectedCustomerId);
@@ -162,7 +168,7 @@ export function WorkOrderFormPage() {
     const items = (workOrder.work_order_materials || []).map((wom) => ({
       description: wom.description || wom.materials?.name || '',
       quantity: parseFloat(wom.quantity) || 1,
-      unit: wom.unit || 'adet',
+      unit: normalizeWorkOrderItemUnit(wom.unit),
       unit_price: resolveProposalItemUnitPrice(wom, woCurrency),
       cost: wom.cost ?? wom.cost_usd ?? null,
       material_id: wom.material_id || null,
@@ -281,6 +287,13 @@ export function WorkOrderFormPage() {
           });
           navigate(`/proposals/${prefilledProposalId}`);
         } else {
+          // Auto-link back to operations item if created from operations pool
+          if (prefilledSourceItemId) {
+            await updateOperationsItem({
+              id: prefilledSourceItemId,
+              work_order_id: newWo.id,
+            });
+          }
           navigate(`/work-orders/${newWo.id}`);
         }
       }

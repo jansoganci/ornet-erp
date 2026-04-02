@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Modal, Textarea } from '../../../components/ui';
 
 const OUTCOME_OPTIONS = [
+  { value: 'field_resolved', labelKey: 'operations:closeOutcome.options.field_resolved' },
   { value: 'remote_resolved', labelKey: 'operations:closeOutcome.options.remote_resolved' },
   { value: 'closed_no_action', labelKey: 'operations:closeOutcome.options.closed_no_action' },
   { value: 'cancelled', labelKey: 'operations:closeOutcome.options.cancelled' },
@@ -10,11 +11,19 @@ const OUTCOME_OPTIONS = [
 
 export function CloseOutcomeModal({ open, onClose, onConfirm, isSubmitting = false }) {
   const { t } = useTranslation(['operations', 'common']);
-  const [outcomeType, setOutcomeType] = useState('closed_no_action');
+  const [outcomeType, setOutcomeType] = useState('field_resolved');
   const [notes, setNotes] = useState('');
 
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      setOutcomeType('field_resolved');
+      setNotes('');
+    }
+  }, [open]);
+
   const handleClose = () => {
-    setOutcomeType('closed_no_action');
+    setOutcomeType('field_resolved');
     setNotes('');
     onClose();
   };

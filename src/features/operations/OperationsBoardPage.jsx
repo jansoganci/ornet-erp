@@ -1,17 +1,19 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ClipboardList, Calendar, BarChart3, Upload } from 'lucide-react';
+import { ClipboardList, Calendar, BarChart3, Upload, Archive } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button } from '../../components/ui';
 import { RequestPoolTab } from './components/RequestPoolTab';
 import { PlanPanel } from './components/PlanPanel';
 import { CalendarTab } from './components/CalendarTab';
 import { InsightsTab } from './components/InsightsTab';
+import { RequestArchiveTab } from './components/RequestArchiveTab';
 
 const TABS = [
   { id: 'pool', icon: ClipboardList, labelKey: 'operations:tabs.pool' },
   { id: 'calendar', icon: Calendar, labelKey: 'operations:tabs.calendar' },
   { id: 'insights', icon: BarChart3, labelKey: 'operations:tabs.insights' },
+  { id: 'archive', icon: Archive, labelKey: 'operations:tabs.archive' },
 ];
 
 export function OperationsBoardPage() {
@@ -74,6 +76,7 @@ export function OperationsBoardPage() {
         )}
         {activeTab === 'calendar' && <CalendarTab />}
         {activeTab === 'insights' && <InsightsTab />}
+        {activeTab === 'archive' && <RequestArchiveTab />}
       </div>
     </PageContainer>
   );

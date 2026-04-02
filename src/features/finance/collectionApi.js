@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { endOfMonth, format } from 'date-fns';
 
 // Query keys
 export const collectionKeys = {
@@ -48,7 +49,7 @@ export async function fetchCollectionPayments(filters = {}) {
     .select(COLLECTION_SELECT)
     .eq('status', 'pending');
 
-  // Optional month filter — when not set, shows ALL pending (current + overdue)
+  // Optional month filter — when not set, show only "due" (past + current month)
   if (filters.year && filters.month) {
     const m = String(filters.month).padStart(2, '0');
     const periodStart = `${filters.year}-${m}-01`;
@@ -58,6 +59,9 @@ export async function fetchCollectionPayments(filters = {}) {
     query = query
       .gte('payment_month', periodStart)
       .lt('payment_month', nextMonth);
+  } else {
+    const boundary = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+    query = query.lte('payment_month', boundary);
   }
 
   // Search filter (customer name)
@@ -106,6 +110,10 @@ export async function fetchCollectionStats(filters = {}) {
     paidQuery = paidQuery
       .gte('payment_month', periodStart)
       .lt('payment_month', nextMonth);
+  } else {
+    const boundary = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+    pendingQuery = pendingQuery.lte('payment_month', boundary);
+    paidQuery = paidQuery.lte('payment_month', boundary);
   }
 
   const [{ data: pending, error: pendingErr }, { data: paid, error: paidErr }] =

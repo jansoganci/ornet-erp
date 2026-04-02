@@ -6,7 +6,8 @@ import {
   Modal, 
   Input, 
   Button, 
-  Textarea 
+  Textarea,
+  Select,
 } from '../../components/ui';
 import { siteSchema, siteDefaultValues } from './schema';
 import { useCreateSite, useUpdateSite } from './hooks';
@@ -21,6 +22,10 @@ export function SiteFormModal({
 }) {
   const { t } = useTranslation(['customers', 'common']);
   const isEditing = !!site;
+  const siteTypeOptions = [
+    { value: 'residential', label: t('customers:sites.siteTypes.residential') },
+    { value: 'business', label: t('customers:sites.siteTypes.business') },
+  ];
 
   const {
     register,
@@ -29,7 +34,9 @@ export function SiteFormModal({
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(siteSchema),
-    defaultValues: site ? { ...siteDefaultValues, ...site, customer_id: site.customer_id } : { ...siteDefaultValues, customer_id: customerId || '' },
+    defaultValues: site
+      ? { ...siteDefaultValues, ...site, customer_id: site.customer_id || customerId || '' }
+      : { ...siteDefaultValues, customer_id: customerId || '' },
   });
 
   // Reset form when modal opens — defaultValues only apply on mount, so we must reset when site/customerId changes
@@ -38,8 +45,9 @@ export function SiteFormModal({
       if (site) {
         reset({
           ...siteDefaultValues,
-          customer_id: site.customer_id || '',
+          customer_id: site.customer_id || customerId || '',
           site_name: site.site_name || '',
+          site_type: site.site_type || '',
           account_no: site.account_no || '',
           alarm_center: site.alarm_center || '',
           address: site.address || '',
@@ -129,6 +137,16 @@ export function SiteFormModal({
             error={errors.alarm_center?.message}
             {...register('alarm_center')}
           />
+          <Select
+            label={t('customers:sites.fields.siteType')}
+            placeholder={t('customers:sites.placeholders.siteType')}
+            options={siteTypeOptions}
+            error={errors.site_type?.message}
+            {...register('site_type')}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label={t('customers:sites.fields.connectionDate')}
             type="date"
