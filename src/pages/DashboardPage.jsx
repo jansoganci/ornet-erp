@@ -1,26 +1,18 @@
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import {
-  AlertTriangle,
-  CalendarCheck,
   CreditCard,
   TrendingUp,
   AlertCircle,
   DollarSign,
-  ChevronRight,
 } from 'lucide-react';
 import { PageContainer } from '../components/layout';
 import { Skeleton, CardSkeleton } from '../components/ui';
 import { cn } from '../lib/utils';
-import { formatTL } from '../lib/chartTheme';
-import {
-  useDashboardStats,
-  useMonthlyRevenue,
-} from '../features/dashboard/hooks';
-import { useSimFinancialStats } from '../features/simCards/hooks';
+import { fetchFinanceDashboardKpis, financeDashboardKeys } from '../features/finance/api';
 import { useSubscriptionStats, useCurrentProfile } from '../features/subscriptions/hooks';
-import { useActionBoardCounts } from '../features/actionBoard/hooks';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { KpiCard } from '../components/ui';
 import { QuickActionsBar } from '../features/dashboard/components/QuickActionsBar';
 import { TodayScheduleFeed } from '../features/dashboard/components/TodayScheduleFeed';
@@ -30,97 +22,43 @@ import { RevenueExpenseLineChart } from '../features/dashboard/components/Revenu
 import { OverduePaymentsList } from '../features/dashboard/components/OverduePaymentsList';
 import { CurrencyWidget } from '../features/dashboard/components/CurrencyWidget';
 
-// ── Action Board doorbell (admin only) ────────────────────────────────────
-
-function ActionBoardCard({ lateWorkOrderCount, overduePaymentCount, pendingProposalCount, isLoading, isError }) {
-  const { t } = useTranslation('actionBoard');
-  const navigate = useNavigate();
-
-  const total = lateWorkOrderCount + overduePaymentCount + pendingProposalCount;
-
-  // Rule 1: loading or all-clear → render nothing
-  if (isLoading || (!isError && total === 0)) return null;
-
-  // Build specific message parts in order: work orders · proposals · payments
-  const parts = [];
-  if (lateWorkOrderCount  > 0) parts.push(t('dashboard.lateWorkOrders',  { count: lateWorkOrderCount }));
-  if (pendingProposalCount > 0) parts.push(t('dashboard.pendingProposals', { count: pendingProposalCount }));
-  if (overduePaymentCount  > 0) parts.push(t('dashboard.overduePayments',  { count: overduePaymentCount }));
-
-  return (
-    <button
-      type="button"
-      onClick={() => navigate('/action-board')}
-      className={cn(
-        'flex items-center gap-3 rounded-xl border p-5 text-left',
-        'transition-all duration-150 hover:-translate-y-px',
-        'w-full lg:w-auto',
-        isError
-          ? [
-              'bg-amber-50 border-amber-200',
-              'dark:bg-amber-950/20 dark:border-amber-900/50',
-              'hover:bg-amber-50/80 dark:hover:bg-amber-950/30',
-            ]
-          : [
-              'border-l-4 border-l-red-500',
-              'bg-red-50 border-red-200',
-              'dark:bg-red-950/20 dark:border-red-900/50 dark:border-l-red-500',
-              'hover:bg-red-50/80 dark:hover:bg-red-950/30',
-            ]
-      )}
-    >
-      <AlertCircle className={cn(
-        'w-4 h-4 flex-shrink-0',
-        isError
-          ? 'text-amber-500 dark:text-amber-400'
-          : 'text-red-500 dark:text-red-400 alert-accent-border'
-      )} />
-
-      <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 mb-1">
-          {t('dashboard.title')}
-        </p>
-        <p className="text-sm font-medium text-red-700 dark:text-red-400 truncate">
-          {isError ? t('dashboard.loadError') : parts.join(' · ')}
-        </p>
-      </div>
-
-      <ChevronRight className="w-4 h-4 text-neutral-400 dark:text-neutral-500 flex-shrink-0 ml-auto" />
-    </button>
-  );
+/** Same MoM % logic as SubscriptionsListPage MRR card — plain KPI, no sparkline. */
+function getMrrMomTrend(current, previous) {
+  if (!previous || previous === 0) return null;
+  const diff = current - previous;
+  const percent = (diff / previous) * 100;
+  const value = Math.abs(Math.round(percent));
+  if (value === 0) return null;
+  return { value, isPositive: diff > 0 };
 }
-
-// ── Page ───────────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
   const { t } = useTranslation('dashboard');
   const { t: tCommon } = useTranslation('common');
   const { user } = useAuth();
 
-  const { data: stats, isLoading: isStatsLoading } = useDashboardStats();
   const { data: subStats, isLoading: isSubStatsLoading } = useSubscriptionStats();
-  const { data: simStats, isLoading: isSimStatsLoading } = useSimFinancialStats();
-  const { data: monthlyRevenue, isLoading: isRevenueLoading } = useMonthlyRevenue(7);
+  const currentMonth = format(new Date(), 'yyyy-MM');
+  const { data: financeKpis, isLoading: isFinanceKpisLoading } = useQuery({
+    queryKey: financeDashboardKeys.kpis(currentMonth, 'total'),
+    queryFn: () => fetchFinanceDashboardKpis({ period: currentMonth, viewMode: 'total' }),
+  });
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
-  const {
-    lateWorkOrderCount,
-    overduePaymentCount,
-    pendingProposalCount,
-    isLoading: isActionLoading,
-    isError: isActionError,
-  } = useActionBoardCounts();
 
-  const isInitialLoading = isStatsLoading || isSubStatsLoading || isSimStatsLoading;
+  const isInitialLoading = isSubStatsLoading || isFinanceKpisLoading;
 
-  // ── Build real sparkline data from monthly revenue ────────────────────────
-  const TR_MONTHS_SHORT = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-  const revenueChartData = Array.isArray(monthlyRevenue)
-    ? monthlyRevenue.map((row) => {
-        const monthIndex = parseInt(row.month?.split('-')[1], 10) - 1;
-        return { name: TR_MONTHS_SHORT[monthIndex] ?? row.month, value: Number(row.revenue) };
-      })
-    : [];
+  const unpaidTotal = subStats?.unpaid_total_amount ?? 0;
+  const currencyFmt = new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    maximumFractionDigits: 0,
+  });
+
+  const mrrMom = getMrrMomTrend(
+    Number(subStats?.mrr) || 0,
+    Number(subStats?.mrr_previous_month) || 0,
+  );
 
   // ── Loading skeleton ─────────────────────────────────────────────────────
 
@@ -128,37 +66,24 @@ export function DashboardPage() {
     return (
       <PageContainer maxWidth="full" padding="compact" className="space-y-5">
         <Skeleton className="h-5 w-48" />
-        {/* KPI strip skeleton */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-          <CardSkeleton count={6} />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <CardSkeleton count={4} />
         </div>
-        {/* Sparkline row skeleton */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          <CardSkeleton count={3} />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-8">
+            <CardSkeleton count={1} className="h-80" />
+          </div>
+          <div className="lg:col-span-4 flex flex-col gap-4">
+            <CardSkeleton count={1} className="h-64" />
+            <CardSkeleton count={1} className="min-h-[12rem]" />
+          </div>
         </div>
-        {/* Quick actions skeleton */}
-        <div className="flex gap-2">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-10 w-32 rounded-lg flex-shrink-0" />
-          ))}
-        </div>
-        {/* Zone B — Feed + Donut skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-8">
             <CardSkeleton count={1} className="h-64" />
           </div>
           <div className="lg:col-span-4">
             <CardSkeleton count={1} className="h-64" />
-          </div>
-        </div>
-        {/* Zone E — Chart + Tasks/Overdue stacked skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-8">
-            <CardSkeleton count={1} className="h-80" />
-          </div>
-          <div className="lg:col-span-4 flex flex-col gap-4">
-            <CardSkeleton count={1} className="h-[calc(50%-0.5rem)]" />
-            <CardSkeleton count={1} className="h-[calc(50%-0.5rem)]" />
           </div>
         </div>
       </PageContainer>
@@ -188,7 +113,6 @@ export function DashboardPage() {
   return (
     <PageContainer maxWidth="full" padding="compact" className="space-y-5">
 
-      {/* ── Welcome + Currency + Shortcuts ───────────────────────────────── */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold text-neutral-900 dark:text-neutral-50 leading-snug">
@@ -206,29 +130,10 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* ── ZONE A — KPI Strip ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+      {/* Row 1 — four KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-stretch">
         <KpiCard
-          title={t('kpi.overdueWorkOrders')}
-          value={stats?.pending_work_orders ?? 0}
-          icon={AlertTriangle}
-          trendType="up"
-          trend={stats?.pending_work_orders > 0
-            ? `${stats.pending_work_orders} ${t('kpi.waitingLabel')}`
-            : undefined}
-          variant={stats?.pending_work_orders > 0 ? 'alert' : 'default'}
-          href="/work-orders?status=pending"
-          loading={isStatsLoading}
-        />
-        <KpiCard
-          title={t('kpi.todayPlanned')}
-          value={stats?.today_work_orders ?? 0}
-          icon={CalendarCheck}
-          trendType="neutral"
-          href="/daily-work"
-          loading={isStatsLoading}
-        />
-        <KpiCard
+          className="h-full"
           title={t('kpi.activeSubscriptions')}
           value={subStats?.active_count ?? 0}
           icon={CreditCard}
@@ -237,125 +142,67 @@ export function DashboardPage() {
           loading={isSubStatsLoading}
         />
         <KpiCard
-          title={t('kpi.mrr')}
-          value={new Intl.NumberFormat('tr-TR', {
-            style: 'currency',
-            currency: 'TRY',
-            maximumFractionDigits: 0,
-          }).format(subStats?.mrr ?? 0)}
+          className="h-full"
+          title={t('kpi.subscriptionRevenue')}
+          value={currencyFmt.format(subStats?.mrr ?? 0)}
           icon={TrendingUp}
-          trendType="up"
+          trend={
+            mrrMom ? `${mrrMom.isPositive ? '+' : '-'}${mrrMom.value}%` : undefined
+          }
+          trendType={
+            mrrMom?.isPositive ? 'up' : mrrMom ? 'down' : 'neutral'
+          }
           href="/subscriptions"
           loading={isSubStatsLoading}
         />
         <KpiCard
+          className={cn(
+            'h-full',
+            unpaidTotal > 0 && 'border-l-4 border-l-red-500 dark:border-l-red-500',
+          )}
           title={t('kpi.uncollectedPayments')}
-          value={new Intl.NumberFormat('tr-TR', {
-            style: 'currency',
-            currency: 'TRY',
-            maximumFractionDigits: 0,
-          }).format(subStats?.unpaid_total_amount ?? 0)}
+          value={currencyFmt.format(unpaidTotal)}
           icon={AlertCircle}
           trendType="down"
-          variant={(subStats?.unpaid_total_amount ?? 0) > 0 ? 'alert' : 'default'}
+          variant="default"
           href="/subscriptions"
           loading={isSubStatsLoading}
         />
         <KpiCard
+          className="h-full"
           title={t('kpi.netProfit')}
-          value={formatTL(simStats?.total_monthly_profit ?? 0)}
+          value={currencyFmt.format(financeKpis?.netProfit ?? 0)}
           icon={DollarSign}
-          trendType="up"
+          trendType="neutral"
           href="/finance"
-          loading={isSimStatsLoading}
+          loading={isFinanceKpisLoading}
         />
       </div>
 
-      {/* ── ZONE C — Sparkline Financial Cards ───────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        <KpiCard
-          title={t('sparkline.monthlyRevenue')}
-          value={new Intl.NumberFormat('tr-TR', {
-            style: 'currency',
-            currency: 'TRY',
-            maximumFractionDigits: 0,
-          }).format(simStats?.total_monthly_profit ?? 0)}
-          trend="+12.4%"
-          chartType="positive"
-          icon={DollarSign}
-          chartFormatter={formatTL}
-          loading={isSimStatsLoading || isRevenueLoading}
-          chartData={revenueChartData.length > 0 ? revenueChartData : [
-            { name: 'Eyl', value: 62000 },
-            { name: 'Eki', value: 71000 },
-            { name: 'Kas', value: 68000 },
-            { name: 'Ara', value: 75000 },
-            { name: 'Oca', value: 80000 },
-            { name: 'Şub', value: 78000 },
-            { name: 'Mar', value: simStats?.total_monthly_profit ?? 84200 },
-          ]}
-        />
-        <KpiCard
-          title={t('sparkline.mrrTrend')}
-          value={new Intl.NumberFormat('tr-TR', {
-            style: 'currency',
-            currency: 'TRY',
-            maximumFractionDigits: 0,
-          }).format(subStats?.mrr ?? 0)}
-          trend="+8.2%"
-          chartType="positive"
-          icon={TrendingUp}
-          chartFormatter={formatTL}
-          loading={isSubStatsLoading}
-          chartData={[
-            { name: 'Eyl', value: 45000 },
-            { name: 'Eki', value: 47000 },
-            { name: 'Kas', value: 48500 },
-            { name: 'Ara', value: 50000 },
-            { name: 'Oca', value: 52000 },
-            { name: 'Şub', value: 53500 },
-            { name: 'Mar', value: subStats?.mrr ?? 55200 },
-          ]}
-        />
-      </div>
-
-      {/* Action Board doorbell — admin only, hidden when all clear */}
-      {isAdmin && (
-        <ActionBoardCard
-          lateWorkOrderCount={lateWorkOrderCount}
-          overduePaymentCount={overduePaymentCount}
-          pendingProposalCount={pendingProposalCount}
-          isLoading={isActionLoading}
-          isError={isActionError}
-        />
-      )}
-
-      {/* ── ZONE B — Schedule feed + Donut ───────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8">
-          <TodayScheduleFeed />
-        </div>
-        <div className="lg:col-span-4">
-          <WorkOrderStatusDonut />
-        </div>
-      </div>
-
-      {/* ── ZONE E — Chart (8) + Tasks & Overdue stacked (4) ────────────── */}
+      {/* Row 2 — revenue/expense chart + donut + today tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:auto-rows-fr">
-        {/* Left: Revenue/Expense chart — stretches to match right column */}
-        <div className="lg:col-span-8 flex">
-          <div className="flex-1 min-h-0">
+        <div className="lg:col-span-8 flex min-h-0">
+          <div className="flex-1 min-h-0 w-full">
             <RevenueExpenseLineChart />
           </div>
         </div>
-        {/* Right: Tasks + Overdue stacked — each takes exactly half */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
+        <div className="lg:col-span-4 flex flex-col gap-4 min-h-0">
+          <div className="flex-shrink-0 min-h-0">
+            <WorkOrderStatusDonut />
+          </div>
           <div className="flex-1 flex flex-col min-h-0">
             <TodayTaskChecklist />
           </div>
-          <div className="flex-1 flex flex-col min-h-0">
-            <OverduePaymentsList />
-          </div>
+        </div>
+      </div>
+
+      {/* Row 3 — schedule + overdue payments */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-8 min-h-0">
+          <TodayScheduleFeed />
+        </div>
+        <div className="lg:col-span-4 min-h-0">
+          <OverduePaymentsList />
         </div>
       </div>
 

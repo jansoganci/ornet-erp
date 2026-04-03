@@ -12,6 +12,7 @@ import {
   financeDashboardKeys,
   dashboardV2Keys,
   financeSettingsKeys,
+  financeHealthKeys,
 } from './api';
 
 // Transactions
@@ -314,5 +315,30 @@ export function useFinanceSettings() {
       };
     },
     staleTime: 1000 * 60 * 10,
+  });
+}
+
+// ── Finance Health Check ─────────────────────────────────────────────────────
+
+/** Returns the count of records in view_finance_health_check. */
+export function useFinanceHealthCheck() {
+  return useQuery({
+    queryKey: financeHealthKeys.count(),
+    queryFn: api.fetchFinanceHealthCheckCount,
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Returns the full list of problematic records.
+ * Pass { enabled: true } only when the user explicitly opens the detail modal
+ * to avoid loading the full list on every Finance Dashboard mount.
+ */
+export function useFinanceHealthCheckRecords({ enabled = false } = {}) {
+  return useQuery({
+    queryKey: financeHealthKeys.records(),
+    queryFn: api.fetchFinanceHealthCheckRecords,
+    enabled,
+    staleTime: 5 * 60_000,
   });
 }

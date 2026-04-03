@@ -75,22 +75,11 @@ export function ProposalItemsEditor({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Package className="w-5 h-5 text-primary-600" />
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
-            {t('form.sections.items')}
-          </h3>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={handleAddItem}
-        >
-          {t('items.addItem')}
-        </Button>
+      <div className="flex items-center gap-2">
+        <Package className="w-5 h-5 text-primary-600" />
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+          {t('form.sections.items')}
+        </h3>
       </div>
 
       {/* Desktop Table */}
@@ -168,11 +157,19 @@ export function ProposalItemsEditor({
                         className={cn(
                           'block w-full h-9 rounded-lg border shadow-sm text-sm transition-colors text-center',
                           'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
-                          'border-neutral-300 dark:border-neutral-500 focus:border-primary-600 focus:ring-primary-600/20 px-2'
+                          errors?.items?.[index]?.quantity
+                            ? 'border-error-500 focus:border-error-500 focus:ring-error-500/20'
+                            : 'border-neutral-300 dark:border-neutral-500 focus:border-primary-600 focus:ring-primary-600/20',
+                          'px-2',
                         )}
                       />
                     )}
                   />
+                  {errors?.items?.[index]?.quantity?.message && (
+                    <p className="text-[10px] text-error-600 dark:text-error-400 mt-0.5 text-center">
+                      {errors.items[index].quantity.message}
+                    </p>
+                  )}
                 </div>
                 <div className="px-1 relative z-10">
                   <Controller
@@ -217,11 +214,19 @@ export function ProposalItemsEditor({
                         }}
                         className={cn(
                           'block w-full h-9 rounded-lg border shadow-sm text-sm relative pl-6 pr-2',
-                          'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50 border-neutral-300 dark:border-neutral-500'
+                          'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
+                          errors?.items?.[index]?.unit_price
+                            ? 'border-error-500 focus:border-error-500'
+                            : 'border-neutral-300 dark:border-neutral-500',
                         )}
                       />
                     )}
                   />
+                  {errors?.items?.[index]?.unit_price?.message && (
+                    <p className="text-[10px] text-error-600 dark:text-error-400 mt-0.5 text-right">
+                      {errors.items[index].unit_price.message}
+                    </p>
+                  )}
                 </div>
                 <div className="px-1 text-right">
                   <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
@@ -279,6 +284,16 @@ export function ProposalItemsEditor({
             </div>
           );
         })}
+
+        {/* Add Item Button - Desktop */}
+        <button
+          type="button"
+          onClick={handleAddItem}
+          className="w-full py-3 px-4 mt-2 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 bg-transparent hover:bg-neutral-50 dark:hover:bg-neutral-900/50 hover:border-primary-400 dark:hover:border-primary-600 transition-colors text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 font-medium text-sm"
+        >
+          <Plus className="w-4 h-4" />
+          {t('items.addItem')}
+        </button>
       </div>
 
       {/* Mobile Cards */}
@@ -356,12 +371,19 @@ export function ProposalItemsEditor({
                           'block w-full h-10 rounded-lg border shadow-sm text-sm transition-colors text-center',
                           'focus:outline-none focus:ring-2 focus:ring-offset-0',
                           'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
-                          'border-neutral-300 dark:border-neutral-500 focus:border-primary-600 focus:ring-primary-600/20',
-                          'px-3'
+                          errors?.items?.[index]?.quantity
+                            ? 'border-error-500 focus:border-error-500 focus:ring-error-500/20'
+                            : 'border-neutral-300 dark:border-neutral-500 focus:border-primary-600 focus:ring-primary-600/20',
+                          'px-3',
                         )}
                       />
                     )}
                   />
+                  {errors?.items?.[index]?.quantity?.message && (
+                    <p className="text-xs text-error-600 dark:text-error-400 mt-1">
+                      {errors.items[index].quantity.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">
@@ -422,12 +444,19 @@ export function ProposalItemsEditor({
                           'block w-full h-10 rounded-lg border shadow-sm text-sm transition-colors',
                           'focus:outline-none focus:ring-2 focus:ring-offset-0',
                           'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
-                          'border-neutral-300 dark:border-neutral-500 focus:border-primary-600 focus:ring-primary-600/20',
-                          'pl-6 pr-3'
+                          errors?.items?.[index]?.unit_price
+                            ? 'border-error-500 focus:border-error-500 focus:ring-error-500/20'
+                            : 'border-neutral-300 dark:border-neutral-500 focus:border-primary-600 focus:ring-primary-600/20',
+                          'pl-6 pr-3',
                         )}
                       />
                     )}
                   />
+                  {errors?.items?.[index]?.unit_price?.message && (
+                    <p className="text-xs text-error-600 dark:text-error-400 mt-1">
+                      {errors.items[index].unit_price.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -475,6 +504,16 @@ export function ProposalItemsEditor({
             </div>
           );
         })}
+
+        {/* Add Item Button - Mobile */}
+        <button
+          type="button"
+          onClick={handleAddItem}
+          className="w-full py-3 px-4 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 bg-transparent hover:bg-neutral-50 dark:hover:bg-neutral-900/50 hover:border-primary-400 dark:hover:border-primary-600 transition-colors text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 font-medium text-sm"
+        >
+          <Plus className="w-4 h-4" />
+          {t('items.addItem')}
+        </button>
       </div>
 
       {/* Totals: Subtotal, Discount, Grand Total */}

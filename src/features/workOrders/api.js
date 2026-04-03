@@ -2,6 +2,37 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { resolveProposalItemCost, resolveProposalItemUnitPrice } from '../../lib/proposalCalc';
 
+/**
+ * Dual-column model for work_order_materials (same idea as proposal_items):
+ * USD → unit_price_usd + cost_usd (TRY columns zero/null); TRY → unit_price + cost (USD columns zero/null).
+ * Inserting only unit_price for a USD WO breaks resolveProposalItemUnitPrice() (reads unit_price_usd first).
+ */
+function splitWorkOrderMaterialAmounts(currency, unitPrice, cost) {
+  const cur = (currency || 'TRY').toUpperCase();
+  const price = Number(unitPrice);
+  const safePrice = Number.isFinite(price) ? price : 0;
+  let c = null;
+  if (cost !== null && cost !== undefined && cost !== '') {
+    const n = Number(cost);
+    if (Number.isFinite(n)) c = n;
+  }
+
+  if (cur === 'USD') {
+    return {
+      unit_price: 0,
+      unit_price_usd: safePrice,
+      cost: null,
+      cost_usd: c,
+    };
+  }
+  return {
+    unit_price: safePrice,
+    unit_price_usd: 0,
+    cost: c,
+    cost_usd: null,
+  };
+}
+
 /** Subset of work_orders_detail for list/calendar/combobox/scoped lists (keeps UI fields used in those surfaces). */
 export const WO_LIST_SELECT = [
   'id',
@@ -28,7 +59,9 @@ export const WO_LIST_SELECT = [
 export const WO_DETAIL_SELECT = `
   *,
   work_order_materials (
-    *,
+    id, work_order_id, sort_order, description, quantity, unit, material_id,
+    unit_price, unit_price_usd,
+    cost, cost_usd,
     materials ( code, name, description, unit )
   )
 `.replace(/\s+/g, ' ').trim();
@@ -199,15 +232,15 @@ export async function createWorkOrder(data) {
   if (error) throw error;
 
   if (items && items.length > 0) {
+    const cur = payload.currency || 'TRY';
     const materialRows = items.map((item, index) => ({
       work_order_id: created.id,
       sort_order: index,
       description: item.description,
       quantity: item.quantity,
       unit: item.unit || 'adet',
-      unit_price: item.unit_price ?? 0,
-      cost: item.cost ?? null,
       material_id: item.material_id || null,
+      ...splitWorkOrderMaterialAmounts(cur, item.unit_price ?? 0, item.cost),
     }));
     const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);
     if (mError) throw mError;
@@ -232,6 +265,7 @@ export async function createWorkOrderFromProposal({
   currency = 'TRY',
   materialsDiscountPercent = 0,
   vatRate = 20,
+  hasTevkifat = false,
   description = null,
   notes = null,
   items = [],
@@ -253,6 +287,7 @@ export async function createWorkOrderFromProposal({
     currency: currency || 'TRY',
     materials_discount_percent: materialsDiscountPercent ?? 0,
     vat_rate: vatRate ?? 20,
+    has_tevkifat: !!hasTevkifat,
     description: description?.trim() || null,
     notes: notes?.trim() || null,
     created_by: user.id,
@@ -269,19 +304,20 @@ export async function createWorkOrderFromProposal({
   const rowCurrency = currency || 'TRY';
 
   if (items && items.length > 0) {
-    const materialRows = items.map((item, index) => ({
-      work_order_id: created.id,
-      sort_order: item.sort_order ?? index,
-      description: item.description ?? '',
-      quantity: item.quantity ?? 1,
-      unit: item.unit || 'adet',
-      unit_price: resolveProposalItemUnitPrice(item, rowCurrency),
-      cost:
-        item.cost == null && item.cost_usd == null
-          ? null
-          : resolveProposalItemCost(item, rowCurrency),
-      material_id: item.material_id || null,
-    }));
+    const materialRows = items.map((item, index) => {
+      const resolvedPrice = resolveProposalItemUnitPrice(item, rowCurrency);
+      const hasCost = item.cost != null || item.cost_usd != null;
+      const resolvedCost = hasCost ? resolveProposalItemCost(item, rowCurrency) : null;
+      return {
+        work_order_id: created.id,
+        sort_order: item.sort_order ?? index,
+        description: item.description ?? '',
+        quantity: item.quantity ?? 1,
+        unit: item.unit || 'adet',
+        material_id: item.material_id || null,
+        ...splitWorkOrderMaterialAmounts(rowCurrency, resolvedPrice, resolvedCost),
+      };
+    });
     const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);
     if (mError) throw mError;
   }
@@ -308,6 +344,16 @@ export async function updateWorkOrder({ id, items, materials_discount_percent, .
     updatePayload.materials_discount_percent = materials_discount_percent;
   }
 
+  // DEBUG: Log payload to verify vat_rate and has_tevkifat are included
+  console.log('🔍 updateWorkOrder payload:', {
+    id,
+    vat_rate: updatePayload.vat_rate,
+    has_tevkifat: updatePayload.has_tevkifat,
+    scheduled_date: updatePayload.scheduled_date,
+    scheduled_time: updatePayload.scheduled_time,
+    fullPayload: updatePayload,
+  });
+
   const { data: updated, error } = await supabase
     .from('work_orders')
     .update(updatePayload)
@@ -315,20 +361,22 @@ export async function updateWorkOrder({ id, items, materials_discount_percent, .
     .select()
     .single();
 
+  console.log('✅ updateWorkOrder result:', { updated, error });
+
   if (error) throw error;
 
   if (items !== undefined) {
     await supabase.from('work_order_materials').delete().eq('work_order_id', id);
     if (items.length > 0) {
+      const cur = data.currency || updated.currency || 'TRY';
       const materialRows = items.map((item, index) => ({
         work_order_id: id,
         sort_order: index,
         description: item.description,
         quantity: item.quantity,
         unit: item.unit || 'adet',
-        unit_price: item.unit_price ?? 0,
-        cost: item.cost ?? null,
         material_id: item.material_id || null,
+        ...splitWorkOrderMaterialAmounts(cur, item.unit_price ?? 0, item.cost),
       }));
       const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);
       if (mError) throw mError;
@@ -341,10 +389,7 @@ export async function updateWorkOrder({ id, items, materials_discount_percent, .
 export async function deleteWorkOrder(id) {
   if (!id) throw new Error('Work order id is required');
 
-  const { error } = await supabase
-    .from('work_orders')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+  const { error } = await supabase.rpc('soft_delete_work_order', { p_id: id });
 
   if (error) throw error;
 
@@ -364,7 +409,12 @@ export async function fetchDailyWorkList(date, workerId) {
 export async function fetchWorkOrderMaterials(workOrderId) {
   const { data, error } = await supabase
     .from('work_order_materials')
-    .select('*, materials(*)')
+    .select(`
+      id, work_order_id, sort_order, description, quantity, unit, material_id,
+      unit_price, unit_price_usd,
+      cost, cost_usd,
+      materials(*)
+    `)
     .eq('work_order_id', workOrderId);
 
   if (error) throw error;

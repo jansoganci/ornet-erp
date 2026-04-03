@@ -6,6 +6,12 @@ import * as api from './api';
 import { siteKeys } from '../customerSites/api';
 import { customerKeys } from '../customers/hooks';
 import { operationsApi } from '../operations/api';
+import {
+  financeDashboardKeys,
+  transactionKeys,
+  profitAndLossKeys,
+  financeHealthKeys,
+} from '../finance/api';
 
 export const workOrderKeys = {
   all: ['workOrders'],
@@ -31,6 +37,10 @@ export function useUpdateWorkOrderStatus() {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.auditLogs(data.id) });
       queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: operationsApi.keys.all });
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
       toast.success(t('success.statusUpdated'));
     },
     onError: (error) => {
@@ -127,6 +137,10 @@ export function useCreateWorkOrder() {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
       toast.success(t('success.created'));
     },
     onError: (error) => {
@@ -145,6 +159,10 @@ export function useCreateWorkOrderFromProposal() {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
       toast.success(t('success.created'));
     },
     onError: (error) => {
@@ -159,9 +177,10 @@ export function useUpdateWorkOrder() {
   
   return useMutation({
     mutationFn: api.updateWorkOrder,
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       const { id } = variables;
-      queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: workOrderKeys.auditLogs(id) });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
@@ -169,6 +188,10 @@ export function useUpdateWorkOrder() {
       if (variables?.status === 'completed' || variables?.status === 'cancelled') {
         queryClient.invalidateQueries({ queryKey: operationsApi.keys.all });
       }
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
       toast.success(t('success.updated'));
     },
     onError: (error) => {
@@ -183,8 +206,11 @@ export function useDeleteWorkOrder() {
   
   return useMutation({
     mutationFn: (id) => api.deleteWorkOrder(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: workOrderKeys.all });
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
+      queryClient.removeQueries({ queryKey: workOrderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
+      queryClient.invalidateQueries({ queryKey: siteKeys.all });
       toast.success(t('success.deleted'));
     },
     onError: (error) => {

@@ -14,7 +14,7 @@
     "openTasks": "Açık Görevler",
     "overdueTasks": "Geciken Görevler",
     "totalCustomers": "Toplam Müşteri",
-    "activeSubscriptions": "Aktif Abonelik"
+    "activeSubscriptions": "Aktif Abone Sayısı"
   },
   "todaySchedule": {
     "title": "Bugünün Programı",
@@ -49,10 +49,11 @@
   "kpi": {
     "overdueWorkOrders": "Geciken İş Emirleri",
     "todayPlanned": "Bugün Planlanan",
-    "activeSubscriptions": "Aktif Abonelik",
+    "activeSubscriptions": "Aktif Abone Sayısı",
     "mrr": "Aylık Tekrar Eden Gelir",
-    "uncollectedPayments": "Tahsil Edilemeyen",
-    "netProfit": "Net Kâr (Bu Ay)",
+    "uncollectedPayments": "Gecikmiş Abonelik Borcu",
+    "netProfit": "Bu Ayki Net Kâr",
+    "subscriptionRevenue": "Abonelik Geliri",
     "waitingLabel": "bekliyor"
   },
   "sparkline": {

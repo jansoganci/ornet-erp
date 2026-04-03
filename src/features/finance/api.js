@@ -727,3 +727,31 @@ export async function fetchGeneralExpenses({ year, month, viewMode = 'total' }) 
     }))
     .sort((a, b) => b.latestAt.localeCompare(a.latestAt));
 }
+
+// ============================================================================
+// Finance Health Check — audit view for missing/broken finance entries
+// ============================================================================
+
+export const financeHealthKeys = {
+  all: ['finance_health_check'],
+  count: () => [...financeHealthKeys.all, 'count'],
+  records: () => [...financeHealthKeys.all, 'records'],
+};
+
+export async function fetchFinanceHealthCheckCount() {
+  const { count, error } = await supabase
+    .from('view_finance_health_check')
+    .select('source_id', { count: 'exact', head: true });
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function fetchFinanceHealthCheckRecords() {
+  const { data, error } = await supabase
+    .from('view_finance_health_check')
+    .select('source_type, source_id, reference_no, event_date, income_status, expense_status')
+    .order('event_date', { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data ?? [];
+}

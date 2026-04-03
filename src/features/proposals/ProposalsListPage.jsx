@@ -16,7 +16,7 @@ import {
   EmptyState,
   ErrorState,
 } from '../../components/ui';
-import { cn, formatDate, formatCurrency } from '../../lib/utils';
+import { cn, formatDate } from '../../lib/utils';
 import { ProposalStatusBadge } from './components/ProposalStatusBadge';
 
 const TAB_DEFINITIONS = [
@@ -117,10 +117,15 @@ export function ProposalsListPage() {
     {
       header: t('list.columns.customer'),
       accessor: 'customer_company_name',
+      maxWidth: 250,
+      cellClassName: 'whitespace-normal align-top',
       render: (value, row) => {
         const text = [value ?? row.company_name ?? '—', row.site_name].filter(Boolean).join(' · ');
         return (
-          <div className="min-w-0 truncate font-medium text-neutral-900 dark:text-neutral-50">
+          <div
+            className="min-w-0 w-full max-w-[200px] sm:max-w-[250px] font-medium text-neutral-900 dark:text-neutral-50 whitespace-normal line-clamp-2 break-words"
+            title={text || undefined}
+          >
             {text || '—'}
           </div>
         );
@@ -158,20 +163,6 @@ export function ProposalsListPage() {
           <p className="font-medium text-neutral-900 dark:text-neutral-50 whitespace-normal break-words">
             {value || '—'}
           </p>
-        </div>
-      ),
-    },
-    {
-      header: t('list.columns.amount'),
-      accessor: 'total_amount',
-      align: 'right',
-      render: (value, row) => (
-        <div className="text-right">
-          <span className="font-bold text-neutral-900 dark:text-neutral-100">
-            {value || row.total_amount_usd
-              ? formatCurrency(value ?? row.total_amount_usd, row.currency ?? 'USD')
-              : '-'}
-          </span>
         </div>
       ),
     },

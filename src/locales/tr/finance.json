@@ -321,5 +321,18 @@
     "loading": "Veriler yükleniyor...",
     "error": "Veriler yüklenirken bir hata oluştu.",
     "noDataGeneral": "Seçilen dönemde veri bulunamadı."
+  },
+  "healthBanner": {
+    "message": "{{count}} kayıt finansal bütünlük kontrolü gerektiriyor.",
+    "sourceType": {
+      "work_order": "İş Emri",
+      "proposal": "Teklif"
+    },
+    "status": {
+      "MISSING_INCOME": "Gelir Eksik",
+      "ZERO_VALUE_INCOME": "Sıfır Değer",
+      "CURRENCY_MISMATCH": "Para Birimi Uyuşmazlığı",
+      "MISSING_EXPENSE": "Gider Eksik"
+    }
   }
 }

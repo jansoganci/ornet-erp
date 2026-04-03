@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import {
   calcProposalTotals,
   calcTotalCosts,
+  calcVatTevkifatSummary,
   resolveProposalItemLineTotal,
   resolveProposalItemUnitPrice,
   calcAnnualFixedLineTotal,
@@ -51,6 +52,7 @@ import { ProposalSummaryCard } from './components/ProposalSummaryCard';
 import { CreateWorkOrderFromProposalModal } from './components/CreateWorkOrderFromProposalModal';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useUpdateProposal } from './hooks';
+import { useFinanceSettings } from '../finance/hooks';
 
 /**
  * Public folder image for PDF.
@@ -129,6 +131,7 @@ export function ProposalDetailPage() {
   const unlinkMutation = useUnlinkWorkOrder();
   const updateProposalMutation = useUpdateProposal();
   const duplicateMutation = useDuplicateProposal();
+  const { data: financeSettings } = useFinanceSettings();
 
   if (isLoading) return <DetailSkeleton />;
 
@@ -155,6 +158,22 @@ export function ProposalDetailPage() {
   const discountPercent = Number(proposal.discount_percent) || 0;
   const totalCosts = calcTotalCosts(items, currency);
   const netProfit = grandTotal - totalCosts;
+
+  const vatRate = Number(proposal.vat_rate) || 0;
+  const hasTevkifat = !!proposal.has_tevkifat;
+  const tevkifatNum = Number(financeSettings?.tevkifat_rate_numerator) || 9;
+  const tevkifatDen = Number(financeSettings?.tevkifat_rate_denominator) || 10;
+  const { vatAmount, withheldVat, totalPayable } = calcVatTevkifatSummary(
+    grandTotal,
+    vatRate,
+    hasTevkifat,
+    tevkifatNum,
+    tevkifatDen,
+  );
+  const vatRateLabel = (Number(vatRate) || 0).toLocaleString('tr-TR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 
   const handleStatusChange = (newStatus) => {
     statusMutation.mutate(
@@ -289,29 +308,59 @@ export function ProposalDetailPage() {
                 );
               })}
 
-              {discountPercent > 0 && (
-                <>
-                  <div className="flex items-center justify-between py-1 text-sm">
+              <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-[#262626] space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400">
+                    {t('proposals:detail.subtotal')}
+                  </span>
+                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                    {formatCurrency(subtotal, currency)}
+                  </span>
+                </div>
+                {discountPercent > 0 && (
+                  <div className="flex items-center justify-between text-sm">
                     <span className="text-neutral-600 dark:text-neutral-400">
-                      {t('proposals:detail.subtotal')}
+                      {t('proposals:detail.pricingDiscount')}
                     </span>
-                    <span>{formatCurrency(subtotal, currency)}</span>
+                    <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                      -{formatCurrency(discountAmount, currency)}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between py-1 text-sm">
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400">
+                    {t('proposals:detail.pricingNetExclVat')}
+                  </span>
+                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                    {formatCurrency(grandTotal, currency)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400">
+                    {t('proposals:detail.pricingVatAtRate', { rate: vatRateLabel })}
+                  </span>
+                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                    {formatCurrency(vatAmount, currency)}
+                  </span>
+                </div>
+                {hasTevkifat && (
+                  <div className="flex items-center justify-between text-sm">
                     <span className="text-neutral-600 dark:text-neutral-400">
-                      {t('proposals:detail.discountAmount')}
+                      {t('proposals:detail.pricingWithholdingDeduction')}
                     </span>
-                    <span>-{formatCurrency(discountAmount, currency)}</span>
+                    <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                      -{formatCurrency(withheldVat, currency)}
+                    </span>
                   </div>
-                </>
-              )}
-              <div className="flex items-center justify-between pt-4 border-t-2 border-neutral-900 dark:border-neutral-100">
-                <span className="font-bold text-neutral-900 dark:text-neutral-100 uppercase text-sm">
-                  {t('proposals:detail.total')}
-                </span>
-                <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-                  {formatCurrency(grandTotal, currency)}
-                </span>
+                )}
+                <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#262626]">
+                  <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wide">
+                    {t('proposals:detail.pricingGrandTotalPayable')}
+                  </span>
+                  <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
+                    {formatCurrency(totalPayable, currency)}
+                  </span>
+                </div>
               </div>
             </div>
           )}

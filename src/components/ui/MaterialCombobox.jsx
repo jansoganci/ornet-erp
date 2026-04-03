@@ -5,6 +5,7 @@ import { Spinner } from './Spinner';
 import { Badge } from './Badge';
 import { useMaterials } from '../../features/materials/hooks';
 import { MaterialFormModal } from '../../features/materials/MaterialFormModal';
+import { PROPOSAL_ITEM_UNIT_SET } from '../../features/proposals/schema';
 import { cn } from '../../lib/utils';
 
 /**
@@ -89,7 +90,7 @@ export function MaterialCombobox({
       onMaterialSelect?.({
         description: material.name,
         material_id: material.id,
-        unit: material.unit || 'adet',
+        unit: PROPOSAL_ITEM_UNIT_SET.has(material.unit) ? material.unit : 'adet',
       });
     } else {
       onChange?.(material.id);
@@ -104,7 +105,7 @@ export function MaterialCombobox({
       onMaterialSelect?.({
         description: newMaterial.name,
         material_id: newMaterial.id,
-        unit: newMaterial.unit || 'adet',
+        unit: PROPOSAL_ITEM_UNIT_SET.has(newMaterial.unit) ? newMaterial.unit : 'adet',
       });
     } else {
       onChange?.(newMaterial.id);

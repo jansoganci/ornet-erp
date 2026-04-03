@@ -12,14 +12,27 @@ export const CURRENCIES = ['TRY', 'USD'];
 
 export const ANNUAL_FIXED_COST_CURRENCIES = ['TRY', 'USD', 'EUR'];
 
+/** DB / legacy materials may store units outside this list; coerce to a safe default. */
+export const PROPOSAL_ITEM_UNITS = [
+  'adet', 'boy', 'paket', 'metre', 'mm', 'V', 'A', 'W',
+  'MHz', 'TB', 'MP', 'port', 'kanal', 'inç', 'rpm', 'bölge',
+  'set', 'takim',
+];
+export const PROPOSAL_ITEM_UNIT_SET = new Set(PROPOSAL_ITEM_UNITS);
+
 export const proposalItemSchema = z.object({
   description: z.string().min(1, i18n.t('errors:validation.required')),
-  quantity: z.coerce.number().positive(),
-  unit: z.enum([
-    'adet', 'boy', 'paket', 'metre', 'mm', 'V', 'A', 'W',
-    'MHz', 'TB', 'MP', 'port', 'kanal', 'inç', 'rpm', 'bölge',
-    'set', 'takim',
-  ]).default('adet'),
+  quantity: z.coerce.number().refine((n) => Number.isFinite(n) && n > 0, {
+    message: i18n.t('errors:validation.quantityPositive'),
+  }),
+  unit: z.preprocess(
+    (val) => (PROPOSAL_ITEM_UNIT_SET.has(val) ? val : 'adet'),
+    z.enum([
+      'adet', 'boy', 'paket', 'metre', 'mm', 'V', 'A', 'W',
+      'MHz', 'TB', 'MP', 'port', 'kanal', 'inç', 'rpm', 'bölge',
+      'set', 'takim',
+    ]),
+  ),
   unit_price: z.coerce.number().min(0),
   material_id: z.string().uuid().optional().nullable().or(z.literal('')),
   cost: z.coerce.number().min(0).optional().nullable(),

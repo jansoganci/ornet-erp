@@ -126,7 +126,8 @@
   "errors": {
     "saveFailed": "Kayıt başarısız oldu. Lütfen tekrar deneyin.",
     "loadFailed": "Veriler yüklenemedi. Lütfen tekrar deneyin.",
-    "deleteFailed": "Silme işlemi başarısız oldu. Lütfen tekrar deneyin."
+    "deleteFailed": "Silme işlemi başarısız oldu. Lütfen tekrar deneyin.",
+    "systemHealth": "Sistem Sağlığı"
   },
   "warning": "Uyarı",
   "info": "Bilgi",

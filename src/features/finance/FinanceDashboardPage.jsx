@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+// NOTE: useMemo is kept for mobileKpis / mobileChartData pure computations below.
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -29,6 +30,7 @@ import { WorkTab } from './components/dashboard/WorkTab';
 import { SubscriptionsTab } from './components/dashboard/SubscriptionsTab';
 import { SimTab } from './components/dashboard/SimTab';
 import { ChannelBarChart } from './components/dashboard/ChannelBarChart';
+import { FinanceHealthBanner } from './components/dashboard/FinanceHealthBanner';
 import { QuickEntryModal } from './components/QuickEntryModal';
 import {
   useOverviewTotals,
@@ -185,6 +187,9 @@ export function FinanceDashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Health Banner — shown when finance entries have integrity issues */}
+        <FinanceHealthBanner />
 
         {/* Tab Bar */}
         <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
@@ -390,7 +395,7 @@ export function FinanceDashboardPage() {
             { label: t('finance:dashboardV2.title') },
           ]}
           actions={
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 leftIcon={<TrendingUp className="w-4 h-4" />}
@@ -408,6 +413,8 @@ export function FinanceDashboardPage() {
             </div>
           }
         />
+
+        <FinanceHealthBanner />
 
         <FinanceDashboardFilters
           year={year}

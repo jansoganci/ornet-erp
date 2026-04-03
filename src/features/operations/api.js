@@ -14,9 +14,12 @@ export const operationsItemKeys = {
 export const operationsApi = { keys: operationsItemKeys };
 
 // Lightweight SELECT for operations pool (list view) — only columns displayed on cards
+// All columns read by RequestCard must be listed here explicitly.
+// POOL_SELECT is a performance optimization (avoids SELECT *) — if you add
+// a column to RequestCard, you MUST add it here too or it will be undefined.
 const POOL_SELECT = `
   id, customer_id, site_id, work_type, description, status, contact_status,
-  priority, region, created_at, created_by, work_order_id, outcome_type,
+  priority, region, reschedule_count, created_at, created_by, work_order_id, outcome_type,
   customers ( id, company_name, phone ),
   customer_sites ( id, site_name, account_no, city, district, contact_phone ),
   profiles!created_by ( full_name ),

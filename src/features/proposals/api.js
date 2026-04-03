@@ -225,7 +225,18 @@ export async function fetchProposal(id) {
 export async function fetchProposalItems(proposalId) {
   const { data, error } = await supabase
     .from('proposal_items')
-    .select('*, materials(code, name, description)')
+    .select(`
+      id, proposal_id, sort_order, description, quantity, unit, material_id,
+      unit_price, unit_price_usd,
+      cost, cost_usd,
+      product_cost, product_cost_usd,
+      labor_cost, labor_cost_usd,
+      shipping_cost, shipping_cost_usd,
+      material_cost, material_cost_usd,
+      misc_cost, misc_cost_usd,
+      margin_percent, line_total, total_usd,
+      materials(code, name, description)
+    `)
     .eq('proposal_id', proposalId)
     .order('sort_order', { ascending: true });
 
@@ -256,11 +267,21 @@ export async function createProposal({ items, annual_fixed_costs: annualFixedCos
     payload.site_id = null;
   }
 
+  // DEBUG: Log proposal payload to verify vat_rate and has_tevkifat
+  console.log('🔍 createProposal payload:', {
+    vat_rate: payload.vat_rate,
+    has_tevkifat: payload.has_tevkifat,
+    currency: payload.currency,
+    fullPayload: payload,
+  });
+
   const { data: proposal, error: proposalError } = await supabase
     .from('proposals')
     .insert(payload)
     .select(PROPOSAL_DETAIL_SELECT)
     .single();
+
+  console.log('✅ createProposal result:', { proposal, error: proposalError });
 
   if (proposalError) throw proposalError;
 
@@ -277,9 +298,14 @@ export async function createProposal({ items, annual_fixed_costs: annualFixedCos
     if (itemsError) throw itemsError;
 
     const total = items.reduce((sum, i) => sum + lineTotalForProposalItem(i), 0);
-    const updatePayload = { total_amount: total };
-    if ((proposalData.currency || 'USD') === 'USD') {
+    const cur = (proposalData.currency || 'USD').toUpperCase();
+    const updatePayload = {};
+    if (cur === 'USD') {
       updatePayload.total_amount_usd = total;
+      updatePayload.total_amount = 0;
+    } else {
+      updatePayload.total_amount = total;
+      updatePayload.total_amount_usd = 0;
     }
 
     const { error: updateError } = await supabase
@@ -310,12 +336,23 @@ export async function updateProposal({ id, ...proposalData }) {
   if (updates.site_id === '' || updates.site_id == null) {
     updates.site_id = null;
   }
+
+  // DEBUG: Log proposal update payload
+  console.log('🔍 updateProposal payload:', {
+    id,
+    vat_rate: updates.vat_rate,
+    has_tevkifat: updates.has_tevkifat,
+    fullPayload: updates,
+  });
+
   const { data, error } = await supabase
     .from('proposals')
     .update(updates)
     .eq('id', id)
     .select(PROPOSAL_DETAIL_SELECT)
     .single();
+
+  console.log('✅ updateProposal result:', { data, error });
 
   if (error) throw error;
   return data;
@@ -350,9 +387,14 @@ export async function updateProposalItems(proposalId, items) {
   }
 
   const total = (items || []).reduce((sum, i) => sum + lineTotalForProposalItem(i), 0);
-  const updatePayload = { total_amount: total };
-  if (_currency === 'USD') {
+  const cur = (_currency || 'USD').toUpperCase();
+  const updatePayload = {};
+  if (cur === 'USD') {
     updatePayload.total_amount_usd = total;
+    updatePayload.total_amount = 0;
+  } else {
+    updatePayload.total_amount = total;
+    updatePayload.total_amount_usd = 0;
   }
 
   const { error: updateError } = await supabase

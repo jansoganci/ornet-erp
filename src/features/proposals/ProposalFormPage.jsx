@@ -51,6 +51,56 @@ import { ProposalStepper } from './components/ProposalStepper';
 import { ProposalLivePreview } from './components/ProposalLivePreview';
 import { calcProposalTotals, calcVatTevkifatSummary } from '../../lib/proposalCalc';
 
+/** Maps Zod issue path to Turkish context for toast (step validation used to show only a generic message). */
+function formatProposalValidationToast(issue, t) {
+  const path = issue.path;
+  const p0 = path[0];
+  let where = '';
+  if (p0 === 'site_id') where = t('proposals:form.validation.where.site');
+  else if (p0 === 'title') where = t('proposals:form.validation.where.title');
+  else if (p0 === 'items' && path.length === 1) where = t('proposals:form.validation.where.items');
+  else if (p0 === 'items' && typeof path[1] === 'number') {
+    const n = path[1] + 1;
+    const sub = path[2];
+    if (sub === 'description') where = t('proposals:form.validation.where.itemMaterial', { n });
+    else if (sub === 'quantity') where = t('proposals:form.validation.where.itemQuantity', { n });
+    else if (sub === 'unit_price') where = t('proposals:form.validation.where.itemUnitPrice', { n });
+    else if (sub === 'unit') where = t('proposals:form.validation.where.itemUnit', { n });
+    else where = t('proposals:form.validation.where.itemMaterial', { n });
+  } else if (p0 === 'annual_fixed_costs' && typeof path[1] === 'number') {
+    const n = path[1] + 1;
+    const sub = path[2];
+    if (sub === 'description') where = t('proposals:form.validation.where.annualDescription', { n });
+    else if (sub === 'quantity') where = t('proposals:form.validation.where.annualQuantity', { n });
+    else where = t('proposals:form.validation.where.annualDescription', { n });
+  } else if (p0 === 'discount_percent') where = t('proposals:form.validation.where.discount');
+  if (!where) return issue.message;
+  return t('proposals:form.validation.toastLine', { where, message: issue.message });
+}
+
+function getStepIndexForProposalIssue(issue) {
+  const p0 = issue.path[0];
+  if (p0 === 'items' || p0 === 'annual_fixed_costs' || p0 === 'discount_percent') return 1;
+  if (
+    p0 === 'site_id'
+    || p0 === 'title'
+    || p0 === 'currency'
+    || p0 === 'proposal_date'
+    || p0 === 'survey_date'
+    || p0 === 'vat_rate'
+    || p0 === 'scope_of_work'
+    || p0 === 'authorized_person'
+    || p0 === 'customer_representative'
+    || p0 === 'has_vat'
+    || p0 === 'has_tevkifat'
+    || p0 === 'installation_date'
+    || p0 === 'completion_date'
+  ) {
+    return 0;
+  }
+  return 1;
+}
+
 export function ProposalFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -93,6 +143,7 @@ export function ProposalFormPage() {
     control,
     reset,
     watch,
+    getValues,
     setValue,
     trigger,
     formState: { errors, isSubmitting, isDirty },
@@ -136,21 +187,22 @@ export function ProposalFormPage() {
   // Populate form when editing
   useEffect(() => {
     if (isEdit) {
-      if (proposal && !isProposalLoading && !isItemsLoading && !isAnnualFixedLoading) {
+      if (!hasInitialized && proposal && !isProposalLoading && !isItemsLoading && !isAnnualFixedLoading) {
+        const itemCurrency = proposal.currency === 'USD' ? 'USD' : 'TRY';
         const items = existingItems.length > 0
           ? existingItems.map((item) => ({
               description: item.description || '',
               quantity: item.quantity || 1,
               unit: item.unit || 'adet',
-              unit_price: item.unit_price ?? item.unit_price_usd ?? 0,
+              unit_price: itemCurrency === 'USD' ? (item.unit_price_usd ?? 0) : (item.unit_price ?? 0),
               material_id: item.material_id ?? null,
               cost: item.cost ?? item.cost_usd ?? null,
               margin_percent: item.margin_percent ?? null,
-              product_cost: item.product_cost ?? item.product_cost_usd ?? null,
-              labor_cost: item.labor_cost ?? item.labor_cost_usd ?? null,
-              shipping_cost: item.shipping_cost ?? item.shipping_cost_usd ?? null,
-              material_cost: item.material_cost ?? item.material_cost_usd ?? null,
-              misc_cost: item.misc_cost ?? item.misc_cost_usd ?? null,
+              product_cost: itemCurrency === 'USD' ? (item.product_cost_usd ?? null) : (item.product_cost ?? null),
+              labor_cost: itemCurrency === 'USD' ? (item.labor_cost_usd ?? null) : (item.labor_cost ?? null),
+              shipping_cost: itemCurrency === 'USD' ? (item.shipping_cost_usd ?? null) : (item.shipping_cost ?? null),
+              material_cost: itemCurrency === 'USD' ? (item.material_cost_usd ?? null) : (item.material_cost ?? null),
+              misc_cost: itemCurrency === 'USD' ? (item.misc_cost_usd ?? null) : (item.misc_cost ?? null),
             }))
           : proposalDefaultValues.items;
 
@@ -228,12 +280,13 @@ export function ProposalFormPage() {
 
   const validateStep = useCallback(async (step) => {
     if (step === 0) {
-      const valid = await trigger(['site_id', 'title', 'currency', 'proposal_date', 'survey_date', 'vat_rate', 'scope_of_work', 'authorized_person', 'customer_representative']);
-      return valid;
+      return trigger(
+        ['site_id', 'title', 'currency', 'proposal_date', 'survey_date', 'vat_rate', 'scope_of_work', 'authorized_person', 'customer_representative'],
+        { shouldFocus: true },
+      );
     }
     if (step === 1) {
-      const valid = await trigger(['items', 'discount_percent', 'annual_fixed_costs']);
-      return valid;
+      return trigger(['items', 'discount_percent', 'annual_fixed_costs'], { shouldFocus: true });
     }
     return true;
   }, [trigger]);
@@ -250,9 +303,16 @@ export function ProposalFormPage() {
       setCompletedSteps((prev) => [...new Set([...prev, currentStep])]);
       setCurrentStep(targetStep);
     } else {
-      toast.error(t('common:validation.required'));
+      const parsed = proposalSchema.safeParse(getValues());
+      if (!parsed.success) {
+        const issue = parsed.error.issues[0];
+        toast.error(formatProposalValidationToast(issue, t));
+        if (issue.path[0] === 'annual_fixed_costs') setAnnualFixedOpen(true);
+      } else {
+        toast.error(t('common:validation.required'));
+      }
     }
-  }, [currentStep, validateStep, t]);
+  }, [currentStep, validateStep, t, getValues]);
 
   const handleNext = () => goToStep(currentStep + 1);
   const handlePrev = () => goToStep(currentStep - 1);
@@ -278,21 +338,26 @@ export function ProposalFormPage() {
   const persistSubmit = async (data, { skipNavigate = false } = {}) => {
     try {
       const { items, annual_fixed_costs: annualFixedCosts, has_vat, has_tevkifat, ...proposalData } = data;
-      const proposalPayload = { 
-        ...proposalData, 
+      const proposalPayload = {
+        ...proposalData,
         vat_rate: has_vat ? (Number(data.vat_rate) || 0) : 0,
         has_tevkifat: !!has_tevkifat,
-        company_name: null 
       };
 
       if (isEdit) {
-        await updateMutation.mutateAsync({ id, ...proposalPayload });
+        const updatedProposal = await updateMutation.mutateAsync({ id, ...proposalPayload });
         await updateItemsMutation.mutateAsync({ proposalId: id, items });
         await updateAnnualFixedMutation.mutateAsync({
           proposalId: id,
           rows: annualFixedCosts ?? [],
         });
-        reset(data);
+        // Reset form with saved values (convert DB values back to form format)
+        reset({
+          ...data,
+          has_vat: updatedProposal.vat_rate > 0,
+          has_tevkifat: !!updatedProposal.has_tevkifat,
+          vat_rate: updatedProposal.vat_rate ?? 0,
+        });
         if (!skipNavigate) {
           justSavedRef.current = true;
           navigate(`/proposals/${id}`);
@@ -333,13 +398,47 @@ export function ProposalFormPage() {
     return true;
   };
 
-  const onInvalid = (formErrors) => {
-    if (formErrors.site_id) {
-      toast.error(t('errors:validation.required'));
-      setCurrentStep(0);
-    } else if (formErrors.items || formErrors.annual_fixed_costs) {
-      toast.error(t('common:validation.required'));
-      setCurrentStep(1);
+  const onInvalid = () => {
+    const parsed = proposalSchema.safeParse(getValues());
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      toast.error(formatProposalValidationToast(issue, t));
+      if (issue.path[0] === 'annual_fixed_costs') setAnnualFixedOpen(true);
+      setCurrentStep(getStepIndexForProposalIssue(issue));
+      return;
+    }
+    toast.error(t('common:validation.required'));
+  };
+
+  const handleSaveDraft = async () => {
+    const rawValues = getValues();
+    try {
+      const { items, annual_fixed_costs: annualFixedCosts, has_vat, has_tevkifat, ...proposalData } = rawValues;
+      const draftPayload = {
+        ...proposalData,
+        vat_rate: has_vat ? (Number(rawValues.vat_rate) || 0) : 0,
+        has_tevkifat: !!has_tevkifat,
+        status: 'draft',
+      };
+
+      if (isEdit) {
+        await updateMutation.mutateAsync({ id, ...draftPayload });
+        await updateItemsMutation.mutateAsync({ proposalId: id, items: items ?? [] });
+        await updateAnnualFixedMutation.mutateAsync({ proposalId: id, rows: annualFixedCosts ?? [] });
+        reset(rawValues);
+        toast.success(t('proposals:form.draftSaved'));
+      } else {
+        const newProposal = await createMutation.mutateAsync({
+          ...draftPayload,
+          items: items ?? [],
+          annual_fixed_costs: annualFixedCosts ?? [],
+        });
+        reset(rawValues);
+        justSavedRef.current = true;
+        navigate(`/proposals/${newProposal.id}`);
+      }
+    } catch {
+      toast.error(t('common:errors.saveFailed'));
     }
   };
 
@@ -400,101 +499,117 @@ export function ProposalFormPage() {
                     </h3>
                   </div>
 
-                  {/* Single card: left = customer/site + title; right = proposal meta (2-col subgrid) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-4 min-w-0">
-                      <Controller
-                        name="site_id"
-                        control={control}
-                        render={({ field }) => (
-                          <CustomerSiteSelector
-                            selectedCustomerId={selectedCustomerId}
-                            selectedSiteId={field.value || ''}
-                            onCustomerChange={(cid) => {
-                              setSelectedCustomerId(cid || '');
-                              field.onChange('');
-                            }}
-                            onSiteChange={(sid) => field.onChange(sid || '')}
-                            onAddNewCustomer={() => navigate('/customers/new')}
-                            onAddNewSite={() => setShowSiteModal(true)}
-                            error={errors.site_id?.message}
-                          />
-                        )}
-                      />
-                      <Input
-                        label={t('proposals:form.fields.title')}
-                        placeholder={t('proposals:form.placeholders.title')}
-                        error={errors.title?.message}
-                        {...register('title')}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        label={t('proposals:form.fields.proposalDate')}
-                        type="date"
-                        {...register('proposal_date')}
-                      />
-                      <Input
-                        label={t('proposals:form.fields.surveyDate')}
-                        type="date"
-                        {...register('survey_date')}
-                      />
-                      <Select
-                        label={t('common:fields.currency')}
-                        options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
-                        error={errors.currency?.message}
-                        {...register('currency')}
-                      />
-                      <div className="flex items-end gap-3">
-                        <label className="flex items-center gap-3 p-3 h-12 md:h-10 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 cursor-pointer select-none border border-neutral-300 dark:border-[#262626] hover:border-primary-500/50 transition-colors shrink-0">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                            {...register('has_vat')}
-                          />
-                          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {t('proposals:form.fields.hasVat')}
-                          </span>
-                        </label>
-
-                        {hasVat && (
-                          <div className="flex-1">
-                            <Input
-                              label={t('proposals:form.fields.vatRate')}
-                              type="number"
-                              min={0}
-                              max={100}
-                              step="0.01"
-                              rightIcon={<span className="text-neutral-400 font-bold">%</span>}
-                              error={errors.vat_rate?.message}
-                              {...register('vat_rate')}
+                  <div className="space-y-6">
+                    {/* Two-column grid: Left = Customer/Site selector, Right = Proposal meta */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                      {/* Left Column: Customer & Site Selection */}
+                      <div className="min-w-0">
+                        <Controller
+                          name="site_id"
+                          control={control}
+                          render={({ field }) => (
+                            <CustomerSiteSelector
+                              selectedCustomerId={selectedCustomerId}
+                              selectedSiteId={field.value || ''}
+                              onCustomerChange={(cid) => {
+                                setSelectedCustomerId(cid || '');
+                                field.onChange('');
+                              }}
+                              onSiteChange={(sid) => field.onChange(sid || '')}
+                              onAddNewCustomer={() => navigate('/customers/new')}
+                              onAddNewSite={() => setShowSiteModal(true)}
+                              error={errors.site_id?.message}
                             />
-                          </div>
-                        )}
-                        <label className="flex items-center gap-3 p-3 h-12 md:h-10 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 cursor-pointer select-none border border-neutral-300 dark:border-[#262626] hover:border-primary-500/50 transition-colors shrink-0">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                            {...register('has_tevkifat')}
-                          />
-                          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            {t('proposals:form.fields.hasTevkifat')}
-                          </span>
-                        </label>
+                          )}
+                        />
                       </div>
-                      <Input
-                        label={t('proposals:form.fields.authorizedPerson')}
-                        {...register('authorized_person')}
-                      />
-                      <Input
-                        label={t('proposals:form.fields.customerRepresentative')}
-                        {...register('customer_representative')}
-                      />
-                    </div>
-                  </div>
 
-                  {/* Full-width: Scope of Work */}
-                  <div className="mt-6">
+                      {/* Right Column: Proposal Meta Information */}
+                      <div className="space-y-4">
+                        {/* Survey Date + Proposal Date (side by side) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input
+                            label={t('proposals:form.fields.surveyDate')}
+                            type="date"
+                            {...register('survey_date')}
+                          />
+                          <Input
+                            label={t('proposals:form.fields.proposalDate')}
+                            type="date"
+                            {...register('proposal_date')}
+                          />
+                        </div>
+
+                        {/* Currency (full-width) */}
+                        <Select
+                          label={t('common:fields.currency')}
+                          options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
+                          error={errors.currency?.message}
+                          {...register('currency')}
+                        />
+
+                        {/* KDV + Tevkifat (single row) */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3">
+                          <label className="flex items-center gap-3 p-3 h-12 sm:h-10 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 cursor-pointer select-none border border-neutral-300 dark:border-[#262626] hover:border-primary-500/50 transition-colors shrink-0">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
+                              {...register('has_vat')}
+                            />
+                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                              {t('proposals:form.fields.hasVat')}
+                            </span>
+                          </label>
+
+                          {hasVat && (
+                            <div className="flex-1 w-full sm:w-auto min-w-[120px]">
+                              <Input
+                                label={t('proposals:form.fields.vatRate')}
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="0.01"
+                                rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                                error={errors.vat_rate?.message}
+                                {...register('vat_rate')}
+                              />
+                            </div>
+                          )}
+
+                          <label className="flex items-center gap-3 p-3 h-12 sm:h-10 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 cursor-pointer select-none border border-neutral-300 dark:border-[#262626] hover:border-primary-500/50 transition-colors shrink-0">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
+                              {...register('has_tevkifat')}
+                            />
+                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                              {t('proposals:form.fields.hasTevkifat')}
+                            </span>
+                          </label>
+                        </div>
+
+                        {/* Authorized Person + Customer Representative (side by side) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input
+                            label={t('proposals:form.fields.authorizedPerson')}
+                            {...register('authorized_person')}
+                          />
+                          <Input
+                            label={t('proposals:form.fields.customerRepresentative')}
+                            {...register('customer_representative')}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom: Proposal Title + Scope of Work (full-width) */}
+                    <Input
+                      label={t('proposals:form.fields.title')}
+                      placeholder={t('proposals:form.placeholders.title')}
+                      error={errors.title?.message}
+                      {...register('title')}
+                    />
+
                     <Textarea
                       label={t('proposals:form.fields.scopeOfWork')}
                       placeholder={t('proposals:form.placeholders.scopeOfWork')}
@@ -707,6 +822,19 @@ export function ProposalFormPage() {
             )}
           </div>
           <div className="flex gap-3 flex-1 justify-end flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSaveDraft}
+              loading={
+                createMutation.isPending ||
+                updateMutation.isPending
+              }
+              leftIcon={<Save className="w-4 h-4" />}
+              className="flex-1 lg:flex-none"
+            >
+              {t('proposals:form.saveDraft')}
+            </Button>
             <Button
               type="button"
               variant="outline"

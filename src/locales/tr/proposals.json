@@ -79,6 +79,11 @@
     "confirmComplete": "Montaj tamamlandı olarak işaretlenecek. Emin misiniz?",
     "netProfit": "Net Kar",
     "subtotal": "Ara Toplam",
+    "pricingDiscount": "İndirim",
+    "pricingNetExclVat": "Net Tutar (KDV Hariç)",
+    "pricingVatAtRate": "KDV (%{{rate}})",
+    "pricingWithholdingDeduction": "Tevkifat Kesintisi",
+    "pricingGrandTotalPayable": "Genel Toplam (Ödenecek)",
     "discountPercent": "İskonto %{{percent}}",
     "discountAmount": "İskonto Tutarı",
     "vatAmount": "KDV Tutarı",
@@ -99,6 +104,21 @@
     "siteOptional": "(isteğe bağlı)",
     "editTitle": "Teklifi Düzenle",
     "customerRequired": "Lütfen bir müşteri seçin",
+    "validation": {
+      "toastLine": "{{where}}: {{message}}",
+      "where": {
+        "site": "Lokasyon",
+        "title": "Teklif başlığı",
+        "items": "En az bir malzeme satırı",
+        "discount": "İskonto",
+        "itemMaterial": "Malzeme satırı {{n}} (malzeme adı)",
+        "itemQuantity": "Malzeme satırı {{n}} (miktar)",
+        "itemUnitPrice": "Malzeme satırı {{n}} (birim fiyat)",
+        "itemUnit": "Malzeme satırı {{n}} (birim)",
+        "annualDescription": "Yıllık sabit gider satırı {{n}} (açıklama)",
+        "annualQuantity": "Yıllık sabit gider satırı {{n}} (miktar)"
+      }
+    },
     "stepper": {
       "general": "Genel Bilgiler",
       "services": "Hizmetler",
@@ -152,6 +172,8 @@
       "postAcceptanceDates": "Müşteri onayı sonrası doldurulacak tarihler",
       "terms": "Şartlar ve Koşullar"
     },
+    "saveDraft": "Taslak Kaydet",
+    "draftSaved": "Taslak kaydedildi",
     "tevkifatConfirm": {
       "title": "Tevkifat Onayı",
       "message": "Tutar limit üstü. Tevkifat eklemeden devam edilsin mi?",

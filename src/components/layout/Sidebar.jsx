@@ -178,7 +178,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed = false, onToggleCollapse
                     'relative flex items-center rounded-lg text-sm font-medium transition-all duration-200 min-h-[44px] min-w-[44px]',
                     isCollapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2',
                     isActive
-                      ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400 shadow-sm border-l-2 border-primary-600 dark:border-primary-500'
+                      ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-none'
                       : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-200'
                   )
                 }

@@ -924,6 +924,59 @@ This separation is the single source of truth for revenue attribution and preven
 
 ---
 
+## 19. useMemo — Never use it for side effects or data fetching
+
+**Audit references:** FD-C1 (FinanceDashboardPage health-check fetch)
+
+`useMemo` is a **pure memoization** hook. React guarantees it runs during render and may run it multiple times (React Strict Mode, Concurrent Mode). It must only transform data that already exists in the component's scope — it must never reach outside React (network, Supabase, DOM, timers).
+
+Using `useMemo` for a Supabase fetch worked by accident in development (empty `[]` dependency prevented re-runs in a single render cycle), but breaks under React Strict Mode (double-invocation exposes the side effect) and Concurrent Mode (memoizers may be discarded and re-run without notice).
+
+### ❌ Never do this
+
+```js
+// FinanceDashboardPage.jsx — side effect disguised as memoization
+useMemo(() => {
+  supabase
+    .from('view_finance_health_check')
+    .select('source_id', { count: 'exact', head: true })
+    .then(({ count }) => setHealthCheckCount(count || 0));
+}, []);
+// Problem 1: useMemo is not designed for side effects
+// Problem 2: Direct supabase call inside a component (violates Rule 10 + Rule 16)
+// Problem 3: Double-invokes in React Strict Mode → duplicate network requests
+// Problem 4: setHealthCheckCount called from inside useMemo → state mutation during render
+```
+
+### ✅ Always do this instead
+
+```js
+// api.js — data fetching belongs here
+export async function fetchFinanceHealthCheckCount() {
+  const { count, error } = await supabase
+    .from('view_finance_health_check')
+    .select('source_id', { count: 'exact', head: true });
+  if (error) throw error;
+  return count ?? 0;
+}
+
+// hooks.js — React Query manages the fetch lifecycle correctly
+export function useFinanceHealthCheck() {
+  return useQuery({
+    queryKey: financeHealthKeys.count(),
+    queryFn: api.fetchFinanceHealthCheckCount,
+    staleTime: 5 * 60_000,
+  });
+}
+
+// Component — one clean line, no manual state, no side effect
+const { data: healthCheckCount = 0 } = useFinanceHealthCheck();
+```
+
+**Rule:** If you are calling `supabase`, `fetch`, `axios`, `setTimeout`, or any DOM API, you are writing a side effect. Side effects go in `useEffect` (fire-and-forget) or — always preferably — a `useQuery` / `useMutation` hook. `useMemo` must contain only synchronous, pure transformations of data you already have.
+
+---
+
 ## Summary Checklist
 
 Before submitting any PR that touches mutations, forms, date logic, or auth flows, verify:
@@ -946,3 +999,4 @@ Before submitting any PR that touches mutations, forms, date logic, or auth flow
 - [ ] No page component (`.jsx`) imports `supabase` directly — all DB/auth calls go through named `api.js` functions
 - [ ] After moving any Supabase call to `api.js`, the originating file has no remaining `supabase` import
 - [ ] Never remove the `IF NEW.proposal_id IS NOT NULL THEN RETURN NEW;` guard in `auto_record_work_order_revenue` — it prevents double-counting proposal-linked work order revenue
+- [ ] `useMemo` contains only pure synchronous transformations — never `supabase`, `fetch`, `setState`, `setTimeout`, or any side effect (Rule 19)

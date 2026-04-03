@@ -18,7 +18,9 @@ import {
   Table,
 } from '../../components/ui';
 import { formatDate, formatCurrency } from '../../lib/utils';
+import { calcVatTevkifatSummary } from '../../lib/proposalCalc';
 import { useQueryClient } from '@tanstack/react-query';
+import { useFinanceSettings } from '../finance/hooks';
 import { useWorkOrder, useUpdateWorkOrderStatus, useDeleteWorkOrder, workOrderKeys } from './hooks';
 import { WorkOrderHero } from './components/WorkOrderHero';
 import { WorkOrderStatusActions } from './components/WorkOrderStatusActions';
@@ -68,6 +70,7 @@ export function WorkOrderDetailPage() {
   const { data: workOrder, isLoading, error, refetch } = useWorkOrder(id);
   const updateStatusMutation = useUpdateWorkOrderStatus();
   const deleteMutation = useDeleteWorkOrder();
+  const { data: financeSettings } = useFinanceSettings();
 
   if (isLoading) {
     return <WorkOrderDetailSkeleton />;
@@ -117,17 +120,37 @@ export function WorkOrderDetailPage() {
   const currency = workOrder.currency ?? 'TRY';
   const subtotal = items.reduce((sum, row) => {
     const qty = parseFloat(row.quantity) || 0;
-    const price = parseFloat(row.unit_price ?? row.unit_price_usd) || 0;
+    const price = currency === 'USD'
+      ? (parseFloat(row.unit_price_usd) || 0)
+      : (parseFloat(row.unit_price) || 0);
     return sum + qty * price;
   }, 0);
   const discountAmount = subtotal * (discountPercent / 100);
   const grandTotal = subtotal - discountAmount;
   const totalCosts = items.reduce((sum, row) => {
     const qty = parseFloat(row.quantity) || 0;
-    const cost = parseFloat(row.cost ?? row.cost_usd) || 0;
+    const cost = currency === 'USD'
+      ? (parseFloat(row.cost_usd) || 0)
+      : (parseFloat(row.cost) || 0);
     return sum + cost * qty;
   }, 0);
   const netProfit = grandTotal - totalCosts;
+
+  const vatRate = Number(workOrder.vat_rate) || 0;
+  const hasTevkifat = !!workOrder.has_tevkifat;
+  const tevkifatNum = Number(financeSettings?.tevkifat_rate_numerator) || 9;
+  const tevkifatDen = Number(financeSettings?.tevkifat_rate_denominator) || 10;
+  const { vatAmount, withheldVat, totalPayable } = calcVatTevkifatSummary(
+    grandTotal,
+    vatRate,
+    hasTevkifat,
+    tevkifatNum,
+    tevkifatDen,
+  );
+  const vatRateLabel = (Number(vatRate) || 0).toLocaleString('tr-TR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 
   const materialColumns = [
     {
@@ -160,7 +183,9 @@ export function WorkOrderDetailPage() {
       key: 'unit_price',
       header: t('proposals:items.unitPrice'),
       render: (val, row) => {
-        const price = parseFloat(val ?? row.unit_price_usd ?? 0);
+        const price = currency === 'USD'
+          ? (parseFloat(row.unit_price_usd) || 0)
+          : (parseFloat(row.unit_price) || 0);
         return new Intl.NumberFormat('tr-TR', {
           style: 'currency',
           currency: currency,
@@ -173,7 +198,9 @@ export function WorkOrderDetailPage() {
       header: t('proposals:items.total'),
       render: (_, row) => {
         const qty = parseFloat(row.quantity) || 0;
-        const price = parseFloat(row.unit_price ?? row.unit_price_usd) || 0;
+        const price = currency === 'USD'
+          ? (parseFloat(row.unit_price_usd) || 0)
+          : (parseFloat(row.unit_price) || 0);
         return new Intl.NumberFormat('tr-TR', {
           style: 'currency',
           currency: currency,
@@ -241,34 +268,52 @@ export function WorkOrderDetailPage() {
                 <span className="text-neutral-600 dark:text-neutral-400">
                   {t('proposals:detail.subtotal')}
                 </span>
-                <span className="text-neutral-900 dark:text-neutral-100">
+                <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
                   {formatCurrency(subtotal, currency)}
                 </span>
               </div>
               {discountPercent > 0 && (
-                <>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-600 dark:text-neutral-400">
-                      {t('proposals:form.fields.discountPercent')}
-                    </span>
-                    <span className="text-neutral-900 dark:text-neutral-100">{discountPercent}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-600 dark:text-neutral-400">
-                      {t('proposals:detail.discountAmount')}
-                    </span>
-                    <span className="text-neutral-900 dark:text-neutral-100">
-                      -{formatCurrency(discountAmount, currency)}
-                    </span>
-                  </div>
-                </>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400">
+                    {t('proposals:detail.pricingDiscount')}
+                  </span>
+                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                    -{formatCurrency(discountAmount, currency)}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600 dark:text-neutral-400">
+                  {t('proposals:detail.pricingNetExclVat')}
+                </span>
+                <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                  {formatCurrency(grandTotal, currency)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600 dark:text-neutral-400">
+                  {t('proposals:detail.pricingVatAtRate', { rate: vatRateLabel })}
+                </span>
+                <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                  {formatCurrency(vatAmount, currency)}
+                </span>
+              </div>
+              {hasTevkifat && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400">
+                    {t('proposals:detail.pricingWithholdingDeduction')}
+                  </span>
+                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                    -{formatCurrency(withheldVat, currency)}
+                  </span>
+                </div>
               )}
               <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#262626]">
-                <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300 uppercase">
-                  {t('proposals:detail.total')}
+                <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wide">
+                  {t('proposals:detail.pricingGrandTotalPayable')}
                 </span>
-                <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
-                  {formatCurrency(grandTotal, currency)}
+                <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
+                  {formatCurrency(totalPayable, currency)}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1">

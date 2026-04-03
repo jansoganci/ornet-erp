@@ -30,10 +30,13 @@ export function CreateWorkOrderFromProposalModal({ open, onClose, proposal, onSu
         scheduledDate: scheduledDate || null,
         scheduledTime: scheduledTime || null,
         assignedTo,
-        amount: proposal.total_amount ?? proposal.total_amount_usd ?? null,
+        amount: proposal.currency === 'USD'
+          ? (proposal.total_amount_usd ?? null)
+          : (proposal.total_amount ?? null),
         currency: proposal.currency ?? 'TRY',
         materialsDiscountPercent: proposal.materials_discount_percent ?? proposal.discount_percent ?? 0,
         vatRate: proposal.vat_rate ?? 20,
+        hasTevkifat: proposal.has_tevkifat ?? false,
         description: proposal.title ?? null,
         notes: proposal.notes ?? null,
         items,
@@ -53,9 +56,9 @@ export function CreateWorkOrderFromProposalModal({ open, onClose, proposal, onSu
   }));
 
   const currencySymbol = getCurrencySymbol(proposal?.currency ?? 'TRY');
-  const amountDisplay = proposal?.total_amount != null
-    ? proposal.total_amount
-    : proposal?.total_amount_usd;
+  const amountDisplay = proposal?.currency === 'USD'
+    ? proposal?.total_amount_usd
+    : proposal?.total_amount;
 
   const content = () => {
     if (itemsLoading) {
