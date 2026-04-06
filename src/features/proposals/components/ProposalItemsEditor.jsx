@@ -2,10 +2,10 @@ import { useMemo } from 'react';
 import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Package, Layers, PenLine } from 'lucide-react';
-import { Input, MaterialCombobox } from '../../../components/ui';
+import { MaterialCombobox } from '../../../components/ui';
 import { cn, getCurrencySymbol, formatCurrency } from '../../../lib/utils';
 import {
-  calcProposalTotals,
+  calcSectionTotal,
   calcTotalCosts,
   calcItemLineTotal,
   calcVatTevkifatSummary,
@@ -36,7 +36,6 @@ const BLANK_ITEM = {
 
 export function ProposalItemsEditor({
   control,
-  register,
   errors,
   watch,
   setValue,
@@ -57,10 +56,16 @@ export function ProposalItemsEditor({
 
   const watchItems = watch('items') || [];
   const watchSections = watch('sections') || [];
-  const discountPercent = Number(watch('discount_percent')) || 0;
-  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(watchItems, discountPercent, currency);
   const vatRate = watch('has_vat') ? (Number(watch('vat_rate')) || 0) : 0;
   const hasTevkifat = !!watch('has_tevkifat');
+
+  // Grand total = sum of per-section discounted totals
+  const grandTotal = watchSections.reduce((sum, section) => {
+    const sectionItems = watchItems.filter((item) => item.section_local_id === section._local_id);
+    const { sectionTotal } = calcSectionTotal(sectionItems, section.discount_percent, currency);
+    return sum + sectionTotal;
+  }, 0);
+
   const { vatAmount, totalWithVat, withheldVat, totalPayable } = calcVatTevkifatSummary(
     grandTotal, vatRate, hasTevkifat, tevkifatNumerator, tevkifatDenominator,
   );
@@ -479,19 +484,77 @@ export function ProposalItemsEditor({
           </button>
         </div>
 
-        {/* Section Subtotal */}
-        <div className="flex items-center justify-between px-4 py-3 bg-neutral-50 dark:bg-[#1a1a1a] border-t border-neutral-200 dark:border-[#262626]">
-          {entries.length > 0 ? (
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              {t('sections.sectionSubtotal')}:
-              <span className="ml-1 font-semibold text-neutral-700 dark:text-neutral-200">
-                {formatCurrency(subtotal, currency)}
-              </span>
-            </span>
-          ) : (
+        {/* Section Totals */}
+        {entries.length === 0 ? (
+          <div className="px-4 py-3 bg-neutral-50 dark:bg-[#1a1a1a] border-t border-neutral-200 dark:border-[#262626]">
             <span className="text-xs text-neutral-400 italic">{t('sections.emptySection')}</span>
-          )}
-        </div>
+          </div>
+        ) : (() => {
+          const sectionItems = entries.map(({ flatIndex }) => watchItems[flatIndex] ?? {});
+          const sectionDiscountPct = Number(watchSections[sectionIdx]?.discount_percent) || 0;
+          const { subtotal: secSub, discountAmount: secDisc, sectionTotal: secNet } = calcSectionTotal(sectionItems, sectionDiscountPct, currency);
+          const { vatAmount: secVat, totalWithVat: secTotalWithVat } = calcVatTevkifatSummary(secNet, vatRate, false, 0, 1);
+          return (
+            <div className="px-4 py-3 bg-neutral-50 dark:bg-[#1a1a1a] border-t border-neutral-200 dark:border-[#262626] space-y-1.5">
+              {/* Subtotal row */}
+              <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                <span>{t('sections.sectionSubtotal')}</span>
+                <span className="font-medium tabular-nums">{formatCurrency(secSub, currency)}</span>
+              </div>
+
+              {/* Discount input row */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">{t('sections.discount')} %</span>
+                <Controller
+                  control={control}
+                  name={`sections.${sectionIdx}.discount_percent`}
+                  render={({ field: f }) => (
+                    <input
+                      type="number" min={0} max={100} step={0.01}
+                      value={f.value === undefined || f.value === null || f.value === '' ? '' : String(f.value)}
+                      onChange={(e) => f.onChange(e.target.value)}
+                      onBlur={() => {
+                        const n = parseFloat(String(f.value).trim());
+                        f.onChange(Number.isFinite(n) && n >= 0 ? Math.min(n, 100) : 0);
+                        f.onBlur();
+                      }}
+                      placeholder="0"
+                      className="w-20 h-7 rounded border text-xs text-center bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50 border-neutral-300 dark:border-neutral-600 focus:border-primary-500 outline-none"
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Discount amount */}
+              {sectionDiscountPct > 0 && (
+                <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                  <span>{t('sections.discountAmount')}</span>
+                  <span className="tabular-nums text-error-600 dark:text-error-400">-{formatCurrency(secDisc, currency)}</span>
+                </div>
+              )}
+
+              {/* Section net total */}
+              <div className="flex items-center justify-between text-xs font-bold text-neutral-800 dark:text-neutral-100 pt-0.5 border-t border-neutral-200 dark:border-[#333]">
+                <span>{t('sections.sectionTotal')}</span>
+                <span className="tabular-nums">{formatCurrency(secNet, currency)}</span>
+              </div>
+
+              {/* VAT on section */}
+              {vatRate > 0 && (
+                <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                  <span>KDV (%{vatRate})</span>
+                  <span className="tabular-nums">{formatCurrency(secVat, currency)}</span>
+                </div>
+              )}
+              {vatRate > 0 && (
+                <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-300 font-semibold">
+                  <span>{t('sections.sectionTotalWithVat')}</span>
+                  <span className="tabular-nums">{formatCurrency(secTotalWithVat, currency)}</span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     );
   }
@@ -530,40 +593,19 @@ export function ProposalItemsEditor({
 
       {/* ─── Grand Totals ──────────────────────────────────────────────────── */}
       <div className="pt-4 border-t-2 border-neutral-300 dark:border-[#333] space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-neutral-600 dark:text-neutral-400">{t('detail.subtotal')}</span>
-          <span className="text-neutral-900 dark:text-neutral-100">{formatCurrency(subtotal, currency)}</span>
-        </div>
-        <div className="flex items-center justify-between gap-4">
-          <label className="text-sm text-neutral-600 dark:text-neutral-400 shrink-0">
-            {t('form.fields.discountPercent')}
-          </label>
-          <Input
-            type="number" min={0} max={100} step={0.01} placeholder="0"
-            wrapperClassName="max-w-[120px]"
-            error={errors.discount_percent?.message}
-            {...register('discount_percent')}
-          />
-        </div>
-        {discountPercent > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-600 dark:text-neutral-400">{t('detail.discountAmount')}</span>
-            <span className="text-neutral-900 dark:text-neutral-100">{formatCurrency(-discountAmount, currency)}</span>
-          </div>
-        )}
-        <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#333]">
+        <div className="flex items-center justify-between pt-2">
           <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300 uppercase">{t('detail.total')}</span>
-          <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(grandTotal, currency)}</span>
+          <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">{formatCurrency(grandTotal, currency)}</span>
         </div>
         {vatRate > 0 && (
           <>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-600 dark:text-neutral-400">{t('detail.vatAmount')}</span>
-              <span className="text-neutral-900 dark:text-neutral-100">{formatCurrency(vatAmount, currency)}</span>
+              <span className="text-neutral-600 dark:text-neutral-400">{t('detail.vatAmount')} (%{vatRate})</span>
+              <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">{formatCurrency(vatAmount, currency)}</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-600 dark:text-neutral-400">{t('detail.totalWithVat')}</span>
-              <span className="text-neutral-900 dark:text-neutral-100">{formatCurrency(totalWithVat, currency)}</span>
+            <div className="flex items-center justify-between text-sm font-semibold">
+              <span className="text-neutral-700 dark:text-neutral-300">{t('detail.totalWithVat')}</span>
+              <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">{formatCurrency(totalWithVat, currency)}</span>
             </div>
           </>
         )}
@@ -571,11 +613,11 @@ export function ProposalItemsEditor({
           <>
             <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-600 dark:text-neutral-400">{t('detail.withheldVat')}</span>
-              <span className="text-neutral-900 dark:text-neutral-100">-{formatCurrency(withheldVat, currency)}</span>
+              <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">-{formatCurrency(withheldVat, currency)}</span>
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#333]">
               <span className="text-sm font-bold text-primary-700 dark:text-primary-300 uppercase">{t('detail.totalPayable')}</span>
-              <span className="text-xl font-bold text-primary-600 dark:text-primary-400">{formatCurrency(totalPayable, currency)}</span>
+              <span className="text-xl font-bold text-primary-600 dark:text-primary-400 tabular-nums">{formatCurrency(totalPayable, currency)}</span>
             </div>
           </>
         )}

@@ -282,6 +282,10 @@
     "ungrouped": "Genel",
     "emptySection": "Henüz malzeme eklenmedi.",
     "sectionSubtotal": "Bölüm Ara Toplamı",
-    "sectionCount": "{{count}} bölüm"
+    "sectionCount": "{{count}} bölüm",
+    "discount": "İskonto",
+    "discountAmount": "İskonto Tutarı",
+    "sectionTotal": "Bölüm Toplamı",
+    "sectionTotalWithVat": "KDV Dahil Bölüm Toplamı"
   }
 }

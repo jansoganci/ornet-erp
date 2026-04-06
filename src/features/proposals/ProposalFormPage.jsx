@@ -74,14 +74,14 @@ function formatProposalValidationToast(issue, t) {
     if (sub === 'description') where = t('proposals:form.validation.where.annualDescription', { n });
     else if (sub === 'quantity') where = t('proposals:form.validation.where.annualQuantity', { n });
     else where = t('proposals:form.validation.where.annualDescription', { n });
-  } else if (p0 === 'discount_percent') where = t('proposals:form.validation.where.discount');
+  }
   if (!where) return issue.message;
   return t('proposals:form.validation.toastLine', { where, message: issue.message });
 }
 
 function getStepIndexForProposalIssue(issue) {
   const p0 = issue.path[0];
-  if (p0 === 'items' || p0 === 'annual_fixed_costs' || p0 === 'discount_percent') return 1;
+  if (p0 === 'items' || p0 === 'annual_fixed_costs') return 1;
   if (
     p0 === 'site_id'
     || p0 === 'title'
@@ -204,6 +204,7 @@ export function ProposalFormPage() {
         const sections = existingSections.map((s) => ({
           _local_id: s.id,
           title: s.title || '',
+          discount_percent: Number(s.discount_percent) || 0,
         }));
 
         const items = existingItems.length > 0
@@ -307,7 +308,7 @@ export function ProposalFormPage() {
       );
     }
     if (step === 1) {
-      return trigger(['items', 'discount_percent', 'annual_fixed_costs'], { shouldFocus: true });
+      return trigger(['items', 'annual_fixed_costs'], { shouldFocus: true });
     }
     return true;
   }, [trigger]);
@@ -672,7 +673,6 @@ export function ProposalFormPage() {
                   <Card className="p-6">
                     <ProposalItemsEditor
                       control={control}
-                      register={register}
                       errors={errors}
                       watch={watch}
                       setValue={setValue}

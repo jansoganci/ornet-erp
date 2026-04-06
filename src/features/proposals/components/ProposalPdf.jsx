@@ -9,7 +9,8 @@ import {
 } from '@react-pdf/renderer';
 import { getCurrencySymbol } from '../../../lib/utils';
 import {
-  calcProposalTotals,
+  calcSectionTotal,
+  calcVatTevkifatSummary,
   resolveProposalItemLineTotal,
   resolveProposalItemUnitPrice,
   calcAnnualFixedLineTotal,
@@ -372,23 +373,32 @@ export function ProposalPdf({
   annualFixedCosts = [],
   logoSrc = null,
   certSrc = null,
+  tevkifatNumerator = 9,
+  tevkifatDenominator = 10,
 }) {
   const prop = proposal || {};
   const currency = prop.currency ?? 'USD';
   const symbol = getCurrencySymbol(currency);
   const itemList = Array.isArray(items) ? items : [];
   const annualList = Array.isArray(annualFixedCosts) ? annualFixedCosts : [];
+  const vatRate = Number(prop.vat_rate) || 0;
+  const hasTevkifat = !!prop.has_tevkifat;
 
   // Group items by section; if no sections exist render flat (backward compat)
   const sectionGroups = buildSectionGroups(itemList, sections);
   const hasSections = (sections || []).length > 0;
   const annualSubtotals = sumAnnualFixedCostsByCurrency(annualList);
-  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(
-    itemList,
-    prop.discount_percent,
-    currency
-  );
-  const discountPercent = safeNum(prop.discount_percent, 0);
+  const grandTotal = (sections || []).reduce((sum, section) => {
+    const sectionItems = itemList.filter((item) => item.section_id === section.id);
+    const { sectionTotal } = calcSectionTotal(sectionItems, section.discount_percent, currency);
+    return sum + sectionTotal;
+  }, 0);
+  const {
+    vatAmount: grandVatAmount,
+    totalWithVat: grandTotalWithVat,
+    withheldVat,
+    totalPayable,
+  } = calcVatTevkifatSummary(grandTotal, vatRate, hasTevkifat, tevkifatNumerator, tevkifatDenominator);
   const proposalDate = formatTurkishDate(prop.proposal_date || prop.created_at);
 
   const headerRows = [
@@ -506,6 +516,11 @@ export function ProposalPdf({
               // No sections → flat render (backward compatible)
               if (!hasSections) return rows;
 
+              const section = (sections || []).find((s) => s.id === sectionId);
+              const sectionDiscountPct = safeNum(section?.discount_percent, 0);
+              const sectionDiscountAmt = Math.round(groupSubtotal * sectionDiscountPct / 100 * 100) / 100;
+              const sectionNet = Math.round((groupSubtotal - sectionDiscountAmt) * 100) / 100;
+
               return (
                 <View key={sectionId || '__ungrouped__'}>
                   {title ? (
@@ -515,42 +530,95 @@ export function ProposalPdf({
                   ) : null}
                   {rows}
                   {groupItems.length > 0 && (
-                    <View style={styles.sectionSubtotalRow}>
-                      <Text style={styles.sectionSubtotalLabel}>
-                        {i18n.t('proposals:sections.sectionSubtotal')}
-                      </Text>
-                      <Text style={styles.sectionSubtotalValue}>
-                        {formatByCurrency(groupSubtotal, currency)}
-                      </Text>
-                    </View>
+                    <>
+                      <View style={styles.sectionSubtotalRow}>
+                        <Text style={styles.sectionSubtotalLabel}>
+                          {i18n.t('proposals:sections.sectionSubtotal')}
+                        </Text>
+                        <Text style={styles.sectionSubtotalValue}>
+                          {formatByCurrency(groupSubtotal, currency)}
+                        </Text>
+                      </View>
+                      {sectionDiscountPct > 0 && (
+                        <>
+                          <View style={styles.sectionSubtotalRow}>
+                            <Text style={styles.sectionSubtotalLabel}>
+                              {i18n.t('proposals:sections.discount')} %{sectionDiscountPct}
+                            </Text>
+                            <Text style={styles.sectionSubtotalValue}>
+                              -{formatByCurrency(sectionDiscountAmt, currency)}
+                            </Text>
+                          </View>
+                          <View style={styles.sectionSubtotalRow}>
+                            <Text style={[styles.sectionSubtotalLabel, { fontWeight: 600 }]}>
+                              {i18n.t('proposals:sections.sectionTotal')}
+                            </Text>
+                            <Text style={[styles.sectionSubtotalValue, { fontWeight: 600 }]}>
+                              {formatByCurrency(sectionNet, currency)}
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                      {vatRate > 0 && (() => {
+                        const { vatAmount: secVat, totalWithVat: secWithVat } = calcVatTevkifatSummary(sectionNet, vatRate, false, 0, 1);
+                        return (
+                          <>
+                            <View style={styles.sectionSubtotalRow}>
+                              <Text style={styles.sectionSubtotalLabel}>
+                                KDV (%{vatRate})
+                              </Text>
+                              <Text style={styles.sectionSubtotalValue}>
+                                {formatByCurrency(secVat, currency)}
+                              </Text>
+                            </View>
+                            <View style={styles.sectionSubtotalRow}>
+                              <Text style={[styles.sectionSubtotalLabel, { fontWeight: 600 }]}>
+                                {i18n.t('proposals:sections.sectionTotalWithVat')}
+                              </Text>
+                              <Text style={[styles.sectionSubtotalValue, { fontWeight: 600 }]}>
+                                {formatByCurrency(secWithVat, currency)}
+                              </Text>
+                            </View>
+                          </>
+                        );
+                      })()}
+                    </>
                   )}
                 </View>
               );
             });
           })()}
 
-          {/* Totals: Ara Toplam, İskonto, Genel Toplam */}
+          {/* Totals: Genel Toplam + KDV + Tevkifat */}
           <View style={styles.totalsBlock}>
-            <View style={styles.totalLine}>
-              <Text style={styles.totalLineLabel}>Ara Toplam</Text>
-              <Text style={styles.totalLineValue}>{formatByCurrency(subtotal, currency)}</Text>
-            </View>
-            {discountPercent > 0 && (
-              <>
-                <View style={styles.totalLine}>
-                  <Text style={styles.totalLineLabel}>İskonto Oranı</Text>
-                  <Text style={styles.totalLineValue}>%{discountPercent}</Text>
-                </View>
-                <View style={styles.totalLine}>
-                  <Text style={styles.totalLineLabel}>İskonto Tutarı</Text>
-                  <Text style={styles.totalLineValue}>{formatByCurrency(-discountAmount, currency)}</Text>
-                </View>
-              </>
-            )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Genel Toplam</Text>
               <Text style={styles.totalValue}>{formatByCurrency(grandTotal, currency)}</Text>
             </View>
+            {vatRate > 0 && (
+              <>
+                <View style={styles.totalLine}>
+                  <Text style={styles.totalLineLabel}>KDV (%{vatRate})</Text>
+                  <Text style={styles.totalLineValue}>{formatByCurrency(grandVatAmount, currency)}</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>KDV Dahil Toplam</Text>
+                  <Text style={styles.totalValue}>{formatByCurrency(grandTotalWithVat, currency)}</Text>
+                </View>
+              </>
+            )}
+            {hasTevkifat && vatRate > 0 && (
+              <>
+                <View style={styles.totalLine}>
+                  <Text style={styles.totalLineLabel}>Tevkifat (-{tevkifatNumerator}/{tevkifatDenominator} KDV)</Text>
+                  <Text style={styles.totalLineValue}>-{formatByCurrency(withheldVat, currency)}</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Ödenecek Tutar</Text>
+                  <Text style={styles.totalValue}>{formatByCurrency(totalPayable, currency)}</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 

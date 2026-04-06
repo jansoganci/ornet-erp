@@ -28,6 +28,7 @@ export const PROPOSAL_ITEM_UNIT_SET = new Set(PROPOSAL_ITEM_UNITS);
 export const proposalSectionSchema = z.object({
   _local_id: z.string(),
   title: z.string().default(''),
+  discount_percent: z.coerce.number().min(0).max(100).default(0),
 });
 
 export const proposalItemSchema = z.object({
@@ -73,7 +74,7 @@ export const proposalSchema = z.object({
   title: z.string().min(1, i18n.t('errors:validation.required')),
   scope_of_work: optionalStr(),
   notes: optionalStr(),
-  discount_percent: z.coerce.number().min(0).max(100).optional().nullable(),
+  discount_percent: z.coerce.number().min(0).max(100).optional().nullable(), // deprecated — per-section now
   terms_engineering: optionalStr(),
   terms_pricing: optionalStr(),
   terms_warranty: optionalStr(),
@@ -184,4 +185,5 @@ export const proposalDefaultValues = {
   sections: [],
   items: [],
   annual_fixed_costs: [],
+  discount_percent: null,
 };

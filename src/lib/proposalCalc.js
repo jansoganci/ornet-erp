@@ -100,8 +100,25 @@ export function calcProposalTotals(items = [], discountPercent = 0, proposalCurr
   return { subtotal, discountAmount, grandTotal };
 }
 
-function round2(value) {
+export function round2(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+/**
+ * Calculate subtotal, discount amount, and net total for a single section's items.
+ * @param {Array<object>} items — items belonging to this section
+ * @param {number} [discountPercent=0]
+ * @param {string} [proposalCurrency]
+ * @returns {{ subtotal: number, discountAmount: number, sectionTotal: number }}
+ */
+export function calcSectionTotal(items = [], discountPercent = 0, proposalCurrency = 'USD') {
+  const subtotal = items.reduce((sum, item) => {
+    return sum + resolveProposalItemLineTotal(item, proposalCurrency);
+  }, 0);
+  const pct = Math.min(Math.max(Number(discountPercent) || 0, 0), 100);
+  const discountAmount = round2(subtotal * pct / 100);
+  const sectionTotal = round2(subtotal - discountAmount);
+  return { subtotal, discountAmount, sectionTotal };
 }
 
 /**

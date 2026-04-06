@@ -63,13 +63,23 @@ export function PaymentRecordModal({ open, onClose, payment }) {
   }, [payment, watchedShouldInvoice, watchedVatRate]);
 
   useEffect(() => {
-    if (open) {
+    if (open && payment) {
+      const subscription = payment.subscriptions;
+      const officialInvoice = subscription?.official_invoice ?? true;
+      
+      // If official_invoice is false, VAT should be 0
+      // Otherwise use subscription's vat_rate or default to 20
+      const defaultVatRate = !officialInvoice 
+        ? 0 
+        : (subscription?.vat_rate ?? 20);
+
       reset({
         ...paymentRecordDefaultValues,
         payment_date: new Date().toISOString().slice(0, 10),
+        vat_rate: defaultVatRate,
       });
     }
-  }, [open, reset]);
+  }, [open, payment, reset]);
 
   const onSubmit = async (data) => {
     try {

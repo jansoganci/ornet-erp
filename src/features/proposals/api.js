@@ -128,6 +128,7 @@ async function insertSections(proposalId, sections) {
     proposal_id: proposalId,
     title: String(s.title ?? '').trim(),
     sort_order: i,
+    discount_percent: Number(s.discount_percent) || 0,
   }));
 
   const { data: inserted, error } = await supabase
@@ -181,7 +182,7 @@ export async function updateProposalAnnualFixedCosts(proposalId, rows) {
 export async function fetchProposalSections(proposalId) {
   const { data, error } = await supabase
     .from('proposal_sections')
-    .select('id, proposal_id, title, sort_order')
+    .select('id, proposal_id, title, sort_order, discount_percent')
     .eq('proposal_id', proposalId)
     .order('sort_order', { ascending: true });
 
@@ -223,8 +224,19 @@ export async function updateProposalSectionsAndItems(proposalId, sections, items
     if (insertErr) throw insertErr;
   }
 
-  // Update running total on proposal
-  const total = (items || []).reduce((sum, i) => sum + lineTotalForProposalItem(i), 0);
+  // Update running total on proposal — sum of per-section discounted totals
+  const itemsBySectionLocalId = {};
+  for (const item of (items || [])) {
+    const key = item.section_local_id ?? '__none__';
+    if (!itemsBySectionLocalId[key]) itemsBySectionLocalId[key] = [];
+    itemsBySectionLocalId[key].push(item);
+  }
+  const total = (sections || []).reduce((sum, s) => {
+    const sItems = itemsBySectionLocalId[s._local_id] || [];
+    const sub = sItems.reduce((s2, i) => s2 + lineTotalForProposalItem(i), 0);
+    const pct = Math.min(Math.max(Number(s.discount_percent) || 0, 0), 100);
+    return sum + Math.round((sub - Math.round(sub * pct / 100 * 100) / 100) * 100) / 100;
+  }, 0);
   const cur = (_currency || 'USD').toUpperCase();
   const totalPayload = cur === 'USD'
     ? { total_amount_usd: total, total_amount: 0 }
@@ -381,7 +393,18 @@ export async function createProposal({ items, sections, annual_fixed_costs: annu
     const { error: itemsError } = await supabase.from('proposal_items').insert(itemsToInsert);
     if (itemsError) throw itemsError;
 
-    const total = items.reduce((sum, i) => sum + lineTotalForProposalItem(i), 0);
+    const itemsBySectionLocalId2 = {};
+    for (const item of items) {
+      const key = item.section_local_id ?? '__none__';
+      if (!itemsBySectionLocalId2[key]) itemsBySectionLocalId2[key] = [];
+      itemsBySectionLocalId2[key].push(item);
+    }
+    const total = (sections || []).reduce((sum, s) => {
+      const sItems = itemsBySectionLocalId2[s._local_id] || [];
+      const sub = sItems.reduce((s2, i) => s2 + lineTotalForProposalItem(i), 0);
+      const pct = Math.min(Math.max(Number(s.discount_percent) || 0, 0), 100);
+      return sum + Math.round((sub - Math.round(sub * pct / 100 * 100) / 100) * 100) / 100;
+    }, 0);
     const cur = (proposalData.currency || 'USD').toUpperCase();
     const totalPayload = cur === 'USD'
       ? { total_amount_usd: total, total_amount: 0 }

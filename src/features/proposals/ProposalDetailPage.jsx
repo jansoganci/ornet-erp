@@ -14,7 +14,7 @@ import {
 import { pdf } from '@react-pdf/renderer';
 import { toast } from 'sonner';
 import {
-  calcProposalTotals,
+  calcSectionTotal,
   calcTotalCosts,
   calcVatTevkifatSummary,
   resolveProposalItemLineTotal,
@@ -152,12 +152,11 @@ export function ProposalDetailPage() {
   }
 
   const currency = proposal.currency ?? 'USD';
-  const { subtotal, discountAmount, grandTotal } = calcProposalTotals(
-    items,
-    proposal.discount_percent,
-    currency
-  );
-  const discountPercent = Number(proposal.discount_percent) || 0;
+  const grandTotal = sections.reduce((sum, section) => {
+    const sectionItems = items.filter((item) => item.section_id === section.id);
+    const { sectionTotal } = calcSectionTotal(sectionItems, section.discount_percent, currency);
+    return sum + sectionTotal;
+  }, 0);
   const totalCosts = calcTotalCosts(items, currency);
   const netProfit = grandTotal - totalCosts;
 
@@ -212,6 +211,8 @@ export function ProposalDetailPage() {
           annualFixedCosts={annualFixedCostsPdf}
           logoSrc={logoSrc}
           certSrc={certSrc}
+          tevkifatNumerator={tevkifatNum}
+          tevkifatDenominator={tevkifatDen}
         />,
       ).toBlob();
       const url = URL.createObjectURL(blob);
@@ -312,24 +313,6 @@ export function ProposalDetailPage() {
               })}
 
               <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-[#262626] space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-600 dark:text-neutral-400">
-                    {t('proposals:detail.subtotal')}
-                  </span>
-                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
-                    {formatCurrency(subtotal, currency)}
-                  </span>
-                </div>
-                {discountPercent > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-600 dark:text-neutral-400">
-                      {t('proposals:detail.pricingDiscount')}
-                    </span>
-                    <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
-                      -{formatCurrency(discountAmount, currency)}
-                    </span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-neutral-600 dark:text-neutral-400">
                     {t('proposals:detail.pricingNetExclVat')}
