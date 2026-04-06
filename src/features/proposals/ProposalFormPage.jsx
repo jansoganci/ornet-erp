@@ -34,10 +34,11 @@ import { proposalSchema, proposalDefaultValues, CURRENCIES } from './schema';
 import {
   useProposal,
   useProposalItems,
+  useProposalSections,
   useProposalAnnualFixedCosts,
   useCreateProposal,
   useUpdateProposal,
-  useUpdateProposalItems,
+  useUpdateProposalSectionsAndItems,
   useUpdateProposalAnnualFixedCosts,
 } from './hooks';
 import { useFinanceSettings, useLatestRate } from '../finance/hooks';
@@ -122,13 +123,14 @@ export function ProposalFormPage() {
 
   const { data: proposal, isLoading: isProposalLoading } = useProposal(id);
   const { data: existingItems = [], isLoading: isItemsLoading } = useProposalItems(id);
+  const { data: existingSections = [], isLoading: isSectionsLoading } = useProposalSections(id);
   const { data: existingAnnualFixed = [], isLoading: isAnnualFixedLoading } = useProposalAnnualFixedCosts(id);
   const { data: selectedCustomer } = useCustomer(selectedCustomerId);
   const { data: financeSettings } = useFinanceSettings();
   const { data: latestUsdRate } = useLatestRate('USD');
   const createMutation = useCreateProposal();
   const updateMutation = useUpdateProposal();
-  const updateItemsMutation = useUpdateProposalItems();
+  const updateSectionsAndItemsMutation = useUpdateProposalSectionsAndItems();
   const updateAnnualFixedMutation = useUpdateProposalAnnualFixedCosts();
   const closeOperationsItemMutation = useCloseOperationsItem();
 
@@ -150,7 +152,15 @@ export function ProposalFormPage() {
   } = useForm({
     resolver: zodResolver(proposalSchema),
     defaultValues: proposalDefaultValues,
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
   });
+
+  const {
+    fields: sectionFields,
+    append: appendSection,
+    remove: removeSection,
+  } = useFieldArray({ control, name: 'sections' });
 
   const {
     fields: proposalItemFields,
@@ -187,10 +197,18 @@ export function ProposalFormPage() {
   // Populate form when editing
   useEffect(() => {
     if (isEdit) {
-      if (!hasInitialized && proposal && !isProposalLoading && !isItemsLoading && !isAnnualFixedLoading) {
+      if (!hasInitialized && proposal && !isProposalLoading && !isItemsLoading && !isSectionsLoading && !isAnnualFixedLoading) {
         const itemCurrency = proposal.currency === 'USD' ? 'USD' : 'TRY';
+
+        // Use DB section id as _local_id so items can reference it directly
+        const sections = existingSections.map((s) => ({
+          _local_id: s.id,
+          title: s.title || '',
+        }));
+
         const items = existingItems.length > 0
           ? existingItems.map((item) => ({
+              section_local_id: item.section_id ?? null,
               description: item.description || '',
               quantity: item.quantity || 1,
               unit: item.unit || 'adet',
@@ -238,6 +256,7 @@ export function ProposalFormPage() {
           terms_warranty: proposal.terms_warranty || '',
           terms_other: proposal.terms_other || '',
           terms_attachments: proposal.terms_attachments || '',
+          sections,
           items,
           annual_fixed_costs,
         });
@@ -267,9 +286,11 @@ export function ProposalFormPage() {
     isEdit,
     proposal,
     existingItems,
+    existingSections,
     existingAnnualFixed,
     isProposalLoading,
     isItemsLoading,
+    isSectionsLoading,
     isAnnualFixedLoading,
     reset,
     hasInitialized,
@@ -337,7 +358,7 @@ export function ProposalFormPage() {
 
   const persistSubmit = async (data, { skipNavigate = false } = {}) => {
     try {
-      const { items, annual_fixed_costs: annualFixedCosts, has_vat, has_tevkifat, ...proposalData } = data;
+      const { items, sections, annual_fixed_costs: annualFixedCosts, has_vat, has_tevkifat, ...proposalData } = data;
       const proposalPayload = {
         ...proposalData,
         vat_rate: has_vat ? (Number(data.vat_rate) || 0) : 0,
@@ -346,7 +367,7 @@ export function ProposalFormPage() {
 
       if (isEdit) {
         const updatedProposal = await updateMutation.mutateAsync({ id, ...proposalPayload });
-        await updateItemsMutation.mutateAsync({ proposalId: id, items });
+        await updateSectionsAndItemsMutation.mutateAsync({ proposalId: id, sections: sections ?? [], items });
         await updateAnnualFixedMutation.mutateAsync({
           proposalId: id,
           rows: annualFixedCosts ?? [],
@@ -365,6 +386,7 @@ export function ProposalFormPage() {
       } else {
         const newProposal = await createMutation.mutateAsync({
           ...proposalPayload,
+          sections: sections ?? [],
           items,
           annual_fixed_costs: annualFixedCosts ?? [],
         });
@@ -413,7 +435,7 @@ export function ProposalFormPage() {
   const handleSaveDraft = async () => {
     const rawValues = getValues();
     try {
-      const { items, annual_fixed_costs: annualFixedCosts, has_vat, has_tevkifat, ...proposalData } = rawValues;
+      const { items, sections, annual_fixed_costs: annualFixedCosts, has_vat, has_tevkifat, ...proposalData } = rawValues;
       const draftPayload = {
         ...proposalData,
         vat_rate: has_vat ? (Number(rawValues.vat_rate) || 0) : 0,
@@ -423,13 +445,14 @@ export function ProposalFormPage() {
 
       if (isEdit) {
         await updateMutation.mutateAsync({ id, ...draftPayload });
-        await updateItemsMutation.mutateAsync({ proposalId: id, items: items ?? [] });
+        await updateSectionsAndItemsMutation.mutateAsync({ proposalId: id, sections: sections ?? [], items: items ?? [] });
         await updateAnnualFixedMutation.mutateAsync({ proposalId: id, rows: annualFixedCosts ?? [] });
         reset(rawValues);
         toast.success(t('proposals:form.draftSaved'));
       } else {
         const newProposal = await createMutation.mutateAsync({
           ...draftPayload,
+          sections: sections ?? [],
           items: items ?? [],
           annual_fixed_costs: annualFixedCosts ?? [],
         });
@@ -461,7 +484,7 @@ export function ProposalFormPage() {
     await persistSubmit(queued.data, queued.options || {});
   };
 
-  if (isEdit && (isProposalLoading || isItemsLoading || isAnnualFixedLoading)) {
+  if (isEdit && (isProposalLoading || isItemsLoading || isSectionsLoading || isAnnualFixedLoading)) {
     return <FormSkeleton />;
   }
 
@@ -657,6 +680,9 @@ export function ProposalFormPage() {
                       fields={proposalItemFields}
                       append={appendProposalItem}
                       remove={removeProposalItem}
+                      sectionFields={sectionFields}
+                      appendSection={appendSection}
+                      removeSection={removeSection}
                       tevkifatNumerator={Number(financeSettings?.tevkifat_rate_numerator) || 9}
                       tevkifatDenominator={Number(financeSettings?.tevkifat_rate_denominator) || 10}
                     />
@@ -862,7 +888,7 @@ export function ProposalFormPage() {
                   isSubmitting ||
                   createMutation.isPending ||
                   updateMutation.isPending ||
-                  updateItemsMutation.isPending ||
+                  updateSectionsAndItemsMutation.isPending ||
                   updateAnnualFixedMutation.isPending
                 }
                 className="flex-1 lg:flex-none"

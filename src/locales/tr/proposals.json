@@ -16,14 +16,16 @@
       "createdAt": "Oluşturulma"
     },
     "tabs": {
-      "all": "Tümü",
-      "drafts": "Taslaklar",
-      "sent": "Gönderilenler",
+      "active": "Aktif",
       "archive": "Arşiv"
     },
     "empty": {
       "title": "Henüz teklif yok",
-      "description": "İlk teklifinizi oluşturun."
+      "description": "İlk teklifinizi oluşturun.",
+      "activeTitle": "Aktif teklif yok",
+      "activeDescription": "Taslak, gönderilmiş veya kabul edilmiş teklif bulunmuyor.",
+      "archiveTitle": "Arşiv boş",
+      "archiveDescription": "Tamamlanan, reddedilen veya iptal edilen teklif bulunamadı."
     },
     "noResults": {
       "title": "Sonuç bulunamadı",
@@ -198,6 +200,7 @@
     "unitPrice": "Birim Fiyat",
     "total": "Toplam",
     "addItem": "Malzeme Ekle",
+    "removeRow": "Satırı Sil",
     "units": {
     "adet": "adet",
     "metre": "metre",
@@ -271,5 +274,14 @@
     "annualFixedTitle": "YILLIK SABİT GİDERLER",
     "annualFixedSubtotal": "Ara Toplam ({{currency}})",
     "annualFixedDisclaimer": "Teklif KDV dahil değildir. Yukarıdaki yıllık giderler bilgi amaçlıdır."
+  },
+  "sections": {
+    "addSection": "Bölüm Ekle",
+    "deleteSection": "Bölümü Sil",
+    "titlePlaceholder": "Bölüm adı (ör. Alarm Sistemi, CCTV...)",
+    "ungrouped": "Genel",
+    "emptySection": "Henüz malzeme eklenmedi.",
+    "sectionSubtotal": "Bölüm Ara Toplamı",
+    "sectionCount": "{{count}} bölüm"
   }
 }

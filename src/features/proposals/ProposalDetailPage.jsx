@@ -38,6 +38,7 @@ import { buildDefaultProposalPdfFilename } from './proposalPdfFilename';
 import {
   useProposal,
   useProposalItems,
+  useProposalSections,
   useProposalAnnualFixedCosts,
   useUpdateProposalStatus,
   useDeleteProposal,
@@ -123,6 +124,7 @@ export function ProposalDetailPage() {
 
   const { data: proposal, isLoading, error, refetch } = useProposal(id);
   const { data: items = [] } = useProposalItems(id);
+  const { data: sections = [] } = useProposalSections(id);
   const { data: annualFixedRaw = [] } = useProposalAnnualFixedCosts(id);
   const annualFixedCostsPdf = filterPersistableAnnualFixedRows(annualFixedRaw);
   const { data: linkedWorkOrders = [] } = useProposalWorkOrders(id);
@@ -206,6 +208,7 @@ export function ProposalDetailPage() {
         <ProposalPdf
           proposal={proposal}
           items={items}
+          sections={sections}
           annualFixedCosts={annualFixedCostsPdf}
           logoSrc={logoSrc}
           certSrc={certSrc}

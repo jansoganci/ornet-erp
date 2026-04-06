@@ -9,6 +9,10 @@
       "completed": "Tamamlanan",
       "placeholder": "—"
     },
+    "tabs": {
+      "active": "Aktif",
+      "archive": "Arşiv"
+    },
     "searchPlaceholder": "Müşteri ara...",
     "addButton": "Yeni İş Emri",
     "columns": {
@@ -25,7 +29,11 @@
     "empty": {
       "title": "İş emri bulunamadı",
       "description": "Filtreleri değiştirin veya yeni iş emri oluşturun",
-      "action": "Yeni İş Emri"
+      "action": "Yeni İş Emri",
+      "activeTitle": "Aktif iş emri yok",
+      "activeDescription": "Bekleyen, planlanan veya devam eden iş emri bulunmuyor.",
+      "archiveTitle": "Arşiv boş",
+      "archiveDescription": "Tamamlanan veya iptal edilen iş emri bulunamadı."
     },
     "filters": {
       "all": "Tümü",

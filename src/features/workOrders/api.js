@@ -2,6 +2,10 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { resolveProposalItemCost, resolveProposalItemUnitPrice } from '../../lib/proposalCalc';
 
+/** Status groups for Active / Archive tabs (server-side list filtering). */
+export const WO_ACTIVE_STATUSES = ['pending', 'scheduled', 'in_progress'];
+export const WO_ARCHIVE_STATUSES = ['completed', 'cancelled'];
+
 /**
  * Dual-column model for work_order_materials (same idea as proposal_items):
  * USD → unit_price_usd + cost_usd (TRY columns zero/null); TRY → unit_price + cost (USD columns zero/null).
@@ -118,7 +122,12 @@ export async function fetchWorkOrdersPaginated(filters = {}, page = 0, pageSize 
     query = query.or(`company_name_search.ilike.%${normalized}%,account_no_search.ilike.%${normalized}%,form_no_search.ilike.%${normalized}%`);
   }
 
-  if (filters.status && filters.status !== 'all') {
+  const statusGroup = filters.statusGroup;
+  if (statusGroup === 'active') {
+    query = query.in('status', WO_ACTIVE_STATUSES);
+  } else if (statusGroup === 'archive') {
+    query = query.in('status', WO_ARCHIVE_STATUSES);
+  } else if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);
   }
 
@@ -159,10 +168,19 @@ export async function fetchWorkOrdersPaginated(filters = {}, page = 0, pageSize 
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, count, error } = await query
-    .order('scheduled_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  let ordered = query;
+  if (statusGroup === 'active') {
+    ordered = ordered
+      .order('status_rank', { ascending: true })
+      .order('scheduled_date', { ascending: false })
+      .order('created_at', { ascending: false });
+  } else {
+    ordered = ordered
+      .order('scheduled_date', { ascending: false })
+      .order('created_at', { ascending: false });
+  }
+
+  const { data, count, error } = await ordered.range(from, to);
 
   if (error) throw error;
   return { data: data ?? [], count: count ?? 0 };

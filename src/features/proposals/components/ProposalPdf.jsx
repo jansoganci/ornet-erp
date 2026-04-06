@@ -174,6 +174,43 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#e8e8e8',
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    marginTop: 8,
+    marginBottom: 0,
+  },
+  sectionHeaderText: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: '#333333',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    flex: 1,
+  },
+  sectionSubtotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingTop: 3,
+    paddingBottom: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  sectionSubtotalLabel: {
+    fontSize: 8,
+    color: '#737373',
+    marginRight: 12,
+    fontWeight: 600,
+  },
+  sectionSubtotalValue: {
+    fontSize: 8,
+    fontWeight: 600,
+    width: 70,
+    textAlign: 'right',
+    color: '#404040',
+  },
   totalsBlock: {
     marginTop: 10,
     alignItems: 'flex-end',
@@ -290,10 +327,48 @@ function safeNum(val, fallback = 0) {
   return Number.isNaN(n) ? fallback : n;
 }
 
+/**
+ * Groups items by section_id, preserving section order from the sections array.
+ * Items with null section_id are collected in an ungrouped bucket rendered last (or only).
+ * When there are no named sections, renders flat (backward compatible).
+ *
+ * @param {Array} items - proposal_items rows (have section_id: uuid|null)
+ * @param {Array} sections - proposal_sections rows [{ id, title }]
+ * @returns {Array<{ sectionId: string|null, title: string|null, items: [] }>}
+ */
+function buildSectionGroups(items, sections) {
+  const sectionMap = {};
+  for (const s of (sections || [])) sectionMap[s.id] = s.title || '';
+
+  const ungrouped = [];
+  const bySection = {};
+  for (const item of items) {
+    const sid = item.section_id ?? null;
+    if (!sid || !(sid in sectionMap)) {
+      ungrouped.push(item);
+    } else {
+      if (!bySection[sid]) bySection[sid] = [];
+      bySection[sid].push(item);
+    }
+  }
+
+  const groups = (sections || []).map((s) => ({
+    sectionId: s.id,
+    title: s.title || '',
+    items: bySection[s.id] || [],
+  }));
+
+  if (ungrouped.length > 0) {
+    groups.push({ sectionId: null, title: null, items: ungrouped });
+  }
+
+  return groups;
+}
 
 export function ProposalPdf({
   proposal,
   items,
+  sections = [],
   annualFixedCosts = [],
   logoSrc = null,
   certSrc = null,
@@ -303,6 +378,10 @@ export function ProposalPdf({
   const symbol = getCurrencySymbol(currency);
   const itemList = Array.isArray(items) ? items : [];
   const annualList = Array.isArray(annualFixedCosts) ? annualFixedCosts : [];
+
+  // Group items by section; if no sections exist render flat (backward compat)
+  const sectionGroups = buildSectionGroups(itemList, sections);
+  const hasSections = (sections || []).length > 0;
   const annualSubtotals = sumAnnualFixedCostsByCurrency(annualList);
   const { subtotal, discountAmount, grandTotal } = calcProposalTotals(
     itemList,
@@ -393,29 +472,62 @@ export function ProposalPdf({
             <Text style={[styles.colUnitPrice, styles.headerText]}>B.Fiyat ({symbol})</Text>
             <Text style={[styles.colTotal, styles.headerText]}>Toplam ({symbol})</Text>
           </View>
-          {itemList.map((item, index) => {
-            const lineTotal = safeNum(resolveProposalItemLineTotal(item, currency));
-            const materialDesc = item.materials?.description ? safeStr(item.materials.description) : '';
-            return (
-              <View key={item.id || index} style={styles.tableRow}>
-                <Text style={styles.colSira}>{index + 1}</Text>
-                <View style={styles.colDescription}>
-                  <Text style={{ fontSize: 9 }}>{safeStr(item.description)}</Text>
-                  {materialDesc ? (
-                    <Text style={{ fontSize: 8, color: '#737373', marginTop: 2, lineHeight: 1.2 }}>
-                      {materialDesc}
+          {(() => {
+            return sectionGroups.map(({ sectionId, title, items: groupItems }) => {
+              const groupSubtotal = groupItems.reduce(
+                (sum, item) => sum + safeNum(resolveProposalItemLineTotal(item, currency)),
+                0,
+              );
+              const rows = groupItems.map((item, localIndex) => {
+                const lineTotal = safeNum(resolveProposalItemLineTotal(item, currency));
+                const materialDesc = item.materials?.description ? safeStr(item.materials.description) : '';
+                const rowIndex = localIndex + 1;
+                return (
+                  <View key={item.id || rowIndex} style={styles.tableRow}>
+                    <Text style={styles.colSira}>{rowIndex}</Text>
+                    <View style={styles.colDescription}>
+                      <Text style={{ fontSize: 9 }}>{safeStr(item.description)}</Text>
+                      {materialDesc ? (
+                        <Text style={{ fontSize: 8, color: '#737373', marginTop: 2, lineHeight: 1.2 }}>
+                          {materialDesc}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text style={styles.colQty}>{safeNum(item.quantity)}</Text>
+                    <Text style={styles.colUnit}>{safeStr(item.unit) || 'adet'}</Text>
+                    <Text style={styles.colUnitPrice}>
+                      {formatByCurrency(resolveProposalItemUnitPrice(item, currency), currency)}
                     </Text>
+                    <Text style={styles.colTotal}>{formatByCurrency(lineTotal, currency)}</Text>
+                  </View>
+                );
+              });
+
+              // No sections → flat render (backward compatible)
+              if (!hasSections) return rows;
+
+              return (
+                <View key={sectionId || '__ungrouped__'}>
+                  {title ? (
+                    <View style={styles.sectionHeaderRow}>
+                      <Text style={styles.sectionHeaderText}>{safeStr(title)}</Text>
+                    </View>
                   ) : null}
+                  {rows}
+                  {groupItems.length > 0 && (
+                    <View style={styles.sectionSubtotalRow}>
+                      <Text style={styles.sectionSubtotalLabel}>
+                        {i18n.t('proposals:sections.sectionSubtotal')}
+                      </Text>
+                      <Text style={styles.sectionSubtotalValue}>
+                        {formatByCurrency(groupSubtotal, currency)}
+                      </Text>
+                    </View>
+                  )}
                 </View>
-                <Text style={styles.colQty}>{safeNum(item.quantity)}</Text>
-                <Text style={styles.colUnit}>{safeStr(item.unit) || 'adet'}</Text>
-                <Text style={styles.colUnitPrice}>
-                  {formatByCurrency(resolveProposalItemUnitPrice(item, currency), currency)}
-                </Text>
-                <Text style={styles.colTotal}>{formatByCurrency(lineTotal, currency)}</Text>
-              </View>
-            );
-          })}
+              );
+            });
+          })()}
 
           {/* Totals: Ara Toplam, İskonto, Genel Toplam */}
           <View style={styles.totalsBlock}>

@@ -232,7 +232,17 @@ export function ExpensesPage() {
     {
       header: t('finance:expense.fields.customer'),
       accessor: 'customers',
-      render: (val) => val?.company_name || '-',
+      minWidth: '14rem',
+      maxWidth: '14rem',
+      cellClassName: 'whitespace-normal align-top min-w-0',
+      render: (val) => {
+        const name = val?.company_name;
+        return (
+          <span className="line-clamp-2 break-words" title={name || undefined}>
+            {name || '-'}
+          </span>
+        );
+      },
     },
     {
       header: t('finance:expense.fields.source'),

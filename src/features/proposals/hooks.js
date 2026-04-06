@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/errorHandler';
@@ -6,10 +6,11 @@ import {
   fetchProposals,
   fetchProposal,
   fetchProposalItems,
+  fetchProposalSections,
   fetchProposalAnnualFixedCosts,
   createProposal,
   updateProposal,
-  updateProposalItems,
+  updateProposalSectionsAndItems,
   updateProposalAnnualFixedCosts,
   updateProposalStatus,
   deleteProposal,
@@ -26,14 +27,17 @@ export const proposalKeys = {
   details: () => [...proposalKeys.all, 'detail'],
   detail: (id) => [...proposalKeys.details(), id],
   items: (id) => [...proposalKeys.all, 'items', id],
+  sections: (id) => [...proposalKeys.all, 'sections', id],
   annualFixed: (id) => [...proposalKeys.all, 'annualFixed', id],
   workOrders: (id) => [...proposalKeys.all, 'workOrders', id],
 };
 
+/** List proposals; `filters` is the React Query key — pass `statusGroup: 'active' | 'archive'` for tabbed lists (distinct cache per tab). */
 export function useProposals(filters = {}) {
   return useQuery({
     queryKey: proposalKeys.list(filters),
     queryFn: () => fetchProposals(filters),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -49,6 +53,14 @@ export function useProposalItems(proposalId) {
   return useQuery({
     queryKey: proposalKeys.items(proposalId),
     queryFn: () => fetchProposalItems(proposalId),
+    enabled: !!proposalId,
+  });
+}
+
+export function useProposalSections(proposalId) {
+  return useQuery({
+    queryKey: proposalKeys.sections(proposalId),
+    queryFn: () => fetchProposalSections(proposalId),
     enabled: !!proposalId,
   });
 }
@@ -94,13 +106,15 @@ export function useUpdateProposal() {
   });
 }
 
-export function useUpdateProposalItems() {
+export function useUpdateProposalSectionsAndItems() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ proposalId, items }) => updateProposalItems(proposalId, items),
+    mutationFn: ({ proposalId, sections, items }) =>
+      updateProposalSectionsAndItems(proposalId, sections, items),
     onSuccess: (_, { proposalId }) => {
       queryClient.invalidateQueries({ queryKey: proposalKeys.items(proposalId) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.sections(proposalId) });
       queryClient.invalidateQueries({ queryKey: proposalKeys.detail(proposalId) });
       queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
     },

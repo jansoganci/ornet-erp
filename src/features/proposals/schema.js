@@ -20,7 +20,19 @@ export const PROPOSAL_ITEM_UNITS = [
 ];
 export const PROPOSAL_ITEM_UNIT_SET = new Set(PROPOSAL_ITEM_UNITS);
 
+/**
+ * Client-side only: each section gets a UUID generated at append time.
+ * On edit load, _local_id is set to the DB section id so items can reference it.
+ * Never sent to the server directly — api.js maps it to a real DB id after insert.
+ */
+export const proposalSectionSchema = z.object({
+  _local_id: z.string(),
+  title: z.string().default(''),
+});
+
 export const proposalItemSchema = z.object({
+  /** References a proposalSectionSchema._local_id; null = ungrouped */
+  section_local_id: z.string().nullable().optional().default(null),
   description: z.string().min(1, i18n.t('errors:validation.required')),
   quantity: z.coerce.number().refine((n) => Number.isFinite(n) && n > 0, {
     message: i18n.t('errors:validation.quantityPositive'),
@@ -77,6 +89,7 @@ export const proposalSchema = z.object({
   installation_date: optionalStr(),
   customer_representative: optionalStr(),
   completion_date: optionalStr(),
+  sections: z.array(proposalSectionSchema).default([]),
   items: z.array(proposalItemSchema).min(1, i18n.t('errors:validation.required')),
   annual_fixed_costs: z.array(annualFixedCostRowSchema).default([]),
 }).superRefine((data, ctx) => {
@@ -111,7 +124,8 @@ export const proposalSchema = z.object({
   });
 });
 
-const defaultItem = {
+export const defaultProposalItem = {
+  section_local_id: null,
   description: '',
   quantity: 1,
   unit: 'adet',
@@ -167,6 +181,7 @@ export const proposalDefaultValues = {
   has_vat: false,
   has_tevkifat: false,
   vat_rate: 0,
-  items: [defaultItem],
+  sections: [],
+  items: [],
   annual_fixed_costs: [],
 };

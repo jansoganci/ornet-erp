@@ -59,6 +59,7 @@ export function useWorkOrders(filters) {
 
 const WO_PAGE_SIZE = 50;
 
+/** Paginated list; `filters` is in the query key (include `statusGroup` for Active/Archive tabs). `keepPreviousData` avoids an empty table while the next tab’s request runs. */
 export function useWorkOrdersPaginated(filters = {}, page = 0) {
   const query = useQuery({
     queryKey: [...workOrderKeys.list(filters), 'paginated', page],

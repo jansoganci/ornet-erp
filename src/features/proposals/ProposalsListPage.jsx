@@ -20,11 +20,12 @@ import { cn, formatDate } from '../../lib/utils';
 import { ProposalStatusBadge } from './components/ProposalStatusBadge';
 
 const TAB_DEFINITIONS = [
-  { key: 'all', labelKey: 'list.tabs.all', statuses: null },
-  { key: 'drafts', labelKey: 'list.tabs.drafts', statuses: ['draft'] },
-  { key: 'sent', labelKey: 'list.tabs.sent', statuses: ['sent', 'accepted'] },
-  { key: 'archive', labelKey: 'list.tabs.archive', statuses: ['rejected', 'cancelled', 'completed'] },
+  { key: 'active', labelKey: 'list.tabs.active', statusGroup: 'active' },
+  { key: 'archive', labelKey: 'list.tabs.archive', statusGroup: 'archive' },
 ];
+
+/** Client-side sort rank for Active tab: draft → sent → accepted */
+const ACTIVE_STATUS_RANK = { draft: 0, sent: 1, accepted: 2 };
 
 function ListSkeleton() {
   return (
@@ -51,7 +52,8 @@ export function ProposalsListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { search, setSearch, debouncedSearch } = useSearchInput({ debounceMs: 300 });
 
-  const activeTab = searchParams.get('tab') || 'all';
+  const tabParam = searchParams.get('tab');
+  const activeTabKey = tabParam === 'archive' ? 'archive' : 'active';
   const yearParam = searchParams.get('year') || '';
   const monthParam = searchParams.get('month') || '';
 
@@ -65,39 +67,53 @@ export function ProposalsListPage() {
 
   const handleTabChange = (tabKey) => {
     setSearchParams((prev) => {
-      if (tabKey === 'all') prev.delete('tab');
+      if (tabKey === 'active') prev.delete('tab');
       else prev.set('tab', tabKey);
-      // Remove old status param when using tabs
-      prev.delete('status');
       return prev;
     });
   };
 
-  // Map active tab to status filter
-  const currentTabDef = TAB_DEFINITIONS.find((t) => t.key === activeTab) || TAB_DEFINITIONS[0];
-  const statusFilter = currentTabDef.statuses ? currentTabDef.statuses.join(',') : '';
+  const currentTabDef =
+    TAB_DEFINITIONS.find((def) => def.key === activeTabKey) ?? TAB_DEFINITIONS[0];
 
-  const { data: proposals, isLoading, error, refetch } = useProposals({
+  const { data: proposals, isLoading, isFetching, error, refetch } = useProposals({
     search: debouncedSearch,
-    status: statusFilter,
+    statusGroup: currentTabDef.statusGroup,
     year: yearParam || undefined,
     month: monthParam || undefined,
   });
 
-  // Count per tab (client-side from all-status data would need extra query — use simple approach)
-  const { data: allProposals } = useProposals({});
-  const tabCounts = useMemo(() => {
-    if (!allProposals) return {};
-    const counts = {};
-    TAB_DEFINITIONS.forEach((tab) => {
-      if (!tab.statuses) {
-        counts[tab.key] = allProposals.length;
-      } else {
-        counts[tab.key] = allProposals.filter((p) => tab.statuses.includes(p.status)).length;
-      }
+  const sortedProposals = useMemo(() => {
+    if (!proposals?.length) return [];
+    const list = [...proposals];
+    if (activeTabKey === 'active') {
+      return list.sort((a, b) => {
+        const ra = ACTIVE_STATUS_RANK[a.status] ?? 99;
+        const rb = ACTIVE_STATUS_RANK[b.status] ?? 99;
+        if (ra !== rb) return ra - rb;
+        const ta = new Date(a.created_at).getTime();
+        const tb = new Date(b.created_at).getTime();
+        return tb - ta;
+      });
+    }
+    return list.sort((a, b) => {
+      const ta = new Date(a.created_at).getTime();
+      const tb = new Date(b.created_at).getTime();
+      return tb - ta;
     });
-    return counts;
-  }, [allProposals]);
+  }, [proposals, activeTabKey]);
+
+  const hasListFilters = Boolean(debouncedSearch) || Boolean(yearParam) || Boolean(monthParam);
+  const emptyStateTitle = hasListFilters
+    ? t('list.noResults.title')
+    : activeTabKey === 'active'
+      ? t('list.empty.activeTitle')
+      : t('list.empty.archiveTitle');
+  const emptyStateDescription = hasListFilters
+    ? t('list.noResults.description')
+    : activeTabKey === 'active'
+      ? t('list.empty.activeDescription')
+      : t('list.empty.archiveDescription');
 
   const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString());
   const yearOptions = [
@@ -245,8 +261,8 @@ export function ProposalsListPage() {
       <div className="mb-4 overflow-x-auto scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0">
         <div className="flex gap-6 min-w-max border-b border-neutral-200 dark:border-[#262626] lg:border-0 lg:flex lg:items-center lg:gap-1 lg:p-1 lg:w-full lg:bg-neutral-100 lg:dark:bg-neutral-800/60 lg:rounded-xl lg:min-w-0">
           {TAB_DEFINITIONS.map(({ key, labelKey }) => {
-            const isActive = activeTab === key;
-            const count = tabCounts[key];
+            const isActive = activeTabKey === key;
+            const count = isActive ? proposals?.length : undefined;
 
             return (
               <button
@@ -323,18 +339,29 @@ export function ProposalsListPage() {
 
       {!isLoading && !error && proposals?.length === 0 && (
         <EmptyState
-          title={debouncedSearch || activeTab !== 'all' ? t('list.noResults.title') : t('list.empty.title')}
-          description={debouncedSearch || activeTab !== 'all' ? t('list.noResults.description') : t('list.empty.description')}
-          actionLabel={!debouncedSearch && activeTab === 'all' ? t('list.addButton') : null}
-          onAction={!debouncedSearch && activeTab === 'all' ? () => navigate('/proposals/new') : null}
+          title={emptyStateTitle}
+          description={emptyStateDescription}
+          actionLabel={
+            !hasListFilters && activeTabKey === 'active' ? t('list.addButton') : null
+          }
+          onAction={
+            !hasListFilters && activeTabKey === 'active'
+              ? () => navigate('/proposals/new')
+              : null
+          }
         />
       )}
 
       {!isLoading && !error && proposals?.length > 0 && (
-        <div className="mt-6 bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm lg:rounded-lg">
+        <div
+          className={cn(
+            'mt-6 bg-white dark:bg-[#171717] rounded-2xl border border-neutral-200 dark:border-[#262626] overflow-hidden shadow-sm lg:rounded-lg transition-opacity',
+            isFetching && !isLoading ? 'opacity-70' : ''
+          )}
+        >
           <Table
             columns={columns}
-            data={proposals}
+            data={sortedProposals}
             loading={isLoading}
             onRowClick={(row) => navigate(`/proposals/${row.id}`)}
             className="border-none"

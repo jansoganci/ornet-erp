@@ -29,15 +29,21 @@ import {
   Modal,
   IconButton,
 } from '../../components/ui';
-import { 
-  formatDate, 
+import {
+  formatDate,
   formatCurrency,
   workOrderStatusVariant,
   priorityVariant,
+  cn,
 } from '../../lib/utils';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useWorkOrdersPaginated } from './hooks';
 import { WORK_TYPES } from './schema';
+
+const WO_TAB_DEFINITIONS = [
+  { key: 'active', labelKey: 'list.tabs.active', statusGroup: 'active' },
+  { key: 'archive', labelKey: 'list.tabs.archive', statusGroup: 'archive' },
+];
 
 export function WorkOrdersListPage() {
   const { t } = useTranslation(['workOrders', 'common']);
@@ -64,15 +70,18 @@ export function WorkOrdersListPage() {
     });
   }, [debouncedSearch, searchFromUrl, setSearchParams]);
 
-  const status = searchParams.get('status') || 'all';
   const work_type = searchParams.get('work_type') || 'all';
   const yearParam = searchParams.get('year') || '';
   const monthParam = searchParams.get('month') || '';
   const page = Number(searchParams.get('page') || '0');
+  const tabParam = searchParams.get('tab');
+  const activeTabKey = tabParam === 'archive' ? 'archive' : 'active';
+  const currentTabDef =
+    WO_TAB_DEFINITIONS.find((def) => def.key === activeTabKey) ?? WO_TAB_DEFINITIONS[0];
 
   const filters = {
     search: debouncedSearch,
-    status,
+    statusGroup: currentTabDef.statusGroup,
     work_type,
     year: yearParam || undefined,
     month: monthParam || undefined,
@@ -109,14 +118,16 @@ export function WorkOrdersListPage() {
     });
   };
 
-  const statusOptions = [
-    { value: 'all', label: t('common:filters.all') },
-    { value: 'pending', label: tCommon('status.pending') },
-    { value: 'scheduled', label: tCommon('status.scheduled') },
-    { value: 'in_progress', label: tCommon('status.in_progress') },
-    { value: 'completed', label: tCommon('status.completed') },
-    { value: 'cancelled', label: tCommon('status.cancelled') },
-  ];
+  const handleTabChange = (tabKey) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tabKey === 'active') next.delete('tab');
+      else next.set('tab', tabKey);
+      next.delete('page');
+      next.delete('status');
+      return next;
+    });
+  };
 
   const typeOptions = [
     { value: 'all', label: t('common:filters.all') },
@@ -255,11 +266,13 @@ export function WorkOrdersListPage() {
 
   const [filterOpen, setFilterOpen] = useState(false);
   const activeFilterCount = [
-    status !== 'all',
     work_type !== 'all',
     yearParam,
     monthParam,
   ].filter(Boolean).length;
+
+  const hasNarrowingFilters =
+    Boolean(debouncedSearch) || work_type !== 'all' || Boolean(yearParam) || Boolean(monthParam);
 
   return (
     <PageContainer maxWidth="full" padding="default" className="space-y-6">
@@ -335,7 +348,13 @@ export function WorkOrdersListPage() {
         />
         <KpiCard
           title={t('workOrders:list.kpi.open')}
-          value={kpiPlaceholder}
+          value={
+            showKpiValues
+              ? activeTabKey === 'active'
+                ? totalCount
+                : kpiPlaceholder
+              : kpiPlaceholder
+          }
           icon={FolderOpen}
           loading={isLoading}
           className="border-neutral-200/70 bg-neutral-50/90 dark:border-[#262626] dark:bg-[#131313]"
@@ -349,11 +368,55 @@ export function WorkOrdersListPage() {
         />
         <KpiCard
           title={t('workOrders:list.kpi.completed')}
-          value={kpiPlaceholder}
+          value={
+            showKpiValues
+              ? activeTabKey === 'archive'
+                ? totalCount
+                : kpiPlaceholder
+              : kpiPlaceholder
+          }
           icon={CircleCheck}
           loading={isLoading}
           className="border-neutral-200/70 bg-neutral-50/90 dark:border-[#262626] dark:bg-[#131313]"
         />
+      </div>
+
+      {/* Active / Archive — same responsive pattern as ProposalsListPage */}
+      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0">
+        <div className="flex gap-6 min-w-max border-b border-neutral-200 dark:border-[#262626] lg:border-0 lg:flex lg:items-center lg:gap-1 lg:p-1 lg:w-full lg:bg-neutral-100 lg:dark:bg-neutral-800/60 lg:rounded-xl lg:min-w-0">
+          {WO_TAB_DEFINITIONS.map(({ key, labelKey }) => {
+            const isActive = activeTabKey === key;
+            const count = isActive ? totalCount : undefined;
+
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleTabChange(key)}
+                className={cn(
+                  'shrink-0 pb-2.5 lg:pb-0 lg:flex-1 lg:flex lg:items-center lg:justify-center lg:gap-2 lg:px-3 lg:py-2 lg:rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150',
+                  isActive
+                    ? 'border-b-2 border-primary text-primary dark:border-primary-400 dark:text-primary-400 lg:border-0 lg:bg-white lg:dark:bg-[#171717] lg:text-neutral-900 lg:dark:text-neutral-50 lg:shadow-sm'
+                    : 'border-b-2 border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 lg:hover:text-neutral-700 lg:dark:hover:text-neutral-200 lg:hover:bg-white/60 lg:dark:hover:bg-neutral-700/40'
+                )}
+              >
+                <span>{t(labelKey)}</span>
+                {count != null && count > 0 && (
+                  <span
+                    className={cn(
+                      'ml-1.5 lg:ml-0 px-1.5 py-0.5 text-[10px] font-bold rounded-full min-w-[18px] text-center tabular-nums leading-none inline-block lg:inline',
+                      isActive
+                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 lg:bg-primary-100 lg:text-primary-700'
+                        : 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Filters - desktop only */}
@@ -371,21 +434,10 @@ export function WorkOrdersListPage() {
           <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
             <div className="w-full sm:flex-1 md:w-44">
               <ListboxSelect
-                options={statusOptions}
-                value={status}
-                onChange={(v) => handleFilterChange('status', v)}
-                placeholder={t('workOrders:list.filters.status')}
-                leftIcon={<Filter className="w-4 h-4" />}
-                size="sm"
-              />
-            </div>
-            <div className="w-full sm:flex-1 md:w-44">
-              <ListboxSelect
                 options={typeOptions}
                 value={work_type}
                 onChange={(v) => handleFilterChange('work_type', v)}
                 placeholder={t('workOrders:list.filters.workType')}
-                leftIcon={<ClipboardList className="w-4 h-4" />}
                 size="sm"
               />
             </div>
@@ -425,7 +477,7 @@ export function WorkOrdersListPage() {
               onClick={() => {
                 setSearchParams((prev) => {
                   const next = new URLSearchParams(prev);
-                  ['status', 'work_type', 'year', 'month'].forEach((k) => next.delete(k));
+                  ['work_type', 'year', 'month'].forEach((k) => next.delete(k));
                   next.delete('page');
                   return next;
                 });
@@ -440,15 +492,6 @@ export function WorkOrdersListPage() {
         }
       >
         <div className="grid grid-cols-2 gap-4 py-2">
-          <div className="col-span-2">
-            <ListboxSelect
-              options={statusOptions}
-              value={status}
-              onChange={(v) => handleFilterChange('status', v)}
-              placeholder={t('workOrders:list.filters.status')}
-              size="sm"
-            />
-          </div>
           <div className="col-span-2">
             <ListboxSelect
               options={typeOptions}
@@ -488,10 +531,28 @@ export function WorkOrdersListPage() {
       ) : totalCount === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title={t('workOrders:list.empty.title')}
-          description={t('workOrders:list.empty.description')}
-          actionLabel={t('workOrders:list.addButton')}
-          onAction={() => navigate('/work-orders/new')}
+          title={
+            hasNarrowingFilters
+              ? t('workOrders:list.empty.title')
+              : activeTabKey === 'active'
+                ? t('workOrders:list.empty.activeTitle')
+                : t('workOrders:list.empty.archiveTitle')
+          }
+          description={
+            hasNarrowingFilters
+              ? t('workOrders:list.empty.description')
+              : activeTabKey === 'active'
+                ? t('workOrders:list.empty.activeDescription')
+                : t('workOrders:list.empty.archiveDescription')
+          }
+          actionLabel={
+            !hasNarrowingFilters && activeTabKey === 'active' ? t('workOrders:list.addButton') : null
+          }
+          onAction={
+            !hasNarrowingFilters && activeTabKey === 'active'
+              ? () => navigate('/work-orders/new')
+              : null
+          }
         />
       ) : (
         <div
