@@ -100,7 +100,6 @@ function getFinanceLabel(prev, seg) {
     vat: { labelKey: 'common:nav.finance.vat', to: '/finance/vat' },
     exchange: { labelKey: 'common:nav.finance.exchange', to: '/finance/exchange' },
     recurring: { labelKey: 'common:nav.finance.recurring', to: '/finance/recurring' },
-    reports: { labelKey: 'common:nav.finance.reports', to: '/finance/reports' },
   };
   return map[seg] ?? { labelKey: 'common:nav.finance.dashboard', to: '/finance' };
 }
