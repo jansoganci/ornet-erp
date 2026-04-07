@@ -303,6 +303,22 @@ export function useGeneralExpenses({ year, month, viewMode = 'total' } = {}) {
   });
 }
 
+export function useIncomeBySource({ year, month, viewMode = 'total' } = {}) {
+  return useQuery({
+    queryKey: dashboardV2Keys.incomeBySource(year, month, viewMode),
+    queryFn: () => api.fetchIncomeBySource({ year, month, viewMode }),
+    enabled: !!year,
+  });
+}
+
+export function useExpensesBySource({ year, month, viewMode = 'total' } = {}) {
+  return useQuery({
+    queryKey: dashboardV2Keys.expensesBySource(year, month, viewMode),
+    queryFn: () => api.fetchExpensesBySource({ year, month, viewMode }),
+    enabled: !!year,
+  });
+}
+
 export function useFinanceSettings() {
   return useQuery({
     queryKey: financeSettingsKeys.detail(),

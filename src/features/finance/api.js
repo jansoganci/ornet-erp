@@ -568,6 +568,10 @@ export const dashboardV2Keys = {
     [...dashboardV2Keys.all, 'overview', year, month, viewMode],
   generalExpenses: (year, month, viewMode) =>
     [...dashboardV2Keys.all, 'general_expenses', year, month, viewMode],
+  incomeBySource: (year, month, viewMode) =>
+    [...dashboardV2Keys.all, 'income_by_source', year, month, viewMode],
+  expensesBySource: (year, month, viewMode) =>
+    [...dashboardV2Keys.all, 'expenses_by_source', year, month, viewMode],
 };
 
 const CHANNEL_INCOME_TYPES = {
@@ -726,6 +730,72 @@ export async function fetchGeneralExpenses({ year, month, viewMode = 'total' }) 
       latestAt: latestCreatedAt[category] || '',
     }))
     .sort((a, b) => b.latestAt.localeCompare(a.latestAt));
+}
+
+export async function fetchIncomeBySource({ year, month, viewMode = 'total' }) {
+  const periods = buildPeriodFilter(year, month);
+
+  let query = supabase
+    .from('v_profit_and_loss')
+    .select('source_type, amount_try')
+    .eq('direction', 'income')
+    .in('period', periods);
+
+  if (viewMode === 'official') {
+    query = query.eq('is_official', true);
+  } else if (viewMode === 'unofficial') {
+    query = query.eq('is_official', false);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const bySource = {};
+  for (const row of data || []) {
+    const sourceType = row.source_type || 'other';
+    if (!bySource[sourceType]) bySource[sourceType] = 0;
+    bySource[sourceType] += Number(row.amount_try) || 0;
+  }
+
+  return Object.entries(bySource)
+    .map(([source_type, amount]) => ({
+      source_type,
+      amount: Math.round(amount * 100) / 100,
+    }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
+export async function fetchExpensesBySource({ year, month, viewMode = 'total' }) {
+  const periods = buildPeriodFilter(year, month);
+
+  let query = supabase
+    .from('v_profit_and_loss')
+    .select('source_type, amount_try')
+    .eq('direction', 'expense')
+    .in('period', periods);
+
+  if (viewMode === 'official') {
+    query = query.eq('is_official', true);
+  } else if (viewMode === 'unofficial') {
+    query = query.eq('is_official', false);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const bySource = {};
+  for (const row of data || []) {
+    const sourceType = row.source_type || 'other';
+    if (!bySource[sourceType]) bySource[sourceType] = 0;
+    bySource[sourceType] += Math.abs(Number(row.amount_try) || 0);
+  }
+
+  return Object.entries(bySource)
+    .map(([source_type, amount]) => ({
+      source_type,
+      amount: Math.round(amount * 100) / 100,
+    }))
+    .sort((a, b) => b.amount - a.amount);
 }
 
 // ============================================================================

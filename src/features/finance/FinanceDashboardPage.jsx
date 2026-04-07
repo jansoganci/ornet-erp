@@ -1,66 +1,87 @@
 import { useMemo, useState } from 'react';
-// NOTE: useMemo is kept for mobileKpis / mobileChartData pure computations below.
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
-  TrendingUp,
-  TrendingDown,
   Calendar,
-  LayoutGrid,
-  ClipboardList,
-  Receipt,
-  Wifi,
   PlusCircle,
   MinusCircle,
-  ChevronRight,
-  Fuel,
-  Building2,
-  Users,
-  Cloud,
-  MoreHorizontal,
-  Wallet,
+  Download,
 } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button } from '../../components/ui';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { FinanceDashboardFilters } from './components/dashboard/FinanceDashboardFilters';
-import { FinanceDashboardTabs } from './components/dashboard/FinanceDashboardTabs';
-import { OverviewTab } from './components/dashboard/OverviewTab';
-import { WorkTab } from './components/dashboard/WorkTab';
-import { SubscriptionsTab } from './components/dashboard/SubscriptionsTab';
-import { SimTab } from './components/dashboard/SimTab';
+import { ChannelKpiCard } from './components/dashboard/ChannelKpiCard';
 import { ChannelBarChart } from './components/dashboard/ChannelBarChart';
 import { FinanceHealthBanner } from './components/dashboard/FinanceHealthBanner';
 import { QuickEntryModal } from './components/QuickEntryModal';
 import {
   useOverviewTotals,
-  useGeneralExpenses,
-  useChannelMetrics,
   useRevenueExpensesByMonth,
+  useIncomeBySource,
+  useExpensesBySource,
 } from './hooks';
+import { fetchProfitAndLoss } from './api';
 import { formatCurrency } from '../../lib/utils';
+import { toCSV, downloadCSV } from '../../lib/csvExport';
+import { getSourceLabel } from './exportUtils';
 
-const VALID_TABS = ['overview', 'work', 'subscriptions', 'sim'];
+function mapIncomeSourceToGroup(sourceType) {
+  if (sourceType === 'subscription') return 'subscriptions';
+  if (sourceType === 'sim_rental') return 'sim';
+  if (sourceType === 'proposal') return 'proposals';
+  if (['service', 'installation', 'maintenance', 'sale'].includes(sourceType)) return 'workOrders';
+  return 'other';
+}
 
-const TAB_ICONS = {
-  overview: LayoutGrid,
-  work: ClipboardList,
-  subscriptions: Receipt,
-  sim: Wifi,
-};
+function BreakdownCard({ title, rows, total, loading, totalLabel }) {
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-[#171717] p-4">
+        <div className="mb-4">
+          <Skeleton className="h-5 w-40" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex items-center justify-between">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-const CATEGORY_ICONS = {
-  fuel: Fuel,
-  rent: Building2,
-  payroll: Users,
-  software: Cloud,
-  sim_operator: Wifi,
-  other: MoreHorizontal,
-};
+  return (
+    <div className="rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-[#171717] p-4">
+      <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-3">{title}</h3>
+      {rows.length === 0 ? (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 py-3">—</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((row) => (
+            <div key={row.key} className="flex items-center justify-between text-sm">
+              <span className="text-neutral-600 dark:text-neutral-300">{row.label}</span>
+              <span className="font-semibold tabular-nums text-neutral-900 dark:text-neutral-50">
+                {formatCurrency(row.amount)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="mt-3 pt-3 border-t border-neutral-200/70 dark:border-neutral-800/70 flex items-center justify-between">
+        <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300">{totalLabel}</span>
+        <span className="text-sm font-bold tabular-nums text-neutral-900 dark:text-neutral-50">
+          {formatCurrency(total)}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export function FinanceDashboardPage() {
   const { t } = useTranslation(['finance', 'common']);
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const now = useMemo(() => new Date(), []);
@@ -71,8 +92,6 @@ export function FinanceDashboardPage() {
   const monthParam = searchParams.get('month');
   const month = monthParam ? Number(monthParam) : defaultMonth;
   const viewMode = searchParams.get('viewMode') || 'total';
-  const tab = searchParams.get('tab') || 'overview';
-  const activeTab = VALID_TABS.includes(tab) ? tab : 'overview';
 
   const updateParam = (key, value, defaultValue) => {
     setSearchParams((prev) => {
@@ -88,20 +107,16 @@ export function FinanceDashboardPage() {
   const handleYearChange = (v) => updateParam('year', v, defaultYear);
   const handleMonthChange = (v) => updateParam('month', v, defaultMonth);
   const handleViewModeChange = (v) => updateParam('viewMode', v, 'total');
-  const handleTabChange = (v) => updateParam('tab', v, 'overview');
 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [quickEntry, setQuickEntry] = useState({ open: false, direction: null });
+  const [isExporting, setIsExporting] = useState(false);
 
-  const tabProps = { year, month, viewMode };
-  const activeChannel = activeTab !== 'overview' ? activeTab : null;
+  const filterProps = { year, month, viewMode };
 
-  const { data: overviewTotals, isLoading: overviewLoading } = useOverviewTotals(tabProps);
-  const { data: channelMetrics, isLoading: channelLoading } = useChannelMetrics({
-    channel: activeChannel,
-    ...tabProps,
-  });
-  const { data: generalExpenses = [], isLoading: expensesLoading } = useGeneralExpenses(tabProps);
+  const { data: overviewTotals, isLoading: overviewLoading } = useOverviewTotals(filterProps);
+  const { data: incomeBySource = [], isLoading: incomeLoading } = useIncomeBySource(filterProps);
+  const { data: expensesBySource = [], isLoading: expensesLoading } = useExpensesBySource(filterProps);
   const { data: revenueByMonth = [], isLoading: revenueByMonthLoading } = useRevenueExpensesByMonth({
     months: 6,
     viewMode,
@@ -112,66 +127,110 @@ export function FinanceDashboardPage() {
     ? `${monthNames[month - 1]} ${year}`
     : String(year);
 
-  const mobileKpis = useMemo(() => {
-    if (activeTab === 'overview') {
-      const revenue = overviewTotals?.totalRevenue ?? 0;
-      const expenses = overviewTotals?.totalExpenses ?? 0;
-      const netProfit = overviewTotals?.remaining ?? 0;
-      const margin = revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : null;
-      return { revenue, expenses, netProfit, margin };
-    }
-    const revenue = channelMetrics?.revenue ?? 0;
-    const costs = channelMetrics?.costs ?? 0;
-    const netProfit = Math.round((revenue - costs) * 100) / 100;
-    const margin = channelMetrics?.grossMarginPct;
-    return { revenue, expenses: costs, netProfit, margin };
-  }, [activeTab, overviewTotals, channelMetrics]);
+  const totalRevenue = overviewTotals?.totalRevenue ?? 0;
+  const totalExpenses = overviewTotals?.totalExpenses ?? 0;
+  const remaining = overviewTotals?.remaining ?? 0;
 
-  const mobileChartData = useMemo(() => {
-    if (activeTab === 'overview') {
-      return revenueByMonth.map((d) => ({
-        period: d.period,
-        revenue: d.revenue,
-        costs: d.expenses,
+  const chartData = useMemo(
+    () => revenueByMonth.map((d) => ({ period: d.period, revenue: d.revenue, costs: d.expenses })),
+    [revenueByMonth]
+  );
+
+  const incomeRows = useMemo(() => {
+    const grouped = {
+      subscriptions: 0,
+      workOrders: 0,
+      sim: 0,
+      proposals: 0,
+      other: 0,
+    };
+    for (const row of incomeBySource) {
+      const group = mapIncomeSourceToGroup(row.source_type);
+      grouped[group] += Number(row.amount) || 0;
+    }
+    return [
+      { key: 'subscriptions', label: t('common:nav.subscriptions'), amount: grouped.subscriptions },
+      { key: 'workOrders', label: t('common:nav.workOrders'), amount: grouped.workOrders },
+      { key: 'sim', label: t('simCards:title'), amount: grouped.sim },
+      { key: 'proposals', label: t('common:nav.proposals'), amount: grouped.proposals },
+      { key: 'other', label: t('common:type.other'), amount: grouped.other },
+    ].filter((item) => item.amount > 0);
+  }, [incomeBySource, t]);
+
+  const expenseRows = useMemo(
+    () => expensesBySource.map((row) => ({
+      key: row.source_type || 'other',
+      label: getSourceLabel(row.source_type, 'expense', t),
+      amount: Number(row.amount) || 0,
+    })),
+    [expensesBySource, t]
+  );
+
+  const handleExportCSV = async () => {
+    const period = month ? `${year}-${String(month).padStart(2, '0')}` : null;
+    setIsExporting(true);
+    try {
+      const plData = await fetchProfitAndLoss(period, viewMode);
+      if (!plData?.length) return;
+
+      const exportRows = plData.map((row) => ({
+        period_date: row.period_date,
+        source_label: getSourceLabel(row.source_type, row.direction, t),
+        direction_label: row.direction === 'income' ? t('finance:exportColumns.income') : t('finance:exportColumns.expense'),
+        amount_try: row.amount_try != null && row.amount_try !== '' ? Number(row.amount_try) : '',
+        original_currency: row.original_currency ?? 'TRY',
+        output_vat: row.output_vat != null && row.output_vat !== '' ? Number(row.output_vat) : '',
+        input_vat: row.input_vat != null && row.input_vat !== '' ? Number(row.input_vat) : '',
+        cogs_try: row.cogs_try != null && row.cogs_try !== '' ? Number(row.cogs_try) : '',
       }));
-    }
-    return channelMetrics?.monthlyBreakdown || [];
-  }, [activeTab, revenueByMonth, channelMetrics]);
 
-  const mobileChartConfig = useMemo(() => {
-    switch (activeTab) {
-      case 'work':
-        return { title: t('dashboardV2.work.chartTitle'), costsLabel: t('dashboardV2.chart.costs') };
-      case 'subscriptions':
-        return { title: t('dashboardV2.subscriptions.chartTitle'), costsLabel: t('dashboardV2.chart.costs') };
-      case 'sim':
-        return { title: t('dashboardV2.sim.chartTitle'), costsLabel: t('dashboardV2.chart.expenses') };
-      default:
-        return { title: t('dashboardV2.mobile.cashFlow'), costsLabel: t('dashboardV2.chart.expenses') };
-    }
-  }, [activeTab, t]);
+      const columns = [
+        { key: 'period_date', header: t('finance:exportColumns.date') },
+        { key: 'source_label', header: t('finance:exportColumns.category') },
+        { key: 'direction_label', header: t('finance:exportColumns.direction') },
+        { key: 'amount_try', header: t('finance:exportColumns.amount') },
+        { key: 'original_currency', header: t('finance:exportColumns.currency') },
+        { key: 'output_vat', header: t('finance:exportColumns.outputVat') },
+        { key: 'input_vat', header: t('finance:exportColumns.inputVat') },
+        { key: 'cogs_try', header: t('finance:exportColumns.cogs') },
+      ];
 
-  const mobileKpiLoading = activeTab === 'overview' ? overviewLoading : channelLoading;
-  const mobileChartLoading = activeTab === 'overview' ? revenueByMonthLoading : channelLoading;
+      const csv = toCSV(exportRows, columns);
+      const filenamePeriod = period || String(year);
+      downloadCSV(csv, `${t('finance:export.plFilename')}_${filenamePeriod}.csv`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <PageContainer maxWidth="full" padding="default">
       {/* ===== MOBILE LAYOUT ===== */}
       <div className="md:hidden space-y-4">
-        {/* Sticky Header */}
         <div className="sticky top-16 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 -mt-4 sm:-mt-6 pt-3 pb-3 bg-white dark:bg-[#171717] border-b border-neutral-200 dark:border-[#262626]">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-50">
-              {t('dashboardV2.mobileTitle')}
+              {t('dashboardV2.title')}
             </h1>
-            <button
-              type="button"
-              onClick={() => setShowMobileFilters((prev) => !prev)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-[#262626] text-sm font-medium text-neutral-700 dark:text-neutral-200 transition-colors"
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              {periodLabel}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters((prev) => !prev)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-[#262626] text-sm font-medium text-neutral-700 dark:text-neutral-200 transition-colors"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                {periodLabel}
+              </button>
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<Download className="w-4 h-4" />}
+                onClick={handleExportCSV}
+                loading={isExporting}
+              >
+                {t('finance:export.csv')}
+              </Button>
+            </div>
           </div>
 
           {showMobileFilters && (
@@ -188,121 +247,55 @@ export function FinanceDashboardPage() {
           )}
         </div>
 
-        {/* Health Banner — shown when finance entries have integrity issues */}
         <FinanceHealthBanner />
 
-        {/* Tab Bar */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
-          {VALID_TABS.map((tabKey) => {
-            const Icon = TAB_ICONS[tabKey];
-            const isActive = activeTab === tabKey;
-            return (
-              <button
-                key={tabKey}
-                type="button"
-                onClick={() => handleTabChange(tabKey)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors shrink-0 ${
-                  isActive
-                    ? 'bg-neutral-100 dark:bg-[#262626] text-primary-600 dark:text-primary-400 font-bold'
-                    : 'text-neutral-500 dark:text-neutral-400 font-medium'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {t(`dashboardV2.tabs.${tabKey}`)}
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.totalRevenue')}
+            value={formatCurrency(totalRevenue)}
+            loading={overviewLoading}
+            variant="positive"
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.totalExpenses')}
+            value={formatCurrency(totalExpenses)}
+            loading={overviewLoading}
+            variant="negative"
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.remaining')}
+            value={formatCurrency(remaining)}
+            loading={overviewLoading}
+            variant={remaining >= 0 ? 'positive' : 'negative'}
+            emphasis
+          />
         </div>
 
-        {/* KPI 2×2 Grid */}
-        {mobileKpiLoading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="rounded-xl border-l-4 border-neutral-300 dark:border-neutral-700 bg-white dark:bg-[#171717] p-3.5"
-              >
-                <Skeleton className="h-3 w-16 mb-2" />
-                <Skeleton className="h-6 w-24" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {/* Gelir */}
-            <div className="rounded-xl border-l-4 border-green-400/50 bg-white dark:bg-[#171717] p-3.5">
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-                {t('dashboardV2.mobile.income')}
-              </p>
-              <p className="text-lg font-bold tabular-nums text-green-600 dark:text-green-400">
-                {formatCurrency(mobileKpis.revenue)}
-              </p>
-            </div>
+        <div className="grid grid-cols-1 gap-4">
+          <BreakdownCard
+            title={t('dashboardV2.overview.totalRevenue')}
+            rows={incomeRows}
+            total={totalRevenue}
+            loading={incomeLoading}
+            totalLabel={t('finance:exportColumns.total')}
+          />
+          <BreakdownCard
+            title={t('dashboardV2.overview.totalExpenses')}
+            rows={expenseRows}
+            total={totalExpenses}
+            loading={expensesLoading}
+            totalLabel={t('finance:exportColumns.total')}
+          />
+        </div>
 
-            {/* Gider */}
-            <div className="rounded-xl border-l-4 border-red-400/50 bg-white dark:bg-[#171717] p-3.5">
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-                {t('dashboardV2.mobile.expense')}
-              </p>
-              <p className="text-lg font-bold tabular-nums text-red-600 dark:text-red-400">
-                {formatCurrency(mobileKpis.expenses)}
-              </p>
-            </div>
-
-            {/* Net Kar */}
-            <div
-              className={`rounded-xl border-l-4 ${
-                mobileKpis.netProfit >= 0 ? 'border-primary/50' : 'border-red-400/50'
-              } bg-white dark:bg-[#171717] p-3.5`}
-            >
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-                {t('dashboardV2.mobile.netProfit')}
-              </p>
-              <p
-                className={`text-lg font-bold tabular-nums ${
-                  mobileKpis.netProfit >= 0
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-red-600 dark:text-red-400'
-                }`}
-              >
-                {mobileKpis.netProfit >= 0 ? '+' : ''}
-                {formatCurrency(mobileKpis.netProfit)}
-              </p>
-              <p
-                className={`text-[10px] font-medium mt-0.5 ${
-                  mobileKpis.netProfit >= 0
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-red-500 dark:text-red-400'
-                }`}
-              >
-                {mobileKpis.netProfit >= 0
-                  ? t('dashboardV2.mobile.efficient')
-                  : t('dashboardV2.mobile.loss')}
-              </p>
-            </div>
-
-            {/* Marj */}
-            <div className="rounded-xl border-l-4 border-neutral-400/30 bg-white dark:bg-[#171717] p-3.5">
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
-                {t('dashboardV2.mobile.margin')}
-              </p>
-              <p className="text-lg font-bold tabular-nums text-neutral-900 dark:text-neutral-50">
-                {mobileKpis.margin != null ? `%${mobileKpis.margin}` : '—'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Chart */}
         <ChannelBarChart
-          title={mobileChartConfig.title}
-          data={mobileChartData}
-          loading={mobileChartLoading}
+          title={t('dashboardV2.mobile.cashFlow')}
+          data={chartData}
+          loading={revenueByMonthLoading}
           revenueLabel={t('dashboardV2.chart.revenue')}
-          costsLabel={mobileChartConfig.costsLabel}
+          costsLabel={t('dashboardV2.chart.expenses')}
         />
 
-        {/* Quick Action Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
@@ -321,72 +314,8 @@ export function FinanceDashboardPage() {
             {t('quickActions.addExpense')}
           </button>
         </div>
-
-        {/* General Expenses — overview tab only */}
-        {activeTab === 'overview' && (
-          <div className="rounded-xl border border-neutral-200/60 dark:border-neutral-800/60 bg-white dark:bg-[#171717] p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300">
-                {t('dashboardV2.overview.generalExpenses')}
-              </h3>
-              <button
-                type="button"
-                onClick={() => navigate('/finance/expenses')}
-                className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 transition-colors"
-              >
-                {t('dashboardV2.mobile.viewAll')}
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {expensesLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="w-8 h-8 rounded-lg" />
-                      <Skeleton className="h-4 w-28" />
-                    </div>
-                    <Skeleton className="h-4 w-16" />
-                  </div>
-                ))}
-              </div>
-            ) : generalExpenses.length === 0 ? (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 py-4 text-center">
-                {t('dashboardV2.overview.noExpenses')}
-              </p>
-            ) : (
-              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {generalExpenses.map((item) => {
-                  const CatIcon = CATEGORY_ICONS[item.category] || Wallet;
-                  return (
-                    <div
-                      key={item.category}
-                      className="flex items-center justify-between py-2.5"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                          <CatIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                        </div>
-                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                          {t(`expenseCategories.${item.category}`, {
-                            defaultValue: item.category,
-                          })}
-                        </span>
-                      </div>
-                      <span className="text-sm font-bold tabular-nums text-neutral-900 dark:text-neutral-50">
-                        {formatCurrency(item.amount)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* ===== DESKTOP LAYOUT ===== */}
       <div className="hidden md:block space-y-6">
         <PageHeader
           title={t('finance:dashboardV2.title')}
@@ -398,15 +327,23 @@ export function FinanceDashboardPage() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                leftIcon={<TrendingUp className="w-4 h-4" />}
-                onClick={() => navigate('/finance/income')}
+                leftIcon={<Download className="w-4 h-4" />}
+                onClick={handleExportCSV}
+                loading={isExporting}
+              >
+                {t('finance:export.csv')}
+              </Button>
+              <Button
+                variant="outline"
+                leftIcon={<PlusCircle className="w-4 h-4" />}
+                onClick={() => setQuickEntry({ open: true, direction: 'income' })}
               >
                 {t('finance:quickActions.addIncome')}
               </Button>
               <Button
                 variant="primary"
-                leftIcon={<TrendingDown className="w-4 h-4" />}
-                onClick={() => navigate('/finance/expenses')}
+                leftIcon={<MinusCircle className="w-4 h-4" />}
+                onClick={() => setQuickEntry({ open: true, direction: 'expense' })}
               >
                 {t('finance:quickActions.addExpense')}
               </Button>
@@ -425,15 +362,54 @@ export function FinanceDashboardPage() {
           onViewModeChange={handleViewModeChange}
         />
 
-        <FinanceDashboardTabs activeTab={activeTab} onChange={handleTabChange} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.totalRevenue')}
+            value={formatCurrency(totalRevenue)}
+            loading={overviewLoading}
+            variant="positive"
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.totalExpenses')}
+            value={formatCurrency(totalExpenses)}
+            loading={overviewLoading}
+            variant="negative"
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.remaining')}
+            value={formatCurrency(remaining)}
+            loading={overviewLoading}
+            variant={remaining >= 0 ? 'positive' : 'negative'}
+            emphasis
+          />
+        </div>
 
-        {activeTab === 'overview' && <OverviewTab {...tabProps} />}
-        {activeTab === 'work' && <WorkTab {...tabProps} />}
-        {activeTab === 'subscriptions' && <SubscriptionsTab {...tabProps} />}
-        {activeTab === 'sim' && <SimTab {...tabProps} />}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <BreakdownCard
+            title={t('dashboardV2.overview.totalRevenue')}
+            rows={incomeRows}
+            total={totalRevenue}
+            loading={incomeLoading}
+            totalLabel={t('finance:exportColumns.total')}
+          />
+          <BreakdownCard
+            title={t('dashboardV2.overview.totalExpenses')}
+            rows={expenseRows}
+            total={totalExpenses}
+            loading={expensesLoading}
+            totalLabel={t('finance:exportColumns.total')}
+          />
+        </div>
+
+        <ChannelBarChart
+          title={t('dashboardV2.mobile.cashFlow')}
+          data={chartData}
+          loading={revenueByMonthLoading}
+          revenueLabel={t('dashboardV2.chart.revenue')}
+          costsLabel={t('dashboardV2.chart.expenses')}
+        />
       </div>
 
-      {/* QuickEntryModal — mobile quick actions */}
       <QuickEntryModal
         open={quickEntry.open}
         onClose={() => setQuickEntry({ open: false, direction: null })}

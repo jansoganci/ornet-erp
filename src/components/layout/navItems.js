@@ -92,10 +92,6 @@ export const navItems = [
       { to: '/finance', icon: Receipt, labelKey: 'nav.finance.dashboard' },
       { to: '/finance/income', icon: TrendingUp, labelKey: 'nav.finance.income' },
       { to: '/finance/expenses', icon: TrendingDown, labelKey: 'nav.finance.expenses' },
-      { to: '/finance/vat', icon: Percent, labelKey: 'nav.finance.vat' },
-      { to: '/finance/exchange', icon: DollarSign, labelKey: 'nav.finance.exchange' },
-      { to: '/finance/recurring', icon: RefreshCw, labelKey: 'nav.finance.recurring' },
-      { to: '/finance/reports', icon: FileText, labelKey: 'nav.finance.reports' },
     ],
   },
   // Ayarlar group (default collapsed)
@@ -107,6 +103,9 @@ export const navItems = [
     children: [
       { to: '/technical-guide', icon: BookOpen, labelKey: 'nav.technicalGuide' },
       { to: '/materials', icon: Package, labelKey: 'nav.materials' },
+      { to: '/finance/vat', icon: Percent, labelKey: 'nav.finance.vat', canWriteOnly: true },
+      { to: '/finance/exchange', icon: DollarSign, labelKey: 'nav.finance.exchange', canWriteOnly: true },
+      { to: '/finance/recurring', icon: RefreshCw, labelKey: 'nav.finance.recurring', canWriteOnly: true },
       // Future: { to: '/users', icon: UserCog, labelKey: 'users', adminOnly: true }
       // Future: { to: '/company', icon: Building2, labelKey: 'companySettings', adminOnly: true }
     ],

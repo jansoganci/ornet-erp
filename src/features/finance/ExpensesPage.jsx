@@ -8,8 +8,6 @@ import {
   Repeat,
   TrendingDown,
   ListOrdered,
-  Receipt,
-  ArrowDownCircle,
   Filter,
   X,
   CreditCard,
@@ -106,12 +104,10 @@ export function ExpensesPage() {
   });
 
   const kpis = useMemo(() => {
-    if (!transactions?.length) return { total: 0, count: 0, average: 0, largest: 0 };
+    if (!transactions?.length) return { total: 0, count: 0 };
     const total = transactions.reduce((sum, t) => sum + (Number(t.amount_try) || 0), 0);
     const count = transactions.length;
-    const average = total / count;
-    const largest = Math.max(...transactions.map((t) => Number(t.amount_try) || 0));
-    return { total, count, average, largest };
+    return { total, count };
   }, [transactions]);
 
   const groupedData = useMemo(() => {
@@ -344,7 +340,7 @@ export function ExpensesPage() {
         {/* Mobile loading — md:hidden */}
         <div className="md:hidden space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2].map((i) => (
               <div key={i} className="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 border border-neutral-200 dark:border-[#262626]/10">
                 <div className="h-3 w-16 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse mb-2" />
                 <div className="h-6 w-20 rounded bg-neutral-200 dark:bg-neutral-800 animate-pulse" />
@@ -376,11 +372,9 @@ export function ExpensesPage() {
 
         {/* Desktop loading — hidden md:block */}
         <div className="hidden md:block space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
             <KpiCard title={t('finance:expense.kpi.total')} value="0" icon={TrendingDown} loading />
             <KpiCard title={t('finance:expense.kpi.count')} value="0" icon={ListOrdered} loading />
-            <KpiCard title={t('finance:expense.kpi.average')} value="0" icon={Receipt} loading />
-            <KpiCard title={t('finance:expense.kpi.largest')} value="0" icon={ArrowDownCircle} loading />
           </div>
           <TableSkeleton cols={8} />
         </div>
@@ -461,30 +455,12 @@ export function ExpensesPage() {
             {kpis.count}
           </p>
         </div>
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 border border-neutral-200 dark:border-[#262626]/10">
-          <p className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-neutral-500 dark:text-neutral-400 mb-1">
-            {t('finance:expense.kpi.average')}
-          </p>
-          <p className="text-neutral-500 dark:text-neutral-400 font-bold text-xl tracking-tight tabular-nums">
-            {formatCurrency(kpis.average)}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 border border-neutral-200 dark:border-[#262626]/10">
-          <p className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-neutral-500 dark:text-neutral-400 mb-1">
-            {t('finance:expense.kpi.largest')}
-          </p>
-          <p className="text-amber-400 font-bold text-xl tracking-tight tabular-nums">
-            {formatCurrency(kpis.largest)}
-          </p>
-        </div>
       </section>
 
       {/* ── Desktop KPI Grid — hidden md:grid ── */}
-      <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-2 gap-3">
         <KpiCard title={t('finance:expense.kpi.total')} value={formatCurrency(kpis.total)} icon={TrendingDown} />
         <KpiCard title={t('finance:expense.kpi.count')} value={String(kpis.count)} icon={ListOrdered} />
-        <KpiCard title={t('finance:expense.kpi.average')} value={formatCurrency(kpis.average)} icon={Receipt} />
-        <KpiCard title={t('finance:expense.kpi.largest')} value={formatCurrency(kpis.largest)} icon={ArrowDownCircle} />
       </div>
 
       {/* ── Mobile Filter Row — md:hidden ── */}
