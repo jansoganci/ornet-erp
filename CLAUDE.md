@@ -1,752 +1,175 @@
-# CLAUDE.md - Ornet ERP Project Context
+# CLAUDE.md — Ornet ERP context
 
-> This file helps Claude understand the project context, architecture, and coding conventions.
-> Last updated: 2026-03-20
+<!-- UPDATED: 2026-04-07 — condensed + finance/SIM/monthly batch accuracy -->
 
----
-
-## Project Overview
-
-**Ornet ERP** is a Work Order Management and ERP system built for a Turkish security company. It manages work orders, customers, field technicians, materials, and business operations.
-
-### Target Users
-- Field technicians (montaj/servis workers)
-- Office staff (scheduling, customer management)
-- Accountants (finance, invoicing)
-- Administrators (full access)
-
-### Current Features
-- Customer management with multi-location support (sites)
-- Work order management (keşif, montaj, servis, bakım)
-- Task management with mini calendar sidebar and plan groups
-- Materials/inventory tracking with import and usage modals
-- Daily work tracking
-- Work history search
-- Calendar view (react-big-calendar)
-- Dashboard with metrics and currency widget
-- Authentication (login, register, password reset, email verification)
-- **Action Board** - Admin-only operational command center
-- **Operations Board** - Operational request pool with calendar view, inline scheduling, contact status tracking, and insights tab (`/operations`, `canWrite` guard)
-- **Subscription Management** - Alarm and camera rental contracts with monthly/3-month/6-month/yearly billing, payment grid, pause/cancel, price revisions, dynamic VAT per subscription, SIM card linking, auto finance transaction generation on payment, and **Collection Desk** (`/subscriptions/collection`) for overdue payment follow-up
-- **SIM Card Management** - 2500+ phone numbers in security devices (location, owner, revenue, status) with import, invoice analysis (Turkcell PDF parsing), static IP tracking, and automated status sync (SIM status auto-updates when linked subscription is cancelled/paused)
-- **Proposals/Quotes** - Offer generator with PDF export (@react-pdf/renderer), work order bridge, and auto finance transaction on completion
-- **Finance Module** - Income, expenses, VAT tracking (dynamic `vat_rate`), exchange rates (TCMB), recurring expenses, P&L reports, CSV export. `financial_transactions` is the **single source of truth** for all financial reporting — subscription payments, proposal completions, and work order completions auto-create rows via DB triggers
-- **Notifications** - In-app notification center with triggered alerts and reminder form
-- **Site Assets** - Equipment tracking per customer location with bulk registration
-- **User Profile** - Profile management
-
-### Planned Features
-- **Customer Situation Tracking** - Current status of all customers
-- **Paraşüt Integration** - Connect to Paraşüt accounting system
-- **Invoice Automation** - Generate invoices (monthly, yearly, on installation) and auto-send to Paraşüt
+> AI assistant context: architecture, finance rules, routes. Prefer this file + the repo over assumptions.
 
 ---
 
-## Tech Stack
+## Project identity
 
-| Category | Technology | Version |
-|----------|------------|---------|
-| Framework | React | 19.x |
-| Build Tool | Vite | 7.x |
-| Routing | React Router DOM | 7.x |
-| State Management | TanStack React Query | 5.x |
-| Forms | react-hook-form + zod | 7.x / 4.x |
-| Form Resolvers | @hookform/resolvers | 5.x |
-| Backend | Supabase (PostgreSQL) | 2.x |
-| Styling | Tailwind CSS | 4.x |
-| CSS Utilities | clsx + tailwind-merge | 2.x / 3.x |
-| Icons | lucide-react | 0.563.x |
-| i18n | i18next | 25.x |
-| i18n (React bindings) | react-i18next | 16.x |
-| Notifications | sonner | 2.x |
-| Date Utils | date-fns | 4.x |
-| Charts | recharts | 3.x |
-| Calendar | react-big-calendar | 1.x |
-| PDF Export | @react-pdf/renderer | 4.x |
-| PDF Parsing | pdfjs-dist | 5.x |
-| Excel/CSV | xlsx | 0.18.x |
-| Error Tracking | @sentry/react | 10.x |
+**Ornet ERP** — Work order management and ERP for a **Turkish security company**: customers and sites, work orders, materials, subscriptions, SIM inventory, proposals/quotes, finance ledger, notifications, site equipment (“Equipment” in UI), operations board, technical guide.
+
+**Roles** (`profiles.role`, `src/lib/roles.js`): `admin`, `accountant`, `field_worker`. **`canWrite`** = admin OR accountant (subscriptions, SIMs, proposals, finance, operations import, etc.).
 
 ---
 
-## Project Structure
+## Tech stack (from `package.json`)
 
-```
-src/
-├── app/                    # App configuration
-│   ├── AppLayout.jsx       # Main layout (sidebar + topbar)
-│   ├── providers.jsx       # React Query, Theme, Toaster
-│   ├── ProtectedRoute.jsx  # Auth protection wrapper
-│   └── AuthRoute.jsx       # Redirect if logged in
-│
-├── features/               # Feature modules (domain-driven)
-│   ├── actionBoard/        # Admin action board
-│   ├── auth/               # Authentication
-│   ├── calendar/           # Calendar view
-│   ├── customers/          # Customer management
-│   ├── customerSites/      # Customer locations
-│   ├── dashboard/          # Dashboard & metrics
-│   ├── finance/            # Income, expenses, VAT, exchange rates, reports, collection desk
-│   ├── materials/          # Materials/inventory
-│   ├── notifications/      # In-app notification center
-│   ├── operations/         # Operations board (request pool, scheduling, insights)
-│   ├── profile/            # User profile management
-│   ├── proposals/          # Quotes/offers with PDF export
-│   ├── service/            # (reserved, empty)
-│   ├── simCards/           # SIM card / data card inventory
-│   ├── siteAssets/         # Equipment tracking per site
-│   ├── subscriptions/      # Subscription & recurring payment management
-│   ├── tasks/              # Task management
-│   ├── workHistory/        # Work history
-│   └── workOrders/         # Work orders
-│
-├── components/
-│   ├── import/             # Shared import UI (ImportInstructionCard, ImportResultSummary)
-│   ├── layout/             # Layout components
-│   ├── ui/                 # Reusable UI components
-│   └── ErrorBoundary.jsx   # Top-level error boundary
-│
-├── hooks/                  # Global hooks
-│   ├── useAuth.js          # Authentication
-│   ├── useDebouncedValue.js# Debounce hook for search inputs
-│   ├── useSearchInput.js   # Search input state management
-│   ├── useTheme.jsx        # Theme toggle
-│   ├── useUnsavedChanges.js# Warn before leaving with unsaved changes
-│   └── themeContext.js     # Theme context provider
-│
-├── lib/                    # Utilities
-│   ├── breadcrumbConfig.js # Breadcrumb route definitions
-│   ├── chartTheme.js       # Recharts color constants (CHART_COLORS, SPARKLINE_COLORS)
-│   ├── csvExport.js        # CSV export utility
-│   ├── errorHandler.js     # Error localization
-│   ├── i18n.js             # i18next config (23 namespaces)
-│   ├── normalizeForSearch.js # Turkish character normalization for search
-│   ├── roles.js            # Role constants & useRole() hook
-│   ├── supabase.js         # Supabase client
-│   ├── utils.js            # Helper functions
-│   └── zodHelpers.js       # Reusable Zod schema helpers
-│
-├── locales/tr/             # Turkish translations (23 files)
-│   ├── actionBoard.json
-│   ├── auth.json
-│   ├── calendar.json
-│   ├── collection.json
-│   ├── common.json
-│   ├── customers.json
-│   ├── dailyWork.json
-│   ├── dashboard.json
-│   ├── errors.json
-│   ├── finance.json
-│   ├── invoiceAnalysis.json
-│   ├── materials.json
-│   ├── notifications.json
-│   ├── operations.json
-│   ├── profile.json
-│   ├── proposals.json
-│   ├── recurring.json
-│   ├── simCards.json
-│   ├── siteAssets.json
-│   ├── subscriptions.json
-│   ├── tasks.json
-│   ├── workHistory.json
-│   └── workOrders.json
-│
-├── pages/
-│   └── DashboardPage.jsx   # Main dashboard page
-│
-├── App.jsx                 # Router configuration
-├── main.jsx                # Entry point
-└── index.css               # Tailwind + CSS variables
-```
-
-### Feature Module Structure
-
-Each feature folder follows this pattern:
-
-```
-features/customers/
-├── api.js                  # Supabase API calls
-├── hooks.js                # React Query hooks
-├── schema.js               # Zod validation schemas
-├── index.js                # Barrel exports
-├── CustomersListPage.jsx   # List page
-├── CustomerDetailPage.jsx  # Detail page
-├── CustomerFormPage.jsx    # Create/Edit form
-└── components/             # Feature-specific components
-```
-
-Some features split API concerns into multiple files (e.g., `subscriptions` has `api.js`, `importApi.js`, `paymentsApi.js`, `paymentMethodsApi.js`; `finance` has `recurringApi.js`, `collectionApi.js`, `collectionHooks.js`, `recurringHooks.js`).
+React ^19.2 · Vite ^7.2 · react-router-dom ^7.13 · TanStack Query ^5.90 · Supabase JS ^2.93 · react-hook-form ^7 · zod ^4 · Tailwind ^4 · i18next ^25 / react-i18next ^16 · recharts ^3.8 · react-big-calendar ^1.19 · @react-pdf/renderer ^4.3 · pdfjs-dist ^5 · xlsx ^0.18 · @sentry/react ^10.39 · sonner · lucide-react · clsx · tailwind-merge · vite-plugin-pwa (dev).
 
 ---
 
-## Routing
+## Routes & features
 
-All routes are defined in `src/App.jsx`. Key route groups:
+<!-- UPDATED: matches src/App.jsx; notes tasks/calendar -->
 
-| Group | Routes |
-|-------|--------|
-| Auth (public) | `/login`, `/register`, `/forgot-password`, `/auth/update-password`, `/auth/verify-email` |
-| Dashboard | `/`, `/profile`, `/notifications`, `/action-board` |
-| Operations | `/operations` (`canWrite`) |
-| Customers | `/customers`, `/customers/new`, `/customers/import`, `/customers/:id`, `/customers/:id/edit` |
-| Work Orders | `/work-orders`, `/work-orders/new`, `/work-orders/:id`, `/work-orders/:id/edit` |
-| Planning | `/daily-work`, `/work-history`, `/tasks`, `/calendar` |
-| Materials | `/materials`, `/materials/import` |
-| Subscriptions | `/subscriptions`, `/subscriptions/collection`, `/subscriptions/price-revision`, `/subscriptions/import`, `/subscriptions/new`, `/subscriptions/:id`, `/subscriptions/:id/edit` (`canWrite`) |
-| Proposals | `/proposals`, `/proposals/new`, `/proposals/:id`, `/proposals/:id/edit` (`canWrite`) |
-| Finance | `/finance`, `/finance/expenses`, `/finance/income`, `/finance/vat`, `/finance/exchange`, `/finance/recurring`, `/finance/reports` (`canWrite`) |
-| Equipment | `/equipment`, `/equipment/import` |
-| SIM Cards | `/sim-cards`, `/sim-cards/new`, `/sim-cards/import`, `/sim-cards/invoice-analysis`, `/sim-cards/:id/edit` (`canWrite`) |
+Single source: **`src/App.jsx`**. **`RoleRoute`** = requires `canWrite`.
 
----
+| Module | Paths | Guard |
+|--------|--------|--------|
+| Auth | `/login`, `/register`, `/forgot-password` | `AuthRoute` |
+| Auth | `/auth/update-password`, `/auth/verify-email` | public |
+| Dashboard | `/` | auth |
+| Profile / notifications | `/profile`, `/notifications` | auth |
+| Action board | `/action-board` | auth |
+| Operations | `/operations`, `/operations/import` | `RoleRoute` |
+| Customers | `/customers`, `/import`, `/new`, `/:id`, `/:id/edit` | auth |
+| Work orders | `/work-orders`, `/new`, `/:id`, `/:id/edit` | auth |
+| Daily work | `/daily-work` | auth |
+| Work history | `/work-history` | auth |
+| Materials | `/materials`, `/materials/import` | auth |
+| Technical guide | `/technical-guide`, `/technical-guide/:slug` | auth |
+| Subscriptions | `/subscriptions` (+ nested: `collection`, `price-revision`, `import`, `new`, `:id`, `:id/edit`) | `RoleRoute` |
+| Proposals | `/proposals`, `/new`, `/:id`, `/:id/edit` | `RoleRoute` |
+| Finance | `/finance`, `/expenses`, `/income`, `/vat`, `/exchange`, `/recurring` | `RoleRoute` |
+| Finance | `/finance/reports` → redirect `/finance` | |
+| Equipment (site assets) | `/equipment`, `/equipment/import` | auth |
+| SIM cards | `/sim-cards`, `/new`, `/import`, `/invoice-analysis`, `/:id/edit` | `RoleRoute` |
 
-## Navigation
+**`src/features/tasks` & `src/features/calendar`:** shared hooks/logic (dashboard, operations `CalendarTab`, daily work). **No `/tasks` or `/calendar` routes in `App.jsx`** — do not assume those URLs exist unless you add them.
 
-Navigation is configured in `src/components/layout/navItems.js` with these groups:
-
-1. **Top-level** (5 items, also in mobile bottom bar): Dashboard, Operations (`canWrite`), Customers, Work Orders, Proposals (`canWrite`)
-2. **Operasyon**: Notifications, Action Board (admin only)
-3. **Planlama**: Work History
-4. **Gelir ve Altyapı**: Subscriptions (`canWrite`), SIM Cards (`canWrite`), Invoice Analysis (`canWrite`), Equipment
-5. **Finans** (`canWrite`): Finance Dashboard, Income, Expenses, VAT, Exchange Rates, Recurring Expenses, Reports
-6. **Ayarlar** (collapsed by default): Materials
-
----
-
-## Coding Patterns
-
-### Component Pattern
-
-```jsx
-// Always functional components with hooks
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-
-export function MyComponent() {
-  const { t } = useTranslation('namespace');
-  // ...
-}
-```
-
-### Form Pattern
-
-```jsx
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { schema, defaultValues } from './schema';
-
-const {
-  register,
-  handleSubmit,
-  formState: { errors, isSubmitting },
-} = useForm({
-  resolver: zodResolver(schema),
-  defaultValues,
-});
-```
-
-### API Pattern
-
-```javascript
-// api.js - Supabase calls
-export async function fetchCustomers(filters) {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('*, customer_sites(count)')
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data;
-}
-```
-
-### React Query Pattern
-
-```javascript
-// hooks.js - Query hooks
-export const customerKeys = {
-  all: ['customers'],
-  lists: () => [...customerKeys.all, 'list'],
-  detail: (id) => [...customerKeys.all, 'detail', id],
-};
-
-export function useCustomers(filters) {
-  return useQuery({
-    queryKey: customerKeys.lists(),
-    queryFn: () => fetchCustomers(filters),
-  });
-}
-
-export function useCreateCustomer() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createCustomer,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
-      toast.success(t('common:success.created'));
-    },
-  });
-}
-```
-
-### i18n Pattern
-
-```jsx
-// Always use translations - never hardcode Turkish
-import { useTranslation } from 'react-i18next';
-
-function MyPage() {
-  const { t } = useTranslation('customers');
-
-  return (
-    <PageHeader title={t('list.title')} />
-  );
-}
-```
+**Navigation hints:** `src/components/layout/navItems.js` (finance VAT/exchange/recurring live under “Ayarlar” group; top bar differs by `canWrite`).
 
 ---
 
-## UI Components
+## Finance module rules (critical)
 
-### Available Components (src/components/ui/)
+<!-- UPDATED: four income paths + SIM batch + subscriptions official_invoice -->
 
-| Component | Usage |
-|-----------|-------|
-| `Button` | Primary, secondary, outline, ghost, danger, success variants |
-| `Input` | Text input with label, error, hint support |
-| `Textarea` | Multi-line input |
-| `Select` | Dropdown selection |
-| `Modal` | Dialog/modal windows |
-| `Card` | Container card |
-| `Badge` | Status badges |
-| `Table` | Data tables |
-| `Spinner` | Loading spinner |
-| `Skeleton` | Loading placeholder |
-| `CardSkeleton` | Card-shaped skeleton loader |
-| `TableSkeleton` | Table-shaped skeleton loader |
-| `FormSkeleton` | Form-shaped skeleton loader |
-| `EmptyState` | Empty data state |
-| `ErrorState` | Error display with retry |
-| `SearchInput` | Search field |
-| `IconButton` | Icon-only button |
-| `DateRangeFilter` | Date range picker for filters |
-| `CustomerCombobox` | Searchable customer selector |
-| `MaterialCombobox` | Searchable material selector |
-| `SimCardCombobox` | Searchable SIM card selector |
-| `KpiCard` | KPI metric card with value, label, and trend |
-| `UnsavedChangesModal` | Warn user before leaving with unsaved changes |
-| `ChartTooltip` | Shared tooltip component for Recharts charts |
+### Single source of truth
 
-### Import Components (src/components/import/)
+**`financial_transactions`** — All P&L, VAT, income/expense UI, and aggregates should read this table. **Do not** use `subscription_payments` as the ledger for reporting totals.
 
-| Component | Usage |
-|-----------|-------|
-| `ImportInstructionCard` | Shared import page instructions card |
-| `ImportResultSummary` | Shared import result summary (success/error counts) |
+**`direction`:** `'income'` | `'expense'`.
 
-### Layout Components (src/components/layout/)
+### Four automated income paths (to `financial_transactions`)
 
-| Component | Usage |
-|-----------|-------|
-| `PageContainer` | Page wrapper with max-width |
-| `PageHeader` | Page title, breadcrumbs, actions |
-| `Container` | Generic container with padding |
-| `Sidebar` | Navigation sidebar |
-| `MobileNavDrawer` | Mobile slide-out navigation |
-| `Header` | Top application header |
-| `Footer` | Application footer |
-| `NavGroup` | Collapsible navigation group |
-| `Stack` | Spacing utility |
-| `UserProfileDropdown` | User menu in header |
+1. **Subscriptions** — On `subscription_payments` transition to `paid`, trigger **`fn_subscription_payment_to_finance`** (`trg_subscription_payment_to_finance` from early migrations; function body latest in **`00201_fix_subscription_payment_trigger_vat_logic.sql`**).  
+   - Inserts **income** row: `income_type = 'subscription'`, links `subscription_payment_id`, NET amounts in TRY, `output_vat` / `vat_rate` per rules below, optional COGS on income via `cogs_try`.  
+   - May insert **expense** row (COGS): category **`subscription_cogs`**, `input_vat` **NULL** (internal cost, not supplier invoice).
 
-### Usage Example
+2. **Proposals** — On `proposals` → `completed`, **`auto_record_proposal_revenue`** (`trg_auto_record_proposal_revenue`). Latest logic includes TRY/USD branches and COGS (see **`00191`**, **`00200`** family predecessors).  
+   - **Income** row linked to `proposal_id`.  
+   - **COGS** as **expense** when applicable.
 
-```jsx
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { PageContainer, PageHeader } from '@/components/layout';
+3. **Work orders (standalone)** — On `work_orders` → `completed`, **`auto_record_work_order_revenue`** (`trg_auto_record_work_order_revenue`). **Skips rows with `proposal_id IS NOT NULL`** — revenue for those jobs is only via proposal completion.  
+   - **Income** + optional **COGS expense**; **`00200`** aligns income row `cogs_try` / COGS handling with proposal-style margin reporting.
 
-function MyPage() {
-  return (
-    <PageContainer>
-      <PageHeader title="Page Title" />
-      <Input label="Name" error={errors.name?.message} {...register('name')} />
-      <Button variant="primary" loading={isSubmitting}>
-        Save
-      </Button>
-    </PageContainer>
-  );
-}
-```
+4. **SIM rental (aggregated monthly)** — **`generate_monthly_sim_finance()`** ( **`00202_monthly_sim_finance_cron.sql`**, return column fix **`00203_fix_sim_finance_status_ambiguity.sql`** ):  
+   - **Previous calendar month**, idempotent per period.  
+   - **Income:** sum of `sim_cards.sale_price` where `status = 'active'`, `income_type = 'sim_rental'`, aggregated row (`sim_card_id` NULL), description pattern “SIM Kart Kiralama Geliri”.  
+   - **Expense:** sum of `cost_price` where `status IN ('active','available')`, category **`sim_operator`**, “SIM Kart Operatör Gideri”.  
+   - Scheduled **pg_cron** job name **`generate-monthly-sim-finance`**, `0 2 1 * *` UTC (1st of month 02:00). Not row-level SIM triggers for this bulk path.
+
+**Plus:** manual UI entries, **`fn_generate_recurring_expenses`** (recurring templates → `financial_transactions`), and **write-off** path **`fn_write_off_to_finance`** on payment updates (`00180_write_off_to_finance.sql`). **Reversals:** `reverse_work_order_finance_entries` / `reverse_proposal_finance_entries` on status regressions (`00190_financial_reversal_on_status_change.sql`).
+
+### VAT and `official_invoice`
+
+- **General:** use **dynamic `vat_rate`** from the business row (`subscriptions`, `work_orders`, `proposals` where present); store on `financial_transactions` as needed. Avoid magic `0.20` in app code.  
+- **Subscription payments (`00201`):** If **`subscriptions.official_invoice`** is **false** (treat missing as **true** in that trigger), **`output_vat := 0`** on the income row; else use payment’s VAT (`NEW.vat_amount`). Subscription COGS expense row: **`has_invoice` false**, **`input_vat` NULL**, **`vat_rate` NULL**.  
+- **Proposal TRY branch (`00191`):** computes `output_vat` on revenue; COGS side uses `input_vat` where applicable for TRY detail — follow DB function, not duplicated app rules.
+
+### SIM vs subscription SIM amounts
+
+Subscription monthly pricing and SIM line items live on **`subscriptions`** (NET components, `vat_rate`, etc.). **Monthly SIM card rental income/expense in the ledger** for operator inventory is the **batch** above, not per-card trigger inserts (large fleet).
 
 ---
 
-## Styling Guidelines
+## Database snapshot
 
-### Tailwind CSS
-- Use Tailwind classes exclusively
-- Mobile-first responsive design
-- Dark mode with `dark:` prefix
-- Use `clsx` + `tailwind-merge` for conditional class composition
+<!-- UPDATED: migration id -->
 
-```jsx
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-const cn = (...inputs) => twMerge(clsx(inputs));
-```
-
-### Responsive Breakpoints
-```
-sm: 640px   - Small tablets
-md: 768px   - Tablets
-lg: 1024px  - Desktops
-xl: 1280px  - Large desktops
-```
-
-### Dark Mode
-```jsx
-// Always include dark mode variants
-<div className="bg-white dark:bg-[#171717]">
-  <p className="text-neutral-900 dark:text-neutral-50">
-    Content
-  </p>
-</div>
-```
-
-### Common Dark Mode Colors
-```
-Background:  dark:bg-[#0a0a0a]    (app background)
-Surface:     dark:bg-[#171717]    (cards, modals)
-Border:      dark:border-[#262626]
-Text:        dark:text-neutral-50  (primary)
-             dark:text-neutral-400 (secondary)
-```
+- **Migrations:** **`00203`** is the latest numbered file; **202** `.sql` files under `supabase/migrations/`.  
+- **Ledger:** `financial_transactions` (+ `expense_categories`, `exchange_rates`, `recurring_expense_templates`, …).  
+- **SIM:** `sim_cards`, `sim_static_ips`.  
+- **Ops:** plan/items evolved through **`00173+`** migrations (check DB for current table names).
 
 ---
 
-## i18n Structure
+## i18n
 
-### Translation Files Location
-```
-src/locales/tr/          (23 namespaces)
-├── actionBoard.json     # Action board
-├── auth.json            # Authentication
-├── calendar.json        # Calendar view
-├── collection.json      # Collection desk (overdue payment follow-up)
-├── common.json          # General UI, actions, time
-├── customers.json       # Customer module
-├── dailyWork.json       # Daily work tracking
-├── dashboard.json       # Dashboard
-├── errors.json          # Error messages
-├── finance.json         # Finance module
-├── invoiceAnalysis.json # SIM card invoice analysis
-├── materials.json       # Materials
-├── notifications.json   # Notifications
-├── operations.json      # Operations board
-├── profile.json         # User profile
-├── proposals.json       # Proposals/quotes
-├── recurring.json       # Recurring expenses
-├── simCards.json        # SIM cards
-├── siteAssets.json      # Site assets/equipment
-├── subscriptions.json   # Subscriptions
-├── tasks.json           # Tasks
-├── workHistory.json     # Work history
-└── workOrders.json      # Work orders
-```
+<!-- UPDATED: 24 namespaces in src/lib/i18n.js -->
 
-### Adding New Translations
+**Namespaces:** `common`, `auth`, `errors`, `customers`, `workOrders`, `dailyWork`, `workHistory`, `materials`, `tasks`, `dashboard`, `profile`, `calendar`, `subscriptions`, `simCards`, `proposals`, `finance`, `notifications`, `recurring`, `siteAssets`, `invoiceAnalysis`, `actionBoard`, `collection`, `operations`, `technicalGuide`.
 
-1. Add namespace JSON file to `src/locales/tr/myFeature.json`
-2. Register namespace in `src/lib/i18n.js`
-3. Use in component:
-
-```jsx
-const { t } = useTranslation('myNamespace');
-<h1>{t('myFeature.title')}</h1>
-```
+**Rule:** no user-visible Turkish hardcoded in components — use `useTranslation('namespace')` and keys in `src/locales/tr/*.json`.
 
 ---
 
-## Database (Supabase)
+## Code layout & patterns
 
-### Key Tables
-- `customers` - Company records
-- `customer_sites` - Location/branch records
-- `work_orders` - Work order records
-- `work_order_materials` - Materials used in work orders
-- `materials` - Material catalog
-- `tasks` - Task records
-- `profiles` - User profiles
-- `subscriptions` - Recurring subscription contracts (has `vat_rate`, `sim_card_id`, billing frequency)
-- `subscription_payments` - Monthly payment records per subscription (trigger creates `financial_transactions` on payment)
-- `sim_cards` - SIM/data card inventory (status auto-syncs with subscription lifecycle)
-- `sim_static_ips` - Static IP assignments per SIM card
-- `proposals` - Customer quotes/offers
-- `proposal_items` - Line items per proposal
-- `proposal_work_orders` - Junction: proposals ↔ work orders
-- `financial_transactions` - **Single source of truth** for income & expense ledger (populated by manual entry, subscription payment triggers, proposal/WO completion triggers, and recurring expense generation)
-- `expense_categories` - Expense classification
-- `exchange_rates` - TCMB currency rates (auto-fetched)
-- `recurring_expense_templates` - Scheduled repeating expense templates (generates `financial_transactions` rows)
-- `payment_methods` - Customer payment methods (card, bank transfer, etc.)
-- `audit_logs` - Change tracking for subscriptions, payments, price changes
-- `site_assets` - Equipment assigned to customer sites
-- `notifications` - In-app notification records
+- **Features:** `src/features/<name>/` — commonly **`api.js`** (Supabase), **`hooks.js`** (React Query), **`schema.js`** (zod); some modules split **`paymentsApi.js`**, **`collectionApi.js`**, **`recurringApi.js`**, etc.  
+- **Queries:** stable **`queryKey` factories**, invalidate related keys on mutations.  
+- **Forms:** `react-hook-form` + `zodResolver`.  
+- **UI:** reuse `src/components/ui/*` and layout from `src/components/layout/*`; Tailwind only (no new CSS files).  
+- **Search:** Turkish normalization via **`normalizeForSearch`** where applicable.  
+- **Charts:** colors from **`src/lib/chartTheme.js`**.
 
-### Query Patterns
-```javascript
-// Select with relationships
-const { data } = await supabase
-  .from('customers')
-  .select('*, customer_sites(*)');
-
-// Select with count
-const { data } = await supabase
-  .from('customers')
-  .select('*, customer_sites(count)');
-
-// Filter
-const { data } = await supabase
-  .from('work_orders')
-  .select('*')
-  .eq('status', 'pending')
-  .gte('scheduled_date', '2024-01-01');
-```
+**Global hooks:** `useAuth`, `useTheme`, `useDebouncedValue`, `useSearchInput`, `useUnsavedChanges` under `src/hooks/`; **`useRole`** in **`src/lib/roles.js`**.
 
 ---
 
-## Global Hooks Reference
+## Anti-patterns (do not)
 
-| Hook | Location | Purpose |
-|------|----------|---------|
-| `useAuth` | `src/hooks/useAuth.js` | Auth state, user, session |
-| `useTheme` | `src/hooks/useTheme.jsx` | Light/dark theme toggle |
-| `useDebouncedValue` | `src/hooks/useDebouncedValue.js` | Debounce rapidly changing values |
-| `useSearchInput` | `src/hooks/useSearchInput.js` | Search input state with debounce |
-| `useUnsavedChanges` | `src/hooks/useUnsavedChanges.js` | Warn before navigating away |
-| `useRole` | `src/lib/roles.js` | Role-based rendering & access control (`isAdmin`, `isAccountant`, `isFieldWorker`, `canWrite`) |
+1. Bypass **`financial_transactions`** for finance KPIs or CSV export sources.  
+2. Hardcode VAT rates or assume all subscriptions issue official invoices — respect **`official_invoice`**.  
+3. Record revenue twice for **proposal-linked work orders** (DB skips WO trigger when `proposal_id` set).  
+4. Call Supabase directly from large page components — prefer **`api.js` + hooks**.  
+5. Skip loading/error/empty UI states.  
+6. Add dependencies without project need / discussion.  
+7. Hardcode Turkish strings in UI.
 
-> **Note:** `useRole` lives in `src/lib/roles.js`, not in `src/hooks/`. Import it from there for role-based rendering and access control throughout the app.
-
----
-
-## Utility Libraries
-
-| File | Purpose |
-|------|---------|
-| `src/lib/utils.js` | General helper functions |
-| `src/lib/csvExport.js` | CSV file export |
-| `src/lib/normalizeForSearch.js` | Normalize Turkish characters for search (ş→s, ı→i, etc.) |
-| `src/lib/breadcrumbConfig.js` | Route-to-breadcrumb mapping |
-| `src/lib/errorHandler.js` | Localize Supabase/API errors |
-| `src/lib/chartTheme.js` | Single source of truth for Recharts colors (`CHART_COLORS`, `SPARKLINE_COLORS`). Never hardcode hex values in chart components — import from here. |
-| `src/lib/roles.js` | Role constants (`ADMIN`, `accountant`, `field_worker`) and `useRole()` hook returning `{ role, isAdmin, isAccountant, isFieldWorker, canWrite }`. Import from here for role-based access control. |
-| `src/lib/zodHelpers.js` | Reusable Zod schema helpers, e.g. `isoDateString()` for validated date fields. |
+**Ambiguous requests:** ask **one** focused clarifying question (data source, scope, role, or module placement).
 
 ---
 
-## Critical Rules
+## Recent migrations (latest 10)
 
-> See [/docs/CODING-LESSONS.md](/docs/CODING-LESSONS.md) for 18 audit-derived coding rules with bad/good code examples (React Query invalidation, timezone-safe dates, auth guards, form wiring, proposal/WO finance trigger flow, and more).
+<!-- UPDATED -->
 
-### Finance Architecture Rules
-
-> See [/docs/archive/completed/finance-audit-report.md](/docs/archive/completed/finance-audit-report.md) for the full audit and [/docs/archive/completed/finance-fix-roadmap.md](/docs/archive/completed/finance-fix-roadmap.md) for the fix roadmap (Phases 1–4 implemented).
-
-1. **`financial_transactions` is the single source of truth** — All financial reporting (P&L, dashboard, VAT, income/expense pages) reads from `financial_transactions`. Subscription payments, proposal completions, and work order completions auto-create rows via DB triggers. Never query `subscription_payments` directly for financial aggregation.
-2. **Always use dynamic `vat_rate`** — Never hardcode `0.20` or `20` for VAT. Read `vat_rate` from the subscription, work order, or proposal record. The `vat_rate` column exists on `subscriptions`, `financial_transactions`, and `subscription_payments`.
-3. **Amount fields are always NET (KDV haric)** — `base_price`, `sms_fee`, `line_fee`, `static_ip_fee`, `sim_amount` on subscriptions are monthly NET amounts. VAT is calculated as `ROUND(subtotal * vat_rate / 100, 2)` and stored separately.
-4. **Never bypass the proposal/WO guard clause** — `auto_record_work_order_revenue` skips proposal-linked work orders (`IF NEW.proposal_id IS NOT NULL THEN RETURN NEW`). Revenue for those is handled by `auto_record_proposal_revenue`. See CODING-LESSONS.md Rule 18.
-
-### ALWAYS Do
-
-1. **Implement i18n** - Every page, modal, popup must use translations
-2. **Mobile-first design** - Test on mobile, tablet, desktop
-3. **Follow existing architecture** - Use feature folder structure
-4. **Use existing UI components** - Don't reinvent Button, Input, etc.
-5. **Handle all states** - Loading, error, empty, success
-6. **Use react-hook-form + zod** - For all forms
-7. **Use React Query hooks** - For all data fetching
-8. **Include dark mode** - All UI must work in dark mode
-9. **Use English in code** - Variables, functions, comments in English
-10. **Normalize search** - Use `normalizeForSearch` for Turkish text search
-
-### NEVER Do
-
-1. **Don't create new CSS files** - Use Tailwind classes only
-2. **Don't use class components** - Functional components only
-3. **Don't add npm dependencies without asking** - Check first
-4. **Don't use inline styles** - Use Tailwind classes
-5. **Don't hardcode Turkish strings** - Use i18n
-6. **Don't create new UI components if existing ones work** - Reuse
-7. **Don't skip form validation** - Always use zod schemas
-8. **Don't call Supabase directly in components** - Use api.js + hooks
-9. **Don't create pages without mobile responsiveness** - Always responsive
-10. **Don't forget loading/error/empty states** - Handle all cases
-
-### Clarification Behavior
-
-When a request is ambiguous, ask exactly **ONE** clarifying question — the single most important one that unblocks progress. Make reasonable assumptions for everything else and state them. Do not ask multiple questions in sequence. Priority for the one question:
-
-1. **Data source** — Which table/API does this touch?
-2. **Scope** — CRUD vs. single page vs. component?
-3. **Role restriction** — Who can access this?
-4. **Module placement** — Which feature folder does this belong in?
-
-If the answer is inferrable from context (e.g., the user is already working in a specific feature), skip the question and proceed.
+| # | File (short) | Purpose |
+|---|----------------|---------|
+| 00203 | `fix_sim_finance_status_ambiguity` | `generate_monthly_sim_finance` return column renamed to avoid `status` ambiguity |
+| 00202 | `monthly_sim_finance_cron` | Monthly SIM aggregate income/expense + pg_cron schedule |
+| 00201 | `fix_subscription_payment_trigger_vat_logic` | `official_invoice` → `output_vat`; COGS expense `input_vat` NULL |
+| 00200 | `auto_record_work_order_revenue_income_cogs_try` | WO completion income/COGS alignment (`cogs_try` on income) |
+| 00199 | `proposal_sections_discount` | Proposal sections discount |
+| 00198 | `proposal_sections_rls` | RLS for proposal sections |
+| 00197 | `proposal_sections` | Proposal sections schema |
+| 00196 | `proposal_items_section_label` | Section labels on items |
+| 00195 | `work_orders_detail_status_rank` | View/detail ordering |
+| 00194 | `update_work_orders_detail_vat` | Work order detail VAT exposure |
 
 ---
 
-## File Naming Conventions
+## Environment
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Components | PascalCase | `CustomerFormPage.jsx` |
-| Hooks | camelCase with "use" | `useCustomers.js` |
-| Utils | camelCase | `formatDate.js` |
-| API files | `api.js` | `src/features/customers/api.js` |
-| Schema files | `schema.js` | `src/features/customers/schema.js` |
-| Hook files | `hooks.js` | `src/features/customers/hooks.js` |
+Required: **`VITE_SUPABASE_URL`**, **`VITE_SUPABASE_ANON_KEY`** (`.env.local`). Optional: **`VITE_SENTRY_DSN`**.
 
 ---
 
-## Common Commands
+## Further reading
 
-```bash
-# Development
-npm run dev          # Start dev server (http://localhost:5173)
-
-# Build
-npm run build        # Production build
-npm run preview      # Preview production build
-
-# Linting
-npm run lint         # Run ESLint
-```
-
----
-
-## Environment Variables
-
-Required in `.env.local`:
-```
-VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
-```
-
----
-
-## Quick Reference
-
-### Creating a New Feature
-
-1. Create folder: `src/features/myFeature/`
-2. Add files:
-   - `api.js` - Supabase calls
-   - `hooks.js` - React Query hooks
-   - `schema.js` - Zod schemas
-   - `MyFeaturePage.jsx` - Page component
-   - `index.js` - Exports
-3. Add translations: `src/locales/tr/myFeature.json`
-4. Register namespace in: `src/lib/i18n.js`
-5. Add route: `src/App.jsx`
-6. Add to navigation: `src/components/layout/navItems.js`
-
-### Creating a New Page
-
-```jsx
-import { useTranslation } from 'react-i18next';
-import { PageContainer, PageHeader } from '@/components/layout';
-import { Button } from '@/components/ui/Button';
-import { Spinner } from '@/components/ui/Spinner';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { ErrorState } from '@/components/ui/ErrorState';
-import { useMyData } from './hooks';
-
-export function MyPage() {
-  const { t } = useTranslation('myNamespace');
-  const { data, isLoading, error } = useMyData();
-
-  if (isLoading) {
-    return (
-      <PageContainer>
-        <div className="flex justify-center py-12">
-          <Spinner size="lg" />
-        </div>
-      </PageContainer>
-    );
-  }
-
-  if (error) {
-    return (
-      <PageContainer>
-        <ErrorState message={t('common:errors.loadFailed')} />
-      </PageContainer>
-    );
-  }
-
-  if (!data?.length) {
-    return (
-      <PageContainer>
-        <PageHeader title={t('list.title')} />
-        <EmptyState
-          title={t('list.empty.title')}
-          description={t('list.empty.description')}
-        />
-      </PageContainer>
-    );
-  }
-
-  return (
-    <PageContainer>
-      <PageHeader
-        title={t('list.title')}
-        actions={
-          <Button variant="primary">
-            {t('list.addButton')}
-          </Button>
-        }
-      />
-      {/* Content */}
-    </PageContainer>
-  );
-}
-```
-
----
-
-## Business Terms Glossary
-
-| Turkish | English | Context |
-|---------|---------|---------|
-| İş Emri | Work Order | Main work record |
-| Müşteri | Customer | Company/client |
-| Lokasyon | Site/Location | Customer branch |
-| Hesap No | Account Number | Alarm monitoring ID |
-| Montaj | Installation | New system setup |
-| Servis | Service | Repair/support |
-| Bakım | Maintenance | Scheduled upkeep |
-| Keşif | Survey | Pre-installation check |
-| Malzeme | Material | Equipment/parts |
-| Personel | Worker/Staff | Field technician |
-| Görev | Task | To-do item |
-| Abone | Subscriber | Subscription contract holder |
-| Teklif | Proposal/Quote | Offer document |
-| Fatura | Invoice | Billing document |
-| Gelir | Income | Revenue |
-| Gider | Expense | Cost |
-| KDV | VAT | Turkish value-added tax |
-
----
-
-## Contact & Resources
-
-- **Supabase Dashboard**: Check database/auth settings
-- **Paraşüt**: Future accounting integration target
-- **Tailwind Docs**: https://tailwindcss.com/docs
-- **React Query Docs**: https://tanstack.com/query
-- **i18next Docs**: https://www.i18next.com
-- **Recharts Docs**: https://recharts.org/en-US/api
-- **React PDF Renderer**: https://react-pdf.org
+- Repo: **`docs/CODING-LESSONS.md`**, **`docs/archive/completed/finance-audit-report.md`** / **`finance-fix-roadmap.md`** (historical audits).  
+- Do not treat “planned” roadmap items as shipped unless code/migrations exist.
