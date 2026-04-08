@@ -584,7 +584,7 @@ export function SimCardsListPage() {
       accessor: 'sale_price',
       render: (value, row) =>
         quickEditMode ? (
-          <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
             <QuickSalePriceField
               sim={row}
               onUpdate={handleQuickFieldUpdate}
