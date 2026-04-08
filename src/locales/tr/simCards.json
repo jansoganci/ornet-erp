@@ -60,7 +60,7 @@
       "periodOrderError": "Bitiş dönemi başlangıç döneminden önce olamaz"
     },
     "quickEdit": "Hızlı Düzenleme",
-    "quickEditDateSaveHint": "Tarih: kayıt için alanın dışına tıklayın veya Tab ile çıkın. Kaydedilmeden sayfadan çıkamazsınız.",
+    "quickEditDateSaveHint": "Tarih ve aylık satış fiyatı: kayıt için alanın dışına tıklayın veya Tab ile çıkın. Tarihte kaydedilmemiş değişiklik varken sayfadan çıkamazsınız.",
     "quickEditUnsavedDescription": "Aktivasyon tarihinde henüz kaydedilmemiş bir düzenleme var. Çıkarsanız veya hızlı düzenlemeyi kapatırsanız bu düzenleme silinir.",
     "quickEditNoCompany": "Seçilmedi",
     "unassigned": "Atama Bekliyor"

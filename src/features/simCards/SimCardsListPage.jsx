@@ -46,6 +46,7 @@ import { getErrorMessage } from '../../lib/errorHandler';
 import { QuickStatusSelect } from './components/QuickStatusSelect';
 import { QuickProviderSelect } from './components/QuickProviderSelect';
 import { QuickActivationDateField } from './components/QuickActivationDateField';
+import { QuickSalePriceField } from './components/QuickSalePriceField';
 
 /** Uniform trigger height in SIM list filter controls (matches `SearchInput` / `Input` sm). */
 const SIM_FILTER_LISTBOX_TRIGGER = 'h-10 min-h-[2.5rem] md:h-10';
@@ -581,11 +582,20 @@ export function SimCardsListPage() {
     {
       header: t('list.columns.salePrice'),
       accessor: 'sale_price',
-      render: (value, row) => (
-        <span className="font-medium text-neutral-900 dark:text-neutral-50">
-          {formatCurrency(value ?? 0, row.currency ?? 'TRY')}
-        </span>
-      ),
+      render: (value, row) =>
+        quickEditMode ? (
+          <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+            <QuickSalePriceField
+              sim={row}
+              onUpdate={handleQuickFieldUpdate}
+              label={t('list.columns.salePrice')}
+            />
+          </div>
+        ) : (
+          <span className="font-medium text-neutral-900 dark:text-neutral-50">
+            {formatCurrency(value ?? 0, row.currency ?? 'TRY')}
+          </span>
+        ),
     },
     {
       header: t('common:actions.actionsColumn'),
