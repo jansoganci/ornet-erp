@@ -2,15 +2,23 @@
 
 <!-- UPDATED: replaced Vite template; project overview and setup -->
 
-Work order management and lightweight ERP for a Turkish security company: customers, field work, subscriptions, SIM inventory, proposals, and finance on Supabase.
+Ornet ERP is a live React + Supabase ERP for a Turkish security company, used to run field operations, subscriptions, SIM inventory, proposals, and finance in one system ([live app](https://ornet-erp.pages.dev/)).
 
-## Who it is for
+## What it does
 
-- Field technicians (`field_worker`): daily work, work orders, customers (read-focused workflows).
-- Office staff: scheduling, customers, work history, operations board, equipment.
-- Accountants and admins (`accountant`, `admin`): subscriptions, SIMs, proposals, full finance module (`canWrite` in `src/lib/roles.js`).
+- Tracks customers, sites, work orders, and daily field progress so office and field teams stay synced on the same records.
+- Automates subscription billing flows, collection screens, and SIM inventory operations including import and invoice analysis.
+- Converts completed proposals and work orders into finance ledger entries through database triggers and functions.
+- Gives accountants/admins controlled finance views for income, expenses, VAT, exchange rates, and recurring entries.
+- Runs live in production today; current public access is via Pages while custom domain restrictions are being resolved with the domain provider.
 
-## Tech stack
+## How I built this
+
+I built this project with an AI-orchestrated workflow using Cursor, Claude, and Perplexity as daily coding tools. I used AI to speed up scaffolding, repetitive refactors, query/hook boilerplate, and migration draft iterations across feature modules. I personally made the final architecture, data model, and business-rule decisions, then reviewed and validated routes, role guards, trigger behavior, and finance-critical flows before shipping.
+
+## Tech Stack
+
+Developer: Umurcan Soğancı (6+ years enterprise consulting in SAP BPC and S/4HANA, now building modern web apps as a solopreneur).
 
 Versions follow `package.json`:
 
@@ -20,7 +28,10 @@ Versions follow `package.json`:
 | Build | Vite | ^7.2.4 |
 | Router | react-router-dom | ^7.13.0 |
 | Data | @tanstack/react-query | ^5.90.20 |
-| Backend | @supabase/supabase-js | ^2.93.3 |
+| Backend | Supabase JS client (`@supabase/supabase-js`) | ^2.93.3 |
+| APIs | PostgREST (Supabase REST APIs) | via Supabase project |
+| Automation | n8n / Zapier | external integrations as needed |
+| LLM | OpenAI / Claude integrations | feature-specific usage |
 | Forms | react-hook-form, zod, @hookform/resolvers | ^7.x, ^4.x, ^5.x |
 | Styling | tailwindcss, @tailwindcss/vite | ^4.1.18 |
 | i18n | i18next, react-i18next | ^25.x, ^16.x |
@@ -66,7 +77,7 @@ Defined in `src/App.jsx`. `RoleRoute` wraps paths that require `canWrite` (admin
 
 Feature folders under `src/features/` include: `actionBoard`, `auth`, `calendar`, `customers`, `customerSites`, `dashboard`, `finance`, `materials`, `notifications`, `operations`, `profile`, `proposals`, `service` (placeholder), `simCards`, `siteAssets`, `subscriptions`, `tasks`, `technicalGuide`, `workHistory`, `workOrders`.
 
-## Getting started
+## Getting Started
 
 ```bash
 npm install
@@ -77,9 +88,11 @@ npm run preview
 npm run lint
 ```
 
+## Deployment
+
 Optional deploy scripts: `npm run deploy`, `npm run deploy:prod` (Vite build + `wrangler pages deploy`).
 
-## Project structure (short)
+## Project Structure
 
 <!-- UPDATED -->
 
@@ -91,7 +104,7 @@ Optional deploy scripts: `npm run deploy`, `npm run deploy:prod` (Vite build + `
 - `src/pages/` — e.g. `DashboardPage.jsx`
 - `supabase/migrations/` — SQL migrations
 
-## Database (Supabase)
+## Database Schema & API
 
 <!-- UPDATED: migration revision -->
 
@@ -101,7 +114,7 @@ Optional deploy scripts: `npm run deploy`, `npm run deploy:prod` (Vite build + `
 
 Applied behavior for automated finance is defined in Postgres functions/triggers (see `CLAUDE.md`).
 
-## Environment variables
+## Environment Variables
 
 <!-- UPDATED: from .env.example + main.jsx -->
 
@@ -113,7 +126,7 @@ Applied behavior for automated finance is defined in Postgres functions/triggers
 
 Use `.env.local` for local development (do not commit secrets).
 
-## Documentation for contributors
+## Additional docs
 
 - **`CLAUDE.md`** — AI/session context: routing, finance rules, triggers, conventions.
 - **`docs/`** — deeper audits and archived notes where present.
