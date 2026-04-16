@@ -15,6 +15,7 @@ import {
   updateProposalStatus,
   deleteProposal,
   duplicateProposal,
+  fetchProposalsBySite,
   fetchProposalWorkOrders,
   linkWorkOrderToProposal,
   unlinkWorkOrderFromProposal,
@@ -30,6 +31,7 @@ export const proposalKeys = {
   sections: (id) => [...proposalKeys.all, 'sections', id],
   annualFixed: (id) => [...proposalKeys.all, 'annualFixed', id],
   workOrders: (id) => [...proposalKeys.all, 'workOrders', id],
+  bySite: (siteId) => [...proposalKeys.all, 'bySite', siteId],
 };
 
 /** List proposals; `filters` is the React Query key — pass `statusGroup: 'active' | 'archive'` for tabbed lists (distinct cache per tab). */
@@ -187,6 +189,14 @@ export function useDuplicateProposal() {
     onError: (error) => {
       toast.error(getErrorMessage(error, 'common.createFailed'));
     },
+  });
+}
+
+export function useProposalsBySite(siteId) {
+  return useQuery({
+    queryKey: proposalKeys.bySite(siteId),
+    queryFn: () => fetchProposalsBySite(siteId),
+    enabled: !!siteId,
   });
 }
 

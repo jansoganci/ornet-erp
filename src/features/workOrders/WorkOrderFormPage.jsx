@@ -25,7 +25,7 @@ import { WorkOrderItemsEditor } from './components/WorkOrderItemsEditor';
 import { AccountNoWarning } from './AccountNoWarning';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useSite, useSitesByCustomer } from '../customerSites/hooks';
-import { useLinkWorkOrder } from '../proposals/hooks';
+import { useLinkWorkOrder, useProposalsBySite } from '../proposals/hooks';
 import { updateOperationsItem } from '../operations/api';
 import { useFinanceSettings, useLatestRate } from '../finance/hooks';
 import { resolveProposalItemUnitPrice, calcVatTevkifatSummary } from '../../lib/proposalCalc';
@@ -58,6 +58,7 @@ export function WorkOrderFormPage() {
   const isEdit = !!id;
 
   const [showSiteModal, setShowSiteModal] = useState(false);
+  const [selectedProposalId, setSelectedProposalId] = useState('');
   /** 'new-site' = always create; 'account-no' = edit current site if selected, else create for customer */
   const [siteModalIntent, setSiteModalIntent] = useState(null);
   const [showTevkifatConfirmModal, setShowTevkifatConfirmModal] = useState(false);
@@ -110,6 +111,12 @@ export function WorkOrderFormPage() {
   /** Line-item display currency (TRY default; preserved on edit via reset). */
   const lineCurrency = watch('currency') ?? 'TRY';
   const { data: siteData } = useSite(selectedSiteId);
+  const { data: siteProposals = [] } = useProposalsBySite(selectedSiteId);
+
+  // Reset proposal link when site changes
+  useEffect(() => {
+    setSelectedProposalId('');
+  }, [selectedSiteId]);
 
   // When switching TO survey: clear the blank default row (if it's the only item and still empty).
   // When switching FROM survey: restore the blank default row if the user left items empty.
@@ -287,6 +294,12 @@ export function WorkOrderFormPage() {
           });
           navigate(`/proposals/${prefilledProposalId}`);
         } else {
+          if (selectedProposalId) {
+            await linkWorkOrderMutation.mutateAsync({
+              proposalId: selectedProposalId,
+              workOrderId: newWo.id,
+            });
+          }
           // Auto-link back to operations item if created from operations pool
           if (prefilledSourceItemId) {
             await updateOperationsItem({
@@ -372,6 +385,25 @@ export function WorkOrderFormPage() {
             )}
           />
         </Card>
+
+        {/* Proposal Link — only on create, only when the selected site has accepted/completed proposals */}
+        {!isEdit && siteProposals.length > 0 && (
+          <Card className="rounded-[2rem] p-4 sm:p-6 lg:p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
+            <Select
+              label={t('form.linkedProposal')}
+              options={[
+                { value: '', label: t('form.noProposal') },
+                ...siteProposals.map((p) => ({
+                  value: p.id,
+                  label: `${p.proposal_no} — ${p.title}`,
+                })),
+              ]}
+              value={selectedProposalId}
+              onChange={(e) => setSelectedProposalId(e.target.value)}
+              className="rounded-2xl"
+            />
+          </Card>
+        )}
 
         {/* 2. Work Details */}
         <Card header={

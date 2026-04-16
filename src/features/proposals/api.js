@@ -533,6 +533,18 @@ export async function duplicateProposal(proposalId) {
   return createProposal({ ...copyData, sections, items, annual_fixed_costs });
 }
 
+export async function fetchProposalsBySite(siteId) {
+  const { data, error } = await supabase
+    .from('proposals')
+    .select('id, proposal_no, title, status')
+    .eq('site_id', siteId)
+    .in('status', ['accepted', 'completed'])
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function fetchProposalWorkOrders(proposalId) {
   const { data, error } = await supabase
     .from('proposal_work_orders')

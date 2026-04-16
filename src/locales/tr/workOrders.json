@@ -187,6 +187,8 @@
       "addAccountNo": "Hesap No Ekle",
       "changeCustomer": "Değiştir"
     },
+    "linkedProposal": "Teklife Bağla",
+    "noProposal": "Bağlama (opsiyonel)",
     "tevkifatConfirm": {
       "title": "Tevkifat Onayı",
       "message": "Tutar limit üstü. Tevkifat eklemeden devam edilsin mi?",
