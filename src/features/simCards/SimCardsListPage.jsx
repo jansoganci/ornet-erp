@@ -1207,7 +1207,9 @@ export function SimCardsListPage() {
             <Table
               columns={columns}
               data={simCards}
-              onRowClick={(row) => handleEdit(row.id)}
+              onRowClick={
+                quickEditMode ? undefined : (row) => handleEdit(row.id)
+              }
               className="border-none"
             />
             {pageCount > 1 && (
