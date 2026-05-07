@@ -13,6 +13,8 @@ import {
   dashboardV2Keys,
   financeSettingsKeys,
   financeHealthKeys,
+  receivableKeys,
+  transactionPaymentKeys,
 } from './api';
 
 // Transactions
@@ -356,5 +358,43 @@ export function useFinanceHealthCheckRecords({ enabled = false } = {}) {
     queryFn: api.fetchFinanceHealthCheckRecords,
     enabled,
     staleTime: 5 * 60_000,
+  });
+}
+
+// ── Receivables ───────────────────────────────────────────────────────────────
+
+export function useReceivables(filters = {}) {
+  return useQuery({
+    queryKey: receivableKeys.list(filters),
+    queryFn: () => api.fetchReceivables(filters),
+    staleTime: 60_000,
+  });
+}
+
+export function useTransactionPayments(transactionId) {
+  return useQuery({
+    queryKey: transactionPaymentKeys.byTransaction(transactionId),
+    queryFn: () => api.fetchTransactionPayments(transactionId),
+    enabled: !!transactionId,
+  });
+}
+
+export function useCreateTransactionPayment() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('finance');
+
+  return useMutation({
+    mutationFn: api.createTransactionPayment,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: receivableKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: transactionPaymentKeys.byTransaction(variables.transactionId) });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: dashboardV2Keys.all });
+      toast.success(t('receivables.addPayment.confirmButton'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.createFailed'));
+    },
   });
 }

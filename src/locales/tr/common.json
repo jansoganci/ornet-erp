@@ -197,7 +197,8 @@
       "vat": "KDV Raporu",
       "exchange": "Döviz Kurları",
       "recurring": "Otomatik Giderler",
-      "reports": "Raporlar"
+      "reports": "Raporlar",
+      "receivables": "Bekleyen Tahsilatlar"
     },
     "account": "Hesap",
     "quickActions": {

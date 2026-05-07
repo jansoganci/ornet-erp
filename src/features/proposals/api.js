@@ -456,6 +456,16 @@ export async function updateProposalStatus({ id, status }) {
   return data;
 }
 
+export async function completeProposalWithRate({ id, exchangeRate, rateSuggested }) {
+  const { error } = await supabase.rpc('complete_proposal_with_rate', {
+    p_proposal_id: id,
+    p_exchange_rate: exchangeRate,
+    p_rate_suggested: rateSuggested ?? null,
+  });
+  if (error) throw error;
+  return { id };
+}
+
 /**
  * Soft-delete a proposal (sets deleted_at).
  */

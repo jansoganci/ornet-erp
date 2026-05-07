@@ -275,6 +275,17 @@
     "annualFixedSubtotal": "Ara Toplam ({{currency}})",
     "annualFixedDisclaimer": "Teklif KDV dahil değildir. Yukarıdaki yıllık giderler bilgi amaçlıdır."
   },
+  "completionRate": {
+    "title": "Tamamlama Kuru Onayla",
+    "proposalTotal": "Teklif Tutarı (USD)",
+    "rateLabel": "USD/TRY Kuru",
+    "suggestedHint": "TCMB kuru: {{rate}} ({{date}} tarihli)",
+    "noSuggestedRate": "Güncel kur bulunamadı",
+    "convertedAmount": "TRY Karşılığı",
+    "deviationWarning": "Girilen kur, önerilen kurdan %{{pct}} sapıyor. Devam etmek istediğinizden emin misiniz?",
+    "noUsdTotal": "Bu teklifin USD tutarı girilmemiş. Teklifi düzenleyerek USD tutarını ekleyin.",
+    "confirm": "Tamamla ve Kaydet"
+  },
   "sections": {
     "addSection": "Bölüm Ekle",
     "deleteSection": "Bölümü Sil",

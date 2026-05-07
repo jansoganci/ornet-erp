@@ -233,13 +233,39 @@
     "delete": "Sil",
     "viewCustomer": "Müşteriyi Görüntüle"
   },
+  "readyToBill": {
+    "title": "Tüm iş emirleri tamamlandı — teklif faturalanmaya hazır.",
+    "canWriteAction": "Teklifi açarak faturalandır →",
+    "fieldWorkerAction": "Muhasebeni bilgilendirerek teklifin kapatılmasını isteyin."
+  },
   "statusChange": {
     "startConfirm": "Bu işe başlamak istediğinizden emin misiniz?",
     "completeConfirm": "Bu işi tamamlamak istediğinizden emin misiniz?",
     "cancelConfirm": "Bu işi iptal etmek istediğinizden emin misiniz?",
+    "proposalLinkedUsdNote": "Bu iş emri USD teklife bağlı. Finansal kayıt, teklif tamamlandığında oluşturulur ve döviz kuru o adımda onaylanır.",
     "started": "İş başlatıldı",
     "completed": "İş tamamlandı",
     "cancelled": "İş iptal edildi"
+  },
+  "completion": {
+    "title": "İş Emrini Tamamla",
+    "subtitle": "Tahsilat yöntemini seçin",
+    "collectionDate": "Tamamlanma / Tahsilat Tarihi",
+    "vatIncluded": "KDV Dahil",
+    "amountSummary": "Tutar Özeti",
+    "netAmount": "Net Tutar (KDV Hariç)",
+    "vatAmount": "KDV",
+    "totalAmount": "Ödenecek Toplam",
+    "paymentMethod": "Ödeme Yöntemi",
+    "paymentMethods": {
+      "cash": "Nakit",
+      "card": "Kredi Kartı",
+      "bank_transfer": "Havale / EFT"
+    },
+    "bankTransferHint": "Havale seçilirse tahsilat, 'Bekleyen Tahsilatlar' ekranında takip edilir.",
+    "noMaterialsHint": "Bu iş emrinde malzeme kaydı bulunmuyor; finansal işlem oluşturulmayacak.",
+    "proposalLinkedNote": "Bu iş emri bir teklife bağlı; tahsilat teklif üzerinden yönetilmektedir.",
+    "confirmButton": "Tamamla ve Kaydet"
   },
   "delete": {
     "title": "İş Emri Sil",

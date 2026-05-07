@@ -209,9 +209,17 @@ export function IncomePage() {
       render: (val) => formatDate(val),
     },
     {
-      header: t('finance:income.fields.amount'),
+      header: t('finance:list.columnNetAmount'),
       accessor: 'amount_try',
       render: (val) => formatCurrency(val),
+    },
+    {
+      header: t('finance:list.columnVatTotal'),
+      id: 'vat_total',
+      render: (_, row) => {
+        if (row.output_vat == null) return '—';
+        return formatCurrency((Number(row.amount_try) || 0) + (Number(row.output_vat) || 0));
+      },
     },
     {
       header: t('finance:income.fields.incomeType'),
@@ -525,6 +533,11 @@ export function IncomePage() {
                       <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-50 tracking-tight truncate">
                         {tx.customers?.company_name || tx.description || t('finance:mobile.noDescription')}
                       </h3>
+                      {tx.output_vat != null && Number(tx.output_vat) > 0 && (
+                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 tabular-nums">
+                          {t('finance:mobile.vatInclTotal')} {formatCurrency((Number(tx.amount_try) || 0) + (Number(tx.output_vat) || 0))}
+                        </p>
+                      )}
                     </div>
 
                     {/* Amount */}

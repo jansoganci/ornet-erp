@@ -75,10 +75,21 @@
     "maintenance": "Bakım",
     "other": "Diğer"
   },
+  "timeline": {
+    "created": "Oluşturuldu",
+    "contacted": "İletişim",
+    "woCreated": "İş Emri",
+    "closed": "Kapatıldı"
+  },
+  "boomerang": {
+    "title": "Ziyaret Neden Başarısız Oldu?",
+    "confirm": "Havuza Geri Gönder"
+  },
   "actions": {
     "schedule": "Planla",
     "createWorkOrder": "İş Emri Oluştur",
     "boomerang": "Yeniden Planla",
+    "visitFailed": "Ziyaret Başarısız",
     "callQueue": "Arama Sırası",
     "cancel": "İptal Et",
     "addToDailyPlan": "Günlük Plana Ekle",
@@ -87,7 +98,8 @@
     "edit": "Düzenle",
     "viewWorkOrder": "İş Emrine Git",
     "resolvedRemotely": "Uzaktan Çözüldü",
-    "createProposal": "Teklif Oluştur"
+    "createProposal": "Teklif Oluştur",
+    "more": "Daha Fazla"
   },
   "closeOutcome": {
     "title": "Kapanış Kategorisini Seçin",
@@ -192,7 +204,8 @@
     "allRegions": "Tüm Bölgeler",
     "allStatuses": "Tüm Durumlar",
     "allPriorities": "Tüm Öncelikler",
-    "search": "Müşteri ara..."
+    "search": "Müşteri ara...",
+    "rescheduledOnly": "Yeniden Planlanacak"
   },
   "empty": {
     "title": "Talep havuzu boş",

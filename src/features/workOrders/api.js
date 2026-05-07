@@ -462,3 +462,24 @@ export async function fetchWorkOrdersByCustomer(customerId) {
   if (error) throw error;
   return data;
 }
+
+/**
+ * Complete a standalone work order and record payment method atomically.
+ * Uses fn_complete_work_order_with_payment RPC (migration 00208).
+ *
+ * @param {object} params
+ * @param {string} params.workOrderId
+ * @param {'cash'|'card'|'bank_transfer'} params.paymentMethod
+ * @param {string} params.collectionDate - ISO date string 'YYYY-MM-DD'
+ * @returns {Promise<{ status: string, transaction_id?: string, payment_status?: string }>}
+ */
+export async function completeWorkOrderWithPayment({ workOrderId, paymentMethod, collectionDate, vatRate }) {
+  const { data, error } = await supabase.rpc('fn_complete_work_order_with_payment', {
+    p_work_order_id:   workOrderId,
+    p_payment_method:  paymentMethod,
+    p_collection_date: collectionDate,
+    p_vat_rate:        vatRate ?? null,
+  });
+  if (error) throw error;
+  return data;
+}

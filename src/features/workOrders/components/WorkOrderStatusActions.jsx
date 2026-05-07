@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui';
 
-export function WorkOrderStatusActions({ workOrder, setStatusToUpdate }) {
+export function WorkOrderStatusActions({ workOrder, setStatusToUpdate, onComplete }) {
   const { t } = useTranslation(['workOrders', 'common']);
   const status = workOrder?.status;
   const isCompletedOrCancelled = ['completed', 'cancelled'].includes(status);
@@ -25,7 +25,7 @@ export function WorkOrderStatusActions({ workOrder, setStatusToUpdate }) {
         <Button
           variant="success"
           className="flex-1 max-w-xs"
-          onClick={() => setStatusToUpdate('completed')}
+          onClick={() => onComplete ? onComplete() : setStatusToUpdate('completed')}
         >
           {t('workOrders:actions.complete')}
         </Button>

@@ -46,10 +46,10 @@
     "saveAndClose": "Kaydet ve Kapat",
     "fields": {
       "date": "Tarih",
-      "amount": "Tutar",
+      "amount": "Net Tutar",
       "currency": "Para Birimi",
       "exchangeRate": "Döviz Kuru",
-      "amountTry": "Tutar (TRY)",
+      "amountTry": "Net Tutar (TRY)",
       "incomeType": "Gelir Tipi",
       "customer": "Müşteri",
       "proposal": "Teklif",
@@ -62,7 +62,7 @@
     },
     "placeholders": {
       "date": "Tarih seçin",
-      "amount": "0",
+      "amount": "0 (KDV hariç)",
       "exchangeRate": "Kur girin",
       "amountTry": "TRY tutarı",
       "proposal": "Teklif ara...",
@@ -94,7 +94,15 @@
     "empty": "Henüz gider kaydı yok",
     "emptyIncome": "Henüz gelir kaydı yok",
     "addFirst": "İlk gideri ekleyerek başlayın.",
-    "addFirstIncome": "İlk geliri ekleyerek başlayın."
+    "addFirstIncome": "İlk geliri ekleyerek başlayın.",
+    "columnNetAmount": "Net Tutar",
+    "columnVatTotal": "KDV Dahil Toplam"
+  },
+  "vatSummary": {
+    "title": "KDV Özeti",
+    "net": "Net Tutar",
+    "vatAmount": "KDV Tutarı (%{{rate}})",
+    "total": "KDV Dahil Toplam"
   },
   "quickActions": {
     "addIncome": "Gelir Ekle",
@@ -174,6 +182,7 @@
     "filterButton": "Filtrele",
     "thisMonth": "Bu Ay",
     "noDescription": "Açıklama yok",
+    "vatInclTotal": "KDV Dahil",
     "perTransaction": "İşlem başına",
     "addForm": "Form Ekle",
     "lastUpdated": "Son Güncelleme",
@@ -323,6 +332,42 @@
     "loading": "Veriler yükleniyor...",
     "error": "Veriler yüklenirken bir hata oluştu.",
     "noDataGeneral": "Seçilen dönemde veri bulunamadı."
+  },
+  "customer": {
+    "openDetail": "Müşteri detayına git",
+    "accountNo": "Hesap No"
+  },
+  "receivables": {
+    "title": "Bekleyen Tahsilatlar",
+    "subtitle": "Havale / EFT bekleyen iş emirleri",
+    "empty": {
+      "title": "Bekleyen tahsilat yok",
+      "description": "Tüm iş emirleri tahsil edildi."
+    },
+    "columns": {
+      "customer": "Müşteri",
+      "workOrder": "İş Emri",
+      "netAmount": "Net Tutar",
+      "vatAmount": "KDV",
+      "totalAmount": "Toplam",
+      "status": "Durum",
+      "date": "Tarih"
+    },
+    "status": {
+      "unpaid": "Ödenmedi",
+      "partially_paid": "Kısmi Ödeme",
+      "paid": "Tahsil Edildi"
+    },
+    "addPayment": {
+      "title": "Tahsilat Ekle",
+      "documentTotal": "Belge Tutarı",
+      "amount": "Tahsilat Tutarı (TRY)",
+      "paymentMethod": "Ödeme Yöntemi",
+      "paidAt": "Tahsilat Tarihi",
+      "notes": "Not",
+      "notesPlaceholder": "İsteğe bağlı not...",
+      "confirmButton": "Tahsilatı Kaydet"
+    }
   },
   "healthBanner": {
     "message": "{{count}} kayıt finansal bütünlük kontrolü gerektiriyor.",

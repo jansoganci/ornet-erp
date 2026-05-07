@@ -216,9 +216,17 @@ export function ExpensesPage() {
       render: (val) => formatDate(val),
     },
     {
-      header: t('finance:expense.fields.amount'),
+      header: t('finance:list.columnNetAmount'),
       accessor: 'amount_try',
       render: (val) => formatCurrency(val),
+    },
+    {
+      header: t('finance:list.columnVatTotal'),
+      id: 'vat_total',
+      render: (_, row) => {
+        if (row.input_vat == null) return '—';
+        return formatCurrency((Number(row.amount_try) || 0) + (Number(row.input_vat) || 0));
+      },
     },
     {
       header: t('finance:expense.fields.category'),
@@ -239,11 +247,6 @@ export function ExpensesPage() {
           </span>
         );
       },
-    },
-    {
-      header: t('finance:expense.fields.source'),
-      accessor: 'proposal_id',
-      render: (val) => (val ? t('finance:income.fields.proposal') : '-'),
     },
     {
       header: t('finance:expense.fields.paymentMethod'),
@@ -587,6 +590,11 @@ export function ExpensesPage() {
                       <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-50 tracking-tight truncate">
                         {tx.description || categoryName}
                       </h3>
+                      {tx.input_vat != null && Number(tx.input_vat) > 0 && (
+                        <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 tabular-nums">
+                          {t('finance:mobile.vatInclTotal')} {formatCurrency((Number(tx.amount_try) || 0) + (Number(tx.input_vat) || 0))}
+                        </p>
+                      )}
                     </div>
                     <span className="text-red-400 font-bold text-lg shrink-0 tabular-nums">
                       {formatCurrency(tx.amount_try)}

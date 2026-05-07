@@ -13,6 +13,7 @@ import {
   updateProposalSectionsAndItems,
   updateProposalAnnualFixedCosts,
   updateProposalStatus,
+  completeProposalWithRate,
   deleteProposal,
   duplicateProposal,
   fetchProposalsBySite,
@@ -148,6 +149,23 @@ export function useUpdateProposalStatus() {
 
   return useMutation({
     mutationFn: updateProposalStatus,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.detail(data.id) });
+      toast.success(t('success.statusUpdated'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.updateFailed'));
+    },
+  });
+}
+
+export function useCompleteProposalWithRate() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('common');
+
+  return useMutation({
+    mutationFn: completeProposalWithRate,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
       queryClient.invalidateQueries({ queryKey: proposalKeys.detail(data.id) });

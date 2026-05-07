@@ -825,3 +825,78 @@ export async function fetchFinanceHealthCheckRecords() {
   if (error) throw error;
   return data ?? [];
 }
+
+// ============================================================================
+// Receivables — unpaid / partially-paid income documents
+// ============================================================================
+
+export const receivableKeys = {
+  all: ['receivables'],
+  lists: () => [...receivableKeys.all, 'list'],
+  list: (filters) => [...receivableKeys.lists(), filters],
+};
+
+const RECEIVABLE_SELECT = `
+  id, transaction_date, period, amount_try, output_vat, payment_status,
+  income_type, payment_method, work_order_id, proposal_id, customer_id,
+  customers ( company_name ),
+  work_orders ( id, form_no ),
+  proposals ( proposal_no, title )
+`.replace(/\s+/g, ' ').trim();
+
+export async function fetchReceivables(filters = {}) {
+  let query = supabase
+    .from('financial_transactions')
+    .select(RECEIVABLE_SELECT)
+    .eq('direction', 'income')
+    .in('payment_status', ['unpaid', 'partially_paid'])
+    .is('deleted_at', null)
+    .order('transaction_date', { ascending: false });
+
+  if (filters.customerId) {
+    query = query.eq('customer_id', filters.customerId);
+  }
+
+  const { data, error } = await query.limit(200);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// ── Transaction Payments ─────────────────────────────────────────────────────
+
+export const transactionPaymentKeys = {
+  all: ['transaction_payments'],
+  byTransaction: (id) => [...transactionPaymentKeys.all, 'tx', id],
+};
+
+export async function fetchTransactionPayments(transactionId) {
+  const { data, error } = await supabase
+    .from('financial_transaction_payments')
+    .select('id, amount_try, payment_method, paid_at, notes, created_at')
+    .eq('transaction_id', transactionId)
+    .is('deleted_at', null)
+    .order('paid_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createTransactionPayment({ transactionId, amountTry, paymentMethod, paidAt, notes }) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('not_authenticated');
+
+  const { data, error } = await supabase
+    .from('financial_transaction_payments')
+    .insert({
+      transaction_id: transactionId,
+      amount_try:     amountTry,
+      payment_method: paymentMethod,
+      paid_at:        paidAt,
+      notes:          notes || null,
+      created_by:     user.id,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}

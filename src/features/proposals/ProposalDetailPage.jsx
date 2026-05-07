@@ -41,11 +41,13 @@ import {
   useProposalSections,
   useProposalAnnualFixedCosts,
   useUpdateProposalStatus,
+  useCompleteProposalWithRate,
   useDeleteProposal,
   useDuplicateProposal,
   useProposalWorkOrders,
   useUnlinkWorkOrder,
 } from './hooks';
+import { ProposalCompletionRateModal } from './components/ProposalCompletionRateModal';
 import { ProposalPdf } from './components/ProposalPdf';
 import { ProposalHero } from './components/ProposalHero';
 import { ProposalSiteCard } from './components/ProposalSiteCard';
@@ -113,6 +115,7 @@ export function ProposalDetailPage() {
   const { t: tCommon } = useTranslation('common');
 
   const [confirmAction, setConfirmAction] = useState(null);
+  const [showCompletionRateModal, setShowCompletionRateModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showFaturalandirModal, setShowFaturalandirModal] = useState(false);
@@ -129,6 +132,7 @@ export function ProposalDetailPage() {
   const annualFixedCostsPdf = filterPersistableAnnualFixedRows(annualFixedRaw);
   const { data: linkedWorkOrders = [] } = useProposalWorkOrders(id);
   const statusMutation = useUpdateProposalStatus();
+  const completeWithRateMutation = useCompleteProposalWithRate();
   const deleteMutation = useDeleteProposal();
   const unlinkMutation = useUnlinkWorkOrder();
   const updateProposalMutation = useUpdateProposal();
@@ -180,6 +184,21 @@ export function ProposalDetailPage() {
     statusMutation.mutate(
       { id, status: newStatus },
       { onSuccess: () => setConfirmAction(null) }
+    );
+  };
+
+  const handleFlowAction = (action) => {
+    if (action === 'completed' && currency === 'USD') {
+      setShowCompletionRateModal(true);
+    } else {
+      setConfirmAction(action);
+    }
+  };
+
+  const handleCompletionRateConfirm = ({ exchangeRate, rateSuggested }) => {
+    completeWithRateMutation.mutate(
+      { id, exchangeRate, rateSuggested },
+      { onSuccess: () => setShowCompletionRateModal(false) }
     );
   };
 
@@ -261,10 +280,10 @@ export function ProposalDetailPage() {
         onDelete={() => setShowDeleteConfirm(true)}
         onDownloadPdf={handleOpenPdfFilenameModal}
         isExporting={isExporting}
-        onFlowAction={setConfirmAction}
+        onFlowAction={handleFlowAction}
         onFaturalandir={() => setShowFaturalandirModal(true)}
         onCreateWorkOrder={handleCreateWorkOrderClick}
-        flowLoading={statusMutation.isPending}
+        flowLoading={statusMutation.isPending || completeWithRateMutation.isPending}
       />
 
       {/* Lokasyon + Özet kartları — desktop: 1x2 */}
@@ -557,7 +576,7 @@ export function ProposalDetailPage() {
               variant="primary"
               className="flex-1"
               leftIcon={<CheckCircle2 className="w-4 h-4" />}
-              onClick={() => setConfirmAction('completed')}
+              onClick={() => handleFlowAction('completed')}
               loading={statusMutation.isPending}
             >
               {t('proposals:detail.actions.markComplete')}
@@ -630,6 +649,15 @@ export function ProposalDetailPage() {
           {t('proposals:detail.actions.duplicate')}
         </Button>
       </div>
+
+      <ProposalCompletionRateModal
+        open={showCompletionRateModal}
+        onClose={() => setShowCompletionRateModal(false)}
+        onConfirm={handleCompletionRateConfirm}
+        proposal={proposal}
+        totalUsd={grandTotal}
+        isLoading={completeWithRateMutation.isPending}
+      />
 
       {/* Confirm Status Modal */}
       <Modal

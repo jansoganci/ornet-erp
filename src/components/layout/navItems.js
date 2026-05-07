@@ -23,6 +23,7 @@ import {
   AlertCircle,
   Radio,
   BookOpen,
+  Landmark,
 } from 'lucide-react';
 
 /**
@@ -92,6 +93,7 @@ export const navItems = [
       { to: '/finance', icon: Receipt, labelKey: 'nav.finance.dashboard' },
       { to: '/finance/income', icon: TrendingUp, labelKey: 'nav.finance.income' },
       { to: '/finance/expenses', icon: TrendingDown, labelKey: 'nav.finance.expenses' },
+      { to: '/finance/receivables', icon: Landmark, labelKey: 'nav.finance.receivables', canWriteOnly: true },
     ],
   },
   // Ayarlar group (default collapsed)

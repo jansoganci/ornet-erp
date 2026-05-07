@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Package,
@@ -7,6 +7,7 @@ import {
   Calendar,
   Clock,
   Info,
+  CheckCircle2,
 } from 'lucide-react';
 import { PageContainer } from '../../components/layout';
 import {
@@ -22,8 +23,11 @@ import { calcVatTevkifatSummary } from '../../lib/proposalCalc';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFinanceSettings } from '../finance/hooks';
 import { useWorkOrder, useUpdateWorkOrderStatus, useDeleteWorkOrder, workOrderKeys } from './hooks';
+import { useProposal, useProposalWorkOrders } from '../proposals/hooks';
+import { useRole } from '../../lib/roles';
 import { WorkOrderHero } from './components/WorkOrderHero';
 import { WorkOrderStatusActions } from './components/WorkOrderStatusActions';
+import { WorkOrderCompletionModal } from './components/WorkOrderCompletionModal';
 import { WorkOrderSiteCard } from './components/WorkOrderSiteCard';
 import { WorkOrderProposalCard } from './components/WorkOrderProposalCard';
 import { WorkOrderActivityTimeline } from './components/WorkOrderActivityTimeline';
@@ -65,12 +69,20 @@ export function WorkOrderDetailPage() {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [statusToUpdate, setStatusToUpdate] = useState(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const queryClient = useQueryClient();
+  const { canWrite } = useRole();
   const { data: workOrder, isLoading, error, refetch } = useWorkOrder(id);
   const updateStatusMutation = useUpdateWorkOrderStatus();
   const deleteMutation = useDeleteWorkOrder();
   const { data: financeSettings } = useFinanceSettings();
+
+  // For ready-to-bill nudge: fetch sibling WOs and linked proposal status.
+  // Both queries are gated on proposal_id so they fire only for proposal-linked WOs.
+  const proposalId = workOrder?.proposal_id ?? null;
+  const { data: linkedProposal } = useProposal(proposalId);
+  const { data: siblingWorkOrders = [] } = useProposalWorkOrders(proposalId);
 
   if (isLoading) {
     return <WorkOrderDetailSkeleton />;
@@ -112,7 +124,21 @@ export function WorkOrderDetailPage() {
   };
 
   const handleEdit = () => navigate(`/work-orders/${id}/edit`);
+  const isStandalone = !workOrder.proposal_id;
   const canStartWork = ['pending', 'scheduled'].includes(workOrder.status);
+
+  // M2 + M5: ready-to-bill nudge.
+  // Cancelled WOs are excluded from the "all done" check (M5).
+  const allSiblingsSettled =
+    siblingWorkOrders.length > 0 &&
+    siblingWorkOrders.every(
+      (wo) => wo.status === 'completed' || wo.status === 'cancelled'
+    );
+  const showReadyToBillNudge =
+    !isStandalone &&
+    workOrder.status === 'completed' &&
+    linkedProposal?.status === 'accepted' &&
+    allSiblingsSettled;
   const canCompleteWork = workOrder.status === 'in_progress';
 
   const items = workOrder.work_order_materials || [];
@@ -223,6 +249,7 @@ export function WorkOrderDetailPage() {
       <WorkOrderStatusActions
         workOrder={workOrder}
         setStatusToUpdate={setStatusToUpdate}
+        onComplete={isStandalone ? () => setShowCompletionModal(true) : undefined}
       />
 
       <div className="grid grid-cols-12 gap-6">
@@ -336,6 +363,30 @@ export function WorkOrderDetailPage() {
 
         <WorkOrderProposalCard proposalId={workOrder.proposal_id} />
 
+        {/* M2: ready-to-bill nudge — shown when all sibling WOs are settled and proposal is still open */}
+        {showReadyToBillNudge && (
+          <div className="flex items-start gap-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 px-4 py-3">
+            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+            <div className="min-w-0 space-y-1">
+              <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                {t('workOrders:readyToBill.title')}
+              </p>
+              {canWrite ? (
+                <Link
+                  to={`/proposals/${workOrder.proposal_id}`}
+                  className="text-sm text-green-700 dark:text-green-400 underline underline-offset-2"
+                >
+                  {t('workOrders:readyToBill.canWriteAction')}
+                </Link>
+              ) : (
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  {t('workOrders:readyToBill.fieldWorkerAction')}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {workOrder.notes && (
           <Card
             header={
@@ -443,7 +494,7 @@ export function WorkOrderDetailPage() {
           <Button
             className="flex-1"
             variant="success"
-            onClick={() => setStatusToUpdate('completed')}
+            onClick={() => isStandalone ? setShowCompletionModal(true) : setStatusToUpdate('completed')}
           >
             {t('workOrders:actions.complete')}
           </Button>
@@ -485,7 +536,22 @@ export function WorkOrderDetailPage() {
             }`
           )}
         </p>
+        {statusToUpdate === 'completed' && !isStandalone && currency === 'USD' && (
+          <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-4 py-3 mt-1">
+            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
+              {t('workOrders:statusChange.proposalLinkedUsdNote')}
+            </p>
+          </div>
+        )}
       </Modal>
+
+      {/* Standalone WO completion modal (payment routing) */}
+      <WorkOrderCompletionModal
+        open={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        workOrder={workOrder}
+      />
 
       {/* Delete confirmation modal */}
       <Modal

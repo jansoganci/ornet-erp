@@ -72,7 +72,7 @@ import {
 } from './features/proposals';
 import { NotificationsCenterPage } from './features/notifications';
 import { ProfilePage } from './features/profile';
-import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, RecurringExpensesPage, CollectionDeskPage } from './features/finance';
+import { FinanceDashboardPage, ExpensesPage, IncomePage, VatReportPage, ExchangeRatePage, RecurringExpensesPage, CollectionDeskPage, ReceivablesPage } from './features/finance';
 import { SiteAssetsListPage, SiteAssetsImportPage } from './features/siteAssets';
 import { ActionBoardPage } from './features/actionBoard';
 import { OperationsBoardPage, OperationsImportPage } from './features/operations';
@@ -153,6 +153,7 @@ const router = createBrowserRouter(
         <Route path="finance/vat" element={<RoleRoute><VatReportPage /></RoleRoute>} />
         <Route path="finance/exchange" element={<RoleRoute><ExchangeRatePage /></RoleRoute>} />
         <Route path="finance/recurring" element={<RoleRoute><RecurringExpensesPage /></RoleRoute>} />
+        <Route path="finance/receivables" element={<RoleRoute><ReceivablesPage /></RoleRoute>} />
         <Route path="finance/reports" element={<Navigate to="/finance" replace />} />
 
         {/* Equipment / Site Assets routes */}

@@ -20,9 +20,10 @@ import {
 } from '../schema';
 import { useCategories, useCreateTransaction, useUpdateTransaction, useLatestRate } from '../hooks';
 import { useProposalItems } from '../../proposals/hooks';
-import { CustomerSiteSelector } from '../../workOrders/CustomerSiteSelector';
+import { FinanceCustomerPicker } from './FinanceCustomerPicker';
 import { ProposalCombobox } from './ProposalCombobox';
 import { WorkOrderCombobox } from './WorkOrderCombobox';
+import { VatSummaryStrip } from './VatSummaryStrip';
 import { computeProposalCogsUsd } from '../utils';
 
 function getTodayISO() {
@@ -100,6 +101,8 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
   const amountOriginal = useWatch({ control, name: 'amount_original', defaultValue: 0 });
   const exchangeRate = useWatch({ control, name: 'exchange_rate', defaultValue: undefined });
   const proposalId = useWatch({ control, name: 'proposal_id', defaultValue: '' });
+  const watchedAmountTry = useWatch({ control, name: 'amount_try', defaultValue: 0 });
+  const watchedVatRate = useWatch({ control, name: 'vat_rate', defaultValue: 20 });
 
   const selectedCustomerId = watch('customer_id') || '';
   const selectedSiteId = watch('site_id') || '';
@@ -391,81 +394,98 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
         open={open}
         onClose={handleClose}
         title={showTabs ? t('finance:quickEntry.title') : (isEditMode ? t('finance:expense.editTitle') : t('finance:expense.title'))}
-        size="md"
+        size="xl"
         footer={expenseFooter}
       >
         {tabBar}
-        <form className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <Input
-              label={t('finance:expense.fields.date')}
-              type="date"
-              error={errors.transaction_date?.message}
-              {...register('transaction_date')}
-              autoFocus
-            />
-            <Input
-              label={t('finance:expense.fields.amount')}
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder={t('finance:expense.placeholders.amount')}
-              hint={t('finance:expense.fields.amountHint')}
-              error={errors.amount_try?.message}
-              {...register('amount_try')}
-            />
+        <form>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+
+            {/* ── Left: Financial Core ── */}
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label={t('finance:expense.fields.date')}
+                  type="date"
+                  error={errors.transaction_date?.message}
+                  {...register('transaction_date')}
+                  autoFocus
+                />
+                <Input
+                  label={t('finance:expense.fields.amount')}
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder={t('finance:expense.placeholders.amount')}
+                  hint={t('finance:expense.fields.amountHint')}
+                  error={errors.amount_try?.message}
+                  {...register('amount_try')}
+                />
+              </div>
+
+              <Select
+                label={t('finance:expense.fields.paymentMethod')}
+                options={paymentMethodOptions}
+                placeholder={t('finance:expense.placeholders.paymentMethod')}
+                error={errors.payment_method?.message}
+                {...register('payment_method')}
+              />
+
+              <div className="flex items-center space-x-3 p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-xl border border-neutral-100 dark:border-neutral-800">
+                <input
+                  id="has_invoice"
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-600 transition-all cursor-pointer"
+                  {...register('has_invoice')}
+                />
+                <label
+                  htmlFor="has_invoice"
+                  className="text-sm font-bold text-neutral-700 dark:text-neutral-200 cursor-pointer select-none"
+                >
+                  {t('finance:expense.fields.hasInvoice')}
+                </label>
+              </div>
+
+              {hasInvoice && (
+                <Input
+                  label={t('finance:expense.fields.vatRate')}
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  error={errors.vat_rate?.message}
+                  {...register('vat_rate')}
+                />
+              )}
+
+              <VatSummaryStrip
+                netAmount={watchedAmountTry}
+                vatRate={watchedVatRate}
+                show={hasInvoice && Number(watchedAmountTry) > 0}
+                direction="expense"
+              />
+            </div>
+
+            {/* ── Right: Contextual ── */}
+            <div className="space-y-5 sm:border-l sm:border-neutral-100 dark:sm:border-neutral-800 sm:pl-8">
+              <Select
+                label={t('finance:expense.fields.category')}
+                options={categoryOptions}
+                placeholder={t('finance:expense.placeholders.category')}
+                error={errors.expense_category_id?.message}
+                {...register('expense_category_id')}
+              />
+
+              <Textarea
+                label={t('finance:expense.fields.description')}
+                placeholder={t('finance:expense.placeholders.description')}
+                error={errors.description?.message}
+                rows={8}
+                {...register('description')}
+              />
+            </div>
+
           </div>
-
-          <Select
-            label={t('finance:expense.fields.category')}
-            options={categoryOptions}
-            placeholder={t('finance:expense.placeholders.category')}
-            error={errors.expense_category_id?.message}
-            {...register('expense_category_id')}
-          />
-
-          <Select
-            label={t('finance:expense.fields.paymentMethod')}
-            options={paymentMethodOptions}
-            placeholder={t('finance:expense.placeholders.paymentMethod')}
-            error={errors.payment_method?.message}
-            {...register('payment_method')}
-          />
-
-          <div className="flex items-center space-x-3 p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-xl border border-neutral-100 dark:border-neutral-800">
-            <input
-              id="has_invoice"
-              type="checkbox"
-              className="h-5 w-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-600 transition-all cursor-pointer"
-              {...register('has_invoice')}
-            />
-            <label
-              htmlFor="has_invoice"
-              className="text-sm font-bold text-neutral-700 dark:text-neutral-200 cursor-pointer select-none"
-            >
-              {t('finance:expense.fields.hasInvoice')}
-            </label>
-          </div>
-
-          {hasInvoice && (
-            <Input
-              label={t('finance:expense.fields.vatRate')}
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              error={errors.vat_rate?.message}
-              {...register('vat_rate')}
-            />
-          )}
-
-          <Textarea
-            label={t('finance:expense.fields.description')}
-            placeholder={t('finance:expense.placeholders.description')}
-            error={errors.description?.message}
-            rows={3}
-            {...register('description')}
-          />
         </form>
       </Modal>
     );
@@ -513,156 +533,169 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
       open={open}
       onClose={handleClose}
       title={showTabs ? t('finance:quickEntry.title') : (isEditMode ? t('finance:income.editTitle') : t('finance:income.title'))}
-      size="lg"
+      size="xl"
       footer={incomeFooter}
     >
       {tabBar}
-      <form className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Input
-            label={t('finance:income.fields.date')}
-            type="date"
-            error={errors.transaction_date?.message}
-            {...register('transaction_date')}
-            autoFocus
-          />
-          <Input
-            label={`${t('finance:income.fields.amount')} (${originalCurrency})`}
-            type="number"
-            min={0}
-            step="0.01"
-            placeholder={t('finance:income.placeholders.amount')}
-            error={errors.amount_original?.message}
-            {...register('amount_original')}
-          />
-        </div>
+      <form>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <Select
-            label={t('finance:income.fields.currency')}
-            options={currencyOptions}
-            {...register('original_currency')}
-          />
-          {originalCurrency === 'USD' && (
+          {/* ── Left: Financial Core ── */}
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label={t('finance:income.fields.date')}
+                type="date"
+                error={errors.transaction_date?.message}
+                {...register('transaction_date')}
+                autoFocus
+              />
+              <Select
+                label={t('finance:income.fields.currency')}
+                options={currencyOptions}
+                {...register('original_currency')}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label={`${t('finance:income.fields.amount')} (${originalCurrency})`}
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder={t('finance:income.placeholders.amount')}
+                error={errors.amount_original?.message}
+                {...register('amount_original')}
+              />
+              <Input
+                label={t('finance:income.fields.amountTry')}
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder={t('finance:income.placeholders.amountTry')}
+                error={errors.amount_try?.message}
+                {...register('amount_try')}
+                readOnly={originalCurrency === 'USD'}
+              />
+            </div>
+
+            {originalCurrency === 'USD' && (
+              <Input
+                label={t('finance:income.fields.exchangeRate')}
+                type="number"
+                min={0}
+                step="0.0001"
+                placeholder={t('finance:income.placeholders.exchangeRate')}
+                error={errors.exchange_rate?.message}
+                {...register('exchange_rate')}
+              />
+            )}
+
+            <div className="flex items-center space-x-3 p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-xl border border-neutral-100 dark:border-neutral-800">
+              <input
+                id="should_invoice"
+                type="checkbox"
+                className="h-5 w-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-600 transition-all cursor-pointer"
+                {...register('should_invoice')}
+              />
+              <label
+                htmlFor="should_invoice"
+                className="text-sm font-bold text-neutral-700 dark:text-neutral-200 cursor-pointer select-none"
+              >
+                {t('finance:income.fields.shouldInvoice')}
+              </label>
+            </div>
+
+            {shouldInvoice && (
+              <Input
+                label={t('finance:income.fields.vatRate')}
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                error={errors.vat_rate?.message}
+                {...register('vat_rate')}
+              />
+            )}
+
+            <VatSummaryStrip
+              netAmount={watchedAmountTry}
+              vatRate={watchedVatRate}
+              show={shouldInvoice && Number(watchedAmountTry) > 0}
+              direction="income"
+            />
+
             <Input
-              label={t('finance:income.fields.exchangeRate')}
+              label={t('finance:income.fields.cogs')}
               type="number"
               min={0}
-              step="0.0001"
-              placeholder={t('finance:income.placeholders.exchangeRate')}
-              error={errors.exchange_rate?.message}
-              {...register('exchange_rate')}
+              step="0.01"
+              error={errors.cogs_try?.message}
+              {...register('cogs_try')}
             />
-          )}
-          <Input
-            label={t('finance:income.fields.amountTry')}
-            type="number"
-            min={0}
-            step="0.01"
-            placeholder={t('finance:income.placeholders.amountTry')}
-            error={errors.amount_try?.message}
-            {...register('amount_try')}
-            readOnly={originalCurrency === 'USD'}
-          />
+          </div>
+
+          {/* ── Right: Contextual ── */}
+          <div className="space-y-5 sm:border-l sm:border-neutral-100 dark:sm:border-neutral-800 sm:pl-8">
+            <Select
+              label={t('finance:income.fields.incomeType')}
+              options={incomeTypeOptions}
+              error={errors.income_type?.message}
+              {...register('income_type')}
+            />
+
+            <FinanceCustomerPicker
+              selectedCustomerId={selectedCustomerId}
+              selectedSiteId={selectedSiteId}
+              onCustomerChange={(id) => {
+                setValue('customer_id', id || '');
+                setValue('site_id', '');
+              }}
+              onSiteChange={(id) => setValue('site_id', id || '')}
+            />
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                {t('finance:income.fields.proposal')}
+              </label>
+              <ProposalCombobox
+                value={proposalId}
+                selectedProposal={selectedProposal}
+                onSelect={handleProposalSelect}
+                placeholder={t('finance:income.placeholders.proposal')}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                {t('finance:income.fields.workOrder')}
+              </label>
+              <WorkOrderCombobox
+                value={watch('work_order_id') || ''}
+                selectedWorkOrder={selectedWorkOrder}
+                onSelect={handleWorkOrderSelect}
+                placeholder={t('finance:income.placeholders.workOrder')}
+                proposalId={proposalId}
+              />
+            </div>
+
+            <Select
+              label={t('finance:income.fields.paymentMethod')}
+              options={paymentMethodOptions}
+              error={errors.payment_method?.message}
+              {...register('payment_method')}
+            />
+
+            <Textarea
+              label={t('finance:income.fields.description')}
+              placeholder={t('finance:income.placeholders.description')}
+              error={errors.description?.message}
+              rows={3}
+              {...register('description')}
+            />
+          </div>
+
         </div>
-
-        <Select
-          label={t('finance:income.fields.incomeType')}
-          options={incomeTypeOptions}
-          error={errors.income_type?.message}
-          {...register('income_type')}
-        />
-
-        <div className="border border-neutral-200 dark:border-[#262626] rounded-xl p-4">
-          <CustomerSiteSelector
-            selectedCustomerId={selectedCustomerId}
-            selectedSiteId={selectedSiteId}
-            onCustomerChange={(id) => {
-              setValue('customer_id', id || '');
-              setValue('site_id', '');
-            }}
-            onSiteChange={(id) => setValue('site_id', id || '')}
-            onAddNewSite={() => {}}
-            onAddNewCustomer={() => {}}
-            siteOptional
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            {t('finance:income.fields.proposal')}
-          </label>
-          <ProposalCombobox
-            value={proposalId}
-            selectedProposal={selectedProposal}
-            onSelect={handleProposalSelect}
-            placeholder={t('finance:income.placeholders.proposal')}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-            {t('finance:income.fields.workOrder')}
-          </label>
-          <WorkOrderCombobox
-            value={watch('work_order_id') || ''}
-            selectedWorkOrder={selectedWorkOrder}
-            onSelect={handleWorkOrderSelect}
-            placeholder={t('finance:income.placeholders.workOrder')}
-            proposalId={proposalId}
-          />
-        </div>
-
-        <Select
-          label={t('finance:income.fields.paymentMethod')}
-          options={paymentMethodOptions}
-          error={errors.payment_method?.message}
-          {...register('payment_method')}
-        />
-
-        <div className="flex items-center space-x-3 p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-xl border border-neutral-100 dark:border-neutral-800">
-          <input
-            id="should_invoice"
-            type="checkbox"
-            className="h-5 w-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-600 transition-all cursor-pointer"
-            {...register('should_invoice')}
-          />
-          <label
-            htmlFor="should_invoice"
-            className="text-sm font-bold text-neutral-700 dark:text-neutral-200 cursor-pointer select-none"
-          >
-            {t('finance:income.fields.shouldInvoice')}
-          </label>
-        </div>
-
-        {shouldInvoice && (
-          <Input
-            label={t('finance:income.fields.vatRate')}
-            type="number"
-            min={0}
-            max={100}
-            step="0.01"
-            error={errors.vat_rate?.message}
-            {...register('vat_rate')}
-          />
-        )}
-
-        <Input
-          label={t('finance:income.fields.cogs')}
-          type="number"
-          min={0}
-          step="0.01"
-          error={errors.cogs_try?.message}
-          {...register('cogs_try')}
-        />
-
-        <Textarea
-          label={t('finance:income.fields.description')}
-          placeholder={t('finance:income.placeholders.description')}
-          error={errors.description?.message}
-          rows={3}
-          {...register('description')}
-        />
       </form>
     </Modal>
   );

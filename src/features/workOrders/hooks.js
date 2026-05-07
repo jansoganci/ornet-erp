@@ -11,6 +11,7 @@ import {
   transactionKeys,
   profitAndLossKeys,
   financeHealthKeys,
+  receivableKeys,
 } from '../finance/api';
 
 export const workOrderKeys = {
@@ -198,6 +199,31 @@ export function useUpdateWorkOrder() {
     onError: (error) => {
       toast.error(getErrorMessage(error, 'common.updateFailed'));
     }
+  });
+}
+
+export function useCompleteWorkOrderWithPayment() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('workOrders');
+
+  return useMutation({
+    mutationFn: api.completeWorkOrderWithPayment,
+    onSuccess: (_, variables) => {
+      const { workOrderId } = variables;
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.detail(workOrderId) });
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.auditLogs(workOrderId) });
+      queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: operationsApi.keys.all });
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
+      queryClient.invalidateQueries({ queryKey: receivableKeys.lists() });
+      toast.success(t('completion.confirmButton'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.updateFailed'));
+    },
   });
 }
 
