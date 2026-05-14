@@ -12,8 +12,6 @@ import {
   CheckCircle2,
   XCircle,
   Receipt,
-  Plus,
-  MapPin,
   Info,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +41,6 @@ export function ProposalHero({
   isExporting,
   onFlowAction,
   onFaturalandir,
-  onCreateWorkOrder,
   flowLoading,
 }) {
   const { t } = useTranslation(['proposals', 'common']);
@@ -119,29 +116,6 @@ export function ProposalHero({
                 {t('proposals:detail.actions.reject')}
               </Button>
             </>
-          )}
-          {(status === 'accepted' || status === 'completed') && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              leftIcon={
-                proposal?.site_id ? (
-                  <Plus className="w-4 h-4" />
-                ) : (
-                  <MapPin className="w-4 h-4" />
-                )
-              }
-              disabled={!proposal?.site_id && !proposal?.customer_id}
-              title={
-                !proposal?.site_id && proposal?.customer_id
-                  ? t('proposals:detail.addSiteAndWorkOrder')
-                  : undefined
-              }
-              onClick={() => onCreateWorkOrder?.()}
-            >
-              {t('proposals:detail.actions.createWorkOrder')}
-            </Button>
           )}
           {status === 'accepted' && (
             <Button

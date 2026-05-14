@@ -52,39 +52,10 @@ import { ProposalPdf } from './components/ProposalPdf';
 import { ProposalHero } from './components/ProposalHero';
 import { ProposalSiteCard } from './components/ProposalSiteCard';
 import { ProposalSummaryCard } from './components/ProposalSummaryCard';
-import { CreateWorkOrderFromProposalModal } from './components/CreateWorkOrderFromProposalModal';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useUpdateProposal } from './hooks';
 import { useFinanceSettings } from '../finance/hooks';
-
-/**
- * Public folder image for PDF.
- * Returns a base64 data URI so @react-pdf/renderer never needs to make a
- * second internal network request (which was causing toBlob() to throw for
- * large images). Returns null if the file is missing — ProposalPdf handles
- * null gracefully by skipping the <Image> element.
- */
-async function resolveProposalPdfPublicImage(relativePath) {
-  const path = relativePath.replace(/^\//, '');
-  const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin).href;
-  const url = new URL(path, base).href;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const ct = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-    if (ct && !ct.startsWith('image/')) return null;
-    const buffer = await res.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    const CHUNK = 8192;
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-    }
-    return `data:${ct};base64,${btoa(binary)}`;
-  } catch {
-    return null;
-  }
-}
+import { resolveProposalPdfPublicImage } from '../../lib/resolvePdfImage';
 
 function DetailSkeleton() {
   return (
@@ -121,7 +92,6 @@ export function ProposalDetailPage() {
   const [showFaturalandirModal, setShowFaturalandirModal] = useState(false);
   const [unlinkWoId, setUnlinkWoId] = useState(null);
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
-  const [showCreateWOModal, setShowCreateWOModal] = useState(false);
   const [showPdfFilenameModal, setShowPdfFilenameModal] = useState(false);
   const [pdfFilename, setPdfFilename] = useState('');
 
@@ -263,11 +233,6 @@ export function ProposalDetailPage() {
     navigate(`/work-orders/new?${params.toString()}`);
   };
 
-  const handleCreateWorkOrderClick = () => {
-    if (proposal.site_id) setShowCreateWOModal(true);
-    else if (proposal.customer_id) setShowAddSiteModal(true);
-  };
-
   return (
     <PageContainer maxWidth="full" padding="default" className="space-y-5 pb-24">
       {/* Hero */}
@@ -282,7 +247,6 @@ export function ProposalDetailPage() {
         isExporting={isExporting}
         onFlowAction={handleFlowAction}
         onFaturalandir={() => setShowFaturalandirModal(true)}
-        onCreateWorkOrder={handleCreateWorkOrderClick}
         flowLoading={statusMutation.isPending || completeWithRateMutation.isPending}
       />
 
@@ -796,14 +760,6 @@ export function ProposalDetailPage() {
         customerId={proposal?.customer_id}
         site={null}
         onSuccess={handleSiteCreated}
-      />
-      <CreateWorkOrderFromProposalModal
-        open={showCreateWOModal}
-        onClose={() => setShowCreateWOModal(false)}
-        proposal={proposal}
-        onSuccess={(newId) => {
-          if (newId) navigate(`/work-orders/${newId}`);
-        }}
       />
     </PageContainer>
   );

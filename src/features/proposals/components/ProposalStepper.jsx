@@ -1,11 +1,10 @@
 import { useTranslation } from 'react-i18next';
-import { ClipboardList, Wrench, Eye, Check } from 'lucide-react';
+import { ClipboardList, Wrench, Check } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
 const STEPS = [
   { key: 'general', icon: ClipboardList, labelKey: 'form.stepper.general' },
   { key: 'services', icon: Wrench, labelKey: 'form.stepper.services' },
-  { key: 'review', icon: Eye, labelKey: 'form.stepper.review' },
 ];
 
 export function ProposalStepper({ currentStep, onStepClick, completedSteps = [] }) {

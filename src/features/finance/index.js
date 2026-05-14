@@ -10,3 +10,4 @@ export { QuickEntryModal } from './components/QuickEntryModal';
 export { RecurringExpensesPage } from './RecurringExpensesPage';
 export { CollectionDeskPage } from './CollectionDeskPage';
 export { ReceivablesPage } from './ReceivablesPage';
+export { TahsilatPage } from './TahsilatPage';

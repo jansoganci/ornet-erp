@@ -18,6 +18,18 @@ export const PROPOSAL_ITEM_UNITS = [
   'MHz', 'TB', 'MP', 'port', 'kanal', 'inç', 'rpm', 'bölge',
   'set', 'takim',
 ];
+
+export const ANNUAL_FIXED_COST_PRESETS = [
+  'Alarm İzleme Hizmet Bedeli',
+  'SMS Hizmet Bedeli',
+  'İnternet Hizmet Bedeli',
+  'Mobil Uygulama Lisans Bedeli',
+  'Merkez İzleme Hizmet Bedeli',
+  'Bakım ve Destek Hizmet Bedeli',
+  'Yazılım Lisans Bedeli',
+  'Hat Kira Bedeli',
+];
+
 export const PROPOSAL_ITEM_UNIT_SET = new Set(PROPOSAL_ITEM_UNITS);
 
 /**

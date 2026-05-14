@@ -21,6 +21,7 @@ export function Modal({
   footer,
   size = 'md',
   className,
+  contentClassName,
 }) {
   const { t } = useTranslation('common');
   const modalRef = useRef(null);
@@ -122,7 +123,12 @@ export function Modal({
         )}
 
         {/* Content - pointer-events-auto so clicks reach inputs/selects/buttons inside modals */}
-        <div className="flex-1 overflow-y-auto p-6 text-neutral-700 dark:text-neutral-300 pointer-events-auto">
+        <div
+          className={cn(
+            'flex-1 overflow-y-auto p-6 text-neutral-700 dark:text-neutral-300 pointer-events-auto min-h-0',
+            contentClassName
+          )}
+        >
           {children}
         </div>
 

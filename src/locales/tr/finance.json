@@ -350,16 +350,20 @@
       "netAmount": "Net Tutar",
       "vatAmount": "KDV",
       "totalAmount": "Toplam",
+      "cogsTry": "Maliyet",
+      "profit": "Kâr",
       "status": "Durum",
       "date": "Tarih"
     },
     "status": {
       "unpaid": "Ödenmedi",
+      "partial": "Kısmi Ödeme",
       "partially_paid": "Kısmi Ödeme",
       "paid": "Tahsil Edildi"
     },
     "addPayment": {
       "title": "Tahsilat Ekle",
+      "applyRemainingAmount": "Tutarın tamamı",
       "documentTotal": "Belge Tutarı",
       "amount": "Tahsilat Tutarı (TRY)",
       "paymentMethod": "Ödeme Yöntemi",
@@ -368,6 +372,82 @@
       "notesPlaceholder": "İsteğe bağlı not...",
       "confirmButton": "Tahsilatı Kaydet"
     }
+  },
+  "tahsilat": {
+    "title": "Tahsilat",
+    "kpi": {
+      "totalOutstanding": "Toplam Alacak",
+      "totalCollected": "Toplam Tahsilat",
+      "unpaidCount": "Ödenmeyen",
+      "collectionRate": "Tahsilat Oranı"
+    },
+    "filters": {
+      "search": "Müşteri Ara...",
+      "dateFrom": "Başlangıç",
+      "dateTo": "Bitiş",
+      "category": "İşin Cinsi",
+      "status": "Durum",
+      "allCategories": "Tümü",
+      "allStatuses": "Tümü"
+    },
+    "table": {
+      "customer": "Müşteri",
+      "documentCount": "Belge",
+      "totalBilled": "Toplam",
+      "collected": "Tahsil Edilen",
+      "outstanding": "Kalan",
+      "status": "Durum",
+      "actions": "İşlem",
+      "description": "Açıklama",
+      "salePrice": "Satış",
+      "outputVat": "Satış KDV",
+      "totalInclVat": "Toplam",
+      "cost": "Maliyet",
+      "profit": "Kâr",
+      "date": "Tarih",
+      "category": "Tür",
+      "noDocuments": "Bu müşteriye ait belge bulunamadı."
+    },
+    "status": {
+      "unpaid": "Ödenmedi",
+      "partial": "Kısmi Ödendi",
+      "paid": "Ödendi"
+    },
+    "category": {
+      "kira": "Kira",
+      "merkez": "Merkez",
+      "montaj": "Montaj",
+      "servis": "Servis",
+      "satis": "Satış",
+      "mal_gonderme": "Mal Gönderme",
+      "diger": "Diğer"
+    },
+    "modalTitle": "Tahsilat Kaydı",
+    "customer": "Müşteri",
+    "totalWithVat": "KDV Dahil Toplam",
+    "remaining": "Kalan Tutar",
+    "amount": "Tahsilat Tutarı",
+    "payFull": "Tamamını Tahsil Et",
+    "paidDate": "Tahsilat Tarihi",
+    "paymentMethod": "Ödeme Yöntemi",
+    "notes": "Notlar",
+    "save": "Tahsilatı Kaydet",
+    "success": "Tahsilat kaydedildi",
+    "errors": {
+      "invalidAmount": "Geçerli bir tutar girin",
+      "amountExceeds": "Tutar kalan bakiyeden fazla olamaz"
+    },
+    "methods": {
+      "bankTransfer": "Banka Havalesi",
+      "cash": "Nakit",
+      "card": "Kredi Kartı",
+      "check": "Çek",
+      "other": "Diğer"
+    },
+    "quickPay": "Tam Tahsilat",
+    "quickSuccess": "Tahsilat tamamlandı",
+    "noResults": "Tahsilat kaydı bulunamadı.",
+    "noResultsDesc": "Henüz finansal işlem bulunmuyor."
   },
   "healthBanner": {
     "message": "{{count}} kayıt finansal bütünlük kontrolü gerektiriyor.",

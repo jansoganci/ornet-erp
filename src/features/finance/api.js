@@ -837,7 +837,7 @@ export const receivableKeys = {
 };
 
 const RECEIVABLE_SELECT = `
-  id, transaction_date, period, amount_try, output_vat, payment_status,
+  id, transaction_date, period, amount_try, output_vat, cogs_try, payment_status,
   income_type, payment_method, work_order_id, proposal_id, customer_id,
   customers ( company_name ),
   work_orders ( id, form_no ),
@@ -849,7 +849,7 @@ export async function fetchReceivables(filters = {}) {
     .from('financial_transactions')
     .select(RECEIVABLE_SELECT)
     .eq('direction', 'income')
-    .in('payment_status', ['unpaid', 'partially_paid'])
+    .in('payment_status', ['unpaid', 'partial', 'partially_paid'])
     .is('deleted_at', null)
     .order('transaction_date', { ascending: false });
 
@@ -899,4 +899,80 @@ export async function createTransactionPayment({ transactionId, amountTry, payme
 
   if (error) throw error;
   return data;
+}
+
+// === Tahsilat (Collection) ===
+export const collectionKeys = {
+  all: ['collection'],
+  summaries: (filters) => [...collectionKeys.all, 'summaries', filters],
+  documents: (filters) => [...collectionKeys.all, 'documents', filters],
+};
+
+export async function fetchCollectionSummaries(filters = {}) {
+  let query = supabase.from('v_collection_customer_summary').select('*');
+
+  if (filters.search) {
+    query = query.ilike('customer_name', `%${filters.search}%`);
+  }
+  if (filters.payment_status) {
+    // Filter customers that have at least one document with this status
+    // We'll do client-side filtering for simplicity
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  // Client-side payment_status filtering
+  if (filters.payment_status) {
+    return (data || []).filter((row) => {
+      if (filters.payment_status === 'unpaid') return row.unpaid_count > 0;
+      if (filters.payment_status === 'partial') return row.partial_count > 0;
+      if (filters.payment_status === 'paid') return row.paid_count > 0;
+      return true;
+    });
+  }
+
+  return data || [];
+}
+
+export async function fetchCollectionDocuments(filters = {}) {
+  let query = supabase.from('v_collection_documents').select('*');
+
+  if (filters.customer_id) {
+    query = query.eq('customer_id', filters.customer_id);
+  }
+  if (filters.service_category) {
+    query = query.eq('service_category', filters.service_category);
+  }
+  if (filters.payment_status) {
+    query = query.eq('payment_status', filters.payment_status);
+  }
+  if (filters.search) {
+    query = query.or(
+      `customer_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+    );
+  }
+  if (filters.date_from) {
+    query = query.gte('transaction_date', filters.date_from);
+  }
+  if (filters.date_to) {
+    query = query.lte('transaction_date', filters.date_to);
+  }
+
+  query = query.order('transaction_date', { ascending: false }).limit(500);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function recordPayment({ transaction_id, amount, paid_date, payment_method, notes }) {
+  const { error } = await supabase.from('financial_transaction_payments').insert({
+    transaction_id,
+    amount,
+    paid_date,
+    payment_method: payment_method || 'bank_transfer',
+    notes: notes || null,
+  });
+  if (error) throw error;
 }

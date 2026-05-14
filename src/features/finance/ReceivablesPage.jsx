@@ -39,7 +39,7 @@ function StatusBadge({ status }) {
   const { t } = useTranslation('finance');
   const label = t(`receivables.status.${status}`, { defaultValue: status });
 
-  if (status === 'partially_paid') {
+  if (status === 'partially_paid' || status === 'partial') {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-warning-100 dark:bg-warning-950/40 text-warning-700 dark:text-warning-300 border border-warning-200 dark:border-warning-800/40">
         <Clock className="w-3 h-3" />
@@ -78,6 +78,12 @@ function ReceivablesTable({ rows, onAddPayment }) {
             <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
               {t('finance:receivables.columns.totalAmount')}
             </th>
+            <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
+              {t('finance:receivables.columns.cogsTry')}
+            </th>
+            <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
+              {t('finance:receivables.columns.profit')}
+            </th>
             <th className="text-left py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
               {t('finance:receivables.columns.status')}
             </th>
@@ -92,6 +98,8 @@ function ReceivablesTable({ rows, onAddPayment }) {
             const net   = Number(row.amount_try) || 0;
             const vat   = Number(row.output_vat) || 0;
             const total = net + vat;
+            const cogs = Number(row.cogs_try) || 0;
+            const profit = net - cogs;
             const customerName = row.customers?.company_name ?? '—';
 
             return (
@@ -110,6 +118,12 @@ function ReceivablesTable({ rows, onAddPayment }) {
                 </td>
                 <td className="py-3 px-4 text-right font-mono font-bold text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
                   {formatCurrency(total, 'TRY')}
+                </td>
+                <td className="py-3 px-4 text-right font-mono text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+                  {formatCurrency(cogs, 'TRY')}
+                </td>
+                <td className="py-3 px-4 text-right font-mono text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+                  {formatCurrency(profit, 'TRY')}
                 </td>
                 <td className="py-3 px-4 whitespace-nowrap">
                   <StatusBadge status={row.payment_status} />

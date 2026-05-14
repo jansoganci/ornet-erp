@@ -51,6 +51,7 @@ import { ProposalAnnualFixedCostsEditor } from './components/ProposalAnnualFixed
 import { ProposalStepper } from './components/ProposalStepper';
 import { ProposalLivePreview } from './components/ProposalLivePreview';
 import { calcProposalTotals, calcVatTevkifatSummary } from '../../lib/proposalCalc';
+import { cn } from '../../lib/utils';
 
 /** Maps Zod issue path to Turkish context for toast (step validation used to show only a generic message). */
 function formatProposalValidationToast(issue, t) {
@@ -785,40 +786,6 @@ export function ProposalFormPage() {
                 </>
               )}
 
-              {/* ===== STEP 2: Review ===== */}
-              {currentStep === 2 && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <ProposalLivePreview
-                    watchedValues={watchedValues}
-                    customerCompanyName={selectedCustomer?.company_name ?? ''}
-                    tevkifatNumerator={Number(financeSettings?.tevkifat_rate_numerator) || 9}
-                    tevkifatDenominator={Number(financeSettings?.tevkifat_rate_denominator) || 10}
-                  />
-                  <Card className="p-6 space-y-4">
-                    <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
-                      {t('proposals:form.sections.notes')}
-                    </h3>
-                    <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400">
-                      {watchedValues.scope_of_work && (
-                        <div>
-                          <p className="font-medium text-neutral-800 dark:text-neutral-200 mb-1">
-                            {t('proposals:form.fields.scopeOfWork')}
-                          </p>
-                          <p className="whitespace-pre-wrap">{watchedValues.scope_of_work}</p>
-                        </div>
-                      )}
-                      {watchedValues.notes && (
-                        <div>
-                          <p className="font-medium text-neutral-800 dark:text-neutral-200 mb-1">
-                            {t('proposals:detail.notes')}
-                          </p>
-                          <p className="whitespace-pre-wrap">{watchedValues.notes}</p>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                </div>
-              )}
         </div>
 
         {/* Step Navigation + Action Bar */}
@@ -870,7 +837,7 @@ export function ProposalFormPage() {
             >
               {t('proposals:form.preview.openButton')}
             </Button>
-            {currentStep < 2 && (
+            {currentStep === 0 && (
               <Button
                 type="button"
                 variant="primary"
@@ -878,10 +845,10 @@ export function ProposalFormPage() {
                 rightIcon={<ArrowRight className="w-4 h-4" />}
                 className="flex-1 lg:flex-none"
               >
-                {t(`proposals:form.stepper.${currentStep === 0 ? 'services' : 'review'}`)}
+                {t('proposals:form.stepper.services')}
               </Button>
             )}
-            {currentStep === 2 && (
+            {currentStep === 1 && (
               <Button
                 type="submit"
                 loading={
@@ -914,9 +881,19 @@ export function ProposalFormPage() {
         open={showPreviewModal}
         onClose={() => setShowPreviewModal(false)}
         title={t('proposals:form.preview.title')}
-        size="xl"
+        size="full"
+        className={cn(
+          'max-w-full min-h-0',
+          // Mobile: maximize height (bottom sheet + safe area + dynamic viewport)
+          'h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)]',
+          // Tablet + desktop: overlay vertical padding sm:p-6 → 3rem; overrides Modal base md:max-h-[90vh]
+          'sm:h-[calc(100dvh-3rem)] sm:max-h-[calc(100dvh-3rem)]',
+          'md:h-[calc(100dvh-3rem)] md:max-h-[calc(100dvh-3rem)]'
+        )}
+        contentClassName="flex flex-col overflow-hidden !min-h-0 p-3 sm:p-4 md:p-5"
       >
         <ProposalLivePreview
+          variant="modal"
           watchedValues={watchedValues}
           customerCompanyName={selectedCustomer?.company_name ?? ''}
           tevkifatNumerator={Number(financeSettings?.tevkifat_rate_numerator) || 9}

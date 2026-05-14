@@ -1,6 +1,7 @@
 import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
+import { AnnualFixedCostCombobox } from './AnnualFixedCostCombobox';
 import { Button, Input } from '../../../components/ui';
 import { cn, getCurrencySymbol, formatCurrency } from '../../../lib/utils';
 import { calcAnnualFixedLineTotal, sumAnnualFixedCostsByCurrency } from '../../../lib/proposalCalc';
@@ -117,16 +118,10 @@ export function ProposalAnnualFixedCostsEditor({
                   control={control}
                   name={`annual_fixed_costs.${index}.description`}
                   render={({ field: f }) => (
-                    <Input
-                      placeholder={t('annualFixed.description')}
-                      error={errors?.annual_fixed_costs?.[index]?.description?.message}
-                      ref={f.ref}
-                      name={f.name}
-                      value={f.value ?? ''}
+                    <AnnualFixedCostCombobox
+                      value={f.value}
                       onChange={f.onChange}
-                      onBlur={f.onBlur}
-                      wrapperClassName="w-full min-w-[160px]"
-                      className="text-neutral-900 dark:text-neutral-50"
+                      error={errors?.annual_fixed_costs?.[index]?.description?.message}
                     />
                   )}
                 />
@@ -279,16 +274,10 @@ export function ProposalAnnualFixedCostsEditor({
                 control={control}
                 name={`annual_fixed_costs.${index}.description`}
                 render={({ field: f }) => (
-                  <Input
-                    label={t('annualFixed.description')}
-                    error={errors?.annual_fixed_costs?.[index]?.description?.message}
-                    ref={f.ref}
-                    name={f.name}
-                    value={f.value ?? ''}
+                  <AnnualFixedCostCombobox
+                    value={f.value}
                     onChange={f.onChange}
-                    onBlur={f.onBlur}
-                    wrapperClassName="w-full"
-                    className="text-neutral-900 dark:text-neutral-50"
+                    error={errors?.annual_fixed_costs?.[index]?.description?.message}
                   />
                 )}
               />

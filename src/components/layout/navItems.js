@@ -24,6 +24,7 @@ import {
   Radio,
   BookOpen,
   Landmark,
+  Banknote,
 } from 'lucide-react';
 
 /**
@@ -94,6 +95,7 @@ export const navItems = [
       { to: '/finance/income', icon: TrendingUp, labelKey: 'nav.finance.income' },
       { to: '/finance/expenses', icon: TrendingDown, labelKey: 'nav.finance.expenses' },
       { to: '/finance/receivables', icon: Landmark, labelKey: 'nav.finance.receivables', canWriteOnly: true },
+      { to: '/finance/collections', icon: Banknote, labelKey: 'finance:tahsilat.title', canWriteOnly: true },
     ],
   },
   // Ayarlar group (default collapsed)

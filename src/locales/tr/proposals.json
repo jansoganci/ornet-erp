@@ -266,6 +266,10 @@
       "total": "Toplam ($)"
     },
     "grandTotal": "Genel Toplam",
+    "vat": "KDV (%{{rate}})",
+    "totalWithVat": "KDV Dahil Toplam",
+    "withholdingTax": "Tevkifat (-{{num}}/{{den}} KDV)",
+    "totalPayable": "Ödenecek Tutar",
     "exportError": "PDF oluşturulurken bir hata oluştu",
     "filenameModalTitle": "PDF dosya adı",
     "filenameLabel": "Dosya adı",
@@ -273,7 +277,8 @@
     "downloadButton": "İndir",
     "annualFixedTitle": "YILLIK SABİT GİDERLER",
     "annualFixedSubtotal": "Ara Toplam ({{currency}})",
-    "annualFixedDisclaimer": "Teklif KDV dahil değildir. Yukarıdaki yıllık giderler bilgi amaçlıdır."
+    "annualFixedDisclaimer": "Tutarlara KDV dahil değildir.",
+    "footerCompany": "Ornet Güvenlik Sistemleri"
   },
   "completionRate": {
     "title": "Tamamlama Kuru Onayla",

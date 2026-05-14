@@ -15,6 +15,7 @@ import {
   financeHealthKeys,
   receivableKeys,
   transactionPaymentKeys,
+  collectionKeys,
 } from './api';
 
 // Transactions
@@ -387,6 +388,7 @@ export function useCreateTransactionPayment() {
     mutationFn: api.createTransactionPayment,
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: receivableKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: collectionKeys.all });
       queryClient.invalidateQueries({ queryKey: transactionPaymentKeys.byTransaction(variables.transactionId) });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
@@ -395,6 +397,33 @@ export function useCreateTransactionPayment() {
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'common.createFailed'));
+    },
+  });
+}
+
+// === Tahsilat (Collection) Hooks ===
+export function useCollectionSummaries(filters = {}) {
+  return useQuery({
+    queryKey: collectionKeys.summaries(filters),
+    queryFn: () => api.fetchCollectionSummaries(filters),
+  });
+}
+
+export function useCollectionDocuments(filters = {}) {
+  return useQuery({
+    queryKey: collectionKeys.documents(filters),
+    queryFn: () => api.fetchCollectionDocuments(filters),
+    enabled: !!filters.customer_id,
+  });
+}
+
+export function useRecordPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.recordPayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all });
     },
   });
 }

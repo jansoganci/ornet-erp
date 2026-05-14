@@ -108,9 +108,23 @@ export function AddPaymentModal({ open, onClose, transaction }) {
 
         {/* Amount */}
         <div>
-          <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
-            {t('finance:receivables.addPayment.amount')}
-          </label>
+          <div className="mb-1.5 flex items-baseline justify-between gap-3">
+            <label className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">
+              {t('finance:receivables.addPayment.amount')}
+            </label>
+            {remaining > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={createMutation.isPending}
+                className="shrink-0 !min-h-0 py-1 px-2 h-auto text-xs font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 dark:text-primary-400 whitespace-nowrap"
+                onClick={() => setAmount(remaining.toFixed(2))}
+              >
+                {t('finance:receivables.addPayment.applyRemainingAmount')}
+              </Button>
+            ) : null}
+          </div>
           <input
             type="number"
             min="0.01"
