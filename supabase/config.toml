@@ -6,3 +6,9 @@ project_id = "ornet-erp"
 
 [functions.fetch-tcmb-rates]
 verify_jwt = false
+
+[functions.parasut-dispatch]
+verify_jwt = true
+
+[functions.parasut-reconcile]
+verify_jwt = false

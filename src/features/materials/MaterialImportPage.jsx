@@ -10,7 +10,7 @@ import { Button, Card, Spinner, ErrorState } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { toast } from 'sonner';
 
-const HEADERS = ['Kod', 'Ad', 'Kategori', 'Birim', 'Açıklama'];
+const HEADERS = ['Kod', 'Müşteri Malzeme Adı', 'Birim', 'Birim Satış Fiyat', 'Birim Maliyet Fiyat', 'Kur', 'Ornet Malzeme Adı'];
 
 function isEmptyRow(row) {
   return Object.values(row).every(
@@ -19,11 +19,19 @@ function isEmptyRow(row) {
 }
 
 function downloadTemplate() {
-  const wsData = [HEADERS, ['DK230', 'Optik Duman Dedektörü', 'dedektor', 'adet', 'Duman algılama için kullanılır']];
+  const wsData = [HEADERS, ['ORN0001', 'Örnek Malzeme', 'adet', '125.00', '50.00', 'USD', 'Örnek Ornet Malzeme Adı']];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Malzemeler');
   XLSX.writeFile(wb, 'malzeme-icerik-sablonu.xlsx');
+}
+
+function parsePrice(val) {
+  if (!val || String(val).trim() === '') return null;
+  let cleaned = String(val).replace(/[₺TL\s]/g, '').trim();
+  cleaned = cleaned.replace(',', '.');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : Math.round(num * 100) / 100;
 }
 
 export function MaterialImportPage() {
@@ -34,6 +42,7 @@ export function MaterialImportPage() {
   const [errors, setErrors] = useState([]);
   const [isParsing, setIsParsing] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [hasProcessed, setHasProcessed] = useState(false);
   const bulkUpsertMutation = useBulkUpsertMaterials();
 
   const handleFileUpload = (e) => {
@@ -41,6 +50,8 @@ export function MaterialImportPage() {
     if (!file) return;
 
     setIsParsing(true);
+    setHasProcessed(false);
+    setErrors([]);
     setImportResult(null);
     const reader = new FileReader();
 
@@ -52,15 +63,27 @@ export function MaterialImportPage() {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         const result = validateAndFormatData(jsonData);
-        if (!result) {
+        if (result && result.length === 0) {
+          toast.warning('Hiçbir geçerli satır bulunamadı. Kolon başlıklarını kontrol edin.');
+        } else if (!result) {
           toast.error(t('materials:import.parseError'));
         }
-      } catch {
+      } catch (err) {
+        console.error('Parse error:', err);
         toast.error(t('materials:import.parseError'));
         setErrors([t('common:import.fileReadFailed')]);
       } finally {
         setIsParsing(false);
+        setHasProcessed(true);
       }
+    };
+
+    reader.onerror = () => {
+      console.error('FileReader error:', reader.error);
+      toast.error(t('common:import.fileReadFailed'));
+      setErrors([t('common:import.fileReadFailed')]);
+      setIsParsing(false);
+      setHasProcessed(true);
     };
 
     reader.readAsBinaryString(file);
@@ -76,10 +99,13 @@ export function MaterialImportPage() {
       if (isEmptyRow(row)) return;
 
       const code = row['Kod'] != null ? String(row['Kod']).trim() : '';
-      const name = row['Ad'] != null ? String(row['Ad']).trim() : '';
-      const category = row['Kategori'] != null ? String(row['Kategori']).trim() : '';
+      const name = row['Müşteri Malzeme Adı'] != null ? String(row['Müşteri Malzeme Adı']).trim() : '';
       const unit = row['Birim'] != null ? String(row['Birim']).trim() || 'adet' : 'adet';
-      const description = row['Açıklama'] != null ? String(row['Açıklama']).trim() : '';
+      const description = row['Ornet Malzeme Adı'] != null ? String(row['Ornet Malzeme Adı']).trim() : '';
+      const unit_price = row['Birim Satış Fiyat'] != null ? parsePrice(row['Birim Satış Fiyat']) : null;
+      const cost_price = row['Birim Maliyet Fiyat'] != null ? parsePrice(row['Birim Maliyet Fiyat']) : null;
+      const currencyRaw = row['Kur'] != null ? String(row['Kur']).trim().toUpperCase() : '';
+      const currency = ['USD', 'TRY'].includes(currencyRaw) ? currencyRaw : null;
 
       if (!code) {
         validationErrors.push(t('materials:import.missingCode', { row: index + 1 }));
@@ -93,9 +119,11 @@ export function MaterialImportPage() {
       formattedData.push({
         code,
         name,
-        category: category || null,
         unit: unit || 'adet',
         description: description || null,
+        unit_price,
+        cost_price,
+        currency: currency || 'TRY',
         is_active: true,
       });
     });
@@ -145,6 +173,7 @@ export function MaterialImportPage() {
     setData([]);
     setErrors([]);
     setImportResult(null);
+    setHasProcessed(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -159,7 +188,7 @@ export function MaterialImportPage() {
       />
 
       <div className="mt-6 space-y-6">
-        {data.length === 0 && !isParsing ? (
+        {data.length === 0 && !isParsing && !hasProcessed ? (
           <div className="space-y-6">
             <ImportInstructionCard
               title={t('common:import.instructionTitle')}
@@ -270,8 +299,10 @@ export function MaterialImportPage() {
                     <tr>
                       <th className="px-4 py-3 font-medium">{t('materials:fields.code')}</th>
                       <th className="px-4 py-3 font-medium">{t('materials:fields.name')}</th>
-                      <th className="px-4 py-3 font-medium">{t('materials:fields.category')}</th>
                       <th className="px-4 py-3 font-medium">{t('materials:fields.unit')}</th>
+                      <th className="px-4 py-3 font-medium">{t('materials:fields.unitPrice')}</th>
+                      <th className="px-4 py-3 font-medium">{t('materials:fields.costPrice')}</th>
+                      <th className="px-4 py-3 font-medium">{t('materials:fields.currency')}</th>
                       <th className="px-4 py-3 font-medium">{t('materials:fields.description')}</th>
                     </tr>
                   </thead>
@@ -280,8 +311,10 @@ export function MaterialImportPage() {
                       <tr key={i}>
                         <td className="px-4 py-3 font-medium">{row.code}</td>
                         <td className="px-4 py-3">{row.name}</td>
-                        <td className="px-4 py-3">{row.category || '-'}</td>
                         <td className="px-4 py-3">{row.unit}</td>
+                        <td className="px-4 py-3">{row.unit_price ?? '-'}</td>
+                        <td className="px-4 py-3">{row.cost_price ?? '-'}</td>
+                        <td className="px-4 py-3">{row.currency || 'TRY'}</td>
                         <td className="px-4 py-3 max-w-xs truncate" title={row.description || ''}>
                           {row.description || '-'}
                         </td>

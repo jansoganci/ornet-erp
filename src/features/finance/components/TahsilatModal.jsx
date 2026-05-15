@@ -1,26 +1,57 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Modal, Button, Input } from '../../../components/ui';
-import { useRecordPayment } from '../hooks';
+import { useRecordPayment, useTransactionPayments } from '../hooks';
+import { collectionKeys, transactionPaymentKeys } from '../api';
+import { ParasutPaymentsList } from './ParasutPaymentsList';
 
 export function TahsilatModal({ open, onClose, transaction }) {
   const { t } = useTranslation('finance');
+  const queryClient = useQueryClient();
   const recordPayment = useRecordPayment();
+  const transactionId = open ? transaction?.transaction_id : null;
+  const { data: syncedPayments = [], refetch: refetchPayments } = useTransactionPayments(transactionId);
 
   const [amount, setAmount] = useState('');
   const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   const [notes, setNotes] = useState('');
 
+  const transactionWithParasutPayments = useMemo(() => {
+    if (!transaction) return null;
+
+    const parasutPayments = syncedPayments
+      .filter((payment) => payment.parasut_payment_id)
+      .map((payment) => ({
+        id: payment.id,
+        date: payment.paid_date || payment.paid_at,
+        amount: Number(payment.amount_try ?? payment.amount ?? 0),
+        transaction_id: payment.transaction_id,
+      }));
+
+    return { ...transaction, parasut_payments: parasutPayments };
+  }, [syncedPayments, transaction]);
+
   if (!transaction) return null;
 
   const remaining = transaction.remaining || transaction.sale_price_net || 0;
   const totalWithVat = transaction.total_with_vat || 0;
 
+  const refreshPayments = async () => {
+    await queryClient.invalidateQueries({ queryKey: transactionPaymentKeys.byTransaction(transaction.transaction_id) });
+    await queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+    await refetchPayments();
+  };
+
+  const handlePaymentSuccess = async () => {
+    toast.success(t('tahsilat.success'));
+    await refreshPayments();
+  };
+
   const handleFullPayment = async () => {
     setAmount(String(remaining));
-    // Auto-submit with full amount
     setTimeout(async () => {
       try {
         await recordPayment.mutateAsync({
@@ -30,8 +61,7 @@ export function TahsilatModal({ open, onClose, transaction }) {
           payment_method: paymentMethod,
           notes: notes || null,
         });
-        toast.success(t('tahsilat.success'));
-        onClose();
+        await handlePaymentSuccess();
       } catch (err) {
         toast.error(err.message);
       }
@@ -57,8 +87,7 @@ export function TahsilatModal({ open, onClose, transaction }) {
         payment_method: paymentMethod,
         notes,
       });
-      toast.success(t('tahsilat.success'));
-      onClose();
+      await handlePaymentSuccess();
     } catch (err) {
       toast.error(err.message);
     }
@@ -132,6 +161,11 @@ export function TahsilatModal({ open, onClose, transaction }) {
             className="block w-full rounded-lg border border-neutral-300 dark:border-[#262626] bg-white dark:bg-[#171717] text-sm px-3 py-2"
           />
         </div>
+
+        <ParasutPaymentsList
+          transaction={transactionWithParasutPayments}
+          onPaymentDeleted={refreshPayments}
+        />
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={onClose}>

@@ -71,7 +71,16 @@
       "markComplete": "Montaj Tamamlandı",
       "createWorkOrder": "İş emri oluştur",
       "bill": "Faturalandır",
-      "duplicate": "Kopyala"
+      "duplicate": "Kopyala",
+      "downloadSupplierList": "Tedarikçi Listesi İndir"
+    },
+    "supplierExport": {
+      "colCode": "Malzeme kodu",
+      "colDescription": "Açıklama",
+      "colQuantity": "Miktar",
+      "colUnit": "Birim",
+      "sheetName": "Tedarikçi",
+      "error": "Excel oluşturulamadı."
     },
     "comingSoon": "Bu özellik yakında aktif edilecektir.",
     "duplicateSuccess": "Teklif kopyalandı.",
@@ -198,7 +207,9 @@
     "quantity": "Adet",
     "unit": "Birim",
     "unitPrice": "Birim Fiyat",
+    "unitCost": "Birim Maliyet",
     "total": "Toplam",
+    "totalCost": "Maliyet Toplam",
     "addItem": "Malzeme Ekle",
     "removeRow": "Satırı Sil",
     "units": {
@@ -247,7 +258,7 @@
   },
   "pdf": {
     "headerLabels": {
-      "companyName": "FİRMA ADI :",
+      "companyName": "MÜŞTERİ İSMİ :",
       "surveyDate": "KEŞİF TARİHİ :",
       "authorizedPerson": "YETKİLİ KİŞİ :",
       "proposalDate": "TEKLİF TARİHİ :",
@@ -262,8 +273,8 @@
       "description": "Açıklama",
       "material": "Malzeme",
       "quantity": "Adet",
-      "unitPrice": "Birim Fiyat ($)",
-      "total": "Toplam ($)"
+      "unitPrice": "Birim Fiyat",
+      "total": "Toplam"
     },
     "grandTotal": "Genel Toplam",
     "vat": "KDV (%{{rate}})",

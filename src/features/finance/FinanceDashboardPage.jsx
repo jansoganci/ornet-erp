@@ -14,6 +14,7 @@ import { FinanceDashboardFilters } from './components/dashboard/FinanceDashboard
 import { ChannelKpiCard } from './components/dashboard/ChannelKpiCard';
 import { ChannelBarChart } from './components/dashboard/ChannelBarChart';
 import { FinanceHealthBanner } from './components/dashboard/FinanceHealthBanner';
+import { ParasutHealthCard } from './components/ParasutHealthCard';
 import { QuickEntryModal } from './components/QuickEntryModal';
 import {
   useOverviewTotals,
@@ -239,6 +240,7 @@ export function FinanceDashboardPage() {
         </div>
 
         <FinanceHealthBanner />
+        <ParasutHealthCard />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <ChannelKpiCard
@@ -354,6 +356,7 @@ export function FinanceDashboardPage() {
         />
 
         <FinanceHealthBanner />
+        <ParasutHealthCard />
 
         <FinanceDashboardFilters
           year={year}

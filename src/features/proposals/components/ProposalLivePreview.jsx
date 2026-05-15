@@ -37,7 +37,10 @@ export function ProposalLivePreview({
     });
   }, []);
 
-  const proposal = mapWatchedToProposal(watchedValues);
+  const proposal = {
+    ...mapWatchedToProposal(watchedValues),
+    customer_company_name: customerCompanyName,
+  };
   const items = watchedValues.items ?? [];
   const sections = watchedValues.sections ?? [];
   const annualFixedCosts = watchedValues.annual_fixed_costs ?? [];

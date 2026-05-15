@@ -25,6 +25,7 @@ import {
   BookOpen,
   Landmark,
   Banknote,
+  Link2,
 } from 'lucide-react';
 
 /**
@@ -107,6 +108,7 @@ export const navItems = [
     children: [
       { to: '/technical-guide', icon: BookOpen, labelKey: 'nav.technicalGuide' },
       { to: '/materials', icon: Package, labelKey: 'nav.materials' },
+      { to: '/customers/parasut-matching', icon: Link2, labelKey: 'customers:parasutMatching.nav', adminOnly: true },
       { to: '/finance/vat', icon: Percent, labelKey: 'nav.finance.vat', canWriteOnly: true },
       { to: '/finance/exchange', icon: DollarSign, labelKey: 'nav.finance.exchange', canWriteOnly: true },
       { to: '/finance/recurring', icon: RefreshCw, labelKey: 'nav.finance.recurring', canWriteOnly: true },

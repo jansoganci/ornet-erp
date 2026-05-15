@@ -8,11 +8,12 @@ import {
   Unlink,
   CheckCircle2,
   Download,
-  Receipt,
   Copy,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import {
   calcSectionTotal,
   calcTotalCosts,
@@ -57,6 +58,12 @@ import { useUpdateProposal } from './hooks';
 import { useFinanceSettings } from '../finance/hooks';
 import { resolveProposalPdfPublicImage } from '../../lib/resolvePdfImage';
 
+function pickProposalItemMaterial(row) {
+  const m = row?.materials;
+  if (!m) return null;
+  return Array.isArray(m) ? m[0] ?? null : m;
+}
+
 function DetailSkeleton() {
   return (
     <PageContainer maxWidth="full" padding="default" className="space-y-6">
@@ -89,7 +96,6 @@ export function ProposalDetailPage() {
   const [showCompletionRateModal, setShowCompletionRateModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showFaturalandirModal, setShowFaturalandirModal] = useState(false);
   const [unlinkWoId, setUnlinkWoId] = useState(null);
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
   const [showPdfFilenameModal, setShowPdfFilenameModal] = useState(false);
@@ -183,6 +189,37 @@ export function ProposalDetailPage() {
     setShowPdfFilenameModal(true);
   };
 
+  const handleDownloadSupplierList = () => {
+    try {
+      const headerRow = [
+        t('proposals:detail.supplierExport.colCode'),
+        t('proposals:detail.supplierExport.colDescription'),
+        t('proposals:detail.supplierExport.colQuantity'),
+        t('proposals:detail.supplierExport.colUnit'),
+      ];
+      const dataRows = items.map((item) => {
+        const m = pickProposalItemMaterial(item);
+        const description = (m?.description ?? item.description ?? '').trim();
+        return [
+          m?.code ?? '',
+          description,
+          item.quantity ?? '',
+          item.unit ?? '',
+        ];
+      });
+      const ws = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, t('proposals:detail.supplierExport.sheetName'));
+      const base = sanitizeDownloadFileName(
+        [proposal.proposal_no, 'tedarikci-listesi'].filter(Boolean).join('-') || 'tedarikci-listesi',
+      );
+      XLSX.writeFile(wb, `${base}.xlsx`);
+    } catch (err) {
+      console.error('[supplier list export]', err);
+      toast.error(t('proposals:detail.supplierExport.error'));
+    }
+  };
+
   const handleConfirmPdfDownload = async () => {
     const baseName = sanitizeDownloadFileName(pdfFilename.trim().replace(/\.pdf$/i, ''));
     setShowPdfFilenameModal(false);
@@ -245,8 +282,8 @@ export function ProposalDetailPage() {
         onDelete={() => setShowDeleteConfirm(true)}
         onDownloadPdf={handleOpenPdfFilenameModal}
         isExporting={isExporting}
+        onDownloadSupplierList={handleDownloadSupplierList}
         onFlowAction={handleFlowAction}
-        onFaturalandir={() => setShowFaturalandirModal(true)}
         flowLoading={statusMutation.isPending || completeWithRateMutation.isPending}
       />
 
@@ -556,35 +593,24 @@ export function ProposalDetailPage() {
             </Button>
           </>
         )}
-        {proposal.status === 'completed' && (
-          <>
-            <Button
-              variant="success"
-              className="flex-1"
-              leftIcon={<Receipt className="w-4 h-4" />}
-              onClick={() => setShowFaturalandirModal(true)}
-            >
-              {t('proposals:detail.actions.bill')}
-            </Button>
-            <Button variant="outline" className="flex-1" onClick={handleEdit}>
-              {t('proposals:detail.actions.edit')}
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              leftIcon={<Download className="w-4 h-4" />}
-              onClick={handleOpenPdfFilenameModal}
-              loading={isExporting}
-            >
-              {t('proposals:detail.actions.downloadPdf')}
-            </Button>
-          </>
-        )}
-        {(proposal.status === 'rejected' || proposal.status === 'cancelled') && (
+        {(proposal.status === 'completed' ||
+          proposal.status === 'rejected' ||
+          proposal.status === 'cancelled') && (
           <>
             <Button variant="outline" className="flex-1" onClick={handleEdit}>
               {t('proposals:detail.actions.edit')}
             </Button>
+            {proposal.status === 'completed' && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                leftIcon={<FileSpreadsheet className="w-4 h-4" />}
+                type="button"
+                onClick={handleDownloadSupplierList}
+              >
+                {t('proposals:detail.actions.downloadSupplierList')}
+              </Button>
+            )}
             <Button
               variant="outline"
               className="flex-1"
@@ -704,22 +730,6 @@ export function ProposalDetailPage() {
       >
         <p className="text-sm text-neutral-700 dark:text-neutral-300">
           {tCommon('confirm.deleteMessage')}
-        </p>
-      </Modal>
-
-      {/* Faturalandır — Yakında Modal */}
-      <Modal
-        open={showFaturalandirModal}
-        onClose={() => setShowFaturalandirModal(false)}
-        title={t('proposals:detail.actions.bill')}
-        footer={
-          <Button variant="primary" onClick={() => setShowFaturalandirModal(false)}>
-            {tCommon('actions.close')}
-          </Button>
-        }
-      >
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">
-          {t('proposals:detail.comingSoon')}
         </p>
       </Modal>
 

@@ -48,6 +48,7 @@ import { SubscriptionWorkOrdersTab } from './tabs/SubscriptionWorkOrdersTab';
 import { SubscriptionAssetsTab } from './tabs/SubscriptionAssetsTab';
 import { useWorkOrdersBySite } from '../workOrders/hooks';
 import { useAssetsBySite } from '../siteAssets/hooks';
+import { ParasutInvoicePanel } from '../finance/components/ParasutInvoicePanel';
 
 const SURFACE_CARD =
   'rounded-xl border border-neutral-200/80 bg-white shadow-sm dark:border-[#262626] dark:bg-[#1a1a1a]/90';
@@ -678,6 +679,9 @@ export function SubscriptionDetailPage() {
             subscriptionStatus={subscription.status}
             className={SURFACE_CARD}
           />
+          <div className="mt-6">
+            <ParasutInvoicePanel subscriptionId={id} />
+          </div>
         </div>
         <div className="hidden md:flex flex-col gap-4 lg:col-span-1">
           {subscription.sim_card_id && (

@@ -5,12 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCustomer, useCreateCustomer, useUpdateCustomer } from './hooks';
 import { useSitesByCustomer, useCreateSite, useUpdateSite } from '../customerSites/hooks';
 import {
-  customerDefaultValues,
   customerCreateSchema,
   customerCreateDefaultValues,
 } from './schema';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, Card, Input, Textarea, FormSkeleton } from '../../components/ui';
+import { Button, Card, Input, Select, Textarea, FormSkeleton } from '../../components/ui';
 import { useEffect } from 'react';
 import { maskPhone } from '../../lib/utils';
 import { useRole } from '../../lib/roles';
@@ -61,7 +60,6 @@ export function CustomerFormPage() {
 
   const isEdit = Boolean(id);
 
-  if (isFieldWorker) return <Navigate to="/customers" replace />;
   const { data: customer, isLoading: customerLoading } = useCustomer(id);
   const { data: sites = [], isLoading: sitesLoading } = useSitesByCustomer(id);
   const createCustomer = useCreateCustomer();
@@ -91,6 +89,8 @@ export function CustomerFormPage() {
         phone_secondary: customer.phone_secondary || '',
         email: customer.email || '',
         tax_number: customer.tax_number || '',
+        identity_type: customer.identity_type || '',
+        tax_office: customer.tax_office || '',
         notes: customer.notes || '',
       };
       const siteFields = firstSite
@@ -177,6 +177,8 @@ export function CustomerFormPage() {
     return <FormSkeleton />;
   }
 
+  if (isFieldWorker) return <Navigate to="/customers" replace />;
+
   return (
     <PageContainer maxWidth="4xl" padding="default">
       <PageHeader
@@ -244,6 +246,24 @@ export function CustomerFormPage() {
               placeholder={t('customers:form.placeholders.taxNumber')}
               error={errors.tax_number?.message}
               {...register('tax_number')}
+            />
+
+            <Select
+              label={t('customers:form.fields.identityType')}
+              placeholder={t('customers:form.placeholders.identityType')}
+              error={errors.identity_type?.message}
+              options={[
+                { value: 'vkn', label: t('customers:form.identityTypes.vkn') },
+                { value: 'tckn', label: t('customers:form.identityTypes.tckn') },
+              ]}
+              {...register('identity_type')}
+            />
+
+            <Input
+              label={t('customers:form.fields.taxOffice')}
+              placeholder={t('customers:form.placeholders.taxOffice')}
+              error={errors.tax_office?.message}
+              {...register('tax_office')}
             />
 
             <div className="lg:col-span-2">

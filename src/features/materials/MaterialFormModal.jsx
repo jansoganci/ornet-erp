@@ -59,21 +59,15 @@ export function MaterialFormModal({
     onClose();
   };
 
-  const categoryOptions = [
-    { value: 'dedektor', label: t('materials:categories.dedektor') },
-    { value: 'siren', label: t('materials:categories.siren') },
-    { value: 'panel', label: t('materials:categories.panel') },
-    { value: 'buton', label: t('materials:categories.buton') },
-    { value: 'kablo', label: t('materials:categories.kablo') },
-    { value: 'aksesuar', label: t('materials:categories.aksesuar') },
-    { value: 'kamera', label: t('materials:categories.kamera') },
-    { value: 'diger', label: t('materials:categories.diger') },
-  ];
-
   const unitOptions = [
     { value: 'adet', label: t('materials:units.adet') },
     { value: 'metre', label: t('materials:units.metre') },
     { value: 'paket', label: t('materials:units.paket') },
+  ];
+
+  const currencyOptions = [
+    { value: 'TRY', label: t('common:currencies.TRY') },
+    { value: 'USD', label: t('common:currencies.USD') },
   ];
 
   return (
@@ -119,17 +113,35 @@ export function MaterialFormModal({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Select
-            label={t('materials:form.fields.category')}
-            options={categoryOptions}
-            placeholder={t('materials:form.placeholders.category')}
-            error={errors.category?.message}
-            {...register('category')}
-          />
-          <Select
             label={t('materials:form.fields.unit')}
             options={unitOptions}
             error={errors.unit?.message}
             {...register('unit')}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Input
+            label={t('materials:form.fields.unitPrice')}
+            type="number"
+            step="0.01"
+            min={0}
+            error={errors.unit_price?.message}
+            {...register('unit_price', { valueAsNumber: true })}
+          />
+          <Input
+            label={t('materials:form.fields.costPrice')}
+            type="number"
+            step="0.01"
+            min={0}
+            error={errors.cost_price?.message}
+            {...register('cost_price', { valueAsNumber: true })}
+          />
+          <Select
+            label={t('common:fields.currency')}
+            options={currencyOptions}
+            error={errors.currency?.message}
+            {...register('currency')}
           />
         </div>
 

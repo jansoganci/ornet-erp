@@ -48,6 +48,7 @@ import { CustomerOverviewTab } from './tabs/CustomerOverviewTab';
 import { CustomerLocationsTab } from './tabs/CustomerLocationsTab';
 import { CustomerSimCardsTab } from './tabs/CustomerSimCardsTab';
 import { CustomerEquipmentTab } from './tabs/CustomerEquipmentTab';
+import { ParasutHistoryTab } from './components/ParasutHistoryTab';
 import { useRole } from '../../lib/roles';
 import { cn, formatDate, formatPhone, workOrderStatusVariant } from '../../lib/utils';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
@@ -105,10 +106,13 @@ export function CustomerDetailPage() {
   const { isFieldWorker, canWrite, isAdmin } = useRole();
 
   const allowedLegacy = isFieldWorker ? FIELD_LEGACY : LEGACY_TABS;
-  const allowedBottomTabs = useMemo(
-    () => (isAdmin ? LOG_TABS : LOG_TABS.filter((k) => k !== 'logs')),
-    [isAdmin]
-  );
+  const allowedBottomTabs = useMemo(() => {
+    const base = isAdmin ? LOG_TABS : LOG_TABS.filter((k) => k !== 'logs');
+    if (canWrite && import.meta.env.VITE_PARASUT_ENABLED === 'true') {
+      return [...base, 'parasut'];
+    }
+    return base;
+  }, [canWrite, isAdmin]);
 
   const tabParam = searchParams.get('tab');
   const hasExplicitTab = tabParam != null && tabParam !== '';
@@ -994,7 +998,7 @@ export function CustomerDetailPage() {
                       : 'border-transparent text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-100'
                   )}
                 >
-                  {t(`detail.profileLayout.bottomTabs.${tabKey === 'workOrders' ? 'workOrders' : tabKey === 'assets' ? 'assets' : 'logs'}`)}
+                  {t(`detail.profileLayout.bottomTabs.${tabKey === 'workOrders' ? 'workOrders' : tabKey === 'assets' ? 'assets' : tabKey === 'parasut' ? 'parasut' : 'logs'}`)}
                 </button>
               );
             })}
@@ -1112,6 +1116,9 @@ export function CustomerDetailPage() {
 
               {bottomTab === 'logs' && !isAdmin && (
                 <EmptyState title={t('detail.profileLayout.logs.emptyNoAccess')} />
+              )}
+              {bottomTab === 'parasut' && canWrite && (
+                <ParasutHistoryTab customerId={id} />
               )}
             </CustomerDetailProvider>
           </div>

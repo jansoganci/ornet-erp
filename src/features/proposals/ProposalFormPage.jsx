@@ -15,7 +15,9 @@ import {
   ArrowRight,
   CalendarClock,
   Eye,
+  Pencil,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
@@ -42,7 +44,8 @@ import {
   useUpdateProposalAnnualFixedCosts,
 } from './hooks';
 import { useFinanceSettings, useLatestRate } from '../finance/hooks';
-import { useCustomer } from '../customers/hooks';
+import { useCustomer, customerKeys } from '../customers/hooks';
+import { updateCustomer } from '../customers/api';
 import { useCloseOperationsItem } from '../operations/hooks';
 import { CustomerSiteSelector } from '../workOrders/CustomerSiteSelector';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
@@ -127,6 +130,10 @@ export function ProposalFormPage() {
   const { data: existingSections = [], isLoading: isSectionsLoading } = useProposalSections(id);
   const { data: existingAnnualFixed = [], isLoading: isAnnualFixedLoading } = useProposalAnnualFixedCosts(id);
   const { data: selectedCustomer } = useCustomer(selectedCustomerId);
+  const queryClient = useQueryClient();
+  const [editCustomerModalOpen, setEditCustomerModalOpen] = useState(false);
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false);
   const { data: financeSettings } = useFinanceSettings();
   const { data: latestUsdRate } = useLatestRate('USD');
   const createMutation = useCreateProposal();
@@ -486,6 +493,28 @@ export function ProposalFormPage() {
     await persistSubmit(queued.data, queued.options || {});
   };
 
+  const handleEditCustomerOpen = () => {
+    if (!selectedCustomer) return;
+    setEditCustomerName(selectedCustomer.company_name || '');
+    setEditCustomerModalOpen(true);
+  };
+
+  const handleEditCustomerSave = async () => {
+    if (!selectedCustomer || !editCustomerName.trim()) return;
+    setIsSavingCustomer(true);
+    try {
+      await updateCustomer({ id: selectedCustomer.id, company_name: editCustomerName.trim() });
+      toast.success('Müşteri adı güncellendi');
+      setEditCustomerModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: customerKeys.detail(selectedCustomer.id) });
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+    } catch (err) {
+      toast.error('Güncelleme başarısız');
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  };
+
   if (isEdit && (isProposalLoading || isItemsLoading || isSectionsLoading || isAnnualFixedLoading)) {
     return <FormSkeleton />;
   }
@@ -516,6 +545,7 @@ export function ProposalFormPage() {
 
               {/* ===== STEP 0: Genel Bilgiler ===== */}
               {currentStep === 0 && (
+                <>
                 <Card className="p-6 overflow-visible">
                   <div className="flex items-center space-x-2 mb-6">
                     <ClipboardList className="w-5 h-5 text-primary-600" />
@@ -547,6 +577,19 @@ export function ProposalFormPage() {
                             />
                           )}
                         />
+                        {selectedCustomer && (
+                          <div className="mt-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              leftIcon={<Pencil className="w-3.5 h-3.5" />}
+                              onClick={handleEditCustomerOpen}
+                            >
+                              Müşteri Adını Düzenle
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Right Column: Proposal Meta Information */}
@@ -665,6 +708,36 @@ export function ProposalFormPage() {
                     </div>
                   )}
                 </Card>
+
+                <Modal
+                  open={editCustomerModalOpen}
+                  onClose={() => setEditCustomerModalOpen(false)}
+                  title="Müşteri Adını Düzenle"
+                  size="sm"
+                  footer={
+                    <div className="flex gap-3 w-full">
+                      <Button variant="ghost" onClick={() => setEditCustomerModalOpen(false)} className="flex-1">
+                        İptal
+                      </Button>
+                      <Button onClick={handleEditCustomerSave} loading={isSavingCustomer} className="flex-1">
+                        Kaydet
+                      </Button>
+                    </div>
+                  }
+                >
+                  <div className="space-y-4">
+                    <p className="text-sm text-neutral-500">
+                      Müşterinin görünen adını düzenleyin. Bu değişiklik customers tablosuna kaydedilir.
+                    </p>
+                    <Input
+                      value={editCustomerName}
+                      onChange={(e) => setEditCustomerName(e.target.value)}
+                      placeholder="Müşteri adı"
+                      autoFocus
+                    />
+                  </div>
+                </Modal>
+                </>
               )}
 
               {/* ===== STEP 1: Services / Items ===== */}

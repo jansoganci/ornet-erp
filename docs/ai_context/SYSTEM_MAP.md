@@ -140,6 +140,7 @@ collection.useCollectionRecordPayment → invalidates: collectionKeys, subscript
 | 00110–00140 | Dashboard RPCs, subscription fees (sim_amount, static_ip) |
 | 00141–00159 | Site assets v2, dynamic VAT triggers |
 | 00160 | **Operations Board:** service_requests, conversion/boomerang RPCs |
+| 00215 | **Paraşüt PR-1:** customer matching metadata (`parasut_contact_id`, `identity_type`, `tax_office`) + `parasut_match_candidates` |
 
 ### RLS Pattern (all tables)
 
@@ -239,6 +240,7 @@ normalizeForSearch("Boğa Gıda") → "boga gida"
 
 ```
 customers
+  ├── parasut_match_candidates (1:N)   ← staged Paraşüt contact matches
   └── customer_sites (1:N)
         ├── work_orders.site_id        ← WOs link via site, NOT customer
         ├── subscriptions.site_id

@@ -414,7 +414,6 @@ export function ProposalPdf({
 }) {
   const prop = proposal || {};
   const currency = prop.currency ?? 'USD';
-  const symbol = getCurrencySymbol(currency);
   const itemList = Array.isArray(items) ? items : [];
   const annualList = Array.isArray(annualFixedCosts) ? annualFixedCosts : [];
   const vatRate = Number(prop.vat_rate) || 0;
@@ -463,7 +462,7 @@ export function ProposalPdf({
               )}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>{i18n.t('proposals:pdf.headerLabels.companyName')}</Text>
-                <Text style={[styles.infoValue, styles.infoValueBold]}>
+                <Text style={styles.infoValue}>
                   {safeStr(prop.customer_company_name) || safeStr(prop.company_name)}
                 </Text>
               </View>
@@ -510,12 +509,8 @@ export function ProposalPdf({
             <Text style={[styles.colDescription, styles.headerText]}>{i18n.t('proposals:items.material')}</Text>
             <Text style={[styles.colQty, styles.headerText]}>{i18n.t('proposals:items.quantity')}</Text>
             <Text style={[styles.colUnit, styles.headerText]}>{i18n.t('proposals:items.unit')}</Text>
-            <Text style={[styles.colUnitPrice, styles.headerText]}>
-              {i18n.t('proposals:items.unitPrice')} ({symbol})
-            </Text>
-            <Text style={[styles.colTotal, styles.headerText]}>
-              {i18n.t('proposals:items.total')} ({symbol})
-            </Text>
+            <Text style={[styles.colUnitPrice, styles.headerText]}>{i18n.t('proposals:items.unitPrice')}</Text>
+            <Text style={[styles.colTotal, styles.headerText]}>{i18n.t('proposals:items.total')}</Text>
           </View>
           {(() => {
             return sectionGroups.map(({ sectionId, title, items: groupItems }) => {
@@ -525,18 +520,12 @@ export function ProposalPdf({
               );
               const rows = groupItems.map((item, localIndex) => {
                 const lineTotal = safeNum(resolveProposalItemLineTotal(item, currency));
-                const materialDesc = item.materials?.description ? safeStr(item.materials.description) : '';
                 const rowIndex = localIndex + 1;
                 return (
                   <View key={item.id || rowIndex} style={styles.tableRow}>
                     <Text style={styles.colSira}>{rowIndex}</Text>
                     <View style={styles.colDescription}>
                       <Text style={{ fontSize: 9 }}>{safeStr(item.description)}</Text>
-                      {materialDesc ? (
-                        <Text style={{ fontSize: 8, color: '#737373', marginTop: 2, lineHeight: 1.2 }}>
-                          {materialDesc}
-                        </Text>
-                      ) : null}
                     </View>
                     <Text style={styles.colQty}>{safeNum(item.quantity)}</Text>
                     <Text style={styles.colUnit}>{safeStr(item.unit) || i18n.t('proposals:items.units.adet')}</Text>

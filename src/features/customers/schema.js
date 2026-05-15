@@ -14,7 +14,17 @@ export const customerSchema = z.object({
   phone_secondary: phoneSchema,
   email: z.string().email(i18n.t('errors:validation.email')).optional().or(z.literal('')),
   tax_number: z.string().optional().or(z.literal('')),
+  identity_type: z.enum(['vkn', 'tckn']).optional().or(z.literal('')),
+  tax_office: z.string().max(200).optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
+}).superRefine((data, ctx) => {
+  if (data.tax_number?.trim() && !data.identity_type) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['identity_type'],
+      message: i18n.t('errors:validation.required'),
+    });
+  }
 });
 
 export const customerDefaultValues = {
@@ -24,6 +34,8 @@ export const customerDefaultValues = {
   phone_secondary: '',
   email: '',
   tax_number: '',
+  identity_type: '',
+  tax_office: '',
   notes: '',
 };
 

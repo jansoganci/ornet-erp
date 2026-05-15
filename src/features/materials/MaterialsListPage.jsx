@@ -1,28 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  Plus,
-  Package,
-  Edit2,
-  Trash2,
-  Filter,
-  Upload,
-  History,
-  Menu,
-  X,
-  Calendar,
-} from 'lucide-react';
+import { Plus, Package, Edit2, Trash2, Upload, History, Menu, Pencil } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import {
   Button,
   SearchInput,
-  ListboxSelect,
   Table,
   Badge,
   Card,
   EmptyState,
-  Spinner,
   ErrorState,
   IconButton,
   Modal,
@@ -30,10 +17,12 @@ import {
 } from '../../components/ui';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useMobileSidebar } from '../../contexts/MobileSidebarContext';
-import { useMaterials, useDeleteMaterial, useMaterialCategories } from './hooks';
+import { useMaterials, useDeleteMaterial, useMaterialCategories, useUpdateMaterial } from './hooks';
 import { MaterialFormModal } from './MaterialFormModal';
 import { MaterialUsageModal } from './components/MaterialUsageModal';
-import { cn } from '../../lib/utils';
+import { QuickMaterialPriceField } from './components/QuickMaterialPriceField';
+import { QuickMaterialCurrencySelect } from './components/QuickMaterialCurrencySelect';
+import { cn, formatCurrency } from '../../lib/utils';
 
 export function MaterialsListPage() {
   const { t } = useTranslation(['materials', 'common']);
@@ -45,14 +34,12 @@ export function MaterialsListPage() {
   const [localSearch, setLocalSearch] = useState(searchFromUrl);
   const debouncedSearch = useDebouncedValue(localSearch, 300);
   const category = searchParams.get('category') || 'all';
-  const yearParam = searchParams.get('year') || '';
-  const monthParam = searchParams.get('month') || '';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [materialToDelete, setMaterialToDelete] = useState(null);
   const [usageModalMaterial, setUsageModalMaterial] = useState(null);
-  const [periodPanelOpen, setPeriodPanelOpen] = useState(false);
+  const [quickEditMode, setQuickEditMode] = useState(false);
 
   useEffect(() => {
     setLocalSearch(searchFromUrl);
@@ -72,10 +59,8 @@ export function MaterialsListPage() {
     () => ({
       search: debouncedSearch,
       category: category === 'all' ? undefined : category,
-      year: yearParam || undefined,
-      month: monthParam || undefined,
     }),
-    [debouncedSearch, category, yearParam, monthParam],
+    [debouncedSearch, category],
   );
 
   const navigate = useNavigate();
@@ -83,30 +68,27 @@ export function MaterialsListPage() {
   const { data: allMaterials = [], isLoading: isLoadingAll } = useMaterials({});
   const { data: categories = [] } = useMaterialCategories();
   const deleteMutation = useDeleteMaterial();
+  const updateMaterialMutation = useUpdateMaterial();
 
-  const isFilterActive = useMemo(
-    () =>
-      debouncedSearch.trim().length > 0 ||
-      category !== 'all' ||
-      Boolean(yearParam) ||
-      Boolean(monthParam),
-    [debouncedSearch, category, yearParam, monthParam],
+  const handleQuickFieldUpdate = useCallback(
+    async (materialId, patch) => {
+      await updateMaterialMutation.mutateAsync({ id: materialId, data: patch });
+    },
+    [updateMaterialMutation],
   );
 
-  const monthLabels = t('notifications:months', { returnObjects: true });
+  const currencyOptions = useMemo(
+    () => [
+      { value: 'TRY', label: tCommon('currencies.TRY') },
+      { value: 'USD', label: tCommon('currencies.USD') },
+    ],
+    [tCommon],
+  );
 
-  const periodChipLabel = useMemo(() => {
-    if (!yearParam && !monthParam) return t('materials:filters.allPeriods');
-    const y = yearParam || String(new Date().getFullYear());
-    if (yearParam && monthParam) {
-      return `${monthLabels[monthParam] ?? monthParam} ${y}`;
-    }
-    if (yearParam) return y;
-    if (monthParam) {
-      return `${monthLabels[monthParam] ?? monthParam} ${new Date().getFullYear()}`;
-    }
-    return t('materials:filters.allPeriods');
-  }, [yearParam, monthParam, monthLabels, t]);
+  const isFilterActive = useMemo(
+    () => debouncedSearch.trim().length > 0 || category !== 'all',
+    [debouncedSearch, category],
+  );
 
   const kpi = useMemo(() => {
     const total = allMaterials.length;
@@ -128,16 +110,6 @@ export function MaterialsListPage() {
     });
   };
 
-  const clearPeriodFilters = () => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete('year');
-      next.delete('month');
-      return next;
-    });
-    setPeriodPanelOpen(false);
-  };
-
   const handleEdit = (material) => {
     setSelectedMaterial(material);
     setIsModalOpen(true);
@@ -154,20 +126,6 @@ export function MaterialsListPage() {
       setMaterialToDelete(null);
     }
   };
-
-  const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString());
-  const yearOptions = [
-    { value: 'all', label: t('materials:filters.all') },
-    ...years.map((y) => ({ value: y, label: y })),
-  ];
-
-  const monthOptions = [
-    { value: 'all', label: t('materials:filters.all') },
-    ...Object.entries(monthLabels).map(([val, label]) => ({
-      value: val,
-      label,
-    })),
-  ];
 
   const chipClass = (active) =>
     cn(
@@ -213,27 +171,73 @@ export function MaterialsListPage() {
       ),
     },
     {
-      header: t('materials:list.columns.category'),
-      accessor: 'category',
-      width: 150,
-      render: (val) => (
-        <Badge
-          variant="secondary"
-          className="bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-none"
-        >
-          {t(`materials:categories.${val}`) || val}
-        </Badge>
-      ),
-    },
-    {
       header: t('materials:list.columns.unit'),
       accessor: 'unit',
       width: 100,
       render: (val) => (
-        <span className="text-[10px] uppercase text-neutral-400 font-bold tracking-widest">
-          {t(`materials:units.${val}`) || val}
+        <span className="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
+          {t(`materials:units.${val}`, { defaultValue: val })}
         </span>
       ),
+    },
+    {
+      header: t('materials:list.columns.unitCost'),
+      accessor: 'cost_price',
+      width: 130,
+      render: (val, row) =>
+        quickEditMode ? (
+          <QuickMaterialPriceField
+            material={row}
+            field="cost_price"
+            onUpdate={handleQuickFieldUpdate}
+            label={t('materials:list.columns.unitCost')}
+          />
+        ) : (
+          <span className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-nowrap tabular-nums">
+            {val != null && val !== ''
+              ? formatCurrency(Number(val), row.currency ?? 'TRY')
+              : '—'}
+          </span>
+        ),
+    },
+    {
+      header: t('materials:list.columns.unitSale'),
+      accessor: 'unit_price',
+      width: 130,
+      render: (val, row) =>
+        quickEditMode ? (
+          <QuickMaterialPriceField
+            material={row}
+            field="unit_price"
+            onUpdate={handleQuickFieldUpdate}
+            label={t('materials:list.columns.unitSale')}
+          />
+        ) : (
+          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50 whitespace-nowrap tabular-nums">
+            {val != null && val !== ''
+              ? formatCurrency(Number(val), row.currency ?? 'TRY')
+              : '—'}
+          </span>
+        ),
+    },
+    {
+      header: t('materials:list.columns.currency'),
+      accessor: 'currency',
+      width: 118,
+      render: (_, row) =>
+        quickEditMode ? (
+          <QuickMaterialCurrencySelect
+            material={row}
+            onUpdate={handleQuickFieldUpdate}
+            options={currencyOptions}
+            placeholder={t('materials:list.columns.currency')}
+            disabled={updateMaterialMutation.isPending}
+          />
+        ) : (
+          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-600 dark:text-neutral-400">
+            {row.currency ? tCommon(`currencies.${row.currency}`) : tCommon('currencies.TRY')}
+          </span>
+        ),
     },
     {
       header: t('materials:list.columns.status'),
@@ -285,48 +289,22 @@ export function MaterialsListPage() {
         onChange={(v) => handleFilterChange('search', v)}
         size="sm"
       />
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-        <button
-          type="button"
-          onClick={() => handleFilterChange('category', 'all')}
-          className={chipClass(category === 'all')}
-        >
-          {t('materials:filters.all')}
-        </button>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => handleFilterChange('category', cat)}
-            className={chipClass(category === cat)}
-          >
-            {t(`materials:categories.${cat}`) || cat}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const periodSelectors = (
-    <div className="flex flex-col sm:flex-row gap-3 w-full sm:items-end">
-      <div className="w-full sm:flex-1 sm:max-w-[12rem]">
-        <ListboxSelect
-          options={yearOptions}
-          value={yearParam || 'all'}
-          onChange={(v) => handleFilterChange('year', v)}
-          placeholder={t('materials:filters.selectYear')}
-          size="sm"
-        />
-      </div>
-      <div className="w-full sm:flex-1 sm:max-w-[14rem]">
-        <ListboxSelect
-          options={monthOptions}
-          value={monthParam || 'all'}
-          onChange={(v) => handleFilterChange('month', v)}
-          placeholder={t('materials:filters.selectMonth')}
-          size="sm"
-        />
-      </div>
+      {categories.length > 0 ? (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() =>
+                category === cat ? handleFilterChange('category', 'all') : handleFilterChange('category', cat)
+              }
+              className={chipClass(category === cat)}
+            >
+              {t(`materials:categories.${cat}`, { defaultValue: cat })}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 
@@ -368,6 +346,15 @@ export function MaterialsListPage() {
                 {t('common:import.bulkImportButton')}
               </Button>
               <Button
+                type="button"
+                variant={quickEditMode ? 'primary' : 'outline'}
+                onClick={() => setQuickEditMode((v) => !v)}
+                leftIcon={<Pencil className="w-4 h-4" />}
+                className="hidden lg:inline-flex"
+              >
+                {t('materials:list.quickEdit')}
+              </Button>
+              <Button
                 onClick={handleAdd}
                 leftIcon={<Plus className="w-4 h-4" />}
                 className="shadow-lg shadow-primary-600/20"
@@ -401,14 +388,29 @@ export function MaterialsListPage() {
               {t('materials:list.mobileTitle')}
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={handleAdd}
-            className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-600 text-white active:scale-95 transition-transform shadow-lg shadow-primary-600/20 shrink-0"
-            aria-label={t('materials:list.addButton')}
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setQuickEditMode((v) => !v)}
+              className={cn(
+                'flex items-center justify-center w-10 h-10 rounded-xl border transition-colors active:scale-95',
+                quickEditMode
+                  ? 'bg-primary-600 border-primary-600 text-white'
+                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1a] text-neutral-700 dark:text-neutral-200',
+              )}
+              aria-label={t('materials:list.quickEdit')}
+            >
+              <Pencil className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-600 text-white active:scale-95 transition-transform shadow-lg shadow-primary-600/20"
+              aria-label={t('materials:list.addButton')}
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -455,63 +457,26 @@ export function MaterialsListPage() {
         </div>
       </section>
 
-      {/* All breakpoints: search + category chips; desktop: period row */}
       <Card className="p-3 md:p-4 border-neutral-200/60 dark:border-neutral-800/60">
         {filterToolbar}
-        <div className="hidden md:block mt-4 pt-4 border-t border-neutral-200/60 dark:border-neutral-800/60">
-          {periodSelectors}
-        </div>
-      </Card>
-
-      {/* Mobile: period filter pill + chip */}
-      <section className="flex items-center gap-3 overflow-x-auto pb-1 md:hidden scrollbar-hide">
-        <button
-          type="button"
-          onClick={() => setPeriodPanelOpen((v) => !v)}
-          className="flex items-center gap-2 bg-neutral-100 dark:bg-[#201f1f] px-4 py-2 rounded-full border border-neutral-200 dark:border-[#494847]/20 active:scale-95 transition-transform shrink-0 min-h-[44px]"
-        >
-          <Filter className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
-          <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
-            {t('materials:filters.period')}
-          </span>
-          {(yearParam || monthParam) && (
-            <span className="bg-primary-600 text-white text-[0.625rem] font-bold min-w-[1.25rem] h-5 px-1 rounded-full flex items-center justify-center">
-              {(yearParam ? 1 : 0) + (monthParam ? 1 : 0)}
-            </span>
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={() => setPeriodPanelOpen((o) => !o)}
-          className={cn(
-            'flex items-center gap-2 shrink-0 rounded-lg px-3 py-2 text-xs font-medium min-h-[44px]',
-            'border border-neutral-200 dark:border-[#262626] bg-neutral-50 dark:bg-[#1f1f1f]',
-            'text-neutral-800 dark:text-neutral-100',
-          )}
-        >
-          <Calendar className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />
-          <span className="max-w-[140px] truncate">{periodChipLabel}</span>
-        </button>
-        {(yearParam || monthParam) && (
-          <button
+        <div className="hidden md:flex lg:hidden md:flex-row md:items-end md:justify-end md:gap-4 mt-4 pt-4 border-t border-neutral-200/60 dark:border-neutral-800/60">
+          <Button
             type="button"
-            onClick={clearPeriodFilters}
-            className="shrink-0 p-2 rounded-full text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
-            aria-label={tCommon('actions.clear')}
+            variant={quickEditMode ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setQuickEditMode((v) => !v)}
+            leftIcon={<Pencil className="w-4 h-4" />}
+            className="shrink-0"
           >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </section>
-
-      {periodPanelOpen && (
-        <section className="md:hidden bg-white dark:bg-[#1a1a1a] rounded-xl p-4 border border-neutral-200 dark:border-[#262626]/20 space-y-3">
-          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
-            {t('materials:filters.periodPanelTitle')}
+            {t('materials:list.quickEdit')}
+          </Button>
+        </div>
+        {quickEditMode ? (
+          <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2 leading-snug">
+            {t('materials:list.quickEditHint')}
           </p>
-          {periodSelectors}
-        </section>
-      )}
+        ) : null}
+      </Card>
 
       {isLoading ? (
         <>
@@ -527,7 +492,7 @@ export function MaterialsListPage() {
             ))}
           </div>
           <div className="hidden lg:block">
-            <TableSkeleton cols={7} />
+            <TableSkeleton cols={9} />
           </div>
         </>
       ) : materials.length === 0 ? (
@@ -568,17 +533,79 @@ export function MaterialsListPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1.5 shrink-0 max-w-[45%]">
-                    <Badge
-                      variant="secondary"
-                      className="bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-none text-xs truncate max-w-full"
-                    >
-                      {row.category ? t(`materials:categories.${row.category}`) || row.category : '—'}
-                    </Badge>
-                    <span className="text-[0.625rem] uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-semibold">
-                      {t(`materials:units.${row.unit}`) || row.unit}
+                  <div className="flex flex-col items-end justify-center shrink-0">
+                    <span className="text-xs text-neutral-600 dark:text-neutral-300 font-medium tabular-nums text-right">
+                      {t(`materials:units.${row.unit}`, { defaultValue: row.unit })}
                     </span>
                   </div>
+                </div>
+                <div
+                  className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#262626] space-y-3"
+                  onClick={(e) => quickEditMode && e.stopPropagation()}
+                >
+                  {quickEditMode ? (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 shrink-0">
+                          {t('materials:list.columns.unitCost')}
+                        </span>
+                        <QuickMaterialPriceField
+                          material={row}
+                          field="cost_price"
+                          onUpdate={handleQuickFieldUpdate}
+                          label={t('materials:list.columns.unitCost')}
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 shrink-0">
+                          {t('materials:list.columns.unitSale')}
+                        </span>
+                        <QuickMaterialPriceField
+                          material={row}
+                          field="unit_price"
+                          onUpdate={handleQuickFieldUpdate}
+                          label={t('materials:list.columns.unitSale')}
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 shrink-0">
+                          {t('materials:list.columns.currency')}
+                        </span>
+                        <QuickMaterialCurrencySelect
+                          material={row}
+                          onUpdate={handleQuickFieldUpdate}
+                          options={currencyOptions}
+                          placeholder={t('materials:list.columns.currency')}
+                          disabled={updateMaterialMutation.isPending}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+                      <span className="text-neutral-500 dark:text-neutral-400">
+                        {t('materials:list.columns.unitCost')}
+                      </span>
+                      <span className="text-right font-mono tabular-nums text-neutral-800 dark:text-neutral-200">
+                        {row.cost_price != null && row.cost_price !== ''
+                          ? formatCurrency(Number(row.cost_price), row.currency ?? 'TRY')
+                          : '—'}
+                      </span>
+                      <span className="text-neutral-500 dark:text-neutral-400">
+                        {t('materials:list.columns.unitSale')}
+                      </span>
+                      <span className="text-right font-mono tabular-nums font-medium text-neutral-900 dark:text-neutral-50">
+                        {row.unit_price != null && row.unit_price !== ''
+                          ? formatCurrency(Number(row.unit_price), row.currency ?? 'TRY')
+                          : '—'}
+                      </span>
+                      <span className="text-neutral-500 dark:text-neutral-400">
+                        {t('materials:list.columns.currency')}
+                      </span>
+                      <span className="text-right font-semibold uppercase text-neutral-700 dark:text-neutral-300">
+                        {row.currency ? tCommon(`currencies.${row.currency}`) : tCommon('currencies.TRY')}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between items-center mt-3 pt-3 border-t border-neutral-100 dark:border-[#262626]">
                   <IconButton

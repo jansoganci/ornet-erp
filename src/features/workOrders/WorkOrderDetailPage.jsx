@@ -31,6 +31,7 @@ import { WorkOrderCompletionModal } from './components/WorkOrderCompletionModal'
 import { WorkOrderSiteCard } from './components/WorkOrderSiteCard';
 import { WorkOrderProposalCard } from './components/WorkOrderProposalCard';
 import { WorkOrderActivityTimeline } from './components/WorkOrderActivityTimeline';
+import { ParasutInvoicePanel } from '../finance/components/ParasutInvoicePanel';
 
 function WorkOrderDetailSkeleton() {
   return (
@@ -385,6 +386,10 @@ export function WorkOrderDetailPage() {
               )}
             </div>
           </div>
+        )}
+
+        {isStandalone && workOrder.status === 'completed' && (
+          <ParasutInvoicePanel workOrderId={id} />
         )}
 
         {workOrder.notes && (

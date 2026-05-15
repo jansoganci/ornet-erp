@@ -27,6 +27,8 @@
     "submit": "Gönder",
     "reset": "Sıfırla",
     "clear": "Temizle",
+    "accept": "Kabul Et",
+    "reject": "Reddet",
     "select": "Seç",
     "upload": "Yükle",
     "download": "İndir",
@@ -93,6 +95,9 @@
     "noData": "Veri bulunamadı",
     "noResults": "Sonuç bulunamadı",
     "noItems": "Öğe bulunamadı"
+  },
+  "errors": {
+    "forbidden": "Bu sayfa için yetkiniz yok"
   },
   "fields": {
     "amount": "Tutar",

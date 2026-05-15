@@ -1,16 +1,29 @@
 {
   "title": "Malzeme Listesi",
+  "fields": {
+    "code": "Malzeme Kodu",
+    "name": "Müşteri Malzeme Adı",
+    "description": "Ornet Malzeme Adı",
+    "unit": "Birim",
+    "unitPrice": "Birim Fiyat",
+    "costPrice": "Maliyet Fiyatı",
+    "currency": "Para birimi"
+  },
   "list": {
     "mobileTitle": "Malzemeler",
     "addButton": "Yeni Malzeme Ekle",
-    "searchPlaceholder": "Kod veya isim ile ara...",
+    "searchPlaceholder": "Malzeme adı veya Ornet malzeme adı ile ara...",
+    "quickEdit": "Hızlı Düzenleme",
+    "quickEditHint": "Maliyet ve satış: alanı düzenleyip dışına tıklayın veya Tab ile çıkın. Para birimi listeden seçildiğinde kaydedilir.",
     "noMaterials": "Henüz malzeme eklenmemiş.",
     "columns": {
       "code": "Kod",
       "name": "Malzeme Adı",
-      "category": "Kategori",
       "unit": "Birim",
-      "status": "Durum"
+      "status": "Durum",
+      "unitCost": "Birim maliyet",
+      "unitSale": "Birim satış",
+      "currency": "Para birimi"
     }
   },
   "form": {
@@ -18,33 +31,39 @@
     "editTitle": "Malzeme Düzenle",
     "fields": {
       "code": "Malzeme Kodu",
-      "name": "Malzeme Adı",
-      "description": "Açıklama",
-      "category": "Kategori",
+      "name": "Müşteri Malzeme Adı",
+      "description": "Ornet Malzeme Adı",
       "unit": "Birim",
+      "unitPrice": "Birim Fiyat",
+      "costPrice": "Maliyet Fiyatı",
+      "currency": "Para birimi",
       "isActive": "Aktif"
     },
     "placeholders": {
       "code": "Örn: DED-001",
       "name": "Örn: Optik Duman Dedektörü",
-      "description": "Müşteriye gösterilecek ürün açıklaması (isteğe bağlı)",
-      "category": "Kategori seçin"
+      "description": "Ornet malzeme adı (isteğe bağlı)"
     }
   },
-  "categories": {
-    "dedektor": "Dedektör",
-    "siren": "Siren",
-    "panel": "Panel",
-    "buton": "Buton",
-    "kablo": "Kablo",
-    "aksesuar": "Aksesuar",
-    "kamera": "Kamera",
-    "diger": "Diğer"
-  },
   "units": {
-    "adet": "adet",
-    "metre": "metre",
-    "paket": "paket"
+    "adet": "Adet",
+    "boy": "Boy",
+    "paket": "Paket",
+    "metre": "Metre",
+    "mm": "mm",
+    "V": "V (volt)",
+    "A": "A (amper)",
+    "W": "W (watt)",
+    "MHz": "MHz",
+    "TB": "TB",
+    "MP": "MP",
+    "port": "Port",
+    "kanal": "Kanal",
+    "inç": "inç",
+    "rpm": "rpm",
+    "bölge": "Bölge",
+    "set": "Set",
+    "takim": "Takım"
   },
   "status": {
     "active": "Aktif",
@@ -73,7 +92,6 @@
   },
   "filters": {
     "all": "Tümü",
-    "category": "Kategori",
     "status": "Durum",
     "selectYear": "Yıl Seç",
     "selectMonth": "Ay Seç",
@@ -84,8 +102,7 @@
   "kpi": {
     "total": "Toplam",
     "active": "Aktif",
-    "filtered": "Sonuç",
-    "categories": "Kategori"
+    "filtered": "Sonuç"
   },
   "mobile": {
     "openMenu": "Menüyü aç"

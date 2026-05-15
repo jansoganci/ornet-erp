@@ -1,0 +1,9 @@
+{
+  "form": {
+    "fields": {
+      "unitPrice": "Unit price",
+      "costPrice": "Cost price",
+      "currency": "Currency"
+    }
+  }
+}

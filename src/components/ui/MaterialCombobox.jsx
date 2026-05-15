@@ -91,6 +91,9 @@ export function MaterialCombobox({
         description: material.name,
         material_id: material.id,
         unit: PROPOSAL_ITEM_UNIT_SET.has(material.unit) ? material.unit : 'adet',
+        unit_price: material.unit_price ?? null,
+        cost_price: material.cost_price ?? null,
+        currency: material.currency ?? 'TRY',
       });
     } else {
       onChange?.(material.id);
@@ -106,6 +109,9 @@ export function MaterialCombobox({
         description: newMaterial.name,
         material_id: newMaterial.id,
         unit: PROPOSAL_ITEM_UNIT_SET.has(newMaterial.unit) ? newMaterial.unit : 'adet',
+        unit_price: newMaterial.unit_price ?? null,
+        cost_price: newMaterial.cost_price ?? null,
+        currency: newMaterial.currency ?? 'TRY',
       });
     } else {
       onChange?.(newMaterial.id);

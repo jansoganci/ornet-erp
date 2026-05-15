@@ -141,7 +141,8 @@
       "bottomTabs": {
         "workOrders": "İş emri geçmişi",
         "assets": "Varlık listesi",
-        "logs": "Kayıt geçmişi"
+        "logs": "Kayıt geçmişi",
+        "parasut": "Paraşüt faturaları"
       },
       "workOrdersPanel": {
         "searchPlaceholder": "İş emirlerinde ara…",
@@ -231,7 +232,9 @@
       "city": "Şehir",
       "district": "İlçe",
       "notes": "Notlar",
-      "taxNumber": "Vergi No"
+      "taxNumber": "Vergi No",
+      "identityType": "Kimlik Türü",
+      "taxOffice": "Vergi Dairesi"
     },
     "placeholders": {
       "name": "Ad veya firma adı",
@@ -245,11 +248,55 @@
       "city": "Şehir seçin",
       "district": "İlçe seçin",
       "notes": "Müşteri hakkında notlar",
-      "taxNumber": "Vergi numarası (isteğe bağlı)"
+      "taxNumber": "Vergi numarası (isteğe bağlı)",
+      "identityType": "Kimlik türü seçin",
+      "taxOffice": "Vergi dairesi"
+    },
+    "identityTypes": {
+      "vkn": "VKN",
+      "tckn": "TCKN"
     },
     "success": {
       "created": "Müşteri başarıyla oluşturuldu",
       "updated": "Müşteri başarıyla güncellendi"
+    }
+  },
+  "parasutMatching": {
+    "nav": "Paraşüt Eşleştirme",
+    "title": "Paraşüt Müşteri Eşleştirme",
+    "description": "Ornet müşterilerini Paraşüt kişi kayıtlarıyla güvenli şekilde eşleştirin.",
+    "runBulkMatch": "Toplu Eşleştirmeyi Başlat",
+    "statusFilter": "Durum",
+    "ornetCustomer": "Ornet müşterisi",
+    "parasutContact": "Paraşüt kişisi",
+    "emptyTitle": "Eşleştirme adayı yok",
+    "emptyDescription": "Toplu eşleştirme çalıştırıldığında adaylar burada görünür.",
+    "bulkMatchSuccess": "{{count}} aday oluşturuldu",
+    "accepted": "Eşleştirme kabul edildi",
+    "rejected": "Eşleştirme reddedildi",
+    "contactCreated": "Paraşüt kişisi oluşturuldu",
+    "filters": {
+      "pending": "Bekleyen",
+      "accepted": "Kabul edilen",
+      "rejected": "Reddedilen",
+      "all": "Tümü"
+    },
+    "matchTypes": {
+      "exact_vkn": "VKN eşleşti",
+      "exact_tckn": "TCKN eşleşti",
+      "name_only": "İsim eşleşti"
+    }
+  },
+  "parasutHistory": {
+    "notMatchedTitle": "Müşteri Paraşüt ile eşleşmemiş",
+    "notMatchedDescription": "Geçmiş faturaları görmek için önce müşteriyi Paraşüt kişi kaydıyla eşleştirin.",
+    "emptyTitle": "Paraşüt faturası bulunamadı",
+    "emptyDescription": "Son 12 ayda bu müşteri için Paraşüt faturası dönmedi.",
+    "columns": {
+      "date": "Tarih",
+      "invoiceNo": "Fatura No",
+      "amount": "Tutar",
+      "status": "Durum"
     }
   },
   "import": {

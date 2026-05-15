@@ -34,22 +34,28 @@ export function Modal({
     [onClose]
   );
 
+  // Open/close only: do not depend on `onClose` identity — unstable callbacks from parents
+  // would re-run this and steal focus from inputs on every keystroke.
   useEffect(() => {
     if (open) {
       previousFocus.current = document.activeElement;
-      document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
-      // Focus the modal for accessibility
       modalRef.current?.focus();
     } else {
-      document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
       previousFocus.current?.focus();
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [open, handleEscape]);
 

@@ -1,6 +1,7 @@
 import {
   FileText,
   Download,
+  FileSpreadsheet,
   Edit,
   Trash2,
   ChevronLeft,
@@ -11,7 +12,6 @@ import {
   Send,
   CheckCircle2,
   XCircle,
-  Receipt,
   Info,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -39,8 +39,8 @@ export function ProposalHero({
   onDelete,
   onDownloadPdf,
   isExporting,
+  onDownloadSupplierList,
   onFlowAction,
-  onFaturalandir,
   flowLoading,
 }) {
   const { t } = useTranslation(['proposals', 'common']);
@@ -127,14 +127,15 @@ export function ProposalHero({
               {t('proposals:detail.actions.markComplete')}
             </Button>
           )}
-          {status === 'completed' && (
+          {status === 'completed' && onDownloadSupplierList && (
             <Button
+              variant="outline"
               size="sm"
-              variant="success"
-              leftIcon={<Receipt className="w-4 h-4" />}
-              onClick={onFaturalandir}
+              leftIcon={<FileSpreadsheet className="w-4 h-4" />}
+              type="button"
+              onClick={onDownloadSupplierList}
             >
-              {t('proposals:detail.actions.bill')}
+              {t('proposals:detail.actions.downloadSupplierList')}
             </Button>
           )}
           <Button

@@ -433,9 +433,12 @@
     "notes": "Notlar",
     "save": "Tahsilatı Kaydet",
     "success": "Tahsilat kaydedildi",
+    "paymentDeleted": "Paraşüt tahsilatı silindi",
+    "parasutPayments": "Paraşüt Tahsilatları",
     "errors": {
       "invalidAmount": "Geçerli bir tutar girin",
-      "amountExceeds": "Tutar kalan bakiyeden fazla olamaz"
+      "amountExceeds": "Tutar kalan bakiyeden fazla olamaz",
+      "deleteFailed": "Paraşüt tahsilatı silinemedi"
     },
     "methods": {
       "bankTransfer": "Banka Havalesi",
@@ -448,6 +451,34 @@
     "quickSuccess": "Tahsilat tamamlandı",
     "noResults": "Tahsilat kaydı bulunamadı.",
     "noResultsDesc": "Henüz finansal işlem bulunmuyor."
+  },
+  "parasut": {
+    "title": "Paraşüt Fatura",
+    "emptyTitle": "Faturalandırılacak ödeme yok",
+    "emptyDescription": "Resmi fatura gerektiren tahsilatlar ödendiğinde burada görünür.",
+    "invoiceDescriptionFallback": "Abonelik hizmet bedeli",
+    "matchCustomerFirst": "Önce müşteriyi Paraşüt ile eşleştirin",
+    "invoicePrepared": "Paraşüt müsveddesi oluşturuldu",
+    "invoiceFinalized": "Fatura resmileştirildi",
+    "draftCancelled": "Müsvedde iptal edildi",
+    "status": {
+      "not_required": "Gerekli değil",
+      "ready": "Hazır",
+      "draft": "Müsvedde",
+      "sent": "Gönderildi",
+      "confirmed": "Onaylandı",
+      "failed": "Hata"
+    },
+    "actions": {
+      "prepare": "Hazırla",
+      "finalize": "Resmileştir",
+      "cancelDraft": "İptal Et",
+      "view": "Görüntüle"
+    },
+    "health": {
+      "title": "Paraşüt Sağlığı",
+      "summary": "Son 24 saat: {{confirmed}} onaylı, {{failed}} hatalı, {{pending}} bekleyen"
+    }
   },
   "healthBanner": {
     "message": "{{count}} kayıt finansal bütünlük kontrolü gerektiriyor.",

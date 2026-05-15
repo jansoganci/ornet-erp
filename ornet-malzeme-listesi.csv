@@ -1,0 +1,167 @@
+﻿Malzeme Kodu;Müşteri Malzeme Adı;Birim Satış Fiyat;Birim Maliyet Fiyat;Kur;Ornet Malzeme Adı;;;;;;
+ORN0001;"DSC PC 585
+4/ 32 Zone Alarm Kontrol Paneli, Kart Üzerinde 4 Zone Girişi, 32 Kablosuz Zone Kullanım, Kart üzerinde 2 Adet PGM Çıkışı, 8 Adet  Şifre Paneli Bağlanabilir, 500 Olay hafızası";$125,00;$50,00;USD;;;;;;;
+ORN0002;"DSC PC 1616
+6/16 Zone Alarm Kontrol Paneli, Kart Üzerinde 6 Zone Girişi, 16 Kablolu ve Kablosuz Zone Kullanım, Kart üzerinde 2 Adet PGM Çıkışı, 8 Adet  Şifre Paneli Bağlanabilir, 500 Olay hafızası, 2 Partition (Bölüm)";$135,00;$60,00;USD;;;;;;;
+ORN0003;DSC PC 1555 LED Keypad                                                                                                     8 Zone Led Şifre Paneli, LED Işıklarla Aydınlatılmış Durum ve Zone Fonksiyonlar, Ekstra Zone Girişi, 2 Partition Destekler;$36,00;$20,00;USD;;;;;;;
+ORN0004;"DSC LCD Modüllü Keypad (RFK 5501)
+Modern Görünüm, 5 Programlanabilir Fonksiyon Tuşu, Çeşitli Kapı Çan Özelliği Çeşitleri, Yeni AC Durum Göstergesi, 8 Partition Destekler, RFK 5501 32 Kablosuz Zone 16 Uzaktan Kumanda Destekler";$142,00;$85,00;USD;;;;;;;
+ORN0005;"DSC LCD Keypad (PK 5501)
+Modern Görünüm, 5 Programlanabilir Fonksiyon Tuşu, Çeşitli Kapı Çan Özelliği Çeşitleri, Yeni AC Durum Göstergesi, 8 Partition Destekler, RFK 5501 32 Kablosuz Zone 16 Uzaktan Kumanda Destekler";$85,00;$55,00;USD;;;;;;;
+ORN0006;Kablolu Manyetik Kontak;$11,00;$2,00;USD;;;;;;;
+ORN0007;"DSC LC-100 Hareket Dedektörü
+Hayvan Algılamayan Pır Dedektör 'Fresnel Lens Teknolojisi, Tutarlı Dijital Sinyal Analizi, Dahili Kablo Kanalı, Tavan/Duvar Montaj Braketi, 27 kg Hayvan Algılama Özelliği (Pet Imune) 301 DP";$28,00;$9,50;USD;;;;;;;
+ORN0008;"EBS LX3NBQ30 4,5G Gsm/Gprs Haberleşme Modülü
+GSM/GPRS Haberleşme Modülü, GSM Back Up Kullanılabilir, GPRS Üzerinden SurGard Sistem III ve Sistem II Receiverlar ile Haberleşme, PSTN Hattaki Arızada GSM'e Otomatik Geçiş, Contact ID Formatla Çalışan Bütün Alarm Panelleri ile çalışır.";$148,00;$75,00;USD;;;;;;;
+ORN0009;DSC 5108 Zone Arttırma Kartı;$70,00;$27,00;USD;;;;;;;
+ORN0010;Su Basma Dedektörü;$38,00;$19,00;USD;;;;;;;
+ORN0011;GOLDSEL Lpg&Doğalgaz&Co Dedektörü;$36,00;$18,00;USD;;;;;;;
+ORN0012;Optik Kablolu Duman Dedektörü;$32,00;$12,00;USD;;;;;;;
+ORN0013;Optik Kablolu Isı Dedektörü;$32,00;$12,00;USD;;;;;;;
+ORN0014;Kablolu Nem Dedektörü;$55,00;$18,00;USD;;;;;;;
+ORN0015;Kablolu Panik Butonu;$22,00;$2,00;USD;;;;;;;
+ORN0016;WS 4916 Optik Kablosuz Duman Dedektörü;$80,00;$58,00;USD;;;;;;;
+ORN0017;WS 4945 Kablosuz Manyetik Kontak;$56,00;$22,00;USD;;;;;;;
+ORN0018;WS 4904 Kablosuz Hareket Dedektörü;$89,00;$39,00;USD;;;;;;;
+ORN0019;WS 4939 Uzaktan Kumanda;$58,00;$23,00;USD;;;;;;;
+ORN0020;WS 5132 Kablosuz Modülatör;$125,00;$45,00;USD;;;;;;;
+ORN0021;Dahili Tip Siren;$26,00;$7,00;USD;;;;;;;
+ORN0022;AS-204D Sahte Siren;$33,00;$7,00;USD;;;;;;;
+ORN0023;AS-250SFP 12V Sahte Siren;$34,00;$13,00;USD;;;;;;;
+ORN0024;AS-250SF 220V Sahte Siren;$14,00;$13,00;USD;;;;;;;
+ORN0025;AS-260K Harici Siren;$84,00;$22,00;USD;;;;;;;
+ORN0026;12V 7A Akü;$30,00;$9,50;USD;;;;;;;
+ORN0027;16V25W Trafo;$28,00;$5,20;USD;;;;;;;
+ORN0028;Sistem montajı ve devreye alım hizmetleri;$125,00;$80,00;USD;;;;;;;
+ORN0029;Alarm Kontrol Merkezi Bağlantısı (yıllık);₺3.600,00;$1.250,00;TRY;;;;;;;
+ORN0030;SIM Hat Kullanım Bedeli (yıllık);₺840,00;$72,43;TRY;;;;;;;
+ORN0031;DT-8 Alarm Kablosu;$0,56;$0,16;USD;;;;;;;
+ORN0032;16x16 Kablo Kanalı;$0,78;$0,38;USD;;;;;;;
+ORN0033;16x25 Kablo Kanalı;$0,86;$0,47;USD;;;;;;;
+ORN0034;25x25 Kablo Kanalı;$0,92;$0,49;USD;;;;;;;
+ORN0035;25x40 Kablo Kanalı;$1,20;$0,55;USD;;;;;;;
+ORN0036;"Ajax StarterKit Alarm Paneli
+868MHz,100dedektör,9bölge,50kullanıcı,5senaryove1Rexkapasiteli,Ethernetve1kanal2GdahiliGSM/GPRSmodülü,ücretsizIOSveAndroiduyumlu,mobilvePCkurulumveyönetimyazılımı,2000maçıkalanRFmesafesi,elektrikkesintilerinekarşıdahilibatarya ile 16 saate kadar besleme.";$232,00;$185,00;USD;;;;;;;
+ORN0037;"Ajax Keypad Kablosuz 868MHz Alarm tuş takımı
+1200m. Açık alan sinyal mesafesi, 2yıla kadar pil ömrü (pildahil değildir)";$84,00;$69,75;USD;;;;;;;
+ORN0038;"Ajax Motion Protect 868 Mhz PET Immune PIR Hareket Dedektör
+KablosuzRFİletişim,50cmyükseklikteve20kgaltındahayvanlaraalarmvermez,dahiliısısensörü,1700maçıkalansinyalmenzili,12m algılama mesafesi, 88° algılama açısı, 5 yıla kadar pil ömrü, (pil dahil değildir)";$59,00;$39,82;USD;;;;;;;
+ORN0039;"Ajax Door Protect 868Mhz Kablosuz Manyetik Kapıve Pencere Kontağı
+Dahiliısısensörü,Kablolualarmbağlanabilmesiiçinharicikontakgirişi,1100maçıkalansinyalmenzili,7yılakadarpilömrü(pildahildeğildir).Küçükmagnet(1cmaralıkiçin)vebüyükmagnet(2cmaralıkiçin) sete dahildir.";$42,00;$24,92;USD;;;;;;;
+ORN0040;"Ajax Space Control Kontrol Kumandası
+KablosuzUzaktanKontrol,çiftyönlühaberleşmeilekurulumsinyaliulaştıteyidi,panikbutonuvekur/çözbutonları,açıkalanda1200m'yekadarsinyalgönderme,5yılakadarpil ömrü (pil dahil değildir)";$46,00;$28,80;USD;;;;;;;
+ORN0041;"Ajax Home Siren868MhzDahiliortamkablosuzevsireni
+85dBsesgücü,ayarlanabilirçalmasüresi,2000m açık alan menzili ve 5 yıla kadar pil ömrü (pil dahil değildir).";$121,00;$42,00;USD;;;;;;;
+ORN0042;"Ajax Street Siren 868Mhz Dış ortam kablosuz Siren
+85-113dB ayarlanabilir ses gücü, ayarlanabilir ses seviyesi ve LED profilleri, sabotaj alarmı (açıdeğiştiğianalarmverir), 1500m açık alan menzili ve 5 yıla kadar pil ömrü (pildahildeğildir), doğrudan besleme için 12VDC besleme girişi.";$121,00;$91,00;USD;;;;;;;
+ORN0043;"DS-7674RT-L1- DS-7684NI-W1 UHK 4 Kanal NVR (1 SATA, H.265+)
+H.265+/H.265/ H.264+/H.264, Kayıt/İzleme Bant Genişliği: 40Mbps/60Mbps, 1xHDMI, 1xVGA (1920x1080), 6MP'e kadar çözünürlük desteği, 1xRJ45 (10/100 Mbps ethernet arayüzü), 1 SATA desteği (6TB'a kadar), 2xUSB 2.0, 12V DC";$62,00;$29,00;USD;;;;;;;
+ORN0044;"DS-7674DG-L1/4P/MT 4 Kanal NVR (1 SATA, H.265+, PoE)
+H.265+/H.265/ H.264+/H.264, Kayıt/İzleme Bant Genişliği: 40Mbps/60Mbps, 1xHDMI, 1xVGA (1920x1080), 6MP'e kadar çözünürlük desteği, 1xRJ45 (10/100 Mbps ethernet arayüzü), 4x PoE RJ45 arayüz (36W), 1xSATA(~6TB), 2xUSB 2.0, 48V DC";$62,00;$29,00;USD;;;;;;;
+ORN0045;"DS-7848NI-L1-DS-7578WRT-L1UHK 8 Kanal NVR (1 SATA, H.265+)
+H.265+/H.265/ H.264+/H.264, Kayıt/İzleme Bant Genişliği: 60Mbps/60Mbps, 1xHDMI, 1xVGA (1920x1080), 6MP'e kadar çözünürlük desteği, 1xRJ45 (10/100 Mbps ethernet arayüzü), 1 SATA desteği (6TB'a kadar), 2xUSB 2.0, 12V DC";$95,00;$48,00;USD;;;;;;;
+ORN0046;"DS-7848WT-L1/8P/M 8 Kanal NVR (1 SATA, H.265+, PoE)
+H.265+/H.265/ H.264+/H.264, Kayıt/İzleme Bant Genişliği: 60Mbps/60Mbps, 1xHDMI, 1xVGA (1920x1080), 6MP'e kadar çözünürlük desteği, 1xRJ45 (10/100 Mbps ethernet arayüzü), 8x PoE RJ45 arayüz (75W), 1xSATA (~6TB), 2xUSB 2.0, 48V DC";$95,00;$48,00;USD;;;;;;;
+ORN0047;"DS-79516WT-L2-HVN DS-7P16NI-Q2UHK 16 Kanal NVR (1 SATA, H.265+)
+H.265/H.265+/H.264/H.264+/MPEG4, 8MP'e kadar çözünürlük desteği, Çift yönlü ses desteği, Kayıt/izleme bant genişliği: 160Mbps/80Mbps, 1xHDMI (4K desteği), 1xVGA(FHD), 1xSes çıkışı, 1xSATA (~8TB), 1xRJ45, 2xUSB2.0, 12VDC.";$181,00;$90,80;USD;DS-7616NI-Q1;;;;;;
+ORN0048;"DS-7916WT-L2/16P -DS-7P16NI-Q2/16PUHK 16 Kanal NVR (2 SATA,H.265+,PoE)
+H.265/H.265+/H.264/H.264+/MPEG4, 8MP'e kadar çözünürlük desteği, Çift yönlü ses desteği, Kayıt/izleme bant genişliği: 160Mbps/80Mbps, 1xHDMI (4K desteği), 1xVGA(FHD), 1xSes çıkışı, 2xSATA (~6TB), 1xRJ45, 2xUSB2.0, 16 x PoE arayüz (150W), 220VAC";$0,00;$0,00;USD;"DS-7616NI-Q2/16P -DS-7P16NI-Q2/16PUHK 16 Kanal NVR (2 SATA,H.265+,PoE)
+H.265/H.265+/H.264/H.264+/MPEG4, 8MP'e kadar çözünürlük desteği, Çift yönlü ses desteği, Kayıt/izleme bant genişliği: 160Mbps/80Mbps, 1xHDMI (4K desteği), 1xVGA(FHD), 1xSes çıkışı, 2xSATA (~6TB), 1xRJ45, 2xUSB2.0, 16 x PoE arayüz (150W), 220VAC";;;;;;
+ORN0049;"DS-7992WT-K2/UHK 32 Kanal NVR (2 SATA, H.265+)
+İkili işletim sistemi, ANR desteği, H.265/H.265+/H.264/H.264+/MPEG4, 8MP'e kadar çözünürlük desteği, çift yönlü ses desteği, Kayıt/İzleme bant genişliği: 256Mbps/160Mbps, 1xHDMI (4K), 1xVGA (FullHD), (HDMI ve VGA birbirinden bağımsız çalışabilir), Ses çıkışı, kayıttan oynatma: 16 kanal (aynı anda), 2xSATA desteği (~8TB), 1xRJ45, 1xUSB2.0, 1xUSB3.0, Alarm giriş/çıkışı: 4/1, 12VDC.";$226,00;$124,00;USD;"DS-7632NI-K2/UHK 32 Kanal NVR (2 SATA, H.265+)
+İkili işletim sistemi, ANR desteği, H.265/H.265+/H.264/H.264+/MPEG4, 8MP'e kadar çözünürlük desteği, çift yönlü ses desteği, Kayıt/İzleme bant genişliği: 256Mbps/160Mbps, 1xHDMI (4K), 1xVGA (FullHD), (HDMI ve VGA birbirinden bağımsız çalışabilir), Ses çıkışı, kayıttan oynatma: 16 kanal (aynı anda), 2xSATA desteği (~8TB), 1xRJ45, 1xUSB2.0, 1xUSB3.0, Alarm giriş/çıkışı: 4/1, 12VDC.";;;;;;
+ORN0050;"DS-2RT8579WR-WRD 2 MP IP IR Turret Kamera (H.265+ , Dahili Mikrofon) 
+2.0 MP Çözünürlük, 1/2, 8"" CMOS sensör, 0.028 Lux renkli, 2.8mm / 4mm sabit lens, IR Turret kamera, H.265, H.265+ sıkıştırma, 30 mt IR aydınlatma, DWDR, ICR, 3D DNR, BLC, ROI, HLC Maskeleme, Hareket algılama, Hareket algılama, Video kurcalama alarmı, Yasadışı oturum açma, IP66, Dahili mikrofon, 12V DC veya PoE";$64,00;$27,90;USD;"	 DS-2CD1121G2-LIUF 2 MP IP IR Turret Kamera (H.265+ , Dahili Mikrofon) 
+2.0 MP Çözünürlük, 1/2, 8"" CMOS sensör, 0.028 Lux renkli, 2.8mm / 4mm sabit lens, IR Turret kamera, H.265, H.265+ sıkıştırma, 30 mt IR aydınlatma, DWDR, ICR, 3D DNR, BLC, ROI, HLC Maskeleme, Hareket algılama, Hareket algılama, Video kurcalama alarmı, Yasadışı oturum açma, IP66, Dahili mikrofon, 12V DC veya PoE";;;;;;
+ORN0051;"DS-2RT5878WR-QFD (4mm) 2MP IP IR Bullet Kamera ( H.265+)
+1/2.7"" PS CMOS, 0.028 Lux renkli, AGC, ICR, DWDR, 4mm sabit lens, 30mt IR aydınlatma mesafesi, ikili akış, hareket algılama, ROI, BLC, 3D DNR, Beyaz dengeleme, mikroSD desteği (~128GB), ANR, 1xRJ45, maskeleme, aynalama, IP67";$64,00;$27,90;USD;" DS-2CD1021G2-LIUF 2MP IP IR Bullet Kamera ( H.265+)
+1/2.7"" PS CMOS, 0.028 Lux renkli, AGC, ICR, DWDR, 4mm sabit lens, 30mt IR aydınlatma mesafesi, ikili akış, hareket algılama, ROI, BLC, 3D DNR, Beyaz dengeleme, mikroSD desteği (~128GB), ANR, 1xRJ45, maskeleme, aynalama, IP67";;;;;;
+ORN0052;"DS-2CD4451Q0-IW 2MP IR Cube Kamera (Wi-Fi + Sesli, H.265+)
+1/2.7"" PS CMOS, 2.8mm Lens, 0,01, ICR, 3D DNR, 120dB WDR, PIR, BLC, HLC, ROI, Analizler (Hat ihlali, alan ihlali), Dahili Mikrofon, Dahili Speaker, MicroSD desteği (~128GB), SVC, Wi-Fi: ~50m menzil, WPA,WPA2, 802.11b/g/n, Besleme: 12 VDC , PoE (802.3af), 8mt IR Aydınlatma";$71,00;$33,00;USD;"DS-2CD2421G0-IW 2MP IR Cube Kamera (Wi-Fi + Sesli, H.265+)
+1/2.7"" PS CMOS, 2.8mm Lens, 0,01, ICR, 3D DNR, 120dB WDR, PIR, BLC, HLC, ROI, Analizler (Hat ihlali, alan ihlali), Dahili Mikrofon, Dahili Speaker, MicroSD desteği (~128GB), SVC, Wi-Fi: ~50m menzil, WPA,WPA2, 802.11b/g/n, Besleme: 12 VDC , PoE (802.3af), 8mt IR Aydınlatma";;;;;;
+ORN0053;RJ 45 Jack;$4,20;$2,30;USD;;;;;;;
+ORN0054;TP-LINK RT5444 5 Port 10/100 Switch;$14,00;$7,00;USD;TP-LINK LS1005 5 Port 10/100 Switch;;;;;;
+ORN0055;TP-LINK RT5448 8 Port 10/100 Switch;$22,00;$11,00;USD;TP-LINK LS1008 8 Port 10/100 Switch;;;;;;
+ORN0056;TP-LINK TL-WR1416D 16 Port 10/100 Switch;$110,00;$80,00;USD;TP-LINK TL-SF1016D 16 Port 10/100 Switch;;;;;;
+ORN0057;TP-LINK RT58QR 4 Port 10/100 +1 Port RJ45 UPLINK 41W 250 mt. POE Mesafe Metal Kasa Switch;$34,00;$16,00;USD;TP-LINK LS105LP 4 Port 10/100 +1 Port RJ45 UPLINK 41W 250 mt. POE Mesafe Metal Kasa Switch;;;;;;
+ORN0058;TP-LINK LS109P 8 PORT 10/100 +1 Port RJ45 UPLINK 63W 250 mt. POE Mesafe Metal Kasa Switch;$71,00;$33,00;USD;TP-LINK LS109P 8 PORT 10/100 +1 Port RJ45 UPLINK 63W 250 mt. POE Mesafe Metal Kasa Switch;;;;;;
+ORN0059;TP-LINK TL-KL5483RTW 16 Port Gigabit + 2X Gigabit SFP UPLINK Yönetilebilir 192W POE Rackmount Switch;$234,00;$110,00;USD;TP-LINK TL-SG1218MPE 16 Port Gigabit + 2X Gigabit SFP UPLINK Yönetilebilir 192W POE Rackmount Switch;;;;;;
+ORN0060;TP-LINK TL-RT1527PE 24 Port Gibabit + 2X Gigabit RJ45/SFP UPLINK Yönetilebilir 250W POE Rackmount  Switch;$360,00;$180,00;USD;TP-LINK TL-SG1428PE 24 Port Gibabit + 2X Gigabit RJ45/SFP UPLINK Yönetilebilir 250W POE Rackmount  Switch;;;;;;
+ORN0061;TP-LINK OMADA TL-HG35852Q 52 Port Gigabit L2+ 48 PORT POE+ 384W Yönetilebilir Rackmount Switch;$648,00;$324,00;USD;TP-LINK OMADA TL-SG3452P 52 Port Gigabit L2+ 48 PORT POE+ 384W Yönetilebilir Rackmount Switch;;;;;;
+ORN0062;Switchmode Güç Kaynağı 12V 3A;$14,00;$6,00;USD;;;;;;;
+ORN0063;Switchmode Güç Kaynağı 12V 5A;$22,00;$7,00;USD;;;;;;;
+ORN0064;Switchmode Güç Kaynağı 12V 7A;$26,00;$8,00;USD;;;;;;;
+ORN0065;Switchmode Güç Kaynağı 12V 10A;$34,00;$10,00;USD;;;;;;;
+ORN0066;Switchmode Güç Kaynağı 12V 16,5A;$44,00;$16,00;USD;;;;;;;
+ORN0067;WD 1TB 7200 Rpm Purple Harddisk;$168,00;$90,00;USD;;;;;;;
+ORN0068;WD 2TB 7200 Rpm Purple Harddisk;$226,00;$97,00;USD;;;;;;;
+ORN0069;WD 4TB 7200 Rpm Purple Harddisk;$198,00;$128,00;USD;;;;;;;
+ORN0070;WD 6TB 7200 Rpm Purple Harddisk;$284,00;$190,00;USD;;;;;;;
+ORN0071;WD 8TB 7200 RPM Purple Harddisk;392;265,2;USD;;;;;;;
+ORN0072;WD 10TB 7200 Rpm Purple Harddisk;$498,00;$368,00;USD;;;;;;;
+ORN0073;Kamera Buatı;$4,20;$2,30;USD;;;;;;;
+ORN0074;"DS-7684WRT-L1 4 Kanal DVR Kayıt Cihazı 
+HD-TVI & AHD & HDCVI Kayıt Cihazı, 1 SATA(4CH HDTVI + 1CH IP =5CH) 4 Kanal Video kaydı, Dual stream, HDTVI 1080p kamera desteği, Real time 1080p kayıt çözünürlüğü, AHD/HDCVI 1080p kamera desteği, HDMI&VGA, 2xUSB, 1 kanal 1080p IP kamera kaydı, 1x SATA Portu (Her port maks. 4TB destekler), 1xRJ-45 10/100Mbps, Çift yönlü ses desteği, H.265+ Desteği, HDTVI, CVBS, AHD, HDCVI Kamera Desteği";$112,00;$37,00;USD;"DS-7104HGHI-K1 4 Kanal DVR Kayıt Cihazı 
+HD-TVI & AHD & HDCVI Kayıt Cihazı, 1 SATA(4CH HDTVI + 1CH IP =5CH) 4 Kanal Video kaydı, Dual stream, HDTVI 1080p kamera desteği, Real time 1080p kayıt çözünürlüğü, AHD/HDCVI 1080p kamera desteği, HDMI&VGA, 2xUSB, 1 kanal 1080p IP kamera kaydı, 1x SATA Portu (Her port maks. 4TB destekler), 1xRJ-45 10/100Mbps, Çift yönlü ses desteği, H.265+ Desteği, HDTVI, CVBS, AHD, HDCVI Kamera Desteği";;;;;;
+ORN0075;"DS-7688WRT-L1 8 Kanal 1080p H.265 Pro+ DVR Kayıt Cihazı
+8 kanal DVR, H.265, H.265+ sıkıştırma, 1 adet 10 Tb disk desteği, Bnc Videoçıkışı, 1080p lite, 1 HDMI 1080, 1 VGA 1080P, 2 adet USB, 1 Kanal ses giriş,çıkış, 12V DC";$134,00;$45,00;USD;"DS-7108HGHI-K1 8 Kanal 1080p H.265 Pro+ DVR Kayıt Cihazı
+8 kanal DVR, H.265, H.265+ sıkıştırma, 1 adet 10 Tb disk desteği, Bnc Videoçıkışı, 1080p lite, 1 HDMI 1080, 1 VGA 1080P, 2 adet USB, 1 Kanal ses giriş,çıkış, 12V DC";;;;;;
+ORN0076;"DS-7616WRT-L1 16 Kanal HD-TVI Kayıt Cihazı (1080p Lite)
+H.265 Pro+/H.265 Pro/H.265/H.264+/H.264, 1080p lite/720p lite/WD1/4CIF/VGA@15 fps; CIF@25 fps (P)/30 fps (N),720p/WD1/4CIF/VGA@15 fps; CIF@ 25fps (P)/30 fps (N) , CVBS giriş desteği, 1xSes girişi, Çift Yönlü Ses desteği, 11-ch, 1920 × 1080/60Hz, 1280 × 1024/60Hz, 1280 × 720/60Hz, 1024 × 768/60Hz HDMI/VGA, 1xSATA (10TB), 2xUSB2.0, 18 kanala kadar 5MP IP kamera desteği";$182,00;$75,00;USD;"DS-7116HGHI-K1 16 Kanal HD-TVI Kayıt Cihazı (1080p Lite)
+H.265 Pro+/H.265 Pro/H.265/H.264+/H.264, 1080p lite/720p lite/WD1/4CIF/VGA@15 fps; CIF@25 fps (P)/30 fps (N),720p/WD1/4CIF/VGA@15 fps; CIF@ 25fps (P)/30 fps (N) , CVBS giriş desteği, 1xSes girişi, Çift Yönlü Ses desteği, 11-ch, 1920 × 1080/60Hz, 1280 × 1024/60Hz, 1280 × 720/60Hz, 1024 × 768/60Hz HDMI/VGA, 1xSATA (10TB), 2xUSB2.0, 18 kanala kadar 5MP IP kamera desteği";;;;;;
+ORN0077;"DS-7994WT-M4/UHK 64 Kanal NVR (4 SATA, H.265+)
+İkili işletim sistemi, ANR desteği, H.265/H.265+/H.264/H.264+/MPEG4, 8MP'e kadar çözünürlük desteği, çift yönlü ses desteği, Kayıt/İzleme bant genişliği: 256Mbps/160Mbps, 1xHDMI (4K), 1xVGA (FullHD), (HDMI ve VGA birbirinden bağımsız çalışabilir), Ses çıkışı, kayıttan oynatma: 16 kanal (aynı anda), 4xSATA desteği (~16TB)";1116;558;USD;DS-7764NI-M4 64 Kanal H.265+ 4xSata NVR;;;;;;
+ORN0078;"DS-7632WRT-L2 - İDS-7632WQRT-L2/S 32 Kanal HD-TVI Kayıt Cihazı ( H.265 Pro+) 
+Dual stream,H.265 pro+ desteği, Çift yönlü ses desteği, 1xRJ45 10/100/1000Mbps, 8 Kanal HDTVI 3K kamera desteği, Real time 1080p kayıt çözünürlüğü, AHD, 4MP/HDCVI 4MP kamera desteği, HDMI 4K&VGA, 1xUSB 2.0,1xUSB 3.0, 8 kanal 6MP IP kamera kaydı, 2xSATA portu (Her port maks. 10TB destekler), HDTVI, CVBS, AHD, HDCVI kamera desteği,(4 kanal İnsan & Araç analiz desteği)(Her kanal için coaxial kablo üzerinden ses taşıma)";$182,00;$392,00;USD;DS-7232HGHI-K2 - İDS-7232HQHI-M2/S 32 Kanal HD-TVI Kayıt Cihazı ( H.265 Pro+) Dual stream,H.265 pro+ desteği, Çift yönlü ses desteği, 1xRJ45 10/100/1000Mbps, 8 Kanal HDTVI 3K kamera desteği, Real time 1080p kayıt çözünürlüğü, AHD, 4MP/HDCVI 4MP kamera desteği, HDMI 4K&VGA, 1xUSB 2.0,1xUSB 3.0, 8 kanal 6MP IP kamera kaydı, 2xSATA portu (Her port maks. 10TB destekler), HDTVI, CVBS, AHD, HDCVI kamera desteği,(4 kanal İnsan & Araç analiz desteği)(Her kanal için coaxial kablo üzerinden ses taşıma);;;;;;
+ORN0079;"DS-2CT547R57-IPF İç Ortam 2MP Mini IR Dome Kamera
+2MP CMOS sensör, 0.02 Lux/F1.2, 0 lux (IR Açık), 2.8mm Lens, ICR, DWDR, AGC, beyaz dengesi, BLC, 2D DNR, aynalama, 20m Akıllı IR, IP66, TVI/AHD/CVI/CVBS uyumluluk, 12V DC.";$42,00;$13,00;USD;"DS-2CE76D0T-EXIPF İç Ortam 2MP Mini IR Dome Kamera
+2MP CMOS sensör, 0.02 Lux/F1.2, 0 lux (IR Açık), 2.8mm Lens, ICR, DWDR, AGC, beyaz dengesi, BLC, 2D DNR, aynalama, 20m Akıllı IR, IP66, TVI/AHD/CVI/CVBS uyumluluk, 12V DC.";;;;;;
+ORN0080;"DS-2CR589T57-IPF Harici 1080p IR Bullet Kamera
+2MP CMOS sensör, 1080p çözünürlük, 0,01 lux, 3.6mm lens, ICR, 1x Analog HD çıkış, 20mt Smart IR, IP66, 12VDC, TVI/AHD/CVI/CVBS desteği";$44,00;$13,00;USD;"DS-2CE16D0T-EXIPF Harici 1080p IR Bullet Kamera
+2MP CMOS sensör, 1080p çözünürlük, 0,01 lux, 3.6mm lens, ICR, 1x Analog HD çıkış, 20mt Smart IR, IP66, 12VDC, TVI/AHD/CVI/CVBS desteği";;;;;;
+ORN0081;Kamera Power Jack;$0,35;$0,15;USD;;;;;;;
+ORN0082;BNC Konnektör;$0,55;$0,35;USD;;;;;;;
+ORN0083;4+1 CCTV Kablo ;$0,68;$0,20;USD;;;;;;;
+ORN0084;RG6-U4 CCTV Kablo;$0,84;$0,45;USD;;;;;;;
+ORN0085;3x1,5 TTR Kablo;$1,10;$0,45;USD;;;;;;;
+ORN0086;Dummy Box Harici Siren;26;12;USD;;;;;;;
+ORN0087;HIKVISION DS-2CD5846IZSU 4MP Motorize Lens Smart Hybrid Kamera;156;78,4;USD;HIKVISION DS-2CD1743G2-LIZSU 4MP 2.8-12MM MOTORIZE LENS 30 METRE SMART HYBRID DAHİLİ MİKROFON IK08 IP DOME KAMERA;;;;;;
+ORN0088;Switchmode Güç Kaynağı 12V 2A;14;3;USD;;;;;;;
+ORN0089;Buton (Yangın İhbar);16;4;USD;;;;;;;
+ORN0090;CAT 6 Polietilen Data KAblo (halojen free);1,2;0,38;USD;;;;;;;
+ORN0091;Dahili Siren;14;7;USD;;;;;;;
+ORN0092;Dedektör Tabanı;3,2;1,3;USD;;;;;;;
+ORN0093;DS-2CD3214W0-RTG 2 MP IP IR Turret Kamera;108;36;USD;"DS-2CD2121G0-I(W)(S)
+2 MP IR Fixed Dome Network Camera";;;;;;
+ORN0094;Flaşörlü Yangın Sireni;22;10,24;USD;;;;;;;
+ORN0095;J-Y(St)Y 1x2x0.8+0.8 Yangın Kablosu;1,3;0,35;USD;;;;;;;
+ORN0096;Manyetik Kontak;11;2;USD;;;;;;;
+ORN0097;Mekanik Kilit;;;USD;;;;;;;
+ORN0098;Rack Dolabı;81;40;USD;;;;;;;
+ORN0099;Reyee RG-ES228GS-P 28 Portlu, 10/100/1000 Gigabit, Yönetilebilir Switch, 2 SFP, 2 Gigabit RJ45 Uplink 24 Port PoE + (370W);414;320;USD;;;;;;;
+ORN0100;Servis ve devreye alma hizmeti;160;80;USD;;;;;;;
+ORN0101;TL-SG4110P JetStream 10-Port Gigabit Smart Switch with 8-Port PoE + 1500W;212;123,21;USD;TL-SG4110P JetStream 10-Port Gigabit Smart Switch with 8-Port PoE+ 150W;;;;;;
+ORN0102;Yangın İhbar Paneli (4 Bölge);156;74,56;USD;;;;;;;
+ORN0103;Yangın Alarm Paneli;162;74,56;USD;;;;;;;
+ORN0104;"DC232 Konvansiyonel Optik Duman ve Isı Dedektörü
+Foto-elektrik algılama hücresi, Mikro işlemci kontrollü hatasız algılama
+algoritması, 10 saniyede bir yeşil flaşlı çalışma göstergesi, Çift taraflı ışık
+yolu indikatör, Led indikatör çıkışı, EN54-7 sertifikasına sahip . Çap:
+10cm Yükseklik:4,4cm Ağırlık: 90 gr.";30;6,4;USD;;;;;;;
+ORN0105;"CK312 Resetlenebilir Yangın İhbar Butonu
+Mikroişlemci tabanlı tasarım, Led İndikatör, Anahtar ile Resetlenebilir,
+EN54-11 standardına uygun.
+Boyutlar: 8,5x8,5x5,5cm Ağırlık: 150 gr.";14;6,4;USD;;;;;;;
+ORN0106;"SR-408 Konvansiyonel Flaşörlü Yangın Sireni
+4 Led anime, 1 metre 95dBA Kırmızı Şeffaf Renk, Alarm akımı < 30mA,
+EN54-3 sertifikasına sahip, Boyutlar: Çap: 10cm Yükseklik:6,5cm Ağırlık:
+192 gr.";17;10,24;USD;;;;;;;
+ORN0107;12V 1,3A Akü;19;9,92;USD;;;;;;;
+ORN0108;4X1,5 Yangın Kablosu;0,98;0,35;USD;;;;;;;
+ORN0109;"DS-4RT5875SR-WRD 4 MP IP IR Turret Kamera (H.265+ , Dahili Mikrofon) 
+4.0 MP Çözünürlük, 1/2, 8"" CMOS sensör, 0.004 Lux renkli, 2.8mm / 4mm sabit lens, IR Turret kamera, H.265, H.265+ sıkıştırma, 30 mt IR aydınlatma, DWDR, ICR, 3D DNR, BLC, ROI, HLC Maskeleme, Hareket algılama, Hareket algılama, Video kurcalama alarmı, Yasadışı oturum açma, IP66, Dahili mikrofon, 12V DC veya PoE";89,6;44,8;USD;DS-2CD1343G2-LIUF 4MP 2.8mm Lens 30Mt. IR H.265+ Smart Hybrid Light Dome İP Kamera - Dahili Mikrofon;;;;;;
+ORN0110;"DS-2RT5687SR-WRD (4mm) 4MP IP IR Bullet Kamera ( H.265+)
+1/2.7"" PS CMOS, 0.028 Lux renkli, AGC, ICR, DWDR, 4mm sabit lens, 30mt IR aydınlatma mesafesi, ikili akış, hareket algılama, ROI, BLC, 3D DNR, Beyaz dengeleme, mikroSD desteği (~128GB), ANR, 1xRJ45, maskeleme, aynalama, IP67";89,6;44,8;USD;DS-2CD1043G2-LIUF 4MP 2.8mm Lens 30Mt. IR H.265+ Smart Hybrid Light Bullet İP Kamera - Dahili Mikrofon;;;;;;
+ORN0111;8 Port Gigabit 96W PoE Switch;62,7;31,35;USD;Wiking WK-PS310 PoE Switch 8 Port;;;;;;
+ORN0112;16 Port 1000Mbps PoE, Yönetilmez Switch;129;65;USD;Ttec 18300PG 16 Port 100Mbps PoE, 2 Port GB RJ45 Ports Yönetilmez PoE Switch;;;;;;
+ORN0113;Duvar Tipi Pano;21;14,4;USD;;;;;;;

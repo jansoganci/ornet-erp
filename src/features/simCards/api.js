@@ -30,6 +30,9 @@ export function resolveActivationMonthRangeBounds(afy, afm, aty, atm) {
   return { start, end };
 }
 
+/** List/export reads use sim_cards_list (search columns); mutations use sim_cards. */
+const SIM_CARDS_LIST = 'sim_cards_list';
+
 const SIM_CARD_SELECT = `
   *,
   customers:customer_id (company_name),
@@ -39,15 +42,17 @@ const SIM_CARD_SELECT = `
 
 export async function fetchSimCards(filters = {}) {
   let query = supabase
-    .from('sim_cards')
+    .from(SIM_CARDS_LIST)
     .select(SIM_CARD_SELECT)
     .is('deleted_at', null);
 
   if (filters.search) {
     const term = normalizeForSearch(filters.search);
-    query = query.or(
-      `phone_number.ilike.%${term}%`
-    );
+    if (term) {
+      query = query.or(
+        `phone_number.ilike.%${term}%,customer_company_name_search.ilike.%${term}%,customer_label_search.ilike.%${term}%`
+      );
+    }
   }
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);
@@ -92,13 +97,17 @@ export async function fetchSimCards(filters = {}) {
  */
 export async function fetchSimCardsPaginated(filters = {}, page = 0, pageSize = 100) {
   let query = supabase
-    .from('sim_cards')
+    .from(SIM_CARDS_LIST)
     .select(SIM_CARD_SELECT, { count: 'exact' })
     .is('deleted_at', null);
 
   if (filters.search) {
     const term = normalizeForSearch(filters.search);
-    query = query.ilike('phone_number', `%${term}%`);
+    if (term) {
+      query = query.or(
+        `phone_number.ilike.%${term}%,customer_company_name_search.ilike.%${term}%,customer_label_search.ilike.%${term}%`
+      );
+    }
   }
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status);

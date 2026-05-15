@@ -872,7 +872,7 @@ export const transactionPaymentKeys = {
 export async function fetchTransactionPayments(transactionId) {
   const { data, error } = await supabase
     .from('financial_transaction_payments')
-    .select('id, amount_try, payment_method, paid_at, notes, created_at')
+    .select('id, transaction_id, amount, amount_try, paid_date, paid_at, payment_method, notes, created_at, parasut_payment_id, parasut_synced_at')
     .eq('transaction_id', transactionId)
     .is('deleted_at', null)
     .order('paid_at', { ascending: false });
@@ -967,12 +967,30 @@ export async function fetchCollectionDocuments(filters = {}) {
 }
 
 export async function recordPayment({ transaction_id, amount, paid_date, payment_method, notes }) {
-  const { error } = await supabase.from('financial_transaction_payments').insert({
-    transaction_id,
-    amount,
-    paid_date,
-    payment_method: payment_method || 'bank_transfer',
-    notes: notes || null,
-  });
+  const { data, error } = await supabase
+    .from('financial_transaction_payments')
+    .insert({
+      transaction_id,
+      amount,
+      paid_date,
+      payment_method: payment_method || 'bank_transfer',
+      notes: notes || null,
+    })
+    .select('*, financial_transactions(parasut_invoice_id)')
+    .single();
+
   if (error) throw error;
+  if (
+    import.meta.env.VITE_PARASUT_ENABLED === 'true' &&
+    data?.financial_transactions?.parasut_invoice_id
+  ) {
+    const { error: syncError } = await supabase.functions.invoke('parasut-dispatch', {
+      body: {
+        action: 'sync-payment',
+        payload: { financial_transaction_payment_id: data.id },
+      },
+    });
+    if (syncError) throw syncError;
+  }
+  return data;
 }

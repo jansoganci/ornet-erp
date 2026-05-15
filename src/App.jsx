@@ -38,6 +38,7 @@ import {
   CustomerDetailPage,
   CustomerFormPage,
   CustomerImportPage,
+  ParasutMatchingPage,
 } from './features/customers';
 import {
   WorkOrdersListPage,
@@ -111,6 +112,7 @@ const router = createBrowserRouter(
         {/* Customer routes */}
         <Route path="customers" element={<CustomersListPage />} />
         <Route path="customers/import" element={<CustomerImportPage />} />
+        <Route path="customers/parasut-matching" element={<RoleRoute><ParasutMatchingPage /></RoleRoute>} />
         <Route path="customers/new" element={<CustomerFormPage />} />
         <Route path="customers/:id" element={<CustomerDetailPage />} />
         <Route path="customers/:id/edit" element={<CustomerFormPage />} />
