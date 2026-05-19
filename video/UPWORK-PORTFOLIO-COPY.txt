@@ -1,0 +1,14 @@
+TITLE (max 70 chars):
+Ornet ERP — Security ops, billing & finance (React + Supabase)
+
+ROLE (max 100 chars):
+Full-stack developer — React UI, Supabase backend, finance automation, Remotion showcase
+
+DESCRIPTION (max 600 chars):
+Situation: A Turkish security company needed one system for field work orders, office planning, subscriptions, SIM fleet costs, and a reliable finance ledger—not spreadsheets and disconnected tools.
+
+Action: I built Ornet ERP end-to-end with React 19, Vite, TanStack Query, and Supabase (200+ Postgres migrations). Key work: role-based modules, i18n, subscription-to-ledger automation, SIM invoice analysis, and operations scheduling.
+
+Result: Unified workflows from field updates to ledger-ready financial insight in a production-grade SaaS architecture.
+
+Skills: React, TypeScript, Supabase, PostgreSQL, SaaS, Remotion

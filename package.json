@@ -9,7 +9,11 @@
     "deploy": "vite build && wrangler pages deploy dist",
     "deploy:prod": "vite build && wrangler pages deploy dist --project-name=ornet-erp",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "video:dev": "npm --prefix video run dev",
+    "video:render": "npm --prefix video run render",
+    "video:still": "npm --prefix video run still",
+    "video:build": "npm --prefix video run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
