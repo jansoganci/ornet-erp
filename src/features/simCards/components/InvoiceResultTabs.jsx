@@ -5,6 +5,25 @@ import { formatCurrency } from '../../../lib/utils';
 
 const PAGE_SIZE = 50;
 
+function CostDiffTierBadge({ tier, t }) {
+  if (!tier || tier === 'none') return null;
+  const styles = {
+    high: 'bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400',
+    medium: 'bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400',
+    low: 'bg-info-100 dark:bg-info-900/30 text-info-700 dark:text-info-400',
+  };
+  const labels = {
+    high: t('table.tierHigh'),
+    medium: t('table.tierMedium'),
+    low: t('table.tierLow'),
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${styles[tier]}`}>
+      {labels[tier]}
+    </span>
+  );
+}
+
 function TabButton({ label, count, active, onClick }) {
   return (
     <button
@@ -84,7 +103,7 @@ function MatchedTable({ rows }) {
               <th className="px-4 py-3 text-right font-medium text-neutral-600 dark:text-neutral-400">{t('table.salePrice')}</th>
               <th className="px-4 py-3 text-right font-medium text-neutral-600 dark:text-neutral-400">{t('table.profitLoss')}</th>
               <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">{t('table.buyer')}</th>
-              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">{t('table.costIncrease')}</th>
+              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-400">{t('table.costDiffTier')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -106,11 +125,7 @@ function MatchedTable({ rows }) {
                 </td>
                 <td className="px-4 py-2 text-neutral-700 dark:text-neutral-300 max-w-[140px] truncate">{row.buyer || '—'}</td>
                 <td className="px-4 py-2 space-x-1">
-                  {row.isCostIncrease && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
-                      {t('table.costIncrease')}
-                    </span>
-                  )}
+                  <CostDiffTierBadge tier={row.costDiffTier} t={t} />
                   {row.hasUnknownCost && (
                     <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
                   )}
@@ -128,11 +143,7 @@ function MatchedTable({ rows }) {
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-xs font-semibold text-neutral-700 dark:text-neutral-300">{row.hatNo}</span>
               <span className="flex gap-1">
-                {row.isCostIncrease && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400">
-                    {t('table.costIncrease')}
-                  </span>
-                )}
+                <CostDiffTierBadge tier={row.costDiffTier} t={t} />
                 {row.hasUnknownCost && (
                   <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
                 )}

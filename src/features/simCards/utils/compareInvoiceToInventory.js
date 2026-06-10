@@ -3,8 +3,10 @@
  * Returns categorized results and a summary object.
  */
 
-/** TRY cost increase threshold: invoice exceeds stored cost_price by this amount or more. */
-export const COST_INCREASE_THRESHOLD = 1;
+import { getCostDiffTier, COST_DIFF_MIN } from './costDiffTiers';
+
+/** @deprecated Use costDiffTier tiers; kept for filter compatibility */
+export const COST_INCREASE_THRESHOLD = COST_DIFF_MIN;
 
 /**
  * Normalize a phone number to bare 10-digit format.
@@ -19,14 +21,8 @@ function normalizePhone(raw) {
   return null; // unrecognised format — do not guess
 }
 
-/**
- * Cost increase check: invoice amount >= stored cost_price + threshold (1 TL).
- * @param {number} invoiceAmount - from Turkcell PDF
- * @param {number} costPrice - stored in sim_cards table
- */
-function isCostIncrease(invoiceAmount, costPrice) {
-  if (!costPrice || costPrice <= 0) return false;
-  return invoiceAmount >= costPrice + COST_INCREASE_THRESHOLD;
+function isCostIncrease(costDiffTier) {
+  return costDiffTier !== 'none';
 }
 
 /**
@@ -78,9 +74,10 @@ export function compareInvoiceToInventory(invoiceLines, simCards) {
       const costPrice = hasUnknownCost ? null : (simCard.cost_price || 0);
       const salePrice = simCard.sale_price || 0;
       const priceDiff = hasUnknownCost ? null : line.invoiceAmount - costPrice;
+      const costDiffTier = hasUnknownCost ? 'none' : getCostDiffTier(priceDiff);
       const profit = salePrice - line.invoiceAmount;
       const isLoss = profit < 0;
-      const hasCostIncrease = hasUnknownCost ? false : isCostIncrease(line.invoiceAmount, costPrice);
+      const hasCostIncrease = isCostIncrease(costDiffTier);
 
       matched.push({
         ...line,
@@ -88,11 +85,12 @@ export function compareInvoiceToInventory(invoiceLines, simCards) {
         costPrice,
         salePrice,
         priceDiff,
+        costDiffTier,
         profit,
         isLoss,
         isCostIncrease: hasCostIncrease,
         hasUnknownCost,
-        buyer: simCard.buyer?.company_name || null,
+        buyer: simCard.buyer?.company_name || simCard.customers?.company_name || null,
       });
     } else {
       invoiceOnly.push(line);
@@ -110,7 +108,10 @@ export function compareInvoiceToInventory(invoiceLines, simCards) {
   const totalInvoiceAmount = invoiceLines.reduce((s, l) => s + l.invoiceAmount, 0);
   const matchedInvoiceTotal = matched.reduce((s, m) => s + m.invoiceAmount, 0);
   const totalProfit = matched.reduce((s, m) => s + m.profit, 0);
-  const costIncreaseCount = matched.filter((m) => m.isCostIncrease).length;
+  const costDiffHighCount = matched.filter((m) => m.costDiffTier === 'high').length;
+  const costDiffMediumCount = matched.filter((m) => m.costDiffTier === 'medium').length;
+  const costDiffLowCount = matched.filter((m) => m.costDiffTier === 'low').length;
+  const costIncreaseCount = costDiffHighCount + costDiffMediumCount + costDiffLowCount;
   const lossCount = matched.filter((m) => m.isLoss).length;
   const unknownCostCount = matched.filter((m) => m.hasUnknownCost).length;
   const invoiceOnlyTotal = invoiceOnly.reduce((s, l) => s + l.invoiceAmount, 0);
@@ -125,9 +126,27 @@ export function compareInvoiceToInventory(invoiceLines, simCards) {
     invoiceOnlyTotal,
     totalProfit,
     costIncreaseCount,
+    costDiffHighCount,
+    costDiffMediumCount,
+    costDiffLowCount,
     lossCount,
     unknownCostCount,
   };
 
-  return { matched, invoiceOnly, inventoryOnly, summary, duplicateHatNos, unresolvableCards };
+  const byDiffDesc = (a, b) => (b.priceDiff ?? 0) - (a.priceDiff ?? 0);
+  const costDiffHigh = matched.filter((m) => m.costDiffTier === 'high').sort(byDiffDesc);
+  const costDiffMedium = matched.filter((m) => m.costDiffTier === 'medium').sort(byDiffDesc);
+  const costDiffLow = matched.filter((m) => m.costDiffTier === 'low').sort(byDiffDesc);
+
+  return {
+    matched,
+    invoiceOnly,
+    inventoryOnly,
+    costDiffHigh,
+    costDiffMedium,
+    costDiffLow,
+    summary,
+    duplicateHatNos,
+    unresolvableCards,
+  };
 }

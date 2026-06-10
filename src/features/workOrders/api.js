@@ -362,24 +362,12 @@ export async function updateWorkOrder({ id, items, materials_discount_percent, .
     updatePayload.materials_discount_percent = materials_discount_percent;
   }
 
-  // DEBUG: Log payload to verify vat_rate and has_tevkifat are included
-  console.log('🔍 updateWorkOrder payload:', {
-    id,
-    vat_rate: updatePayload.vat_rate,
-    has_tevkifat: updatePayload.has_tevkifat,
-    scheduled_date: updatePayload.scheduled_date,
-    scheduled_time: updatePayload.scheduled_time,
-    fullPayload: updatePayload,
-  });
-
   const { data: updated, error } = await supabase
     .from('work_orders')
     .update(updatePayload)
     .eq('id', id)
     .select()
     .single();
-
-  console.log('✅ updateWorkOrder result:', { updated, error });
 
   if (error) throw error;
 

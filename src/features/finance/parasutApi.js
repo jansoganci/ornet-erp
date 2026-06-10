@@ -32,6 +32,7 @@ export async function fetchSubscriptionParasutTransactions(subscriptionId) {
       )
     `)
     .eq('direction', 'income')
+    .is('deleted_at', null)
     .eq('subscription_payments.subscription_id', subscriptionId)
     .order('transaction_date', { ascending: false });
 
@@ -46,6 +47,7 @@ export async function fetchProposalParasutTransactions(proposalId) {
     .from('financial_transactions')
     .select('*, customers(id, company_name, tax_number, identity_type, parasut_contact_id)')
     .eq('direction', 'income')
+    .is('deleted_at', null)
     .eq('proposal_id', proposalId)
     .order('transaction_date', { ascending: false });
 
@@ -60,6 +62,7 @@ export async function fetchWorkOrderParasutTransactions(workOrderId) {
     .from('financial_transactions')
     .select('*, customers(id, company_name, tax_number, identity_type, parasut_contact_id)')
     .eq('direction', 'income')
+    .is('deleted_at', null)
     .eq('work_order_id', workOrderId)
     .order('transaction_date', { ascending: false });
 

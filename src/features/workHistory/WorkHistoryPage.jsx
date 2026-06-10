@@ -64,13 +64,29 @@ export function WorkHistoryPage() {
     }
   }, [searchParams]);
 
-  const { data: results = [], isLoading, error, refetch } = useSearchWorkHistory({
-    ...filters,
-    search: debouncedSearch,
-    ...(filters.datePreset && filters.datePreset !== 'all' && filters.datePreset !== 'custom'
+  const resolvedDateRange =
+    filters.datePreset && filters.datePreset !== 'all' && filters.datePreset !== 'custom'
       ? getDateRangeFromPreset(filters.datePreset)
-      : { dateFrom: filters.dateFrom, dateTo: filters.dateTo }),
-  });
+      : { dateFrom: filters.dateFrom, dateTo: filters.dateTo };
+
+  const shouldRunSearch =
+    (debouncedSearch || '').trim().length >= 2 ||
+    Boolean(filters.siteId) ||
+    Boolean(resolvedDateRange.dateFrom) ||
+    Boolean(resolvedDateRange.dateTo) ||
+    (filters.workType && filters.workType !== 'all') ||
+    (filters.workerId && filters.workerId !== 'all');
+
+  const { data: results = [], isLoading, error, refetch } = useSearchWorkHistory(
+    {
+      ...filters,
+      search: debouncedSearch,
+      ...resolvedDateRange,
+      limit: 200,
+      offset: 0,
+    },
+    shouldRunSearch
+  );
   const { data: profiles = [] } = useProfiles();
 
   const handleFilterChange = (key, value) => {

@@ -903,40 +903,83 @@ export async function createTransactionPayment({ transactionId, amountTry, payme
 
 // === Tahsilat (Collection) ===
 export const collectionKeys = {
-  all: ['collection'],
+  all: ['tahsilatCollection'],
   summaries: (filters) => [...collectionKeys.all, 'summaries', filters],
   documents: (filters) => [...collectionKeys.all, 'documents', filters],
 };
 
+const COLLECTION_SUMMARY_SELECT = `
+  customer_id,
+  customer_name,
+  document_count,
+  total_billed,
+  total_vat,
+  total_cost,
+  total_collected,
+  outstanding,
+  unpaid_count,
+  partial_count,
+  paid_count,
+  total_profit
+`;
+
+const COLLECTION_DOCUMENT_SELECT = `
+  transaction_id,
+  customer_id,
+  customer_name,
+  service_category,
+  income_type,
+  transaction_date,
+  description,
+  sale_price_net,
+  vat_amount,
+  total_with_vat,
+  cost,
+  profit,
+  original_currency,
+  amount_original,
+  payment_status,
+  total_collected,
+  remaining,
+  work_order_id,
+  proposal_id,
+  subscription_payment_id,
+  created_at
+`;
+
 export async function fetchCollectionSummaries(filters = {}) {
-  let query = supabase.from('v_collection_customer_summary').select('*');
+  const limit = Math.min(Math.max(Number(filters.limit) || 50, 1), 200);
+  const offset = Math.max(Number(filters.offset) || 0, 0);
+
+  let query = supabase
+    .from('v_collection_customer_summary')
+    .select(COLLECTION_SUMMARY_SELECT)
+    .range(offset, offset + limit - 1);
 
   if (filters.search) {
     query = query.ilike('customer_name', `%${filters.search}%`);
   }
-  if (filters.payment_status) {
-    // Filter customers that have at least one document with this status
-    // We'll do client-side filtering for simplicity
+  if (filters.payment_status === 'unpaid') {
+    query = query.gt('unpaid_count', 0);
+  } else if (filters.payment_status === 'partial') {
+    query = query.gt('partial_count', 0);
+  } else if (filters.payment_status === 'paid') {
+    query = query.gt('paid_count', 0);
   }
 
   const { data, error } = await query;
   if (error) throw error;
-
-  // Client-side payment_status filtering
-  if (filters.payment_status) {
-    return (data || []).filter((row) => {
-      if (filters.payment_status === 'unpaid') return row.unpaid_count > 0;
-      if (filters.payment_status === 'partial') return row.partial_count > 0;
-      if (filters.payment_status === 'paid') return row.paid_count > 0;
-      return true;
-    });
-  }
-
   return data || [];
 }
 
 export async function fetchCollectionDocuments(filters = {}) {
-  let query = supabase.from('v_collection_documents').select('*');
+  const limit = Math.min(Math.max(Number(filters.limit) || 200, 1), 500);
+  const offset = Math.max(Number(filters.offset) || 0, 0);
+
+  let query = supabase
+    .from('v_collection_documents')
+    .select(COLLECTION_DOCUMENT_SELECT)
+    .range(offset, offset + limit - 1);
 
   if (filters.customer_id) {
     query = query.eq('customer_id', filters.customer_id);
@@ -959,7 +1002,7 @@ export async function fetchCollectionDocuments(filters = {}) {
     query = query.lte('transaction_date', filters.date_to);
   }
 
-  query = query.order('transaction_date', { ascending: false }).limit(500);
+  query = query.order('transaction_date', { ascending: false });
 
   const { data, error } = await query;
   if (error) throw error;

@@ -31,16 +31,18 @@ export function usePendingTasks() {
   });
 }
 
-export function useMonthlyRevenue(monthsBack = 7) {
+export function useMonthlyRevenue(monthsBack = 7, { enabled = true } = {}) {
   return useQuery({
     queryKey: dashboardKeys.revenue(monthsBack),
     queryFn: () => api.fetchMonthlyRevenue(monthsBack),
+    enabled,
   });
 }
 
-export function useOverduePayments() {
+export function useOverduePayments({ enabled = true } = {}) {
   return useQuery({
     queryKey: dashboardKeys.overduePayments(),
     queryFn: api.fetchOverduePayments,
+    enabled,
   });
 }

@@ -5,6 +5,7 @@ import { tr } from 'date-fns/locale';
 import { AlertCircle, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { Skeleton } from '../../../components/ui/Skeleton';
+import { useRole } from '../../../lib/roles';
 import { useOverduePayments } from '../hooks';
 
 // ── Skeleton ────────────────────────────────────────────────────────────────
@@ -58,7 +59,8 @@ function MonthsBadge({ count }) {
 export function OverduePaymentsList() {
   const { t } = useTranslation('dashboard');
   const { t: tCommon } = useTranslation('common');
-  const { data: payments, isLoading } = useOverduePayments();
+  const { canWrite } = useRole();
+  const { data: payments, isLoading } = useOverduePayments({ enabled: canWrite });
 
   const allItems = Array.isArray(payments) ? payments : [];
   const list = allItems.slice(0, 5);

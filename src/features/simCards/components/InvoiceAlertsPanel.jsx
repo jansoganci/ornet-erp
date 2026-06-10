@@ -81,8 +81,41 @@ function AlertTable({ rows, columns }) {
   );
 }
 
-export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, inventoryOnly }) {
+const costDiffColumnsFactory = (t) => [
+  { key: 'hatNo', label: t('table.hatNo') },
+  { key: 'tariff', label: t('table.tariff') },
+  {
+    key: 'invoiceAmount',
+    label: t('table.invoiceAmount'),
+    render: (row) => formatCurrency(row.invoiceAmount),
+  },
+  {
+    key: 'costPrice',
+    label: t('table.costPrice'),
+    render: (row) => formatCurrency(row.costPrice),
+  },
+  {
+    key: 'priceDiff',
+    label: t('table.diff'),
+    render: (row) => (
+      <span className="text-warning-600 dark:text-warning-400 font-medium">
+        +{formatCurrency(row.priceDiff)}
+      </span>
+    ),
+  },
+  { key: 'buyer', label: t('table.buyer'), render: (row) => row.buyer || '—' },
+];
+
+export function InvoiceAlertsPanel({
+  invoiceOnly,
+  costDiffHigh = [],
+  costDiffMedium = [],
+  costDiffLow = [],
+  lossLines,
+  inventoryOnly,
+}) {
   const { t } = useTranslation('invoiceAnalysis');
+  const costDiffColumns = costDiffColumnsFactory(t);
 
   const invoiceOnlyColumns = [
     { key: 'hatNo', label: t('table.hatNo') },
@@ -92,37 +125,6 @@ export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, 
       label: t('table.invoiceAmount'),
       render: (row) => formatCurrency(row.invoiceAmount),
     },
-  ];
-
-  const costIncreaseColumns = [
-    { key: 'hatNo', label: t('table.hatNo') },
-    { key: 'tariff', label: t('table.tariff') },
-    {
-      key: 'invoiceAmount',
-      label: t('table.invoiceAmount'),
-      render: (row) => formatCurrency(row.invoiceAmount),
-    },
-    {
-      key: 'costPrice',
-      label: t('table.costPrice'),
-      render: (row) => row.hasUnknownCost ? (
-        <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
-      ) : (
-        formatCurrency(row.costPrice)
-      ),
-    },
-    {
-      key: 'priceDiff',
-      label: t('table.diff'),
-      render: (row) => row.hasUnknownCost ? (
-        <span className="text-neutral-400 dark:text-neutral-500">—</span>
-      ) : (
-        <span className="text-warning-600 dark:text-warning-400 font-medium">
-          +{formatCurrency(row.priceDiff)}
-        </span>
-      ),
-    },
-    { key: 'buyer', label: t('table.buyer'), render: (row) => row.buyer || '—' },
   ];
 
   const lossColumns = [
@@ -190,13 +192,33 @@ export function InvoiceAlertsPanel({ invoiceOnly, costIncreaseLines, lossLines, 
       </AlertSection>
 
       <AlertSection
-        severity="warning"
-        title={t('alerts.costIncrease.title')}
-        description={t('alerts.costIncrease.description')}
-        count={costIncreaseLines.length}
+        severity="error"
+        title={t('alerts.costDiffHigh.title')}
+        description={t('alerts.costDiffHigh.description')}
+        count={costDiffHigh.length}
         defaultOpen={true}
       >
-        <AlertTable rows={costIncreaseLines} columns={costIncreaseColumns} />
+        <AlertTable rows={costDiffHigh} columns={costDiffColumns} />
+      </AlertSection>
+
+      <AlertSection
+        severity="warning"
+        title={t('alerts.costDiffMedium.title')}
+        description={t('alerts.costDiffMedium.description')}
+        count={costDiffMedium.length}
+        defaultOpen={true}
+      >
+        <AlertTable rows={costDiffMedium} columns={costDiffColumns} />
+      </AlertSection>
+
+      <AlertSection
+        severity="info"
+        title={t('alerts.costDiffLow.title')}
+        description={t('alerts.costDiffLow.description')}
+        count={costDiffLow.length}
+        defaultOpen={false}
+      >
+        <AlertTable rows={costDiffLow} columns={costDiffColumns} />
       </AlertSection>
 
       <AlertSection

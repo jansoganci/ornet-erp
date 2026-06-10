@@ -388,7 +388,7 @@ export function WorkOrderDetailPage() {
           </div>
         )}
 
-        {isStandalone && workOrder.status === 'completed' && (
+        {canWrite && isStandalone && workOrder.status === 'completed' && (
           <ParasutInvoicePanel workOrderId={id} />
         )}
 

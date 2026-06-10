@@ -157,6 +157,15 @@ export function ProposalDetailPage() {
   });
 
   const handleStatusChange = (newStatus) => {
+    if (newStatus === 'completed' && currency !== 'USD') {
+      // A9: TRY proposals should also complete via RPC path.
+      completeWithRateMutation.mutate(
+        { id, exchangeRate: 1, rateSuggested: null },
+        { onSuccess: () => setConfirmAction(null) }
+      );
+      return;
+    }
+
     statusMutation.mutate(
       { id, status: newStatus },
       { onSuccess: () => setConfirmAction(null) }

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FileSearch, UploadCloud, RefreshCw, AlertTriangle, AlertCircle, TrendingUp, TrendingDown, Smartphone, Receipt, CheckCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Card, Spinner, ErrorState, KpiCard } from '../../components/ui';
-import { parseTurkcellPdf } from './utils/parseTurkcellPdf';
+import { parseTurkcellInvoice } from './utils/parseTurkcellInvoice';
 import { compareInvoiceToInventory } from './utils/compareInvoiceToInventory';
 import { fetchAllTurkcellSimCards } from './api';
 import { formatCurrency } from '../../lib/utils';
@@ -29,6 +29,7 @@ export function InvoiceAnalysisPage() {
   const [invoiceFileName, setInvoiceFileName] = useState('');
   const [parseResult, setParseResult] = useState(null);
   const [comparison, setComparison] = useState(null);
+  const [sourceFormat, setSourceFormat] = useState(null);
 
   const handleReset = () => {
     setState(STATES.IDLE);
@@ -36,6 +37,7 @@ export function InvoiceAnalysisPage() {
     setInvoiceFileName('');
     setParseResult(null);
     setComparison(null);
+    setSourceFormat(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -44,11 +46,11 @@ export function InvoiceAnalysisPage() {
     if (!file) return;
 
     setInvoiceFileName(file.name);
+    setSourceFormat(file.name.toLowerCase().endsWith('.csv') ? 'csv' : 'pdf');
     setState(STATES.PARSING);
 
     try {
-      // Phase 1: Parse PDF
-      const parsed = await parseTurkcellPdf(file);
+      const parsed = await parseTurkcellInvoice(file);
 
       if (parsed.lines.length === 0) {
         setErrorMessage(t('errors.noLinesFound'));
@@ -57,6 +59,7 @@ export function InvoiceAnalysisPage() {
       }
 
       setParseResult(parsed);
+      setSourceFormat(parsed.sourceFormat);
       setState(STATES.LOADING_INVENTORY);
 
       // Phase 2: Fetch Turkcell inventory
@@ -73,8 +76,8 @@ export function InvoiceAnalysisPage() {
       const result = compareInvoiceToInventory(parsed.lines, simCards || []);
       setComparison({ ...result, tariffBreakdown: parsed.tariffBreakdown });
       setState(STATES.READY);
-    } catch {
-      setErrorMessage(t('errors.parseFailed'));
+    } catch (err) {
+      setErrorMessage(err?.message === 'unsupported_format' ? t('errors.unsupportedFormat') : t('errors.parseFailed'));
       setState(STATES.ERROR);
     }
   };
@@ -90,7 +93,9 @@ export function InvoiceAnalysisPage() {
           <div className="text-center">
             <Spinner size="lg" className="mb-4 mx-auto" />
             <p className="font-medium text-neutral-700 dark:text-neutral-300">
-              {state === STATES.PARSING ? t('upload.parsing') : t('loading.inventory')}
+              {state === STATES.PARSING
+                ? (sourceFormat === 'csv' ? t('upload.parsingCsv') : sourceFormat === 'pdf' ? t('upload.parsingPdf') : t('upload.parsing'))
+                : t('loading.inventory')}
             </p>
           </div>
         </div>
@@ -119,7 +124,7 @@ export function InvoiceAnalysisPage() {
               </p>
               <input
                 type="file"
-                accept=".pdf"
+                accept=".pdf,.csv"
                 className="hidden"
                 ref={fileInputRef}
                 onChange={handleFileChange}
@@ -177,8 +182,14 @@ export function InvoiceAnalysisPage() {
 
           <div className="mt-6">
             {/* Invoice header metadata */}
-            {(parseResult.invoiceNo || parseResult.invoiceDate || parseResult.paymentDate) && (
+            {(parseResult.invoiceNo || parseResult.invoiceDate || parseResult.paymentDate || sourceFormat) && (
               <div className="mb-4 flex flex-wrap gap-x-6 gap-y-1 px-4 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700 text-sm text-neutral-600 dark:text-neutral-400">
+                {sourceFormat && (
+                  <span>
+                    <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('upload.accept')}: </span>
+                    {sourceFormat === 'csv' ? t('invoice.sourceCsv') : t('invoice.sourcePdf')}
+                  </span>
+                )}
                 {parseResult.invoiceNo && (
                   <span>
                     <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('invoice.no')}: </span>
@@ -275,7 +286,7 @@ export function InvoiceAnalysisPage() {
             {(() => {
               const totalProfit = comparison.summary?.totalProfit ?? 0;
               return (
-                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-6">
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 mb-6">
                   <KpiCard
                     title={t('summary.totalLines')}
                     value={(comparison.summary?.totalLines ?? 0).toLocaleString('tr-TR')}
@@ -301,8 +312,20 @@ export function InvoiceAnalysisPage() {
                     variant="default"
                   />
                   <KpiCard
-                    title={t('summary.costIncreaseCount')}
-                    value={(comparison.summary?.costIncreaseCount ?? 0).toLocaleString('tr-TR')}
+                    title={t('summary.costDiffHigh')}
+                    value={(comparison.summary?.costDiffHighCount ?? 0).toLocaleString('tr-TR')}
+                    icon={TrendingUp}
+                    variant="default"
+                  />
+                  <KpiCard
+                    title={t('summary.costDiffMedium')}
+                    value={(comparison.summary?.costDiffMediumCount ?? 0).toLocaleString('tr-TR')}
+                    icon={TrendingUp}
+                    variant="default"
+                  />
+                  <KpiCard
+                    title={t('summary.costDiffLow')}
+                    value={(comparison.summary?.costDiffLowCount ?? 0).toLocaleString('tr-TR')}
                     icon={TrendingUp}
                     variant="default"
                   />
@@ -322,12 +345,16 @@ export function InvoiceAnalysisPage() {
 
             <InvoiceAlertsPanel
               invoiceOnly={comparison.invoiceOnly}
-              costIncreaseLines={comparison.matched.filter((m) => m.isCostIncrease)}
+              costDiffHigh={comparison.costDiffHigh}
+              costDiffMedium={comparison.costDiffMedium}
+              costDiffLow={comparison.costDiffLow}
               lossLines={comparison.matched.filter((m) => m.isLoss)}
               inventoryOnly={comparison.inventoryOnly}
             />
 
-            <InvoiceTariffChart tariffBreakdown={comparison.tariffBreakdown} />
+            {sourceFormat !== 'csv' && (
+              <InvoiceTariffChart tariffBreakdown={comparison.tariffBreakdown} />
+            )}
 
             <InvoiceResultTabs
               matched={comparison.matched}

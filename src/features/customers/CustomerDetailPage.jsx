@@ -166,8 +166,8 @@ export function CustomerDetailPage() {
   const { data: customer, isLoading, error, refetch } = useCustomer(id);
   const { data: sites = [], isLoading: sitesLoading } = useSitesByCustomer(id);
   const { data: workOrders = [], isLoading: workOrdersLoading } = useWorkOrdersByCustomer(id);
-  const { data: simCards = [], isLoading: simCardsLoading } = useSimCardsByCustomer(id);
-  const { data: customerSubscriptions = [] } = useCustomerSubscriptions(id);
+  const { data: simCards = [], isLoading: simCardsLoading } = useSimCardsByCustomer(canWrite ? id : null);
+  const { data: customerSubscriptions = [] } = useCustomerSubscriptions(canWrite ? id : null);
   const { data: assets = [] } = useAssetsByCustomer(id);
   const { data: paymentMethods = [] } = usePaymentMethods(canWrite ? id : null);
 

@@ -3,7 +3,7 @@ import { endOfMonth, format } from 'date-fns';
 
 // Query keys
 export const collectionKeys = {
-  all: ['collection'],
+  all: ['subscriptionCollectionDesk'],
   lists: () => [...collectionKeys.all, 'list'],
   list: (filters) => [...collectionKeys.lists(), filters],
   stats: () => [...collectionKeys.all, 'stats'],

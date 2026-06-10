@@ -172,12 +172,14 @@ function CustomerDocumentsPanel({ customerId, filters, onAddPayment }) {
 
 export function TahsilatPage() {
   const { t } = useTranslation('finance');
+  const PAGE_SIZE = 50;
 
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [serviceCategory, setServiceCategory] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
+  const [page, setPage] = useState(0);
   const [expandedCustomerId, setExpandedCustomerId] = useState(null);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
@@ -185,8 +187,10 @@ export function TahsilatPage() {
     () => ({
       search: search || undefined,
       payment_status: paymentStatus || undefined,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
     }),
-    [search, paymentStatus]
+    [search, paymentStatus, page]
   );
 
   const { data: summaries = [], isLoading } = useCollectionSummaries(summaryFilters);
@@ -259,7 +263,10 @@ export function TahsilatPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
           <SearchInput
             value={search}
-            onChange={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setPage(0);
+            }}
             placeholder={t('tahsilat.filters.search')}
             minimal
           />
@@ -289,7 +296,10 @@ export function TahsilatPage() {
           </select>
           <select
             value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value)}
+            onChange={(e) => {
+              setPaymentStatus(e.target.value);
+              setPage(0);
+            }}
             className="h-9 rounded-lg border border-neutral-300 dark:border-[#262626] bg-white dark:bg-[#171717] text-sm px-3"
           >
             <option value="">{t('tahsilat.filters.allStatuses')}</option>
@@ -417,6 +427,29 @@ export function TahsilatPage() {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-neutral-200 dark:border-neutral-800">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              {t('common:pagination.previous')}
+            </Button>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+              {t('common:pagination.page')} {page + 1}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={summaries.length < PAGE_SIZE}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              {t('common:pagination.next')}
+            </Button>
           </div>
         </Card>
       )}

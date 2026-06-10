@@ -326,10 +326,11 @@ export function useOverdueInvoices() {
   });
 }
 
-export function useSubscriptionStats() {
+export function useSubscriptionStats({ enabled = true } = {}) {
   return useQuery({
     queryKey: subscriptionKeys.stats(),
     queryFn: fetchSubscriptionStats,
+    enabled,
   });
 }
 

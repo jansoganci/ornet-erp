@@ -12,6 +12,7 @@ import {
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { ChartTooltip } from '../../../components/ui/ChartTooltip';
 import { CHART_COLORS, formatTL } from '../../../lib/chartTheme';
+import { useRole } from '../../../lib/roles';
 import { useMonthlyRevenue } from '../hooks';
 
 // ── Month label helpers ─────────────────────────────────────────────────────
@@ -48,7 +49,8 @@ function ChartSkeleton() {
  */
 export function RevenueExpenseLineChart() {
   const { t } = useTranslation('dashboard');
-  const { data: raw, isLoading } = useMonthlyRevenue(7);
+  const { canWrite } = useRole();
+  const { data: raw, isLoading } = useMonthlyRevenue(7, { enabled: canWrite });
 
   const chartData = Array.isArray(raw)
     ? raw.map((row) => ({

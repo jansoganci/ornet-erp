@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLatestRate, useFetchTcmbRates } from '../../finance/hooks';
 import { Skeleton } from '../../../components/ui';
 import { cn } from '../../../lib/utils';
+import { useRole } from '../../../lib/roles';
 
 /**
  * CurrencyWidget — Compact inline USD/TRY rate chip.
@@ -11,6 +12,7 @@ import { cn } from '../../../lib/utils';
  */
 export function CurrencyWidget() {
   const { t } = useTranslation('finance');
+  const { canWrite } = useRole();
   const { data: usdRate, isLoading } = useLatestRate('USD');
   const fetchTcmbRatesMutation = useFetchTcmbRates();
 
@@ -58,18 +60,22 @@ export function CurrencyWidget() {
         </p>
       </div>
 
-      <span className="w-px h-4 bg-gray-200 dark:bg-white/10 flex-shrink-0" />
+      {canWrite ? (
+        <>
+          <span className="w-px h-4 bg-gray-200 dark:bg-white/10 flex-shrink-0" />
 
-      {/* Refresh */}
-      <button
-        type="button"
-        onClick={() => fetchTcmbRatesMutation.mutate()}
-        disabled={fetchTcmbRatesMutation.isPending}
-        title={t('exchangeRates.fetchTcmb')}
-        className="flex items-center justify-center w-6 h-6 rounded-md text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors disabled:opacity-40"
-      >
-        <RefreshCw className={cn('w-3 h-3', fetchTcmbRatesMutation.isPending && 'animate-spin')} />
-      </button>
+          {/* Refresh — admin/accountant only (A8) */}
+          <button
+            type="button"
+            onClick={() => fetchTcmbRatesMutation.mutate()}
+            disabled={fetchTcmbRatesMutation.isPending}
+            title={t('exchangeRates.fetchTcmb')}
+            className="flex items-center justify-center w-6 h-6 rounded-md text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw className={cn('w-3 h-3', fetchTcmbRatesMutation.isPending && 'animate-spin')} />
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }

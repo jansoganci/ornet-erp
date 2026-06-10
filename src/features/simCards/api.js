@@ -262,8 +262,8 @@ export async function fetchSimCardsBySite(siteId) {
  * Fetch SIMs for subscription with search (phone_number, buyer name, customer name)
  */
 export async function fetchSimCardsForSubscription(siteId, search = '') {
-  const { data, error } = await supabase
-    .from('sim_cards')
+  let query = supabase
+    .from(SIM_CARDS_LIST)
     .select(`
       *,
       buyer:buyer_id (company_name),
@@ -273,16 +273,18 @@ export async function fetchSimCardsForSubscription(siteId, search = '') {
     .or(`site_id.eq.${siteId},status.eq.available`)
     .order('phone_number', { ascending: true });
 
+  if (search.trim()) {
+    const term = normalizeForSearch(search.trim());
+    if (term) {
+      query = query.or(
+        `phone_search.ilike.%${term}%,buyer_company_name_search.ilike.%${term}%`
+      );
+    }
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
-
-  if (!search.trim()) return data;
-
-  const normalizedTerm = normalizeForSearch(search.trim());
-  return (data || []).filter(
-    (s) =>
-      normalizeForSearch(s.phone_number).includes(normalizedTerm) ||
-      normalizeForSearch(s.buyer?.company_name).includes(normalizedTerm)
-  );
+  return data ?? [];
 }
 
 /**

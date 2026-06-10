@@ -12,6 +12,7 @@ import { Skeleton, CardSkeleton } from '../components/ui';
 import { cn } from '../lib/utils';
 import { fetchFinanceDashboardKpis, financeDashboardKeys } from '../features/finance/api';
 import { useSubscriptionStats, useCurrentProfile } from '../features/subscriptions/hooks';
+import { useRole } from '../lib/roles';
 import { useAuth } from '../hooks/useAuth';
 import { KpiCard } from '../components/ui';
 import { QuickActionsBar } from '../features/dashboard/components/QuickActionsBar';
@@ -37,16 +38,18 @@ export function DashboardPage() {
   const { t: tCommon } = useTranslation('common');
   const { user } = useAuth();
 
-  const { data: subStats, isLoading: isSubStatsLoading } = useSubscriptionStats();
+  const { canWrite } = useRole();
+  const { data: subStats, isLoading: isSubStatsLoading } = useSubscriptionStats({ enabled: canWrite });
   const currentMonth = format(new Date(), 'yyyy-MM');
   const { data: financeKpis, isLoading: isFinanceKpisLoading } = useQuery({
     queryKey: financeDashboardKeys.kpis(currentMonth, 'total'),
     queryFn: () => fetchFinanceDashboardKpis({ period: currentMonth, viewMode: 'total' }),
+    enabled: canWrite,
   });
   const { data: currentProfile } = useCurrentProfile();
   const isAdmin = currentProfile?.role === 'admin';
 
-  const isInitialLoading = isSubStatsLoading || isFinanceKpisLoading;
+  const isInitialLoading = canWrite && (isSubStatsLoading || isFinanceKpisLoading);
 
   const unpaidTotal = subStats?.unpaid_total_amount ?? 0;
   const currencyFmt = new Intl.NumberFormat('tr-TR', {
@@ -130,63 +133,71 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 1 — four KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-stretch">
-        <KpiCard
-          className="h-full"
-          title={t('kpi.activeSubscriptions')}
-          value={subStats?.active_count ?? 0}
-          icon={CreditCard}
-          trendType="neutral"
-          href="/subscriptions"
-          loading={isSubStatsLoading}
-        />
-        <KpiCard
-          className="h-full"
-          title={t('kpi.subscriptionRevenue')}
-          value={currencyFmt.format(subStats?.mrr ?? 0)}
-          icon={TrendingUp}
-          trend={
-            mrrMom ? `${mrrMom.isPositive ? '+' : '-'}${mrrMom.value}%` : undefined
-          }
-          trendType={
-            mrrMom?.isPositive ? 'up' : mrrMom ? 'down' : 'neutral'
-          }
-          href="/subscriptions"
-          loading={isSubStatsLoading}
-        />
-        <KpiCard
-          className={cn(
-            'h-full',
-            unpaidTotal > 0 && 'border-l-4 border-l-red-500 dark:border-l-red-500',
-          )}
-          title={t('kpi.uncollectedPayments')}
-          value={currencyFmt.format(unpaidTotal)}
-          icon={AlertCircle}
-          trendType="down"
-          variant="default"
-          href="/subscriptions"
-          loading={isSubStatsLoading}
-        />
-        <KpiCard
-          className="h-full"
-          title={t('kpi.netProfit')}
-          value={currencyFmt.format(financeKpis?.netProfit ?? 0)}
-          icon={DollarSign}
-          trendType="neutral"
-          href="/finance"
-          loading={isFinanceKpisLoading}
-        />
-      </div>
-
-      {/* Row 2 — revenue/expense chart + donut + today tasks */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:auto-rows-fr">
-        <div className="lg:col-span-8 flex min-h-0">
-          <div className="flex-1 min-h-0 w-full">
-            <RevenueExpenseLineChart />
-          </div>
+      {canWrite && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-stretch">
+          <KpiCard
+            className="h-full"
+            title={t('kpi.activeSubscriptions')}
+            value={subStats?.active_count ?? 0}
+            icon={CreditCard}
+            trendType="neutral"
+            href="/subscriptions"
+            loading={isSubStatsLoading}
+          />
+          <KpiCard
+            className="h-full"
+            title={t('kpi.subscriptionRevenue')}
+            value={currencyFmt.format(subStats?.mrr ?? 0)}
+            icon={TrendingUp}
+            trend={
+              mrrMom ? `${mrrMom.isPositive ? '+' : '-'}${mrrMom.value}%` : undefined
+            }
+            trendType={
+              mrrMom?.isPositive ? 'up' : mrrMom ? 'down' : 'neutral'
+            }
+            href="/subscriptions"
+            loading={isSubStatsLoading}
+          />
+          <KpiCard
+            className={cn(
+              'h-full',
+              unpaidTotal > 0 && 'border-l-4 border-l-red-500 dark:border-l-red-500',
+            )}
+            title={t('kpi.uncollectedPayments')}
+            value={currencyFmt.format(unpaidTotal)}
+            icon={AlertCircle}
+            trendType="down"
+            variant="default"
+            href="/subscriptions"
+            loading={isSubStatsLoading}
+          />
+          <KpiCard
+            className="h-full"
+            title={t('kpi.netProfit')}
+            value={currencyFmt.format(financeKpis?.netProfit ?? 0)}
+            icon={DollarSign}
+            trendType="neutral"
+            href="/finance"
+            loading={isFinanceKpisLoading}
+          />
         </div>
-        <div className="lg:col-span-4 flex flex-col gap-4 min-h-0">
+      )}
+
+      {/* Row 2 — revenue/expense chart (writers only) + donut + today tasks */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:auto-rows-fr">
+        {canWrite ? (
+          <div className="lg:col-span-8 flex min-h-0">
+            <div className="flex-1 min-h-0 w-full">
+              <RevenueExpenseLineChart />
+            </div>
+          </div>
+        ) : null}
+        <div
+          className={cn(
+            canWrite ? 'lg:col-span-4' : 'lg:col-span-12',
+            'flex flex-col gap-4 min-h-0',
+          )}
+        >
           <div className="flex-shrink-0 min-h-0">
             <WorkOrderStatusDonut />
           </div>
@@ -196,14 +207,16 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 3 — schedule + overdue payments */}
+      {/* Row 3 — schedule + overdue payments (writers only) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 min-h-0">
+        <div className={cn(canWrite ? 'lg:col-span-8' : 'lg:col-span-12', 'min-h-0')}>
           <TodayScheduleFeed />
         </div>
-        <div className="lg:col-span-4 min-h-0">
-          <OverduePaymentsList />
-        </div>
+        {canWrite ? (
+          <div className="lg:col-span-4 min-h-0">
+            <OverduePaymentsList />
+          </div>
+        ) : null}
       </div>
 
     </PageContainer>

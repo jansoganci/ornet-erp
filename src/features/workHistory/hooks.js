@@ -6,10 +6,10 @@ export const workHistoryKeys = {
   search: (filters) => [...workHistoryKeys.all, 'search', filters],
 };
 
-export function useSearchWorkHistory(filters) {
+export function useSearchWorkHistory(filters, enabled = true) {
   return useQuery({
     queryKey: workHistoryKeys.search(filters),
     queryFn: () => api.searchWorkHistory(filters),
-    enabled: true,
+    enabled,
   });
 }

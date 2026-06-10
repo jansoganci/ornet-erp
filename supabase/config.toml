@@ -1,6 +1,6 @@
 # Supabase config – https://supabase.com/docs/guides/cli/config
-# fetch-tcmb-rates: disable JWT verification so it can be called from
-# frontend (logged-in user) and pg_cron (anon key) without 401.
+# fetch-tcmb-rates (A8): verify_jwt = false so pg_cron can POST without a user JWT.
+# In-function auth: x-cron-secret (cron) OR admin/accountant session JWT (browser).
 
 project_id = "ornet-erp"
 
@@ -11,4 +11,9 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.parasut-reconcile]
+verify_jwt = false
+
+# extend-subscription-payments: cron-only via in-function CRON_SECRET (A5).
+# Dashboard cron must send x-cron-secret header matching Edge secret CRON_SECRET.
+[functions.extend-subscription-payments]
 verify_jwt = false

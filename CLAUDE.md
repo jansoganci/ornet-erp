@@ -1,6 +1,6 @@
 # CLAUDE.md — Ornet ERP context
 
-<!-- UPDATED: 2026-04-07 — condensed + finance/SIM/monthly batch accuracy -->
+<!-- UPDATED: 2026-05-31 — hybrid payment/accrual, receivables, tahsilat, Paraşüt integration, edge functions -->
 
 > AI assistant context: architecture, finance rules, routes. Prefer this file + the repo over assumptions.
 
@@ -8,7 +8,7 @@
 
 ## Project identity
 
-**Ornet ERP** — Work order management and ERP for a **Turkish security company**: customers and sites, work orders, materials, subscriptions, SIM inventory, proposals/quotes, finance ledger, notifications, site equipment (“Equipment” in UI), operations board, technical guide.
+**Ornet ERP** — Work order management and ERP for a **Turkish security company**: customers and sites, work orders, materials, subscriptions, SIM inventory, proposals/quotes, finance ledger (with accrual receivables + collections/“Tahsilat”), notifications, site equipment (“Equipment” in UI), operations board, technical guide, and an in-progress **Paraşüt** (e-invoice/accounting) integration.
 
 **Roles** (`profiles.role`, `src/lib/roles.js`): `admin`, `accountant`, `field_worker`. **`canWrite`** = admin OR accountant (subscriptions, SIMs, proposals, finance, operations import, etc.).
 
@@ -16,7 +16,9 @@
 
 ## Tech stack (from `package.json`)
 
-React ^19.2 · Vite ^7.2 · react-router-dom ^7.13 · TanStack Query ^5.90 · Supabase JS ^2.93 · react-hook-form ^7 · zod ^4 · Tailwind ^4 · i18next ^25 / react-i18next ^16 · recharts ^3.8 · react-big-calendar ^1.19 · @react-pdf/renderer ^4.3 · pdfjs-dist ^5 · xlsx ^0.18 · @sentry/react ^10.39 · sonner · lucide-react · clsx · tailwind-merge · vite-plugin-pwa (dev).
+React ^19.2 · Vite ^7.2 · react-router-dom ^7.13 · TanStack Query ^5.90 · Supabase JS ^2.93 · react-hook-form ^7 · @hookform/resolvers ^5 · zod ^4 · Tailwind ^4 (@tailwindcss/vite) · i18next ^25 / react-i18next ^16 · recharts ^3.8 · react-big-calendar ^1.19 · @react-pdf/renderer ^4.3 · pdfjs-dist ^5 · xlsx ^0.18 · date-fns ^4 · framer-motion ^12 · @sentry/react ^10.39 · sonner · lucide-react · clsx · tailwind-merge · vite-plugin-pwa / autoprefixer / postcss (dev).
+
+**Hosting/deploy:** Cloudflare Pages via Wrangler (`npm run deploy` / `deploy:prod`). **Backend:** Supabase (no ORM) + **Supabase Edge Functions** (see “Edge functions & cron”).
 
 ---
 
@@ -35,6 +37,7 @@ Single source: **`src/App.jsx`**. **`RoleRoute`** = requires `canWrite`.
 | Action board | `/action-board` | auth |
 | Operations | `/operations`, `/operations/import` | `RoleRoute` |
 | Customers | `/customers`, `/import`, `/new`, `/:id`, `/:id/edit` | auth |
+| Customers · Paraşüt | `/customers/parasut-matching` | `RoleRoute` (nav: admin only) |
 | Work orders | `/work-orders`, `/new`, `/:id`, `/:id/edit` | auth |
 | Daily work | `/daily-work` | auth |
 | Work history | `/work-history` | auth |
@@ -43,7 +46,9 @@ Single source: **`src/App.jsx`**. **`RoleRoute`** = requires `canWrite`.
 | Subscriptions | `/subscriptions` (+ nested: `collection`, `price-revision`, `import`, `new`, `:id`, `:id/edit`) | `RoleRoute` |
 | Proposals | `/proposals`, `/new`, `/:id`, `/:id/edit` | `RoleRoute` |
 | Finance | `/finance`, `/expenses`, `/income`, `/vat`, `/exchange`, `/recurring` | `RoleRoute` |
-| Finance | `/finance/reports` → redirect `/finance` | |
+| Finance | `/finance/receivables` (unpaid income docs), `/finance/collections` (Tahsilat) | `RoleRoute` |
+| Finance | `/finance/tahsilat` → redirect `/finance/collections`; `/finance/reports` → redirect `/finance` | |
+| Subscriptions · Collection desk | `/subscriptions/collection` (CollectionDeskPage) | `RoleRoute` |
 | Equipment (site assets) | `/equipment`, `/equipment/import` | auth |
 | SIM cards | `/sim-cards`, `/new`, `/import`, `/invoice-analysis`, `/:id/edit` | `RoleRoute` |
 
@@ -55,13 +60,31 @@ Single source: **`src/App.jsx`**. **`RoleRoute`** = requires `canWrite`.
 
 ## Finance module rules (critical)
 
-<!-- UPDATED: four income paths + SIM batch + subscriptions official_invoice -->
+<!-- UPDATED: accrual/hybrid payment, receivables, tahsilat + four income paths + SIM batch + official_invoice -->
 
 ### Single source of truth
 
 **`financial_transactions`** — All P&L, VAT, income/expense UI, and aggregates should read this table. **Do not** use `subscription_payments` as the ledger for reporting totals.
 
-**`direction`:** `'income'` | `'expense'`.
+**`direction`:** `'income'` | `'expense'`. Always filter **`deleted_at IS NULL`** (soft delete).
+
+**P&L view (`v_profit_and_loss`):** reads **only** `financial_transactions` (with `deleted_at IS NULL`). The old `subscription_payments` UNION was removed in **`00207`** because it double-counted subscription revenue (already captured by the subscription trigger).
+
+### Accrual / hybrid payment model (00207+)
+
+Finance is **accrual-based**: revenue is recognized when the document is created (period/P&L), and **cash collection is tracked separately**.
+
+- **`financial_transactions.payment_status`** — `'paid'` | `'unpaid'` | (partial). Default `'paid'` for backward compat.
+- **`financial_transaction_payments`** — 1:many payment events per document (cash receipts). A trigger **recalculates `payment_status`** on the parent whenever a payment row changes.
+- **Receivables (`/finance/receivables`):** income documents with `payment_status = 'unpaid'` awaiting collection.
+- **Completion RPCs (don’t set status directly from the app):**
+  - **`fn_complete_work_order_with_payment`** (`00208`): cash/card → income row + payment row → `paid`; bank_transfer → income row, no payment → `unpaid` (shows on receivables). Proposal-linked WOs are still completed but return `completed_proposal_linked` (trigger skips revenue).
+  - **`complete_proposal_with_rate`** (`00210`, fix `00211`): atomically completes a proposal and stores a **user-confirmed USD→TRY rate** (`completion_exchange_rate`) so `auto_record_proposal_revenue` uses it instead of auto-querying. `00211` recomputes `total_amount_usd` from items when stale/zero so the income row is not silently skipped.
+- **Proposal revenue** rows now default to **`payment_status = 'unpaid'`** (`00209`); COGS expense rows stay `paid`.
+
+### Tahsilat / Collections (`/finance/collections`)
+
+Per-customer + per-document collection screen (`features/finance` → `collectionApi.js`/`TahsilatPage`). Backed by views **`v_collection_customer_summary`** (document_count, total_billed, total_vat, total_cost, collected, **`total_profit`** = Σ net − Σ COGS TRY; `00213`/`00214`) and per-document rows. Documents carry a **`service_category_enum`**: `kira`, `merkez`, `montaj`, `servis`, `satis`, `mal_gonderme`, `diger` (`00212`). Distinct from the subscription-only **CollectionDeskPage** at `/subscriptions/collection`.
 
 ### Four automated income paths (to `financial_transactions`)
 
@@ -96,13 +119,41 @@ Subscription monthly pricing and SIM line items live on **`subscriptions`** (NET
 
 ---
 
+## Paraşüt integration (in progress)
+
+> Historical audit docs say Paraşüt “will not be built”. That is **outdated** — an integration is actively being added (migrations `00215`–`00218`, edge functions, `features/customers` + `features/finance` `parasut*` modules).
+
+- **Customers:** `parasut_contact_id`, `identity_type`, `tax_office` (`00215`). Matching UI at **`/customers/parasut-matching`** (`ParasutMatchingPage`, `parasutMatchingApi.js`).
+- **OAuth/audit (`00216`):** `parasut_oauth_tokens` (single-row token store + refresh lock), audit log, idempotency cache.
+- **Invoice sync (`00217`):** `financial_transactions.parasut_e_document_id`, `parasut_sync_status`, `parasut_synced_at`, `parasut_error`, `parasut_trackable_job_id`.
+- **Payment sync (`00218`):** `financial_transaction_payments.parasut_payment_id`, `parasut_transaction_id`, `parasut_synced_at`.
+- **Edge functions:** `parasut-dispatch`, `parasut-reconcile` (see below).
+
+---
+
+## Edge functions & cron
+
+**Supabase Edge Functions** (`supabase/functions/`):
+
+| Function | Purpose |
+|----------|---------|
+| `fetch-tcmb-rates` | Pull TCMB exchange rates → `exchange_rates` |
+| `extend-subscription-payments` | Keep `subscription_payments` schedule populated forward |
+| `parasut-dispatch` | Push invoices/payments to Paraşüt |
+| `parasut-reconcile` | Reconcile Paraşüt sync state back into the ledger |
+
+**pg_cron jobs** still include `generate-monthly-sim-finance` (`0 2 1 * *` UTC) and the recurring-expense generator (`fn_generate_recurring_expenses`, daily).
+
+---
+
 ## Database snapshot
 
 <!-- UPDATED: migration id -->
 
-- **Migrations:** **`00203`** is the latest numbered file; **202** `.sql` files under `supabase/migrations/`.  
-- **Ledger:** `financial_transactions` (+ `expense_categories`, `exchange_rates`, `recurring_expense_templates`, …).  
-- **SIM:** `sim_cards`, `sim_static_ips`.  
+- **Migrations:** **`00220`** is the latest number; **220** `.sql` files under `supabase/migrations/` (note: two files share the `00204` prefix — `materials_prices_with_currency` and `security_invoker_detail_views`). 
+- **Ledger:** `financial_transactions` (+ `financial_transaction_payments`, `expense_categories`, `exchange_rates`, `recurring_expense_templates`, …). 
+- **Collections/Paraşüt:** `v_collection_customer_summary`, `service_category_enum`, `parasut_oauth_tokens`, plus `parasut_*` columns on customers / financial tables. 
+- **SIM:** `sim_cards`, `sim_static_ips`, view `sim_cards_list` (Turkish-normalized search). 
 - **Ops:** plan/items evolved through **`00173+`** migrations (check DB for current table names).
 
 ---
@@ -134,11 +185,13 @@ Subscription monthly pricing and SIM line items live on **`subscriptions`** (NET
 
 1. Bypass **`financial_transactions`** for finance KPIs or CSV export sources.  
 2. Hardcode VAT rates or assume all subscriptions issue official invoices — respect **`official_invoice`**.  
-3. Record revenue twice for **proposal-linked work orders** (DB skips WO trigger when `proposal_id` set).  
-4. Call Supabase directly from large page components — prefer **`api.js` + hooks**.  
-5. Skip loading/error/empty UI states.  
-6. Add dependencies without project need / discussion.  
-7. Hardcode Turkish strings in UI.
+3. Record revenue twice for **proposal-linked work orders** (DB skips WO trigger when `proposal_id` set). 
+4. Re-add `subscription_payments` to P&L/aggregates, or read totals without `deleted_at IS NULL`. 
+5. Set `financial_transactions.payment_status` / complete WOs/proposals by raw status UPDATE — use the **completion RPCs** (`fn_complete_work_order_with_payment`, `complete_proposal_with_rate`) and `financial_transaction_payments` for collection. 
+6. Call Supabase directly from large page components — prefer **`api.js` + hooks**. 
+7. Skip loading/error/empty UI states.  
+8. Add dependencies without project need / discussion.  
+9. Hardcode Turkish strings in UI.
 
 **Ambiguous requests:** ask **one** focused clarifying question (data source, scope, role, or module placement).
 
@@ -150,16 +203,20 @@ Subscription monthly pricing and SIM line items live on **`subscriptions`** (NET
 
 | # | File (short) | Purpose |
 |---|----------------|---------|
-| 00203 | `fix_sim_finance_status_ambiguity` | `generate_monthly_sim_finance` return column renamed to avoid `status` ambiguity |
-| 00202 | `monthly_sim_finance_cron` | Monthly SIM aggregate income/expense + pg_cron schedule |
-| 00201 | `fix_subscription_payment_trigger_vat_logic` | `official_invoice` → `output_vat`; COGS expense `input_vat` NULL |
-| 00200 | `auto_record_work_order_revenue_income_cogs_try` | WO completion income/COGS alignment (`cogs_try` on income) |
-| 00199 | `proposal_sections_discount` | Proposal sections discount |
-| 00198 | `proposal_sections_rls` | RLS for proposal sections |
-| 00197 | `proposal_sections` | Proposal sections schema |
-| 00196 | `proposal_items_section_label` | Section labels on items |
-| 00195 | `work_orders_detail_status_rank` | View/detail ordering |
-| 00194 | `update_work_orders_detail_vat` | Work order detail VAT exposure |
+| 00220 | `materials_description_search` | Turkish-normalized generated search column on `materials.description` |
+| 00219 | `sim_cards_list_view` | `sim_cards_list` view with normalized phone/customer search |
+| 00218 | `parasut_payment_meta` | Paraşüt payment sync columns on `financial_transaction_payments` |
+| 00217 | `parasut_sync_status` | Paraşüt invoice sync columns on `financial_transactions` |
+| 00216 | `parasut_oauth_audit` | Paraşüt OAuth token store, audit log, idempotency cache |
+| 00215 | `parasut_customer_matching` | `parasut_contact_id`/`identity_type`/`tax_office` on customers |
+| 00214 | `collection_customer_summary_profit` | `total_profit` on `v_collection_customer_summary` |
+| 00213 | `tahsilat_views` | Per-customer + per-document collection views |
+| 00212 | `tahsilat_core` | `service_category_enum`, payment tracking, categorization trigger |
+| 00211 | `fix_complete_proposal_with_rate_recalc` | Recompute `total_amount_usd` so proposal income isn’t skipped |
+| 00210 | `complete_proposal_with_rate_rpc` | User-confirmed USD rate on proposal completion |
+| 00209 | `update_proposal_trigger_unpaid` | Proposal income rows default `payment_status = 'unpaid'` (receivables) |
+| 00208 | `complete_work_order_with_payment_rpc` | WO completion + payment method → paid/unpaid |
+| 00207 | `fix_pl_view_and_hybrid_payment_schema` | Drop subscription UNION from P&L; add `payment_status` + `financial_transaction_payments` |
 
 ---
 
@@ -172,4 +229,5 @@ Required: **`VITE_SUPABASE_URL`**, **`VITE_SUPABASE_ANON_KEY`** (`.env.local`). 
 ## Further reading
 
 - Repo: **`docs/CODING-LESSONS.md`**, **`docs/archive/completed/finance-audit-report.md`** / **`finance-fix-roadmap.md`** (historical audits).  
+- **`docs/active/CASHFLOW_MANAGEMENT_AUDIT_AND_ROADMAP.md`** — cashflow/forecast roadmap (Cashflow v1.0 = **planned**, not yet shipped).  
 - Do not treat “planned” roadmap items as shipped unless code/migrations exist.

@@ -82,7 +82,7 @@ export async function deleteRecurringTemplate(id) {
 }
 
 export async function triggerRecurringGeneration() {
-  const { data, error } = await supabase.rpc('fn_generate_recurring_expenses');
+  const { data, error } = await supabase.rpc('fn_generate_recurring_expenses_guarded');
   if (error) throw error;
   return data;
 }

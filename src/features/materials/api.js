@@ -182,43 +182,9 @@ export async function fetchMaterialCategories() {
 }
 
 export async function bulkUpsertMaterials(rows) {
-  // The full unique constraint on `code` was replaced by a partial unique index
-  // (WHERE deleted_at IS NULL) in migration 00086, so ON CONFLICT (code) upsert
-  // no longer works. Fetch existing active records and split into update/insert.
-  const codes = rows.map((r) => r.code);
-  const { data: existing, error: fetchError } = await supabase
-    .from('materials')
-    .select('id, code')
-    .is('deleted_at', null)
-    .in('code', codes);
-
-  if (fetchError) throw fetchError;
-
-  const existingMap = new Map((existing || []).map((r) => [r.code, r.id]));
-  const toUpdate = rows.filter((r) => existingMap.has(r.code));
-  const toInsert = rows.filter((r) => !existingMap.has(r.code));
-
-  const results = [];
-
-  for (const row of toUpdate) {
-    const { data, error } = await supabase
-      .from('materials')
-      .update(row)
-      .eq('id', existingMap.get(row.code))
-      .select()
-      .single();
-    if (error) throw error;
-    results.push(data);
-  }
-
-  if (toInsert.length > 0) {
-    const { data, error } = await supabase
-      .from('materials')
-      .insert(toInsert)
-      .select();
-    if (error) throw error;
-    results.push(...data);
-  }
-
-  return results;
+  // Contract: bulk_upsert_materials is intentionally scoped to the materials import payload.
+  // It only writes supported import fields; future callers must extend the RPC intentionally for extra columns.
+  const { data, error } = await supabase.rpc('bulk_upsert_materials', { p_rows: rows });
+  if (error) throw error;
+  return data ?? [];
 }

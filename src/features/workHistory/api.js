@@ -2,33 +2,30 @@ import { supabase } from '../../lib/supabase';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 export async function searchWorkHistory(filters = {}) {
-  const { search, type = 'both', dateFrom, dateTo, workType, workerId, siteId } = filters;
+  const {
+    search,
+    type = 'both',
+    dateFrom,
+    dateTo,
+    workType,
+    workerId,
+    siteId,
+    limit = 200,
+    offset = 0,
+  } = filters;
 
   const { data, error } = await supabase.rpc('search_work_history', {
     search_query: normalizeForSearch(search || ''),
-    search_type: type
+    search_type: type,
+    p_site_id: siteId || null,
+    p_date_from: dateFrom || null,
+    p_date_to: dateTo || null,
+    p_work_type: workType && workType !== 'all' ? workType : null,
+    p_worker_id: workerId && workerId !== 'all' ? workerId : null,
+    p_limit: limit,
+    p_offset: offset,
   });
 
   if (error) throw error;
-
-  let results = data;
-
-  // Apply additional client-side filters
-  if (siteId) {
-    results = results.filter(r => r.site_id === siteId);
-  }
-  if (dateFrom) {
-    results = results.filter(r => r.scheduled_date >= dateFrom);
-  }
-  if (dateTo) {
-    results = results.filter(r => r.scheduled_date <= dateTo);
-  }
-  if (workType && workType !== 'all') {
-    results = results.filter(r => r.work_type === workType);
-  }
-  if (workerId && workerId !== 'all') {
-    results = results.filter(r => r.assigned_to.includes(workerId));
-  }
-
-  return results;
+  return data ?? [];
 }
