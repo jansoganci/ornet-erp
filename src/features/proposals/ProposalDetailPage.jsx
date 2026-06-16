@@ -17,9 +17,6 @@ import * as XLSX from 'xlsx';
 import {
   calcSectionTotal,
   calcTotalCosts,
-  calcVatTevkifatSummary,
-  resolveProposalItemLineTotal,
-  resolveProposalItemUnitPrice,
   calcAnnualFixedLineTotal,
   sumAnnualFixedCostsByCurrency,
 } from '../../lib/proposalCalc';
@@ -51,8 +48,7 @@ import {
 import { ProposalCompletionRateModal } from './components/ProposalCompletionRateModal';
 import { ProposalPdf } from './components/ProposalPdf';
 import { ProposalHero } from './components/ProposalHero';
-import { ProposalSiteCard } from './components/ProposalSiteCard';
-import { ProposalSummaryCard } from './components/ProposalSummaryCard';
+import { ProposalDetailMaterials } from './components/ProposalDetailMaterials';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { useUpdateProposal } from './hooks';
 import { useFinanceSettings } from '../finance/hooks';
@@ -76,10 +72,6 @@ function DetailSkeleton() {
           </div>
         </div>
         <Skeleton className="h-36 w-full rounded-xl" />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
       </div>
       <Skeleton className="h-64 rounded-xl" />
     </PageContainer>
@@ -144,17 +136,6 @@ export function ProposalDetailPage() {
   const hasTevkifat = !!proposal.has_tevkifat;
   const tevkifatNum = Number(financeSettings?.tevkifat_rate_numerator) || 9;
   const tevkifatDen = Number(financeSettings?.tevkifat_rate_denominator) || 10;
-  const { vatAmount, withheldVat, totalPayable } = calcVatTevkifatSummary(
-    grandTotal,
-    vatRate,
-    hasTevkifat,
-    tevkifatNum,
-    tevkifatDen,
-  );
-  const vatRateLabel = (Number(vatRate) || 0).toLocaleString('tr-TR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
 
   const handleStatusChange = (newStatus) => {
     if (newStatus === 'completed' && currency !== 'USD') {
@@ -296,91 +277,15 @@ export function ProposalDetailPage() {
         flowLoading={statusMutation.isPending || completeWithRateMutation.isPending}
       />
 
-      {/* Lokasyon + Özet kartları — desktop: 1x2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProposalSiteCard proposal={proposal} />
-        <ProposalSummaryCard proposal={proposal} />
-      </div>
-
-      {/* Malzemeler */}
-      <Card className="overflow-hidden">
-        <div className="bg-neutral-50 dark:bg-[#1a1a1a] px-6 py-4 border-b border-neutral-200 dark:border-[#262626]">
-          <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
-            {t('proposals:detail.items')}
-          </h3>
-        </div>
-        <div className="p-6">
-          {items.length === 0 ? (
-            <p className="text-sm text-neutral-500">{t('common:empty.noItems')}</p>
-          ) : (
-            <div className="space-y-3">
-              {items.map((item, index) => {
-                const lineTotal = resolveProposalItemLineTotal(item, currency);
-                return (
-                  <div
-                    key={item.id || index}
-                    className="flex items-start justify-between py-2 border-b border-neutral-100 dark:border-[#1a1a1a] last:border-0"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-neutral-900 dark:text-neutral-100">
-                        {item.quantity > 1 && (
-                          <span className="font-mono text-neutral-500 mr-1">{item.quantity}x</span>
-                        )}
-                        {item.description}
-                      </p>
-                      {item.quantity > 1 && (
-                        <p className="text-xs text-neutral-400 mt-0.5">
-                          @ {formatCurrency(resolveProposalItemUnitPrice(item, currency), currency)}
-                        </p>
-                      )}
-                    </div>
-                    <span className="font-semibold text-neutral-900 dark:text-neutral-100 ml-4 whitespace-nowrap">
-                      {formatCurrency(lineTotal, currency)}
-                    </span>
-                  </div>
-                );
-              })}
-
-              <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-[#262626] space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-600 dark:text-neutral-400">
-                    {t('proposals:detail.pricingNetExclVat')}
-                  </span>
-                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
-                    {formatCurrency(grandTotal, currency)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-600 dark:text-neutral-400">
-                    {t('proposals:detail.pricingVatAtRate', { rate: vatRateLabel })}
-                  </span>
-                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
-                    {formatCurrency(vatAmount, currency)}
-                  </span>
-                </div>
-                {hasTevkifat && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-600 dark:text-neutral-400">
-                      {t('proposals:detail.pricingWithholdingDeduction')}
-                    </span>
-                    <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
-                      -{formatCurrency(withheldVat, currency)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#262626]">
-                  <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wide">
-                    {t('proposals:detail.pricingGrandTotalPayable')}
-                  </span>
-                  <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
-                    {formatCurrency(totalPayable, currency)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
+      <ProposalDetailMaterials
+        items={items}
+        sections={sections}
+        currency={currency}
+        vatRate={vatRate}
+        hasTevkifat={hasTevkifat}
+        tevkifatNumerator={tevkifatNum}
+        tevkifatDenominator={tevkifatDen}
+      />
 
       {annualFixedCostsPdf.length > 0 && (
         <Card className="overflow-hidden">

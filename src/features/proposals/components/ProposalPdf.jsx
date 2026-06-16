@@ -16,6 +16,12 @@ import {
   calcAnnualFixedLineTotal,
   sumAnnualFixedCostsByCurrency,
 } from '../../../lib/proposalCalc';
+import {
+  buildProposalSectionGroups,
+  findSectionById,
+  getSectionKey,
+  filterItemsForSection,
+} from '../proposalSectionGroups';
 import i18n from '../../../lib/i18n';
 
 Font.register({
@@ -363,58 +369,10 @@ function safeNum(val, fallback = 0) {
 
 /**
  * Groups items by section_id, preserving section order from the sections array.
- * Items with null section_id are collected in an ungrouped bucket rendered last (or only).
- * When there are no named sections, renders flat (backward compatible).
- *
- * @param {Array} items - proposal_items rows (have section_id: uuid|null)
- * @param {Array} sections - proposal_sections rows [{ id, title }]
- * @returns {Array<{ sectionId: string|null, title: string|null, items: [] }>}
+ * @see ../proposalSectionGroups.js
  */
 function buildSectionGroups(items, sections) {
-  const sectionMap = {};
-  for (const s of (sections || [])) {
-    const sid = s.id || s._local_id;
-    if (sid) sectionMap[sid] = s.title || '';
-  }
-
-  const ungrouped = [];
-  const bySection = {};
-  for (const item of items) {
-    const sid = item.section_id || item.section_local_id || null;
-    if (!sid || !(sid in sectionMap)) {
-      ungrouped.push(item);
-    } else {
-      if (!bySection[sid]) bySection[sid] = [];
-      bySection[sid].push(item);
-    }
-  }
-
-  const groups = (sections || []).map((s) => ({
-    sectionId: s.id || s._local_id,
-    title: s.title || '',
-    items: bySection[s.id || s._local_id] || [],
-  }));
-
-  if (ungrouped.length > 0) {
-    groups.push({ sectionId: null, title: null, items: ungrouped });
-  }
-
-  return groups;
-}
-
-function findSectionById(sections, sectionId) {
-  if (sectionId == null) return null;
-  return (sections || []).find((s) => (s.id || s._local_id) === sectionId) ?? null;
-}
-
-function getSectionKey(section) {
-  return section?.id || section?._local_id;
-}
-
-function filterItemsForSection(itemList, sectionId) {
-  return itemList.filter(
-    (item) => (item.section_id || item.section_local_id) === sectionId,
-  );
+  return buildProposalSectionGroups(items, sections);
 }
 
 export function ProposalPdf({

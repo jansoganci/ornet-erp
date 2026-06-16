@@ -314,6 +314,7 @@
     "salesSummary": "Satış",
     "costSummary": "Maliyet (Dahili)",
     "sectionSubtotal": "Satış Ara Toplamı",
+    "sectionSubtotalNamed": "{{title}} Ara Toplamı",
     "sectionCount": "{{count}} bölüm",
     "discount": "İskonto",
     "discountAmount": "İskonto Tutarı",

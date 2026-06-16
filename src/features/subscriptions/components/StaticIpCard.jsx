@@ -8,7 +8,7 @@ import { cn, formatDate } from '../../../lib/utils';
 import { fetchActiveStaticIp, fetchStaticIpHistory, cancelStaticIp } from '../../simCards/staticIpApi';
 import { StaticIpModal } from './StaticIpModal';
 
-export function StaticIpCard({ simCardId, isAdmin = false, className }) {
+export function StaticIpCard({ simCardId, isAdmin = false, className, compact = false }) {
   const { t } = useTranslation(['simCards', 'common']);
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
@@ -41,7 +41,28 @@ export function StaticIpCard({ simCardId, isAdmin = false, className }) {
   return (
     <>
       <Card className={cn('overflow-hidden', className)}>
-        <div className="bg-blue-50/50 dark:bg-blue-950/10 px-5 py-3 border-b border-blue-100 dark:border-blue-900/20 flex items-center justify-between">
+        {compact && !isLoading && !activeIp ? (
+          <div className="flex items-center justify-between gap-2 px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <Globe className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+              <span className="truncate text-xs text-neutral-500 dark:text-neutral-400">
+                {t('simCards:staticIp.noIp')}
+              </span>
+            </div>
+            {isAdmin && (
+              <Button variant="ghost" size="sm" onClick={() => setShowModal(true)} className="shrink-0 text-xs">
+                {t('simCards:staticIp.assign')}
+              </Button>
+            )}
+          </div>
+        ) : (
+          <>
+        <div
+          className={cn(
+            'flex items-center justify-between border-b border-blue-100 bg-blue-50/50 px-5 py-3 dark:border-blue-900/20 dark:bg-blue-950/10',
+            compact && 'px-4 py-2.5',
+          )}
+        >
           <div className="flex items-center space-x-2">
             <Globe className="w-4 h-4 text-blue-600" />
             <h3 className="font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wider text-xs">
@@ -60,7 +81,7 @@ export function StaticIpCard({ simCardId, isAdmin = false, className }) {
           )}
         </div>
 
-        <div className="p-5">
+        <div className={cn('p-5', compact && 'p-4')}>
           {isLoading ? (
             <div className="flex justify-center py-4">
               <Spinner size="sm" />
@@ -156,6 +177,8 @@ export function StaticIpCard({ simCardId, isAdmin = false, className }) {
             </div>
           )}
         </div>
+          </>
+        )}
       </Card>
 
       <StaticIpModal

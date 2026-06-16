@@ -75,6 +75,8 @@
     },
     "callButton": "Ara",
     "moreOptions": "Seçenekler",
+    "moreActions": "İşlemler",
+    "noManager": "Atanmadı",
     "fields": {
       "subtotal": "Ara Toplam",
       "vatAmount": "KDV",

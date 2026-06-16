@@ -1,14 +1,9 @@
 import {
-  FileText,
   Download,
   FileSpreadsheet,
   Edit,
   Trash2,
   ChevronLeft,
-  DollarSign,
-  TrendingUp,
-  ClipboardList,
-  Calendar,
   Send,
   CheckCircle2,
   XCircle,
@@ -20,14 +15,19 @@ import { Button, IconButton } from '../../../components/ui';
 import { cn, formatDate, formatCurrency } from '../../../lib/utils';
 import { ProposalStatusBadge } from './ProposalStatusBadge';
 
-function customerInitials(name) {
-  if (!name || !String(name).trim()) return '?';
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-  const s = parts[0];
-  return (s.length >= 2 ? s.slice(0, 2) : s).toUpperCase();
+function InfoChip({ label, value, valueClassName }) {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-lg bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-[#333] px-3 py-1.5 text-sm">
+      <span className="text-neutral-500 dark:text-neutral-400 shrink-0">{label}</span>
+      <span className={cn('font-semibold text-neutral-900 dark:text-neutral-100 tabular-nums', valueClassName)}>
+        {value || '—'}
+      </span>
+    </div>
+  );
+}
+
+function MetaSeparator() {
+  return <span className="text-neutral-300 dark:text-neutral-600 select-none" aria-hidden>·</span>;
 }
 
 export function ProposalHero({
@@ -50,31 +50,27 @@ export function ProposalHero({
   const completedCount = linkedWorkOrders.filter((wo) => wo.status === 'completed').length;
   const totalCount = linkedWorkOrders.length;
   const openWorkOrdersCount = linkedWorkOrders.filter(
-    (wo) => wo.status !== 'completed' && wo.status !== 'cancelled'
+    (wo) => wo.status !== 'completed' && wo.status !== 'cancelled',
   ).length;
   const workOrdersStr =
     totalCount > 0
       ? t('proposals:detail.workOrderCount', { completed: completedCount, total: totalCount })
       : '—';
 
-  const hasDate = proposal.accepted_at || proposal.rejected_at || proposal.sent_at;
-  const dateLabel = hasDate
-    ? proposal.accepted_at
-      ? t('proposals:dateLabels.accepted')
-      : proposal.rejected_at
-        ? t('proposals:dateLabels.rejected')
-        : t('proposals:dateLabels.sent')
-    : t('proposals:detail.summary.sentAt', 'Tarih');
-  const dateValue = hasDate
-    ? formatDate(proposal.accepted_at || proposal.rejected_at || proposal.sent_at)
-    : '—';
-
   const customerDisplayName =
     proposal.customer_company_name || proposal.company_name || '—';
   const siteDisplayName = proposal.site_name?.trim() || '';
+  const addressParts = [proposal.site_address, proposal.city].filter(Boolean);
+  const addressLine = addressParts.join(', ');
+
+  const acceptedOrRejectedValue = proposal.accepted_at
+    ? formatDate(proposal.accepted_at)
+    : proposal.rejected_at
+      ? formatDate(proposal.rejected_at)
+      : null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Breadcrumb + Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
@@ -86,7 +82,6 @@ export function ProposalHero({
         </Link>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Akış butonu — PDF'nin solunda */}
           {status === 'draft' && (
             <Button
               size="sm"
@@ -168,135 +163,110 @@ export function ProposalHero({
 
       {(status === 'accepted' || status === 'completed') && openWorkOrdersCount > 0 && (
         <div className="flex items-start gap-2 rounded-lg border border-neutral-200/80 dark:border-[#333] bg-neutral-50/70 dark:bg-[#1a1a1a]/80 px-3 py-2">
-          <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" aria-hidden />
+          <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" aria-hidden />
           <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
             {t('proposals:detail.openWorkOrdersHint', { count: openWorkOrdersCount })}
           </p>
         </div>
       )}
 
-      {/* Hero Card */}
-      <div className="rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] p-5 shadow-sm">
-        {/* Identity row */}
-        <div className="flex items-start gap-4 mb-5">
-          <div className="p-3 rounded-xl bg-primary-100 dark:bg-primary-950/40 flex-shrink-0">
-            <FileText className="w-7 h-7 text-primary-600 dark:text-primary-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-50 leading-tight truncate">
-                  {proposal.title}
-                </h1>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 font-mono truncate">
-                  {proposal.proposal_no || '—'}
-                </p>
-              </div>
-              <div className="flex items-center flex-shrink-0">
-                <ProposalStatusBadge status={proposal.status} size="sm" />
-              </div>
-            </div>
-
-            <div
-              className={cn(
-                'mt-4 flex gap-3 rounded-xl border border-neutral-200/90 dark:border-[#333]',
-                'bg-neutral-50/90 dark:bg-[#141414] p-4'
-              )}
-            >
-              <div
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-950/50 text-sm font-bold text-primary-800 dark:text-primary-200"
-                aria-hidden
-              >
-                {customerInitials(customerDisplayName)}
-              </div>
-              <div className="min-w-0 flex-1 space-y-3">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                    {t('proposals:detail.customerCard.customerLabel')}
-                  </p>
-                  {proposal.customer_id ? (
-                    <Link
-                      to={`/customers/${proposal.customer_id}`}
-                      className="mt-0.5 block text-lg font-semibold leading-snug text-neutral-900 dark:text-neutral-50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate"
-                      title={t('proposals:detail.customerCard.viewCustomer')}
-                    >
-                      {customerDisplayName}
-                    </Link>
-                  ) : (
-                    <p className="mt-0.5 text-lg font-semibold leading-snug text-neutral-900 dark:text-neutral-50 truncate">
-                      {customerDisplayName}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                    {t('proposals:detail.customerCard.locationLabel')}
-                  </p>
-                  <p
-                    className={cn(
-                      'mt-0.5 text-base leading-snug',
-                      siteDisplayName
-                        ? 'text-neutral-800 dark:text-neutral-200'
-                        : 'text-neutral-400 dark:text-neutral-500 italic'
-                    )}
-                  >
-                    {siteDisplayName || t('proposals:detail.customerCard.noLocation')}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* Compact summary card */}
+      <div className="rounded-xl border border-neutral-200 dark:border-[#262626] bg-white dark:bg-[#171717] px-5 py-4 shadow-sm space-y-3">
+        {/* Row 1 — identity */}
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-50 leading-snug truncate max-w-full">
+            {proposal.title}
+          </h1>
+          {proposal.proposal_no && (
+            <>
+              <MetaSeparator />
+              <span className="text-base font-mono text-neutral-500 dark:text-neutral-400 shrink-0">
+                {proposal.proposal_no}
+              </span>
+            </>
+          )}
+          <ProposalStatusBadge status={proposal.status} size="md" />
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-            <DollarSign className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-500 tracking-wider">
-                {t('proposals:detail.total')}
-              </p>
-              <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 mt-0.5 tabular-nums">
-                {formatCurrency(grandTotal, currency)}
-              </p>
-            </div>
-          </div>
+        {/* Row 2 — customer & location */}
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-base leading-relaxed text-neutral-700 dark:text-neutral-300 min-w-0">
+          {proposal.customer_id ? (
+            <Link
+              to={`/customers/${proposal.customer_id}`}
+              className="font-medium text-neutral-900 dark:text-neutral-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate max-w-full"
+              title={t('proposals:detail.customerCard.viewCustomer')}
+            >
+              {customerDisplayName}
+            </Link>
+          ) : (
+            <span className="font-medium text-neutral-900 dark:text-neutral-100 truncate">
+              {customerDisplayName}
+            </span>
+          )}
+          {siteDisplayName && (
+            <>
+              <MetaSeparator />
+              <span className="truncate">{siteDisplayName}</span>
+            </>
+          )}
+          {addressLine && (
+            <>
+              <MetaSeparator />
+              <span className="text-neutral-500 dark:text-neutral-400 truncate">{addressLine}</span>
+            </>
+          )}
+          {!siteDisplayName && !addressLine && (
+            <>
+              <MetaSeparator />
+              <span className="text-neutral-400 dark:text-neutral-500 italic">
+                {t('proposals:detail.customerCard.noLocation')}
+              </span>
+            </>
+          )}
+        </div>
 
-          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-            <TrendingUp className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-500 tracking-wider">
-                {t('proposals:detail.netProfit')}
-              </p>
-              <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 mt-0.5 tabular-nums">
-                {formatCurrency(netProfit, currency)}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-            <ClipboardList className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-500 tracking-wider">
-                {t('proposals:detail.workOrders')}
-              </p>
-              <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 mt-0.5">
-                {workOrdersStr}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
-            <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-500 tracking-wider">
-                {dateLabel || t('proposals:dateLabels.sent')}
-              </p>
-              <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 mt-0.5 tabular-nums">
-                {dateValue}
-              </p>
-            </div>
-          </div>
+        {/* Row 3 — metrics & meta chips */}
+        <div className="flex flex-wrap gap-2 pt-3 border-t border-neutral-100 dark:border-[#262626]">
+          <InfoChip
+            label={t('proposals:detail.total')}
+            value={formatCurrency(grandTotal, currency)}
+          />
+          <InfoChip
+            label={t('proposals:detail.netProfit')}
+            value={formatCurrency(netProfit, currency)}
+          />
+          <InfoChip
+            label={t('proposals:detail.workOrders')}
+            value={workOrdersStr}
+          />
+          <InfoChip
+            label={t('proposals:detail.summary.createdAt')}
+            value={proposal.created_at ? formatDate(proposal.created_at) : null}
+          />
+          <InfoChip
+            label={t('proposals:detail.summary.sentAt')}
+            value={proposal.sent_at ? formatDate(proposal.sent_at) : null}
+          />
+          <InfoChip
+            label={t('proposals:detail.summary.acceptedOrRejectedAt')}
+            value={acceptedOrRejectedValue}
+          />
+          {(proposal.authorized_person || proposal.customer_representative) && (
+            <>
+              {proposal.authorized_person && (
+                <InfoChip
+                  label={t('proposals:form.fields.authorizedPerson')}
+                  value={proposal.authorized_person}
+                />
+              )}
+              {proposal.customer_representative && (
+                <InfoChip
+                  label={t('proposals:form.fields.customerRepresentative')}
+                  value={proposal.customer_representative}
+                />
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -7,13 +7,6 @@ import {
   Edit,
   Plus,
   MapPin,
-  Info,
-  Eye,
-  Cloud,
-  Cpu,
-  Wallet,
-  CreditCard,
-  CheckCircle2,
   ChevronRight,
   ChevronDown,
   Download,
@@ -49,8 +42,9 @@ import { CustomerLocationsTab } from './tabs/CustomerLocationsTab';
 import { CustomerSimCardsTab } from './tabs/CustomerSimCardsTab';
 import { CustomerEquipmentTab } from './tabs/CustomerEquipmentTab';
 import { ParasutHistoryTab } from './components/ParasutHistoryTab';
+import { CustomerDetailSummary } from './components/CustomerDetailSummary';
 import { useRole } from '../../lib/roles';
-import { cn, formatDate, formatPhone, workOrderStatusVariant } from '../../lib/utils';
+import { cn, formatDate, workOrderStatusVariant } from '../../lib/utils';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { toCSV, downloadCSV } from '../../lib/csvExport';
 
@@ -64,8 +58,6 @@ const PAGE_SIZE = 8;
 const PAGE_BG = 'bg-neutral-50 dark:bg-[#0a0a0a]';
 const SURFACE =
   'rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-[#262626] dark:bg-[#171717]';
-const SURFACE_HIGH =
-  'rounded-xl border border-neutral-200 bg-neutral-50 dark:border-[#262626] dark:bg-neutral-800/50';
 const TEXT_MUTED = 'text-neutral-500 dark:text-neutral-400';
 const INPUT_SURFACE =
   'border-neutral-200 bg-white text-neutral-900 dark:border-[#262626] dark:bg-[#171717] dark:text-neutral-100';
@@ -83,14 +75,14 @@ function topNavItemClass(active) {
 
 function CustomerDetailSkeleton() {
   return (
-    <PageContainer maxWidth="full" padding="default" className={cn(PAGE_BG, 'space-y-6')}>
-      <Skeleton className="h-24 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-72 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
-        ))}
+    <PageContainer maxWidth="full" padding="default" className={cn(PAGE_BG, 'space-y-4')}>
+      <Skeleton className="h-28 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+      <Skeleton className="h-16 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Skeleton className="h-56 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800 lg:col-span-2" />
+        <Skeleton className="h-56 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
       </div>
-      <Skeleton className="h-96 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+      <Skeleton className="h-80 w-full rounded-xl bg-neutral-200 dark:bg-neutral-800" />
     </PageContainer>
   );
 }
@@ -102,7 +94,6 @@ export function CustomerDetailPage() {
   const { t } = useTranslation('customers');
   const { t: tCommon } = useTranslation('common');
   const { t: tWO } = useTranslation('workOrders');
-  const { t: tSub } = useTranslation('subscriptions');
   const { isFieldWorker, canWrite, isAdmin } = useRole();
 
   const allowedLegacy = isFieldWorker ? FIELD_LEGACY : LEGACY_TABS;
@@ -382,8 +373,6 @@ export function CustomerDetailPage() {
     ]
   );
 
-  const subIcons = [Eye, Cloud, Cpu];
-
   if (isLoading) return <CustomerDetailSkeleton />;
 
   if (error) {
@@ -541,15 +530,15 @@ export function CustomerDetailPage() {
       className={cn(PAGE_BG, 'font-sans text-neutral-900 dark:text-neutral-50 pb-10')}
     >
       {/* Single column: header + grids share PageContainer width (no negative margins) */}
-      <div className="flex w-full max-w-full flex-col gap-6 lg:gap-8">
-        {/* Sticky header card — same border/padding language as SURFACE cards below */}
+      <div className="flex w-full max-w-full flex-col gap-4 lg:gap-5">
+        {/* Sticky compact header */}
         <header
           className={cn(
-            'sticky top-16 z-30 w-full space-y-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm backdrop-blur-sm sm:p-6',
+            'sticky top-16 z-30 w-full min-w-0 overflow-hidden space-y-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm backdrop-blur-sm sm:p-4',
             'dark:border-[#262626] dark:bg-[#171717]'
           )}
         >
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Link
             to="/customers"
             className={cn(
@@ -564,13 +553,6 @@ export function CustomerDetailPage() {
           <nav className="flex flex-wrap items-center gap-1 sm:gap-2" aria-label={t('detail.title')}>
             <button type="button" onClick={goToSummary} className={topNavItemClass(!hasExplicitTab)}>
               {t('detail.profileLayout.linkSummary')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('overview')}
-              className={topNavItemClass(hasExplicitTab && normalizedTab === 'overview')}
-            >
-              {t('detail.profileLayout.linkOverview')}
             </button>
             <button
               type="button"
@@ -591,373 +573,161 @@ export function CustomerDetailPage() {
           </nav>
         </div>
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
           <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-              <h1 className="min-w-0 flex-1 text-2xl font-extrabold tracking-tight text-neutral-900 break-words whitespace-normal sm:text-3xl lg:text-4xl dark:text-neutral-50">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="min-w-0 text-xl font-bold tracking-tight text-neutral-900 break-words sm:text-2xl dark:text-neutral-50">
                 {customer.company_name}
               </h1>
               <span
                 className={cn(
-                  'inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide',
+                  'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
                   'border-success-200 bg-success-50 text-success-800',
                   'dark:border-success-800 dark:bg-success-950/40 dark:text-success-300'
                 )}
               >
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success-500 animate-pulse" />
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-success-500" />
                 {t('detail.profileLayout.statusActive')}
               </span>
+              {customer.account_number && (
+                <span className={cn('text-xs font-medium tabular-nums', TEXT_MUTED)}>
+                  #{customer.account_number}
+                </span>
+              )}
             </div>
             {headerAddress && (
-              <p className={cn('flex items-center gap-2 text-sm', TEXT_MUTED)}>
-                <MapPin className="w-4 h-4 shrink-0" />
+              <p className={cn('flex items-center gap-1.5 text-sm', TEXT_MUTED)}>
+                <MapPin className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{headerAddress}</span>
               </p>
             )}
-            <p className={cn('text-xs font-medium uppercase tracking-wide', TEXT_MUTED)}>
-              {t('detail.profileLayout.stickyIdLabel')}:{' '}
-              <span className="font-bold text-primary-600 dark:text-primary-400">
-                {customer.account_number || '—'}
-              </span>
-            </p>
+            {canWrite && (
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-neutral-800 dark:border-[#333] dark:bg-neutral-800/60 dark:text-neutral-100">
+                  {t('detail.profileLayout.financial.monthlyBilling')}: {fmtMoney(monthlyRevenue)}
+                </span>
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-semibold tabular-nums',
+                    (paymentInsights?.overdueTotal || 0) > 0
+                      ? 'border-error-200 bg-error-50 text-error-700 dark:border-error-900 dark:bg-error-950/40 dark:text-error-300'
+                      : 'border-neutral-200 bg-neutral-50 text-neutral-800 dark:border-[#333] dark:bg-neutral-800/60 dark:text-neutral-100'
+                  )}
+                >
+                  {t('detail.profileLayout.financial.pendingBalance')}:{' '}
+                  {fmtMoney(paymentInsights?.overdueTotal || 0)}
+                </span>
+                <span className="inline-flex items-center rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 dark:border-[#333] dark:bg-neutral-800/60 dark:text-neutral-100">
+                  {t('detail.profileLayout.servicesCount', { count: activeSubscriptionsFiltered.length })}
+                </span>
+              </div>
+            )}
           </div>
 
-          <div className="flex w-full shrink-0 flex-col gap-3 lg:max-w-xl lg:ml-auto">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              {sites.length > 0 && (
-                <div className="min-w-0 flex-1 sm:min-w-[200px]">
-                  <Select
-                    label={t('detail.profileLayout.siteScopeLabel')}
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end lg:w-auto lg:max-w-full lg:shrink lg:justify-end">
+            {sites.length > 0 && (
+              <div className="min-w-0 w-full sm:w-auto sm:min-w-[10rem] sm:max-w-[14rem] sm:flex-1 lg:flex-none">
+                <Select
+                  label={t('detail.profileLayout.siteScopeLabel')}
+                  size="sm"
+                  options={siteFilterOptions}
+                  value={selectedSiteId ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSelectedSiteId(v || null);
+                    setWoPage(0);
+                  }}
+                  className={cn(INPUT_SURFACE, '[&_select]:bg-inherit [&_select]:text-inherit')}
+                />
+              </div>
+            )}
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={() => handleNewWorkOrder(selectedSiteId || undefined)}
+                className="rounded-lg"
+              >
+                {t('detail.actions.newWorkOrder')}
+              </Button>
+              {canWrite && (
+                <div className="relative" ref={headerActionsRef}>
+                  <Button
+                    type="button"
+                    variant="outline"
                     size="sm"
-                    options={siteFilterOptions}
-                    value={selectedSiteId ?? ''}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setSelectedSiteId(v || null);
-                      setWoPage(0);
-                    }}
-                    className={cn(INPUT_SURFACE, '[&_select]:bg-inherit [&_select]:text-inherit')}
-                  />
+                    rightIcon={<ChevronDown className="w-4 h-4" />}
+                    onClick={() => setHeaderActionsOpen((o) => !o)}
+                    className="rounded-lg dark:border-[#262626] dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700"
+                  >
+                    {t('detail.profileLayout.moreActions')}
+                  </Button>
+                  {headerActionsOpen && (
+                    <div
+                      className="absolute right-0 z-50 mt-1 min-w-[12.5rem] rounded-xl border border-neutral-200 bg-white py-1 shadow-lg dark:border-[#262626] dark:bg-[#171717]"
+                      role="menu"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                        onClick={() => {
+                          setHeaderActionsOpen(false);
+                          handleEdit();
+                        }}
+                      >
+                        <Edit className="h-4 w-4 shrink-0 text-neutral-400" />
+                        {t('detail.actions.edit')}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                        onClick={() => {
+                          setHeaderActionsOpen(false);
+                          handleAddSubscription();
+                        }}
+                      >
+                        <Plus className="h-4 w-4 shrink-0 text-neutral-400" />
+                        {t('detail.profileLayout.addSubscription')}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-error-600 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-950/30"
+                        onClick={() => {
+                          setHeaderActionsOpen(false);
+                          setShowDeleteModal(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 shrink-0" />
+                        {t('detail.actions.delete')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
-              <div className="flex shrink-0 items-center gap-2">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<Plus className="w-4 h-4" />}
-                  onClick={() => handleNewWorkOrder(selectedSiteId || undefined)}
-                  className="rounded-xl"
-                >
-                  {t('detail.actions.newWorkOrder')}
-                </Button>
-                {canWrite && (
-                  <div className="relative" ref={headerActionsRef}>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      rightIcon={<ChevronDown className="w-4 h-4" />}
-                      onClick={() => setHeaderActionsOpen((o) => !o)}
-                      className="rounded-xl dark:border-[#262626] dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700"
-                    >
-                      {t('detail.profileLayout.moreActions')}
-                    </Button>
-                    {headerActionsOpen && (
-                      <div
-                        className="absolute right-0 z-50 mt-1 min-w-[12.5rem] rounded-xl border border-neutral-200 bg-white py-1 shadow-lg dark:border-[#262626] dark:bg-[#171717]"
-                        role="menu"
-                      >
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
-                          onClick={() => {
-                            setHeaderActionsOpen(false);
-                            handleEdit();
-                          }}
-                        >
-                          <Edit className="h-4 w-4 shrink-0 text-neutral-400" />
-                          {t('detail.actions.edit')}
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-800 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
-                          onClick={() => {
-                            setHeaderActionsOpen(false);
-                            handleAddSubscription();
-                          }}
-                        >
-                          <Plus className="h-4 w-4 shrink-0 text-neutral-400" />
-                          {t('detail.profileLayout.addSubscription')}
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-error-600 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-950/30"
-                          onClick={() => {
-                            setHeaderActionsOpen(false);
-                            setShowDeleteModal(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 shrink-0" />
-                          {t('detail.actions.delete')}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* 3-column grid — same width as header; equal columns (minmax 0 + 1fr) */}
-      <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-        {/* Customer info */}
-        <section className={cn(SURFACE, 'min-w-0 p-6')}>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-50">
-              {t('detail.profileLayout.columnInfo')}
-            </h2>
-            <Info className={cn('w-5 h-5', TEXT_MUTED)} />
-          </div>
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <p className={cn('text-xs font-semibold uppercase tracking-wide', TEXT_MUTED)}>
-                {t('detail.profileLayout.primaryContact')}
-              </p>
-              <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50">
-                {primarySite?.contact_name || '—'}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t('detail.profileLayout.contactRoleHint')}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className={cn('text-xs font-semibold uppercase tracking-wide', TEXT_MUTED)}>
-                {t('detail.profileLayout.emailPhone')}
-              </p>
-              <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 break-all">
-                {customer.email || '—'}
-              </p>
-              <p className="text-sm text-neutral-700 dark:text-neutral-200">
-                {customer.phone ? formatPhone(customer.phone) : '—'}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className={cn('text-xs font-semibold uppercase tracking-wide', TEXT_MUTED)}>
-                {t('detail.profileLayout.billingAddress')}
-              </p>
-              <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-200">
-                {billingAddressLines}
-              </p>
-            </div>
-            <div className="pt-4 mt-4 flex items-center gap-4 border-t border-neutral-200 dark:border-[#262626]">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-                <Info className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-              </div>
-              <div>
-                <p className={cn('text-xs font-semibold uppercase tracking-wide', TEXT_MUTED)}>
-                  {t('detail.profileLayout.accountManager')}
-                </p>
-                <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50">
-                  {accountManagerName || t('detail.profileLayout.noManager')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Subscriptions */}
-        <section className={cn(SURFACE, 'flex min-h-[280px] min-w-0 flex-col p-6')}>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-50">
-              {t('detail.profileLayout.columnSubscriptions')}
-            </h2>
-            <span className="text-xs font-bold uppercase tracking-wide text-primary-600 dark:text-primary-400">
-              {t('detail.profileLayout.servicesCount', { count: activeSubscriptionsFiltered.length })}
-            </span>
-          </div>
-          <div className="space-y-4 flex-1">
-            {activeSubscriptionsFiltered.length === 0 ? (
-              <p className={cn('text-sm', TEXT_MUTED)}>{t('detail.profileLayout.subscriptions.empty')}</p>
-            ) : (
-              activeSubscriptionsFiltered.map((sub, idx) => {
-                const Icon = subIcons[idx % subIcons.length];
-                const tone =
-                  idx % 3 === 0
-                    ? {
-                        box: 'bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300',
-                        price: 'text-primary-700 dark:text-primary-300',
-                        manage: 'font-semibold text-primary-600 dark:text-primary-400',
-                      }
-                    : idx % 3 === 1
-                      ? {
-                          box: 'bg-info-100 text-info-700 dark:bg-info-600/20 dark:text-info-300',
-                          price: 'text-info-700 dark:text-info-300',
-                          manage: 'font-semibold text-info-600 dark:text-info-400',
-                        }
-                      : {
-                          box: 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
-                          price: 'text-neutral-800 dark:text-neutral-200',
-                          manage: 'font-semibold text-neutral-600 dark:text-neutral-400',
-                        };
-                const freqKey = sub.billing_frequency;
-                const freqLabel = freqKey ? tSub(`form.fields.${freqKey}`) : '—';
-                const serviceLabel = sub.service_type
-                  ? tSub(`serviceTypes.${sub.service_type}`, { defaultValue: sub.service_type })
-                  : '';
-                return (
-                  <div
-                    key={sub.id}
-                    className={cn(SURFACE_HIGH, 'p-4 transition-shadow hover:shadow-sm dark:hover:shadow-none')}
-                  >
-                    <div className="flex items-start justify-between mb-3 gap-2">
-                      <div className="flex gap-3 min-w-0">
-                        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', tone.box)}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-50">
-                            {sub.site_name || sub.account_no || tSub('list.title')}
-                          </p>
-                          <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">
-                            {[serviceLabel, freqLabel].filter(Boolean).join(' · ')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className={cn('font-bold', tone.price)}>{fmtMoney(sub.subtotal)}</p>
-                        <p className="text-[0.65rem] uppercase tracking-tight text-neutral-500 dark:text-neutral-400">
-                          {freqLabel}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 text-xs">
-                      <span className={TEXT_MUTED}>
-                        {paymentInsights?.earliestPendingMonth
-                          ? t('detail.profileLayout.subscriptions.nextDue', {
-                              date: formatDate(paymentInsights.earliestPendingMonth),
-                            })
-                          : t('detail.profileLayout.subscriptions.nextDueUnknown')}
-                      </span>
-                      {canWrite && (
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/subscriptions/${sub.id}`)}
-                          className={cn('cursor-pointer', tone.manage)}
-                        >
-                          {t('detail.profileLayout.financial.manageSubscription')}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </section>
-
-        {/* Financial */}
-        <section className="min-w-0 space-y-6">
-          {canWrite ? (
-            <>
-              <div
-                className={cn(
-                  'group relative overflow-hidden rounded-xl border p-6',
-                  'border-primary-200 bg-gradient-to-br from-primary-50 to-white',
-                  'dark:border-primary-800/40 dark:from-primary-950/40 dark:to-[#171717]'
-                )}
-              >
-                <div className="pointer-events-none absolute -right-4 -top-4 opacity-[0.12] transition-transform group-hover:scale-110 dark:opacity-[0.08]">
-                  <Wallet className="h-28 w-28 text-primary-400 dark:text-primary-600" strokeWidth={1.25} />
-                </div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-primary-700 dark:text-primary-400">
-                  {t('detail.profileLayout.financial.monthlyBilling')}
-                </p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-extrabold text-neutral-900 dark:text-neutral-50">
-                    {fmtMoney(monthlyRevenue)}
-                  </span>
-                  <span className={cn('text-sm font-medium', TEXT_MUTED)}>
-                    {t('detail.profileLayout.financial.perMonth')}
-                  </span>
-                </div>
-                <p className={cn('mt-2 text-xs', TEXT_MUTED)}>{nextInvoiceLabel}</p>
-              </div>
-
-              <div className={cn(SURFACE, 'p-6')}>
-                <div className="flex items-center justify-between mb-4">
-                  <p className={cn('text-xs font-bold uppercase tracking-wide', TEXT_MUTED)}>
-                    {t('detail.profileLayout.financial.pendingBalance')}
-                  </p>
-                  {(paymentInsights?.overdueTotal || 0) > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                  )}
-                </div>
-                <h3
-                  className={cn(
-                    'text-2xl font-bold',
-                    (paymentInsights?.overdueTotal || 0) > 0
-                      ? 'text-error-600 dark:text-error-400'
-                      : 'text-neutral-700 dark:text-neutral-200'
-                  )}
-                >
-                  {fmtMoney(paymentInsights?.overdueTotal || 0)}
-                </h3>
-                <p className={cn('mt-1 text-xs', TEXT_MUTED)}>
-                  {t('detail.profileLayout.financial.pendingHint')}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-4 rounded-lg border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20"
-                  onClick={() => navigate('/subscriptions/collection')}
-                >
-                  {t('detail.profileLayout.financial.payBalance')}
-                </Button>
-              </div>
-
-              <div className={cn(SURFACE, 'p-6')}>
-                <p className={cn('mb-4 text-xs font-bold uppercase tracking-wide', TEXT_MUTED)}>
-                  {t('detail.profileLayout.financial.primaryPayment')}
-                </p>
-                {defaultPaymentMethod ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-4">
-                      <div className="flex h-8 w-12 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-neutral-100 dark:border-[#262626] dark:bg-neutral-800">
-                        <CreditCard className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-50">
-                          {(defaultPaymentMethod.method_type || '').toUpperCase()}
-                          {defaultPaymentMethod.card_last4
-                            ? ` •••• ${defaultPaymentMethod.card_last4}`
-                            : ''}
-                        </p>
-                        <p className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400">
-                          <CheckCircle2 className="h-3 w-3" />
-                          {t('detail.profileLayout.financial.autoPayHint')}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className={cn('w-5 h-5 shrink-0', TEXT_MUTED)} />
-                  </div>
-                ) : (
-                  <p className={cn('text-sm', TEXT_MUTED)}>{t('detail.profileLayout.financial.noPaymentMethod')}</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className={cn(SURFACE, 'p-6')}>
-              <p className={cn('text-sm', TEXT_MUTED)}>{t('detail.monthlyRevenue')}</p>
-              <p className="text-lg font-semibold text-neutral-400 mt-2">—</p>
-            </div>
-          )}
-        </section>
-      </div>
+      {!isLegacyTab && (
+        <CustomerDetailSummary
+          customer={customer}
+          primarySite={primarySite}
+          billingAddressLines={billingAddressLines}
+          accountManagerName={accountManagerName}
+          activeSubscriptions={activeSubscriptionsFiltered}
+          monthlyRevenue={monthlyRevenue}
+          paymentInsights={paymentInsights}
+          defaultPaymentMethod={defaultPaymentMethod}
+          fmtMoney={fmtMoney}
+          nextInvoiceLabel={nextInvoiceLabel}
+          canWrite={canWrite}
+        />
+      )}
 
       {/* Legacy full-width panels */}
       {isLegacyTab && (
@@ -1004,7 +774,7 @@ export function CustomerDetailPage() {
             })}
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-5">
             <CustomerDetailProvider value={detailContextValue}>
               {bottomTab === 'workOrders' && (
                 <div className="space-y-6">
