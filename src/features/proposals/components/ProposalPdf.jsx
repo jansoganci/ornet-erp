@@ -82,12 +82,12 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: '#525252',
   },
   infoRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#737373',
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: '#666666',
     marginVertical: 14,
   },
   sectionTitle: {
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#d4d4d4',
+    borderBottomColor: '#666666',
     paddingBottom: 4,
     marginBottom: 4,
   },
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    borderBottomColor: '#808080',
   },
   colSira: {
     width: 28,
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     paddingTop: 3,
     paddingBottom: 6,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: '#666666',
   },
   sectionSubtotalLabel: {
     fontSize: 8,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     width: '55%',
     backgroundColor: '#fafafa',
     borderWidth: 1,
-    borderColor: '#e5e5e5',
+    borderColor: '#525252',
     padding: 10,
   },
   summaryRow: {
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   summaryDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#d4d4d4',
+    borderBottomColor: '#666666',
     marginVertical: 4,
   },
   summaryTotalRow: {
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 4,
     borderTopWidth: 2,
-    borderTopColor: '#1a1a1a',
+    borderTopColor: '#404040',
     marginTop: 4,
   },
   summaryTotalLabel: {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingLeft: 8,
     borderLeftWidth: 2,
-    borderLeftColor: '#d4d4d4',
+    borderLeftColor: '#666666',
   },
   termsTitle: {
     fontSize: 10,
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: '#525252',
   },
   signatureTitle: {
     fontSize: 10,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     left: 50,
     right: 50,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: '#525252',
     paddingTop: 10,
   },
   footerText: {
@@ -402,6 +402,21 @@ function buildSectionGroups(items, sections) {
   return groups;
 }
 
+function findSectionById(sections, sectionId) {
+  if (sectionId == null) return null;
+  return (sections || []).find((s) => (s.id || s._local_id) === sectionId) ?? null;
+}
+
+function getSectionKey(section) {
+  return section?.id || section?._local_id;
+}
+
+function filterItemsForSection(itemList, sectionId) {
+  return itemList.filter(
+    (item) => (item.section_id || item.section_local_id) === sectionId,
+  );
+}
+
 export function ProposalPdf({
   proposal,
   items,
@@ -423,14 +438,25 @@ export function ProposalPdf({
   const sectionGroups = buildSectionGroups(itemList, sections);
   const hasSections = (sections || []).length > 0;
   const annualSubtotals = sumAnnualFixedCostsByCurrency(annualList);
-  const grandTotal = (sections || []).reduce((sum, section) => {
-    const sectionId = section.id || section._local_id;
-    const sectionItems = itemList.filter(
-      (item) => (item.section_id || item.section_local_id) === sectionId
-    );
-    const { sectionTotal } = calcSectionTotal(sectionItems, section.discount_percent, currency);
-    return sum + sectionTotal;
-  }, 0);
+
+  const sectionFinancials = (sections || []).map((section) => {
+    const sectionId = getSectionKey(section);
+    const sectionItems = filterItemsForSection(itemList, sectionId);
+    return calcSectionTotal(sectionItems, section.discount_percent, currency);
+  });
+  const flatItemsTotal = itemList.reduce(
+    (sum, item) => sum + safeNum(resolveProposalItemLineTotal(item, currency)),
+    0,
+  );
+  const grossSubtotal = hasSections
+    ? sectionFinancials.reduce((sum, row) => sum + row.subtotal, 0)
+    : flatItemsTotal;
+  const totalDiscountAmount = hasSections
+    ? sectionFinancials.reduce((sum, row) => sum + row.discountAmount, 0)
+    : 0;
+  const grandTotal = hasSections
+    ? sectionFinancials.reduce((sum, row) => sum + row.sectionTotal, 0)
+    : flatItemsTotal;
   const {
     vatAmount: grandVatAmount,
     totalWithVat: grandTotalWithVat,
@@ -454,12 +480,6 @@ export function ProposalPdf({
           </View>
           <View style={styles.topRight}>
             <View style={styles.infoCard}>
-              {prop.proposal_no && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>{i18n.t('proposals:pdf.headerLabels.proposalNo')}</Text>
-                  <Text style={styles.infoValue}>{safeStr(prop.proposal_no)}</Text>
-                </View>
-              )}
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>{i18n.t('proposals:pdf.headerLabels.companyName')}</Text>
                 <Text style={styles.infoValue}>
@@ -514,10 +534,6 @@ export function ProposalPdf({
           </View>
           {(() => {
             return sectionGroups.map(({ sectionId, title, items: groupItems }) => {
-              const groupSubtotal = groupItems.reduce(
-                (sum, item) => sum + safeNum(resolveProposalItemLineTotal(item, currency)),
-                0,
-              );
               const rows = groupItems.map((item, localIndex) => {
                 const lineTotal = safeNum(resolveProposalItemLineTotal(item, currency));
                 const rowIndex = localIndex + 1;
@@ -540,10 +556,10 @@ export function ProposalPdf({
               // No sections → flat render (backward compatible)
               if (!hasSections) return rows;
 
-              const section = (sections || []).find((s) => s.id === sectionId);
+              const section = findSectionById(sections, sectionId);
               const sectionDiscountPct = safeNum(section?.discount_percent, 0);
-              const sectionDiscountAmt = Math.round(groupSubtotal * sectionDiscountPct / 100 * 100) / 100;
-              const sectionNet = Math.round((groupSubtotal - sectionDiscountAmt) * 100) / 100;
+              const { subtotal: groupSubtotalCalc, discountAmount: sectionDiscountAmt, sectionTotal: sectionNet } =
+                calcSectionTotal(groupItems, sectionDiscountPct, currency);
 
               return (
                 <View key={sectionId || '__ungrouped__'}>
@@ -560,29 +576,27 @@ export function ProposalPdf({
                           {title ? `${safeStr(title)} Ara Toplamı` : i18n.t('proposals:sections.sectionSubtotal')}
                         </Text>
                         <Text style={styles.sectionSubtotalValue}>
-                          {formatByCurrency(groupSubtotal, currency)}
+                          {formatByCurrency(groupSubtotalCalc, currency)}
                         </Text>
                       </View>
                       {sectionDiscountPct > 0 && (
-                        <>
-                          <View style={styles.sectionSubtotalRow}>
-                            <Text style={styles.sectionSubtotalLabel}>
-                              {i18n.t('proposals:sections.discount')} %{sectionDiscountPct}
-                            </Text>
-                            <Text style={styles.sectionSubtotalValue}>
-                              -{formatByCurrency(sectionDiscountAmt, currency)}
-                            </Text>
-                          </View>
-                          <View style={styles.sectionSubtotalRow}>
-                            <Text style={[styles.sectionSubtotalLabel, { fontWeight: 600 }]}>
-                              {i18n.t('proposals:sections.sectionTotal')}
-                            </Text>
-                            <Text style={[styles.sectionSubtotalValue, { fontWeight: 600 }]}>
-                              {formatByCurrency(sectionNet, currency)}
-                            </Text>
-                          </View>
-                        </>
+                        <View style={styles.sectionSubtotalRow}>
+                          <Text style={styles.sectionSubtotalLabel}>
+                            {i18n.t('proposals:sections.discount')} %{sectionDiscountPct}
+                          </Text>
+                          <Text style={[styles.sectionSubtotalValue, { color: '#dc2626' }]}>
+                            −{formatByCurrency(sectionDiscountAmt, currency)}
+                          </Text>
+                        </View>
                       )}
+                      <View style={styles.sectionSubtotalRow}>
+                        <Text style={[styles.sectionSubtotalLabel, { fontWeight: 600 }]}>
+                          {i18n.t('proposals:sections.sectionTotal')}
+                        </Text>
+                        <Text style={[styles.sectionSubtotalValue, { fontWeight: 600 }]}>
+                          {formatByCurrency(sectionNet, currency)}
+                        </Text>
+                      </View>
                       {vatRate > 0 && (() => {
                         const { vatAmount: secVat, totalWithVat: secWithVat } = calcVatTevkifatSummary(sectionNet, vatRate, false, 0, 1);
                         return (
@@ -616,9 +630,28 @@ export function ProposalPdf({
           {/* Totals summary box - right aligned */}
           <View style={styles.totalsWrap}>
             <View style={styles.summaryCard}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>{i18n.t('proposals:pdf.grandTotal')}</Text>
-                <Text style={styles.summaryValue}>{formatByCurrency(grandTotal, currency)}</Text>
+              {totalDiscountAmount > 0 && (
+                <>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>{i18n.t('proposals:pdf.grossSubtotal')}</Text>
+                    <Text style={styles.summaryValue}>{formatByCurrency(grossSubtotal, currency)}</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>{i18n.t('proposals:pdf.totalDiscount')}</Text>
+                    <Text style={[styles.summaryValue, { color: '#dc2626' }]}>
+                      −{formatByCurrency(totalDiscountAmount, currency)}
+                    </Text>
+                  </View>
+                  <View style={styles.summaryDivider} />
+                </>
+              )}
+              <View style={totalDiscountAmount > 0 ? styles.summaryTotalRow : styles.summaryRow}>
+                <Text style={totalDiscountAmount > 0 ? styles.summaryTotalLabel : styles.summaryLabel}>
+                  {i18n.t('proposals:pdf.grandTotal')}
+                </Text>
+                <Text style={totalDiscountAmount > 0 ? styles.summaryTotalValue : styles.summaryValue}>
+                  {formatByCurrency(grandTotal, currency)}
+                </Text>
               </View>
               {vatRate > 0 && (
                 <>

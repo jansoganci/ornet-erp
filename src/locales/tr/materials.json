@@ -40,10 +40,11 @@
       "isActive": "Aktif"
     },
     "placeholders": {
-      "code": "Örn: DED-001",
+      "code": "Örn: ORN0101",
       "name": "Örn: Optik Duman Dedektörü",
       "description": "Ornet malzeme adı (isteğe bağlı)"
-    }
+    },
+    "suggestedCodeHint": "Önerilen kod — gerekirse değiştirebilirsiniz."
   },
   "units": {
     "adet": "Adet",

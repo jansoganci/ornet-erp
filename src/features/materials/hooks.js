@@ -35,6 +35,7 @@ export function useCreateMaterial() {
     mutationFn: api.createMaterial,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: materialKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: materialKeys.ornCodes() });
       toast.success(t('success.created'));
     },
     onError: (error) => {

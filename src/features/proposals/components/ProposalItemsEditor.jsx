@@ -12,7 +12,7 @@ import {
 } from '../../../lib/proposalCalc';
 
 const DESKTOP_ITEM_GRID =
-  'grid-cols-[36px_minmax(220px,1.6fr)_72px_92px_120px_120px_120px_120px_132px_40px]';
+  'grid-cols-[36px_minmax(220px,1.6fr)_72px_92px_minmax(200px,1.5fr)_minmax(200px,1.5fr)_40px]';
 
 const UNIT_OPTIONS = [
   { value: 'adet', labelKey: 'items.units.adet' },
@@ -203,68 +203,76 @@ export function ProposalItemsEditor({
               )}
             />
           </div>
-          {/* Unit Price */}
-          <div className="px-1 relative z-10">
-            <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none z-10">{symbol}</span>
-            <Controller
-              control={control}
-              name={`items.${flatIndex}.unit_price`}
-              render={({ field: f }) => (
-                <input
-                  type="number" min={0} step={0.01}
-                  value={f.value === undefined || f.value === null || f.value === '' ? '' : String(f.value)}
-                  onChange={(e) => f.onChange(e.target.value)}
-                  onBlur={() => {
-                    const n = parseFloat(String(f.value).trim());
-                    f.onChange(Number.isFinite(n) && n >= 0 ? n : 0);
-                    f.onBlur();
-                  }}
-                  className={cn(
-                    'block w-full h-9 rounded-lg border shadow-sm text-sm relative pl-6 pr-2',
-                    'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
-                    errors?.items?.[flatIndex]?.unit_price
-                      ? 'border-error-500' : 'border-neutral-300 dark:border-neutral-500',
-                  )}
-                />
-              )}
-            />
+          {/* Sales: unit price + line total */}
+          <div className="px-1 grid grid-cols-[1fr_auto] gap-1.5 items-center rounded-lg bg-primary-50/60 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/40 px-2 py-1.5">
+            <div className="relative z-10 min-w-0">
+              <span className="absolute inset-y-0 left-2 flex items-center text-neutral-400 text-xs pointer-events-none z-10">{symbol}</span>
+              <Controller
+                control={control}
+                name={`items.${flatIndex}.unit_price`}
+                render={({ field: f }) => (
+                  <input
+                    type="number" min={0} step={0.01}
+                    value={f.value === undefined || f.value === null || f.value === '' ? '' : String(f.value)}
+                    onChange={(e) => f.onChange(e.target.value)}
+                    onBlur={() => {
+                      const n = parseFloat(String(f.value).trim());
+                      f.onChange(Number.isFinite(n) && n >= 0 ? n : 0);
+                      f.onBlur();
+                    }}
+                    className={cn(
+                      'block w-full h-9 rounded-lg border shadow-sm text-sm relative pl-6 pr-2',
+                      'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
+                      errors?.items?.[flatIndex]?.unit_price
+                        ? 'border-error-500' : 'border-neutral-300 dark:border-neutral-500',
+                    )}
+                  />
+                )}
+              />
+            </div>
+            <div className="text-right shrink-0 pl-1 border-l border-primary-200/80 dark:border-primary-800/60">
+              <span className="block text-[10px] font-medium uppercase tracking-wide text-primary-600/80 dark:text-primary-400/80 leading-tight">
+                {t('items.salesTotal')}
+              </span>
+              <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 tabular-nums whitespace-nowrap">
+                {formatCurrency(lineTotal, currency)}
+              </span>
+            </div>
           </div>
-          {/* Line Total */}
-          <div className="px-1 text-right">
-            <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(lineTotal, currency)}
-            </span>
-          </div>
-          {/* Unit Cost */}
-          <div className="px-1 relative z-10">
-            <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none z-10">{symbol}</span>
-            <Controller
-              control={control}
-              name={`items.${flatIndex}.cost`}
-              render={({ field: f }) => (
-                <input
-                  type="number" min={0} step={0.01}
-                  value={f.value === undefined || f.value === null || f.value === '' ? '' : String(f.value)}
-                  onChange={(e) => f.onChange(e.target.value)}
-                  onBlur={() => {
-                    const n = parseFloat(String(f.value).trim());
-                    f.onChange(Number.isFinite(n) && n >= 0 ? n : 0);
-                    f.onBlur();
-                  }}
-                  className={cn(
-                    'block w-full h-9 rounded-lg border shadow-sm text-sm relative pl-6 pr-2',
-                    'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
-                    'border-neutral-300 dark:border-neutral-500',
-                  )}
-                />
-              )}
-            />
-          </div>
-          {/* Line Total Cost */}
-          <div className="px-1 text-right">
-            <span className="font-semibold text-sm text-neutral-700 dark:text-neutral-300">
-              {formatCurrency(lineTotalCost, currency)}
-            </span>
+          {/* Cost: unit cost + line total cost */}
+          <div className="px-1 grid grid-cols-[1fr_auto] gap-1.5 items-center rounded-lg bg-neutral-50 dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#333] px-2 py-1.5">
+            <div className="relative z-10 min-w-0">
+              <span className="absolute inset-y-0 left-2 flex items-center text-neutral-400 text-xs pointer-events-none z-10">{symbol}</span>
+              <Controller
+                control={control}
+                name={`items.${flatIndex}.cost`}
+                render={({ field: f }) => (
+                  <input
+                    type="number" min={0} step={0.01}
+                    value={f.value === undefined || f.value === null || f.value === '' ? '' : String(f.value)}
+                    onChange={(e) => f.onChange(e.target.value)}
+                    onBlur={() => {
+                      const n = parseFloat(String(f.value).trim());
+                      f.onChange(Number.isFinite(n) && n >= 0 ? n : 0);
+                      f.onBlur();
+                    }}
+                    className={cn(
+                      'block w-full h-9 rounded-lg border shadow-sm text-sm relative pl-6 pr-2',
+                      'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
+                      'border-neutral-300 dark:border-neutral-500',
+                    )}
+                  />
+                )}
+              />
+            </div>
+            <div className="text-right shrink-0 pl-1 border-l border-neutral-200 dark:border-[#333]">
+              <span className="block text-[10px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400 leading-tight">
+                {t('items.totalCost')}
+              </span>
+              <span className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 tabular-nums whitespace-nowrap">
+                {formatCurrency(lineTotalCost, currency)}
+              </span>
+            </div>
           </div>
           {/* Delete */}
           <div className="flex items-center justify-center">
@@ -369,71 +377,75 @@ export function ProposalItemsEditor({
             />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">{t('items.unitPrice')}</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none">{symbol}</span>
-              <Controller
-                control={control}
-                name={`items.${flatIndex}.unit_price`}
-                render={({ field }) => (
-                  <input
-                    type="number" min={0} step={0.01}
-                    value={field.value === undefined || field.value === null || field.value === '' ? '' : String(field.value)}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    onBlur={() => {
-                      const n = parseFloat(String(field.value).trim());
-                      field.onChange(Number.isFinite(n) && n >= 0 ? n : 0);
-                      field.onBlur();
-                    }}
-                    className={cn(
-                      'block w-full h-10 rounded-lg border shadow-sm text-sm pl-6 pr-3',
-                      'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
-                      errors?.items?.[flatIndex]?.unit_price
-                        ? 'border-error-500' : 'border-neutral-300 dark:border-neutral-500',
-                    )}
-                  />
-                )}
-              />
+        <div className="rounded-lg bg-primary-50/60 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/40 p-3 space-y-2">
+          <div className="grid grid-cols-2 gap-3 items-end">
+            <div>
+              <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">{t('items.unitPrice')}</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none">{symbol}</span>
+                <Controller
+                  control={control}
+                  name={`items.${flatIndex}.unit_price`}
+                  render={({ field }) => (
+                    <input
+                      type="number" min={0} step={0.01}
+                      value={field.value === undefined || field.value === null || field.value === '' ? '' : String(field.value)}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={() => {
+                        const n = parseFloat(String(field.value).trim());
+                        field.onChange(Number.isFinite(n) && n >= 0 ? n : 0);
+                        field.onBlur();
+                      }}
+                      className={cn(
+                        'block w-full h-10 rounded-lg border shadow-sm text-sm pl-6 pr-3',
+                        'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
+                        errors?.items?.[flatIndex]?.unit_price
+                          ? 'border-error-500' : 'border-neutral-300 dark:border-neutral-500',
+                      )}
+                    />
+                  )}
+                />
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">{t('items.unitCost')}</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none">{symbol}</span>
-              <Controller
-                control={control}
-                name={`items.${flatIndex}.cost`}
-                render={({ field }) => (
-                  <input
-                    type="number" min={0} step={0.01}
-                    value={field.value === undefined || field.value === null || field.value === '' ? '' : String(field.value)}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    onBlur={() => {
-                      const n = parseFloat(String(field.value).trim());
-                      field.onChange(Number.isFinite(n) && n >= 0 ? n : 0);
-                      field.onBlur();
-                    }}
-                    className={cn(
-                      'block w-full h-10 rounded-lg border shadow-sm text-sm pl-6 pr-3',
-                      'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
-                      'border-neutral-300 dark:border-neutral-500',
-                    )}
-                  />
-                )}
-              />
+            <div className="text-right border-l border-primary-200/80 dark:border-primary-800/60 pl-3">
+              <span className="block text-xs font-medium text-primary-600/80 dark:text-primary-400/80 mb-1">{t('items.salesTotal')}</span>
+              <p className="font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">{formatCurrency(lineTotal, currency)}</p>
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-200 dark:border-[#262626]">
-          <div>
-            <span className="text-xs text-neutral-500">{t('items.total')}</span>
-            <p className="font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(lineTotal, currency)}</p>
-          </div>
-          <div className="text-right">
-            <span className="text-xs text-neutral-500">{t('items.totalCost')}</span>
-            <p className="font-bold text-neutral-700 dark:text-neutral-300">{formatCurrency(lineTotalCost, currency)}</p>
+        <div className="rounded-lg bg-neutral-50 dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#262626] p-3 space-y-2">
+          <div className="grid grid-cols-2 gap-3 items-end">
+            <div>
+              <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">{t('items.unitCost')}</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center text-neutral-400 text-xs pointer-events-none">{symbol}</span>
+                <Controller
+                  control={control}
+                  name={`items.${flatIndex}.cost`}
+                  render={({ field }) => (
+                    <input
+                      type="number" min={0} step={0.01}
+                      value={field.value === undefined || field.value === null || field.value === '' ? '' : String(field.value)}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={() => {
+                        const n = parseFloat(String(field.value).trim());
+                        field.onChange(Number.isFinite(n) && n >= 0 ? n : 0);
+                        field.onBlur();
+                      }}
+                      className={cn(
+                        'block w-full h-10 rounded-lg border shadow-sm text-sm pl-6 pr-3',
+                        'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',
+                        'border-neutral-300 dark:border-neutral-500',
+                      )}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+            <div className="text-right border-l border-neutral-200 dark:border-[#333] pl-3">
+              <span className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">{t('items.totalCost')}</span>
+              <p className="font-bold text-neutral-700 dark:text-neutral-300 tabular-nums">{formatCurrency(lineTotalCost, currency)}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -487,10 +499,12 @@ export function ProposalItemsEditor({
               <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1">{t('items.material')}</span>
               <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1">{t('items.quantity')}</span>
               <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1">{t('items.unit')}</span>
-              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1">{t('items.unitPrice')}</span>
-              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1 text-right">{t('items.total')}</span>
-              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1">{t('items.unitCost')}</span>
-              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1 text-right">{t('items.totalCost')}</span>
+              <span className="text-xs font-semibold text-primary-600/90 dark:text-primary-400/90 uppercase tracking-wider px-1 col-span-1">
+                {t('items.unitPrice')} / {t('items.salesTotal')}
+              </span>
+              <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider px-1">
+                {t('items.unitCost')} / {t('items.totalCost')}
+              </span>
               <span />
             </div>
           )}
@@ -523,65 +537,89 @@ export function ProposalItemsEditor({
           const sectionItems = entries.map(({ flatIndex }) => watchItems[flatIndex] ?? {});
           const sectionDiscountPct = Number(watchSections[sectionIdx]?.discount_percent) || 0;
           const { subtotal: secSub, discountAmount: secDisc, sectionTotal: secNet } = calcSectionTotal(sectionItems, sectionDiscountPct, currency);
+          const sectionCost = calcTotalCosts(sectionItems, currency);
+          const sectionProfit = secNet - sectionCost;
           const { vatAmount: secVat, totalWithVat: secTotalWithVat } = calcVatTevkifatSummary(secNet, vatRate, false, 0, 1);
           return (
-            <div className="px-4 py-3 bg-neutral-50 dark:bg-[#1a1a1a] border-t border-neutral-200 dark:border-[#262626] space-y-1.5">
-              {/* Subtotal row */}
-              <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
-                <span>{t('sections.sectionSubtotal')}</span>
-                <span className="font-medium tabular-nums">{formatCurrency(secSub, currency)}</span>
-              </div>
-
-              {/* Discount input row */}
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">{t('sections.discount')} %</span>
-                <Controller
-                  control={control}
-                  name={`sections.${sectionIdx}.discount_percent`}
-                  render={({ field: f }) => (
-                    <input
-                      type="number" min={0} max={100} step={0.01}
-                      value={f.value === undefined || f.value === null || f.value === '' ? '' : String(f.value)}
-                      onChange={(e) => f.onChange(e.target.value)}
-                      onBlur={() => {
-                        const n = parseFloat(String(f.value).trim());
-                        f.onChange(Number.isFinite(n) && n >= 0 ? Math.min(n, 100) : 0);
-                        f.onBlur();
-                      }}
-                      placeholder="0"
-                      className="w-20 h-7 rounded border text-xs text-center bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50 border-neutral-300 dark:border-neutral-600 focus:border-primary-500 outline-none"
-                    />
+            <div className="px-4 py-4 bg-neutral-50 dark:bg-[#1a1a1a] border-t border-neutral-200 dark:border-[#262626]">
+              <div className="grid md:grid-cols-2 gap-3">
+                {/* Sales summary */}
+                <div className="rounded-lg border border-primary-100 dark:border-primary-900/50 bg-primary-50/40 dark:bg-primary-950/20 p-3 space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-400">
+                    {t('sections.salesSummary')}
+                  </h4>
+                  <div className="flex items-center justify-between text-sm text-neutral-600 dark:text-neutral-400">
+                    <span>{t('sections.sectionSubtotal')}</span>
+                    <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">{formatCurrency(secSub, currency)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 text-sm text-neutral-600 dark:text-neutral-400">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span>{t('sections.discount')} %</span>
+                      <Controller
+                        control={control}
+                        name={`sections.${sectionIdx}.discount_percent`}
+                        render={({ field: f }) => (
+                          <input
+                            type="number" min={0} max={100} step={0.01}
+                            value={f.value === undefined || f.value === null || f.value === '' ? '' : String(f.value)}
+                            onChange={(e) => f.onChange(e.target.value)}
+                            onBlur={() => {
+                              const n = parseFloat(String(f.value).trim());
+                              f.onChange(Number.isFinite(n) && n >= 0 ? Math.min(n, 100) : 0);
+                              f.onBlur();
+                            }}
+                            placeholder="0"
+                            className="w-16 h-8 rounded-lg border text-sm text-center bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50 border-neutral-300 dark:border-neutral-600 focus:border-primary-500 outline-none tabular-nums"
+                          />
+                        )}
+                      />
+                    </div>
+                    {sectionDiscountPct > 0 ? (
+                      <span className="tabular-nums font-medium text-error-600 dark:text-error-400">
+                        −{formatCurrency(secDisc, currency)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-primary-200/80 dark:border-primary-800/50">
+                    <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{t('sections.sectionTotal')}</span>
+                    <span className="text-base font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{formatCurrency(secNet, currency)}</span>
+                  </div>
+                  {vatRate > 0 && (
+                    <>
+                      <div className="flex items-center justify-between text-sm text-neutral-600 dark:text-neutral-400">
+                        <span>{t('detail.vatAmount')} (%{vatRate})</span>
+                        <span className="tabular-nums">{formatCurrency(secVat, currency)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                        <span>{t('sections.sectionTotalWithVat')}</span>
+                        <span className="tabular-nums">{formatCurrency(secTotalWithVat, currency)}</span>
+                      </div>
+                    </>
                   )}
-                />
+                </div>
+
+                {/* Cost summary (internal) */}
+                <div className="rounded-lg border border-neutral-200 dark:border-[#333] bg-white/60 dark:bg-[#171717]/60 p-3 space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                    {t('sections.costSummary')}
+                  </h4>
+                  <div className="flex items-center justify-between text-sm text-neutral-600 dark:text-neutral-400">
+                    <span>{t('sections.sectionCostTotal')}</span>
+                    <span className="font-medium tabular-nums text-neutral-800 dark:text-neutral-200">{formatCurrency(sectionCost, currency)}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#333]">
+                    <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{t('sections.estimatedProfit')}</span>
+                    <span className={cn(
+                      'text-base font-bold tabular-nums',
+                      sectionProfit >= 0 ? 'text-green-600 dark:text-green-500' : 'text-error-600 dark:text-error-400',
+                    )}>
+                      {formatCurrency(sectionProfit, currency)}
+                    </span>
+                  </div>
+                </div>
               </div>
-
-              {/* Discount amount */}
-              {sectionDiscountPct > 0 && (
-                <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
-                  <span>{t('sections.discountAmount')}</span>
-                  <span className="tabular-nums text-error-600 dark:text-error-400">-{formatCurrency(secDisc, currency)}</span>
-                </div>
-              )}
-
-              {/* Section net total */}
-              <div className="flex items-center justify-between text-xs font-bold text-neutral-800 dark:text-neutral-100 pt-0.5 border-t border-neutral-200 dark:border-[#333]">
-                <span>{t('sections.sectionTotal')}</span>
-                <span className="tabular-nums">{formatCurrency(secNet, currency)}</span>
-              </div>
-
-              {/* VAT on section */}
-              {vatRate > 0 && (
-                <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
-                  <span>KDV (%{vatRate})</span>
-                  <span className="tabular-nums">{formatCurrency(secVat, currency)}</span>
-                </div>
-              )}
-              {vatRate > 0 && (
-                <div className="flex items-center justify-between text-xs text-neutral-600 dark:text-neutral-300 font-semibold">
-                  <span>{t('sections.sectionTotalWithVat')}</span>
-                  <span className="tabular-nums">{formatCurrency(secTotalWithVat, currency)}</span>
-                </div>
-              )}
             </div>
           );
         })()}

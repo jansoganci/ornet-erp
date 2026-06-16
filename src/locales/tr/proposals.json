@@ -209,6 +209,7 @@
     "unitPrice": "Birim Fiyat",
     "unitCost": "Birim Maliyet",
     "total": "Toplam",
+    "salesTotal": "Satış Toplam",
     "totalCost": "Maliyet Toplam",
     "addItem": "Malzeme Ekle",
     "removeRow": "Satırı Sil",
@@ -289,7 +290,9 @@
     "annualFixedTitle": "YILLIK SABİT GİDERLER",
     "annualFixedSubtotal": "Ara Toplam ({{currency}})",
     "annualFixedDisclaimer": "Tutarlara KDV dahil değildir.",
-    "footerCompany": "Ornet Güvenlik Sistemleri"
+    "footerCompany": "Ornet Güvenlik Sistemleri",
+    "grossSubtotal": "Ara Toplam",
+    "totalDiscount": "İskonto Tutarı"
   },
   "completionRate": {
     "title": "Tamamlama Kuru Onayla",
@@ -308,11 +311,15 @@
     "titlePlaceholder": "Bölüm adı (ör. Alarm Sistemi, CCTV...)",
     "ungrouped": "Genel",
     "emptySection": "Henüz malzeme eklenmedi.",
-    "sectionSubtotal": "Bölüm Ara Toplamı",
+    "salesSummary": "Satış",
+    "costSummary": "Maliyet (Dahili)",
+    "sectionSubtotal": "Satış Ara Toplamı",
     "sectionCount": "{{count}} bölüm",
     "discount": "İskonto",
     "discountAmount": "İskonto Tutarı",
-    "sectionTotal": "Bölüm Toplamı",
-    "sectionTotalWithVat": "KDV Dahil Bölüm Toplamı"
+    "sectionTotal": "Net Satış Toplamı",
+    "sectionTotalWithVat": "KDV Dahil Bölüm Toplamı",
+    "sectionCostTotal": "Bölüm Maliyet Toplamı",
+    "estimatedProfit": "Tahmini Kâr"
   }
 }

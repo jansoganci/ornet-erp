@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Modal, 
   Input, 
@@ -10,21 +12,26 @@ import {
 } from '../../components/ui';
 import { materialSchema, materialDefaultValues } from './schema';
 import { useCreateMaterial, useUpdateMaterial } from './hooks';
+import { fetchOrnMaterialCodes, materialKeys } from './api';
+import { suggestNextOrnCode } from './materialCode';
 import { toast } from 'sonner';
 
 export function MaterialFormModal({ 
   open, 
   onClose, 
   material = null,
-  onSuccess = null
+  suggestedCode = undefined,
+  onSuccess = null,
 }) {
   const { t } = useTranslation(['materials', 'common']);
+  const queryClient = useQueryClient();
   const isEditing = !!material;
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(materialSchema),
@@ -33,6 +40,50 @@ export function MaterialFormModal({
 
   const createMutation = useCreateMaterial();
   const updateMutation = useUpdateMaterial();
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (isEditing) {
+      reset(material);
+      return;
+    }
+
+    reset(materialDefaultValues);
+
+    let cancelled = false;
+    const applySuggestedCode = (code) => {
+      if (!cancelled) setValue('code', code);
+    };
+
+    if (suggestedCode) {
+      applySuggestedCode(suggestedCode);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const cachedList = queryClient.getQueryData(materialKeys.list({}));
+    if (cachedList?.length) {
+      applySuggestedCode(suggestNextOrnCode(cachedList.map((item) => item.code)));
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    queryClient
+      .fetchQuery({
+        queryKey: materialKeys.ornCodes(),
+        queryFn: fetchOrnMaterialCodes,
+        staleTime: 60_000,
+      })
+      .then((codes) => applySuggestedCode(suggestNextOrnCode(codes)))
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isEditing, material, suggestedCode, reset, setValue, queryClient]);
 
   const onSubmit = async (data) => {
     try {
@@ -88,13 +139,20 @@ export function MaterialFormModal({
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Input
-          label={t('materials:form.fields.code')}
-          placeholder={t('materials:form.placeholders.code')}
-          error={errors.code?.message}
-          {...register('code')}
-          autoFocus
-        />
+        <div>
+          <Input
+            label={t('materials:form.fields.code')}
+            placeholder={t('materials:form.placeholders.code')}
+            error={errors.code?.message}
+            {...register('code')}
+            autoFocus
+          />
+          {!isEditing && (
+            <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+              {t('materials:form.suggestedCodeHint')}
+            </p>
+          )}
+        </div>
 
         <Input
           label={t('materials:form.fields.name')}

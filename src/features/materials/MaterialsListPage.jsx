@@ -23,6 +23,7 @@ import { MaterialUsageModal } from './components/MaterialUsageModal';
 import { QuickMaterialPriceField } from './components/QuickMaterialPriceField';
 import { QuickMaterialCurrencySelect } from './components/QuickMaterialCurrencySelect';
 import { cn, formatCurrency } from '../../lib/utils';
+import { suggestNextOrnCode } from './materialCode';
 
 export function MaterialsListPage() {
   const { t } = useTranslation(['materials', 'common']);
@@ -97,6 +98,11 @@ export function MaterialsListPage() {
     const uniqueCats = new Set(materials.map((m) => m.category).filter(Boolean)).size;
     return { total, active, filtered, uniqueCats };
   }, [allMaterials, materials]);
+
+  const nextMaterialCode = useMemo(
+    () => suggestNextOrnCode(allMaterials.map((m) => m.code)),
+    [allMaterials],
+  );
 
   const handleFilterChange = (key, value) => {
     if (key === 'search') {
@@ -658,7 +664,12 @@ export function MaterialsListPage() {
         material={usageModalMaterial}
       />
 
-      <MaterialFormModal open={isModalOpen} onClose={() => setIsModalOpen(false)} material={selectedMaterial} />
+      <MaterialFormModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        material={selectedMaterial}
+        suggestedCode={selectedMaterial ? undefined : nextMaterialCode}
+      />
 
       <Modal
         open={!!materialToDelete}

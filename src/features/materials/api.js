@@ -10,6 +10,7 @@ export const materialKeys = {
   detail: (id) => [...materialKeys.details(), id],
   usage: (id) => [...materialKeys.details(), 'usage', id],
   categories: () => [...materialKeys.all, 'categories'],
+  ornCodes: () => [...materialKeys.all, 'ornCodes'],
 };
 
 /**
@@ -166,6 +167,17 @@ export async function fetchMaterialUsageHistory(materialId) {
       const dateB = b.completed_at || b.scheduled_date || '';
       return dateB.localeCompare(dateA);
     });
+}
+
+export async function fetchOrnMaterialCodes() {
+  const { data, error } = await supabase
+    .from('materials')
+    .select('code')
+    .is('deleted_at', null)
+    .ilike('code', 'ORN%');
+
+  if (error) throw error;
+  return (data ?? []).map((row) => row.code);
 }
 
 export async function fetchMaterialCategories() {
