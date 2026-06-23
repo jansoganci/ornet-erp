@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Phone, Calendar, ChevronRight } from 'lucide-react';
-import { cn, formatDate } from '../../../lib/utils';
+import { MapPin, Phone, Calendar, ChevronRight, Building2, CreditCard, ShieldCheck } from 'lucide-react';
+import { cn, formatCurrency, formatDate } from '../../../lib/utils';
 
 const SURFACE =
   'rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-[#262626] dark:bg-[#171717]';
@@ -25,38 +25,52 @@ export function SubscriptionDetailInfoStrip({ subscription }) {
   const alarmLine = [subscription.alarm_center, subscription.alarm_center_account && `ACC: ${subscription.alarm_center_account}`]
     .filter(Boolean)
     .join(' · ');
+  const locationLine = [subscription.site_name, subscription.site_address].filter(Boolean).join(' · ');
+  const monthlyAmount = Number(subscription.base_price || 0)
+    + Number(subscription.sms_fee || 0)
+    + Number(subscription.line_fee || 0)
+    + Number(subscription.static_ip_fee || 0)
+    + Number(subscription.sim_amount || 0);
 
   return (
-    <section className={cn(SURFACE, 'hidden px-4 py-3 sm:px-5 sm:py-4 md:block')}>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+    <section className={cn(SURFACE, 'hidden px-5 py-4 md:block')}>
+      <div className="mb-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
+          {t('subscriptions:detail.heroEyebrow')}
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-7 xl:gap-5">
+        <InfoCell label={t('subscriptions:list.columns.customer')}>
+          <Link
+            to={`/customers/${subscription.customer_id}`}
+            className="group inline-flex min-w-0 items-center gap-1 text-sm font-semibold text-neutral-900 hover:text-primary-600 dark:text-neutral-50 dark:hover:text-primary-400"
+          >
+            <Building2 className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+            <span className="truncate">{subscription.company_name || '—'}</span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50 group-hover:opacity-100" />
+          </Link>
+        </InfoCell>
+        <InfoCell label={t('subscriptions:detail.fields.serviceType')}>
+          <div className="inline-flex items-start gap-1.5 text-sm font-medium text-neutral-900 dark:text-neutral-50">
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+            <span>{subscription.service_type ? t(`subscriptions:serviceTypes.${subscription.service_type}`) : '—'}</span>
+          </div>
+        </InfoCell>
         <InfoCell label={t('subscriptions:list.columns.site')}>
           <Link
             to={`/customers/${subscription.customer_id}`}
             className="group inline-flex min-w-0 items-center gap-1 text-sm font-medium text-neutral-900 hover:text-primary-600 dark:text-neutral-50 dark:hover:text-primary-400"
           >
-            <span className="truncate">{subscription.site_name || '—'}</span>
+            <span className="truncate">{locationLine || '—'}</span>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50 group-hover:opacity-100" />
           </Link>
         </InfoCell>
-        {subscription.site_address && (
-          <InfoCell label={t('customers:sites.fields.address', 'Adres')}>
-            <p className="flex items-start gap-1.5 text-sm text-neutral-700 dark:text-neutral-200">
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-              <span className="line-clamp-2">{subscription.site_address}</span>
-            </p>
-          </InfoCell>
-        )}
-        {subscription.site_phone && (
-          <InfoCell label={t('customers:sites.fields.contactPhone', 'Telefon')}>
-            <a
-              href={`tel:${subscription.site_phone}`}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 dark:text-primary-400"
-            >
-              <Phone className="h-3.5 w-3.5" />
-              {subscription.site_phone}
-            </a>
-          </InfoCell>
-        )}
+        <InfoCell label={t('subscriptions:list.columns.monthly')}>
+          <div className="inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+            <CreditCard className="h-3.5 w-3.5 text-neutral-400" />
+            <span>{formatCurrency(monthlyAmount, 'TRY')}</span>
+          </div>
+        </InfoCell>
         {subscription.sim_phone_number && (
           <InfoCell label={t('subscriptions:form.fields.simCard')}>
             <a
@@ -68,25 +82,18 @@ export function SubscriptionDetailInfoStrip({ subscription }) {
             </a>
           </InfoCell>
         )}
-        {alarmLine && (
-          <InfoCell label={t('subscriptions:form.fields.alarmCenter')} value={alarmLine} />
-        )}
         <InfoCell
-          label={t('subscriptions:detail.fields.startDate')}
+          label={t('subscriptions:detail.fields.activationDate', 'Aktivasyon Tarihi')}
           value={subscription.start_date ? formatDate(subscription.start_date) : null}
         />
-        <InfoCell
-          label={t('subscriptions:detail.fields.billingDay')}
-          value={subscription.billing_day ? `${subscription.billing_day}. gün` : null}
-        />
-        <InfoCell
-          label={t('subscriptions:detail.fields.managedBy')}
-          value={subscription.managed_by_name || t('subscriptions:detail.noManager')}
-        />
-        <InfoCell
-          label={t('subscriptions:detail.fields.soldBy')}
-          value={subscription.sold_by_name || '—'}
-        />
+        {alarmLine && (
+          <InfoCell label={t('subscriptions:form.fields.alarmCenter')}>
+            <p className="flex items-start gap-1.5 text-sm text-neutral-700 dark:text-neutral-200">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+              <span>{alarmLine}</span>
+            </p>
+          </InfoCell>
+        )}
       </div>
     </section>
   );

@@ -555,15 +555,37 @@ export function ProposalFormPage() {
                   </div>
 
                   <div className="space-y-6">
-                    {/* Two-column grid: Left = Customer/Site selector, Right = Proposal meta */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                      {/* Left Column: Customer & Site Selection */}
-                      <div className="min-w-0">
+                      <section className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4 dark:border-[#262626] dark:bg-neutral-900/30">
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                          <div>
+                            <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+                              {t('workOrders:form.sections.customerSelection')}
+                            </h4>
+                            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                              Müşteri ve lokasyonu kısa özet ile seçin.
+                            </p>
+                          </div>
+                          {selectedCustomer && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              leftIcon={<Pencil className="w-3.5 h-3.5" />}
+                              onClick={handleEditCustomerOpen}
+                              className="shrink-0"
+                            >
+                              Müşteri Adını Düzenle
+                            </Button>
+                          )}
+                        </div>
+
                         <Controller
                           name="site_id"
                           control={control}
                           render={({ field }) => (
                             <CustomerSiteSelector
+                              compact
                               selectedCustomerId={selectedCustomerId}
                               selectedSiteId={field.value || ''}
                               onCustomerChange={(cid) => {
@@ -577,136 +599,137 @@ export function ProposalFormPage() {
                             />
                           )}
                         />
-                        {selectedCustomer && (
-                          <div className="mt-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              leftIcon={<Pencil className="w-3.5 h-3.5" />}
-                              onClick={handleEditCustomerOpen}
-                            >
-                              Müşteri Adını Düzenle
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                      </section>
 
-                      {/* Right Column: Proposal Meta Information */}
-                      <div className="space-y-4">
-                        {/* Survey Date + Proposal Date (side by side) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <Input
-                            label={t('proposals:form.fields.surveyDate')}
-                            type="date"
-                            {...register('survey_date')}
-                          />
-                          <Input
-                            label={t('proposals:form.fields.proposalDate')}
-                            type="date"
-                            {...register('proposal_date')}
-                          />
+                      <section className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4 dark:border-[#262626] dark:bg-neutral-900/30">
+                        <div className="mb-4">
+                          <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+                            Teklif Detayları
+                          </h4>
+                          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                            Tarih, finans ve iletişim bilgilerini tek alanda düzenleyin.
+                          </p>
                         </div>
 
-                        {/* Currency (full-width) */}
-                        <Select
-                          label={t('common:fields.currency')}
-                          options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
-                          error={errors.currency?.message}
-                          {...register('currency')}
-                        />
-
-                        {/* KDV + Tevkifat (single row) */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3">
-                          <label className="flex items-center gap-3 p-3 h-12 sm:h-10 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 cursor-pointer select-none border border-neutral-300 dark:border-[#262626] hover:border-primary-500/50 transition-colors shrink-0">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                              {...register('has_vat')}
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                              label={t('proposals:form.fields.surveyDate')}
+                              type="date"
+                              {...register('survey_date')}
                             />
-                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                              {t('proposals:form.fields.hasVat')}
-                            </span>
-                          </label>
+                            <Input
+                              label={t('proposals:form.fields.proposalDate')}
+                              type="date"
+                              {...register('proposal_date')}
+                            />
+                          </div>
 
-                          {hasVat && (
-                            <div className="flex-1 w-full sm:w-auto min-w-[120px]">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                            <Select
+                              label={t('common:fields.currency')}
+                              options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
+                              error={errors.currency?.message}
+                              {...register('currency')}
+                            />
+
+                            <div className="space-y-3">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <label className="flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#262626] dark:bg-[#171717]">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
+                                    {...register('has_vat')}
+                                  />
+                                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                                    {t('proposals:form.fields.hasVat')}
+                                  </span>
+                                </label>
+
+                                <label className="flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#262626] dark:bg-[#171717]">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
+                                    {...register('has_tevkifat')}
+                                  />
+                                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                                    {t('proposals:form.fields.hasTevkifat')}
+                                  </span>
+                                </label>
+                              </div>
+
+                              {hasVat && (
+                                <Input
+                                  label={t('proposals:form.fields.vatRate')}
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  step="0.01"
+                                  rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                                  error={errors.vat_rate?.message}
+                                  {...register('vat_rate')}
+                                />
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                              label={t('proposals:form.fields.authorizedPerson')}
+                              {...register('authorized_person')}
+                            />
+                            <Input
+                              label={t('proposals:form.fields.customerRepresentative')}
+                              {...register('customer_representative')}
+                            />
+                          </div>
+
+                          {isEdit && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                               <Input
-                                label={t('proposals:form.fields.vatRate')}
-                                type="number"
-                                min={0}
-                                max={100}
-                                step="0.01"
-                                rightIcon={<span className="text-neutral-400 font-bold">%</span>}
-                                error={errors.vat_rate?.message}
-                                {...register('vat_rate')}
+                                label={t('proposals:form.fields.installationDate')}
+                                type="date"
+                                {...register('installation_date')}
+                              />
+                              <Input
+                                label={t('proposals:form.fields.completionDate')}
+                                type="date"
+                                {...register('completion_date')}
                               />
                             </div>
                           )}
-
-                          <label className="flex items-center gap-3 p-3 h-12 sm:h-10 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 cursor-pointer select-none border border-neutral-300 dark:border-[#262626] hover:border-primary-500/50 transition-colors shrink-0">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                              {...register('has_tevkifat')}
-                            />
-                            <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                              {t('proposals:form.fields.hasTevkifat')}
-                            </span>
-                          </label>
                         </div>
-
-                        {/* Authorized Person + Customer Representative (side by side) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <Input
-                            label={t('proposals:form.fields.authorizedPerson')}
-                            {...register('authorized_person')}
-                          />
-                          <Input
-                            label={t('proposals:form.fields.customerRepresentative')}
-                            {...register('customer_representative')}
-                          />
-                        </div>
-                      </div>
+                      </section>
                     </div>
 
-                    {/* Bottom: Proposal Title + Scope of Work (full-width) */}
-                    <Input
-                      label={t('proposals:form.fields.title')}
-                      placeholder={t('proposals:form.placeholders.title')}
-                      error={errors.title?.message}
-                      {...register('title')}
-                    />
+                    <section className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4 dark:border-[#262626] dark:bg-neutral-900/30">
+                      <div className="mb-4">
+                        <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+                          Teklif Başlığı
+                        </h4>
+                        <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                          Teklifin görünen başlığını ve kapsam özetini girin.
+                        </p>
+                      </div>
 
-                    <Textarea
-                      label={t('proposals:form.fields.scopeOfWork')}
-                      placeholder={t('proposals:form.placeholders.scopeOfWork')}
-                      rows={3}
-                      error={errors.scope_of_work?.message}
-                      {...register('scope_of_work')}
-                    />
+                      <div className="space-y-4">
+                        <Input
+                          label={t('proposals:form.fields.title')}
+                          placeholder={t('proposals:form.placeholders.title')}
+                          error={errors.title?.message}
+                          {...register('title')}
+                        />
+
+                        <Textarea
+                          label={t('proposals:form.fields.scopeOfWork')}
+                          placeholder={t('proposals:form.placeholders.scopeOfWork')}
+                          rows={4}
+                          error={errors.scope_of_work?.message}
+                          {...register('scope_of_work')}
+                        />
+                      </div>
+                    </section>
                   </div>
-
-                  {/* Edit-only: Post-acceptance dates */}
-                  {isEdit && (
-                    <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
-                        {t('proposals:form.sections.postAcceptanceDates')}
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input
-                          label={t('proposals:form.fields.installationDate')}
-                          type="date"
-                          {...register('installation_date')}
-                        />
-                        <Input
-                          label={t('proposals:form.fields.completionDate')}
-                          type="date"
-                          {...register('completion_date')}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </Card>
 
                 <Modal

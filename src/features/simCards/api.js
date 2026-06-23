@@ -202,10 +202,7 @@ export async function cancelSimCard(id) {
 export async function fetchSimCardHistory(simCardId) {
   const { data, error } = await supabase
     .from('sim_card_history')
-    .select(`
-      *,
-      profiles:changed_by (full_name)
-    `)
+    .select('*')
     .eq('sim_card_id', simCardId)
     .order('created_at', { ascending: false });
 

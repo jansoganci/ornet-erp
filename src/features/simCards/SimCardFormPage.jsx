@@ -1,13 +1,12 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Smartphone,
   Signal,
   User,
-  MapPin,
   DollarSign,
   FileText,
   StickyNote,
@@ -22,11 +21,17 @@ import { simCardSchema, simCardDefaultValues } from './schema';
 import { useCustomer } from '../customers/hooks';
 import { useSitesByCustomer } from '../customerSites/hooks';
 import { PageContainer } from '../../components/layout';
-import { Button, Card, Input, Spinner, Textarea, Select, FormSkeleton, CustomerCombobox } from '../../components/ui';
+import { Button, Card, Input, Spinner, Textarea, Select, FormSkeleton, CustomerCombobox, ErrorState } from '../../components/ui';
+import { SimCardDetailView } from './components/SimCardDetailView';
 import { SimCardFormHero } from './components/SimCardFormHero';
 import { getCurrencySymbol, cn } from '../../lib/utils';
 
 const MOBILE_CARD = 'rounded-xl border border-neutral-200/80 dark:border-[#262626] bg-white dark:bg-[#171717] p-5 shadow-sm';
+const DESKTOP_CARD = 'rounded-2xl border-neutral-200/70 dark:border-[#262626] shadow-sm';
+const SECTION_ICON = 'rounded-xl p-2';
+const SECTION_TITLE = 'text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400';
+const DESKTOP_FORM_GRID = 'grid grid-cols-1 gap-4 xl:grid-cols-12';
+const DESKTOP_FIELD_GRID = 'grid grid-cols-1 gap-4 md:grid-cols-2';
 
 export function SimCardFormPage() {
   const { id } = useParams();
@@ -37,9 +42,10 @@ export function SimCardFormPage() {
 
   const customerIdParam = searchParams.get('customerId');
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(!id);
 
   const isEdit = Boolean(id);
-  const { data: simCard, isLoading: simCardLoading } = useSimCard(id);
+  const { data: simCard, isLoading: simCardLoading, error: simCardError, refetch: refetchSimCard } = useSimCard(id);
 
   const createSimCard = useCreateSimCard();
   const updateSimCard = useUpdateSimCard();
@@ -50,7 +56,6 @@ export function SimCardFormPage() {
     register,
     handleSubmit,
     reset,
-    watch,
     control,
     setValue,
     formState: { errors, isSubmitting },
@@ -62,11 +67,16 @@ export function SimCardFormPage() {
     },
   });
 
-  const selectedCustomerId = watch('customer_id');
-  const selectedCurrency = watch('currency') || 'TRY';
-  const watchedPhone = watch('phone_number');
+  const selectedCustomerId = useWatch({ control, name: 'customer_id' });
+  const selectedSiteId = useWatch({ control, name: 'site_id' });
+  const selectedCurrency = useWatch({ control, name: 'currency' }) || 'TRY';
+  const watchedPhone = useWatch({ control, name: 'phone_number' });
   const { data: sites } = useSitesByCustomer(selectedCustomerId);
   const { data: selectedCustomer } = useCustomer(selectedCustomerId);
+  const selectedSite = useMemo(
+    () => sites?.find((site) => site.id === (simCard?.site_id || selectedSiteId)) || null,
+    [sites, simCard?.site_id, selectedSiteId]
+  );
 
   useEffect(() => {
     if (isEdit && simCard) {
@@ -95,19 +105,32 @@ export function SimCardFormPage() {
     try {
       if (isEdit) {
         await updateSimCard.mutateAsync({ id, ...data });
+        setIsEditing(false);
       } else {
         await createSimCard.mutateAsync(data);
+        navigate('/sim-cards');
       }
-      navigate('/sim-cards');
     } catch {
       // error handled by mutation onError
     }
   };
 
   const isSaving = isSubmitting || createSimCard.isPending || updateSimCard.isPending;
+  const isDetailMode = isEdit && !isEditing;
 
   if (isEdit && simCardLoading) {
     return <FormSkeleton />;
+  }
+
+  if (isEdit && (simCardError || !simCard)) {
+    return (
+      <PageContainer maxWidth="4xl" padding="default">
+        <ErrorState
+          message={simCardError?.message || t('common:error.description')}
+          onRetry={() => refetchSimCard()}
+        />
+      </PageContainer>
+    );
   }
 
   const siteOptions = sites?.map(s => {
@@ -136,14 +159,65 @@ export function SimCardFormPage() {
     ...(providerCompanies || []).map((p) => ({ value: p.id, label: p.name })),
   ];
 
+  const handleBack = () => {
+    if (isEdit && isDetailMode) {
+      navigate('/sim-cards');
+      return;
+    }
+    navigate(-1);
+  };
+
+  const handleCancelEdit = () => {
+    if (isEdit) {
+      if (simCard) {
+        reset({
+          phone_number: simCard.phone_number || '',
+          operator: simCard.operator || 'TURKCELL',
+          capacity: simCard.capacity || '',
+          status: simCard.status || 'available',
+          provider_company_id: simCard.provider_company_id || null,
+          customer_label: simCard.customer_label || '',
+          customer_id: simCard.customer_id || null,
+          site_id: simCard.site_id || null,
+          imsi: simCard.imsi || '',
+          gprs_serial_no: simCard.gprs_serial_no || '',
+          account_no: simCard.account_no || '',
+          cost_price: simCard.cost_price || 0,
+          sale_price: simCard.sale_price || 0,
+          vat_rate: simCard.vat_rate ?? 0,
+          currency: simCard.currency || 'TRY',
+          notes: simCard.notes || '',
+        });
+      }
+      setAdvancedOpen(false);
+      setIsEditing(false);
+      return;
+    }
+
+    navigate('/sim-cards');
+  };
+
+  if (isDetailMode) {
+    return (
+      <PageContainer maxWidth="4xl" padding="default" className="mx-auto">
+        <SimCardDetailView
+          simCard={simCard}
+          site={selectedSite}
+          onBack={handleBack}
+          onEdit={() => setIsEditing(true)}
+        />
+      </PageContainer>
+    );
+  }
+
   return (
-    <PageContainer maxWidth="4xl" padding="default" className="space-y-8 pb-24 mx-auto">
+    <PageContainer maxWidth="4xl" padding="default" className="mx-auto space-y-6 pb-24">
       {/* Mobile Sticky Header — md:hidden */}
       <div className="md:hidden sticky top-0 z-30 -mx-4 -mt-8 px-4 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-neutral-200/60 dark:border-[#262626]">
         <div className="flex items-center justify-between h-14">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={handleCancelEdit}
             className="flex items-center justify-center w-10 h-10 -ml-2 rounded-xl text-primary-600 dark:text-primary-400 active:scale-95 transition-transform"
             aria-label={tCommon('actions.back')}
           >
@@ -174,14 +248,14 @@ export function SimCardFormPage() {
       <div className="hidden md:block">
         <SimCardFormHero
           isEdit={isEdit}
-          onCancel={() => navigate(-1)}
+          onCancel={handleCancelEdit}
           onSave={handleSubmit(onSubmit)}
           isSaving={isSaving}
           selectedCustomer={selectedCustomer}
         />
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* ======= MOBILE LAYOUT — md:hidden ======= */}
         <div className="md:hidden space-y-6">
           {/* Section 1 — SIM Bilgileri */}
@@ -421,28 +495,29 @@ export function SimCardFormPage() {
         </div>
 
         {/* ======= DESKTOP LAYOUT — hidden md:block ======= */}
-        <div className="hidden md:block space-y-8">
-          {/* 1. SIM Information */}
-          <Card header={
-            <div className="flex items-center space-x-3 px-2">
-              <div className="p-2 bg-primary-50 dark:bg-primary-950/30 rounded-lg">
-                <Smartphone className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
-                {t('simCards:form.addTitle')}
-              </h3>
-            </div>
-          } className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
-            <div className="space-y-10 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="hidden md:block space-y-6">
+          <div className={DESKTOP_FORM_GRID}>
+            <Card
+              header={
+                <div className="flex items-center gap-3">
+                  <div className={cn(SECTION_ICON, 'bg-primary-50 dark:bg-primary-950/30')}>
+                    <Smartphone className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <h3 className={SECTION_TITLE}>
+                    {t('simCards:form.sections.simInfo')}
+                  </h3>
+                </div>
+              }
+              className={cn(DESKTOP_CARD, 'xl:col-span-7')}
+            >
+              <div className={cn(DESKTOP_FIELD_GRID, 'pt-4')}>
                 <Input
                   label={t('simCards:form.phoneNumber')}
                   placeholder="05xx xxx xx xx"
                   error={errors.phone_number?.message}
-                  className="rounded-xl"
+                  className="rounded-xl font-mono"
                   {...register('phone_number')}
                 />
-
                 <Select
                   label={t('simCards:form.operator')}
                   options={operatorOptions}
@@ -451,7 +526,6 @@ export function SimCardFormPage() {
                   className="rounded-xl"
                   {...register('operator')}
                 />
-
                 <Input
                   label={t('simCards:form.capacity')}
                   placeholder="50 MB, 1 GB..."
@@ -459,7 +533,6 @@ export function SimCardFormPage() {
                   className="rounded-xl"
                   {...register('capacity')}
                 />
-
                 <Controller
                   name="provider_company_id"
                   control={control}
@@ -475,7 +548,6 @@ export function SimCardFormPage() {
                     />
                   )}
                 />
-
                 <Select
                   label={t('simCards:list.columns.status')}
                   options={statusOptions}
@@ -485,55 +557,75 @@ export function SimCardFormPage() {
                   {...register('status')}
                 />
               </div>
-            </div>
-          </Card>
+            </Card>
 
-          {/* 2. Assignment */}
-          <Card header={
-            <div className="flex items-center space-x-3 px-2">
-              <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <Card
+              header={
+                <div className="flex items-center gap-3">
+                  <div className={cn(SECTION_ICON, 'bg-emerald-50 dark:bg-emerald-950/30')}>
+                    <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h3 className={SECTION_TITLE}>
+                    {t('simCards:form.sections.financial')}
+                  </h3>
+                </div>
+              }
+              className={cn(DESKTOP_CARD, 'xl:col-span-5')}
+            >
+              <div className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-2">
+                <Input
+                  label={t('simCards:form.costPrice')}
+                  type="number"
+                  step="0.01"
+                  rightIcon={<span className="text-neutral-400 font-bold">{getCurrencySymbol(selectedCurrency)}</span>}
+                  error={errors.cost_price?.message}
+                  className="rounded-xl"
+                  {...register('cost_price', { valueAsNumber: true })}
+                />
+                <Input
+                  label={t('simCards:form.salePrice')}
+                  type="number"
+                  step="0.01"
+                  rightIcon={<span className="text-neutral-400 font-bold">{getCurrencySymbol(selectedCurrency)}</span>}
+                  error={errors.sale_price?.message}
+                  className="rounded-xl"
+                  {...register('sale_price', { valueAsNumber: true })}
+                />
+                <Input
+                  label={t('simCards:form.vatRate')}
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                  error={errors.vat_rate?.message}
+                  className="rounded-xl"
+                  {...register('vat_rate')}
+                />
+                <Select
+                  label={tCommon('fields.currency')}
+                  options={['TRY', 'USD', 'EUR'].map(c => ({ value: c, label: t(`common:currencies.${c}`) }))}
+                  error={errors.currency?.message}
+                  className="rounded-xl"
+                  {...register('currency')}
+                />
               </div>
-              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
-                {t('simCards:history.assignment')}
-              </h3>
-            </div>
-          } className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
-            <div className="space-y-10 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Input
-                  label={t('simCards:form.imsi')}
-                  placeholder="IMSI"
-                  error={errors.imsi?.message}
-                  className="rounded-xl"
-                  {...register('imsi')}
-                />
+            </Card>
 
-                <Input
-                  label={t('simCards:form.gprsSerialNo')}
-                  placeholder="GPRS Seri No"
-                  error={errors.gprs_serial_no?.message}
-                  className="rounded-xl"
-                  {...register('gprs_serial_no')}
-                />
-
-                <Input
-                  label={t('simCards:form.accountNo')}
-                  placeholder="Hesap No"
-                  error={errors.account_no?.message}
-                  className="rounded-xl"
-                  {...register('account_no')}
-                />
-
-
-                <Input
-                  label={t('simCards:form.customerLabel')}
-                  placeholder={t('simCards:form.placeholders.customerLabel')}
-                  error={errors.customer_label?.message}
-                  className="rounded-xl"
-                  {...register('customer_label')}
-                />
-
+            <Card
+              header={
+                <div className="flex items-center gap-3">
+                  <div className={cn(SECTION_ICON, 'bg-blue-50 dark:bg-blue-950/30')}>
+                    <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className={SECTION_TITLE}>
+                    {t('simCards:form.sections.assignment')}
+                  </h3>
+                </div>
+              }
+              className={cn(DESKTOP_CARD, 'xl:col-span-7')}
+            >
+              <div className={cn(DESKTOP_FIELD_GRID, 'pt-4')}>
                 <Controller
                   name="customer_id"
                   control={control}
@@ -551,7 +643,6 @@ export function SimCardFormPage() {
                     />
                   )}
                 />
-
                 <Controller
                   name="site_id"
                   control={control}
@@ -568,81 +659,72 @@ export function SimCardFormPage() {
                     />
                   )}
                 />
-              </div>
-            </div>
-          </Card>
-
-          {/* 3. Financials & Notes */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card header={
-              <div className="flex items-center space-x-3 px-2">
-                <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
-                  <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
-                  {t('simCards:list.columns.costPrice')} & {t('simCards:list.columns.salePrice')}
-                </h3>
-              </div>
-            } className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
-              <div className="space-y-8 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Input
-                    label={t('simCards:form.costPrice')}
-                    type="number"
-                    step="0.01"
-                    rightIcon={<span className="text-neutral-400 font-bold">{getCurrencySymbol(selectedCurrency)}</span>}
-                    error={errors.cost_price?.message}
-                    className="rounded-xl"
-                    {...register('cost_price', { valueAsNumber: true })}
-                  />
-
-                  <Input
-                    label={t('simCards:form.salePrice')}
-                    type="number"
-                    step="0.01"
-                    rightIcon={<span className="text-neutral-400 font-bold">{getCurrencySymbol(selectedCurrency)}</span>}
-                    error={errors.sale_price?.message}
-                    className="rounded-xl"
-                    {...register('sale_price', { valueAsNumber: true })}
-                  />
-
-                  <Input
-                    label={t('simCards:form.vatRate')}
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.01"
-                    rightIcon={<span className="text-neutral-400 font-bold">%</span>}
-                    error={errors.vat_rate?.message}
-                    className="rounded-xl"
-                    {...register('vat_rate')}
-                  />
-                </div>
-                <Select
-                  label={tCommon('fields.currency')}
-                  options={['TRY', 'USD', 'EUR'].map(c => ({ value: c, label: t(`common:currencies.${c}`) }))}
-                  error={errors.currency?.message}
+                <Input
+                  label={t('simCards:form.customerLabel')}
+                  placeholder={t('simCards:form.placeholders.customerLabel')}
+                  error={errors.customer_label?.message}
                   className="rounded-xl"
-                  {...register('currency')}
+                  {...register('customer_label')}
+                />
+                <Input
+                  label={t('simCards:form.accountNo')}
+                  placeholder="Hesap No"
+                  error={errors.account_no?.message}
+                  className="rounded-xl font-mono"
+                  {...register('account_no')}
                 />
               </div>
             </Card>
 
-            <Card header={
-              <div className="flex items-center space-x-3 px-2">
-                <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
-                  <StickyNote className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <Card
+              header={
+                <div className="flex items-center gap-3">
+                  <div className={cn(SECTION_ICON, 'bg-neutral-100 dark:bg-neutral-800')}>
+                    <Settings className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                  </div>
+                  <h3 className={SECTION_TITLE}>
+                    {t('simCards:form.sections.technical')}
+                  </h3>
                 </div>
-                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-[0.2em] text-[10px]">
-                  {t('simCards:form.notes')}
-                </h3>
+              }
+              className={cn(DESKTOP_CARD, 'xl:col-span-5')}
+            >
+              <div className="grid grid-cols-1 gap-4 pt-4">
+                <Input
+                  label={t('simCards:form.imsi')}
+                  placeholder="IMSI"
+                  error={errors.imsi?.message}
+                  className="rounded-xl font-mono"
+                  {...register('imsi')}
+                />
+                <Input
+                  label={t('simCards:form.gprsSerialNo')}
+                  placeholder="GPRS Seri No"
+                  error={errors.gprs_serial_no?.message}
+                  className="rounded-xl font-mono"
+                  {...register('gprs_serial_no')}
+                />
               </div>
-            } className="rounded-[2rem] p-8 border-neutral-200/60 dark:border-[#262626] shadow-sm">
+            </Card>
+
+            <Card
+              header={
+                <div className="flex items-center gap-3">
+                  <div className={cn(SECTION_ICON, 'bg-amber-50 dark:bg-amber-950/30')}>
+                    <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <h3 className={SECTION_TITLE}>
+                    {t('simCards:form.sections.notes')}
+                  </h3>
+                </div>
+              }
+              className={cn(DESKTOP_CARD, 'xl:col-span-12')}
+            >
               <div className="pt-4">
                 <Textarea
                   placeholder={t('simCards:form.notes')}
                   error={errors.notes?.message}
-                  className="rounded-2xl min-h-[120px]"
+                  className="min-h-[120px] rounded-2xl"
                   {...register('notes')}
                 />
               </div>
@@ -650,8 +732,8 @@ export function SimCardFormPage() {
           </div>
 
           {/* Desktop Actions */}
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" type="button" onClick={() => navigate('/sim-cards')} className="rounded-xl px-8">
+          <div className="sticky bottom-4 z-20 flex justify-end gap-3 rounded-2xl border border-neutral-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur dark:border-[#262626] dark:bg-[#171717]/95">
+            <Button variant="outline" type="button" onClick={handleCancelEdit} className="rounded-xl px-8">
               {tCommon('actions.cancel')}
             </Button>
             <Button
@@ -672,7 +754,7 @@ export function SimCardFormPage() {
           variant="outline"
           type="button"
           className="flex-1 min-h-[48px]"
-          onClick={() => navigate(-1)}
+          onClick={handleCancelEdit}
         >
           {tCommon('actions.cancel')}
         </Button>

@@ -119,9 +119,20 @@
       "simInfo": "SIM Bilgileri",
       "assignment": "Atama Bilgileri",
       "advanced": "Gelişmiş",
+      "technical": "Teknik Bilgiler",
       "financial": "Finansal Bilgiler",
-      "notes": "Notlar"
+      "notes": "Notlar",
+      "notesHistory": "Notlar ve Geçmiş"
     }
+  },
+  "detail": {
+    "title": "SIM Kart Detayı",
+    "emptyValue": "—",
+    "noNotes": "Bu SIM kart için not bulunmuyor.",
+    "noHistory": "Geçmiş kaydı bulunmuyor",
+    "noHistoryDescription": "Bu SIM kartta henüz görüntülenecek işlem geçmişi yok.",
+    "system": "Sistem",
+    "locationUnknown": "Lokasyon bilgisi bulunmuyor"
   },
   "history": {
     "title": "İşlem Geçmişi",

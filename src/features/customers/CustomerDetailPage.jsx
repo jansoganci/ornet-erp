@@ -534,7 +534,7 @@ export function CustomerDetailPage() {
         {/* Sticky compact header */}
         <header
           className={cn(
-            'sticky top-16 z-30 w-full min-w-0 overflow-hidden space-y-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm backdrop-blur-sm sm:p-4',
+            'sticky top-16 z-30 w-full min-w-0 space-y-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm backdrop-blur-sm sm:p-4',
             'dark:border-[#262626] dark:bg-[#171717]'
           )}
         >

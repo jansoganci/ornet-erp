@@ -60,7 +60,8 @@ function parseImportDate(value) {
     const d = new Date(s);
     if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1900) return null;
     return d.toISOString().slice(0, 10);
-  } catch {
+  } catch (error) {
+    console.error('SIM import date parse failed:', error?.message ?? error);
     return null;
   }
 }
@@ -93,8 +94,10 @@ export function SimCardImportPage() {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         validateAndFormatData(jsonData, t);
-      } catch {
+      } catch (error) {
+        console.error('SIM import file parse failed:', error?.message ?? error);
         setErrors([t('simCards:import.parseError')]);
+        toast.error(t('common:errors.saveFailed'));
       } finally {
         setIsParsing(false);
       }
@@ -278,8 +281,9 @@ export function SimCardImportPage() {
       } else if (skipped > 0) {
         setImportResult({ created: 0, skipped, skippedDetails });
       }
-    } catch {
-      toast.error(t('simCards:import.failed'));
+    } catch (error) {
+      console.error('SIM import execution failed:', error?.message ?? error);
+      toast.error(t('common:errors.saveFailed'));
       toast.warning(t('simCards:import.partialFailureWarning'));
     }
   };
@@ -374,10 +378,10 @@ export function SimCardImportPage() {
                 onChange={handleFileUpload}
               />
               <div className="flex flex-wrap justify-center gap-3">
-                <Button onClick={() => fileInputRef.current?.click()}>
+                <Button type="button" onClick={() => fileInputRef.current?.click()}>
                   {t('simCards:import.selectFile')}
                 </Button>
-                <Button variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
+                <Button type="button" variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
                   {t('simCards:import.downloadTemplate')}
                 </Button>
               </div>
@@ -459,7 +463,7 @@ export function SimCardImportPage() {
                   </div>
                 )}
                 <div className="mt-4">
-                  <Button variant="primary" size="sm" onClick={() => navigate('/sim-cards')}>
+                  <Button type="button" variant="primary" size="sm" onClick={() => navigate('/sim-cards')}>
                     {t('simCards:import.goToList')}
                   </Button>
                 </div>
@@ -479,10 +483,11 @@ export function SimCardImportPage() {
                 )}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleReset} leftIcon={<X className="w-4 h-4" />}>
+                <Button type="button" variant="outline" onClick={handleReset} leftIcon={<X className="w-4 h-4" />}>
                   {t('simCards:import.cancel')}
                 </Button>
                 <Button
+                  type="button"
                   variant="primary"
                   onClick={handleImport}
                   loading={bulkCreateMutation.isPending || createProviderMutation.isPending}

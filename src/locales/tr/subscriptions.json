@@ -86,6 +86,7 @@
       "staticIpCost": "Statik IP Maliyeti",
       "profit": "Kâr",
       "startDate": "Başlangıç Tarihi",
+      "activationDate": "Aktivasyon Tarihi",
       "endDate": "Bitiş Tarihi",
       "billingDay": "Fatura Günü",
       "pausedDate": "Duraklatıldı",
@@ -101,7 +102,10 @@
       "billingFrequency": "Ödeme Sıklığı",
       "officialInvoice": "Fatura",
       "cashCollector": "Tahsil eden",
-      "paymentStartMonth": "Ödeme Başlangıç Ayı"
+      "paymentStartMonth": "Ödeme Başlangıç Ayı",
+      "equipmentTypes": "farklı ekipman",
+      "equipmentUnits": "toplam adet",
+      "lastInstallation": "son kurulum"
     },
     "officialInvoiceResmi": "Faturalı",
     "officialInvoiceGayri": "Faturasız",

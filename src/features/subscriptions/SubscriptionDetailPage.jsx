@@ -5,7 +5,6 @@ import {
   Edit,
   Phone,
   MapPin,
-  Calendar,
   Building2,
   ChevronRight,
   ChevronDown,
@@ -268,7 +267,7 @@ export function SubscriptionDetailPage() {
       {/* Desktop compact header */}
       <header
         className={cn(
-          'hidden min-w-0 overflow-hidden space-y-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-[#262626] dark:bg-[#171717] md:block sm:p-4',
+          'hidden min-w-0 space-y-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm dark:border-[#262626] dark:bg-[#171717] md:block sm:p-4',
         )}
       >
         <nav
@@ -305,14 +304,9 @@ export function SubscriptionDetailPage() {
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <h1 className="min-w-0 text-xl font-bold tracking-tight text-neutral-900 break-words sm:text-2xl dark:text-neutral-50">
-                {subscription.company_name || subscription.site_name || t('subscriptions:detail.title')}
+                {subscription.company_name || t('subscriptions:detail.title')}
               </h1>
               <SubscriptionStatusBadge status={subscription.status} />
-              {subscription.account_no && (
-                <Badge variant="info" size="sm" className="shrink-0 font-mono">
-                  {subscription.account_no}
-                </Badge>
-              )}
             </div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-600 dark:text-neutral-300">
               {subscription.service_type && (
@@ -320,7 +314,7 @@ export function SubscriptionDetailPage() {
                   {t(`subscriptions:serviceTypes.${subscription.service_type}`)}
                 </span>
               )}
-              {subscription.site_name && subscription.company_name && (
+              {subscription.site_name && (
                 <>
                   <span className="text-neutral-300 dark:text-neutral-600" aria-hidden>
                     ·
@@ -328,28 +322,6 @@ export function SubscriptionDetailPage() {
                   <span>{subscription.site_name}</span>
                 </>
               )}
-            </div>
-            {subscription.site_address && (
-              <p className="flex items-start gap-1.5 text-sm text-neutral-500 dark:text-neutral-400">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span className="line-clamp-2">{subscription.site_address}</span>
-              </p>
-            )}
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-neutral-800 dark:border-[#333] dark:bg-neutral-800/60 dark:text-neutral-100">
-                {t('subscriptions:detail.fields.totalAmount')}:{' '}
-                {formatCurrency(subscriptionInvoiceTotal(subscription), 'TRY')}
-              </span>
-              {subscription.billing_day && (
-                <span className="inline-flex items-center rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 dark:border-[#333] dark:bg-neutral-800/60 dark:text-neutral-100">
-                  {t('subscriptions:detail.fields.billingDay')}: {subscription.billing_day}. gün
-                </span>
-              )}
-              <span className="inline-flex items-center rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 dark:border-[#333] dark:bg-neutral-800/60 dark:text-neutral-100">
-                {subscription.official_invoice !== false
-                  ? t('subscriptions:detail.officialInvoiceResmi')
-                  : t('subscriptions:detail.officialInvoiceGayri')}
-              </span>
             </div>
           </div>
 
@@ -447,9 +419,9 @@ export function SubscriptionDetailPage() {
             <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-50 leading-tight">
               {subscription.company_name}
             </h2>
-            {subscription.site_name && (
+            {subscription.service_type && (
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                {subscription.site_name}
+                {t(`subscriptions:serviceTypes.${subscription.service_type}`)}
               </p>
             )}
           </div>
@@ -461,29 +433,35 @@ export function SubscriptionDetailPage() {
               </p>
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
-            {subscription.service_type && (
-              <span className="px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-primary-600/10 text-primary-600 dark:text-primary-400 border border-primary-600/20">
-                {t(`subscriptions:serviceTypes.${subscription.service_type}`)}
-              </span>
-            )}
-            {subscription.billing_frequency && (
-              <span className="px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border border-transparent">
-                {t(`subscriptions:form.fields.${subscription.billing_frequency}`)}
-              </span>
-            )}
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <div>
+              <p className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">
+                {t('subscriptions:list.columns.monthly')}
+              </p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {formatCurrency(subscriptionInvoiceTotal(subscription), 'TRY')}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">
+                {t('subscriptions:form.fields.alarmCenter')}
+              </p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {subscription.alarm_center || '—'}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="flex items-center justify-between">
             <div className="min-w-0">
-              {subscription.account_no && (
+              {subscription.sim_phone_number && (
                 <code className="text-xs text-primary-600 dark:text-primary-400 font-mono font-bold tracking-widest">
-                  {subscription.account_no}
+                  {subscription.sim_phone_number}
                 </code>
               )}
             </div>
-            {subscription.site_phone && (
+            {(subscription.sim_phone_number || subscription.site_phone) && (
               <a
-                href={`tel:${subscription.site_phone}`}
+                href={`tel:${subscription.sim_phone_number || subscription.site_phone}`}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold active:scale-95 transition-transform shadow-lg shadow-primary-600/20"
               >
                 <Phone className="w-3.5 h-3.5" />
@@ -493,12 +471,6 @@ export function SubscriptionDetailPage() {
           </div>
         </div>
 
-        {/* Mobile Pricing Card */}
-        <SubscriptionPricingCard
-          subscription={subscription}
-          isAdmin={isAdmin}
-          className={cn(SURFACE_CARD, 'w-full')}
-        />
         <div className="h-0.5 rounded-full bg-gradient-to-r from-primary-500 to-primary-400 opacity-30" />
       </div>
 
@@ -591,15 +563,32 @@ export function SubscriptionDetailPage() {
         </div>
       )}
 
-      {/* Ödeme takvimi + fiyat/ödeme sidebar */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
-        <div className="min-w-0 space-y-4 lg:col-span-2">
+      {/* Ödeme takvimi + sağ bilgi kolonu */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(320px,0.95fr)] lg:items-start">
+        <div className="min-w-0 space-y-4">
           <MonthlyPaymentGrid
             subscriptionId={id}
             subscriptionStatus={subscription.status}
             className={SURFACE_CARD}
           />
           <ParasutInvoicePanel subscriptionId={id} />
+
+          <div className="space-y-6">
+            <SubscriptionTabBar
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              counts={{
+                workOrders: siteWorkOrders.length,
+                assets: siteAssets.length,
+              }}
+            />
+            {activeTab === 'workOrders' && (
+              <SubscriptionWorkOrdersTab siteId={subscription.site_id} />
+            )}
+            {activeTab === 'assets' && (
+              <SubscriptionAssetsTab siteId={subscription.site_id} />
+            )}
+          </div>
         </div>
         <div className="hidden md:contents">
           <SubscriptionDetailSidebar
@@ -745,24 +734,6 @@ export function SubscriptionDetailPage() {
               </p>
             </Card>
           )}
-      </div>
-
-      {/* Tabbed bottom section — Work Orders & Assets */}
-      <div className="space-y-6">
-        <SubscriptionTabBar
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          counts={{
-            workOrders: siteWorkOrders.length,
-            assets: siteAssets.length,
-          }}
-        />
-        {activeTab === 'workOrders' && (
-          <SubscriptionWorkOrdersTab siteId={subscription.site_id} />
-        )}
-        {activeTab === 'assets' && (
-          <SubscriptionAssetsTab siteId={subscription.site_id} />
-        )}
       </div>
 
       {/* Floating Action Bar for Mobile */}
