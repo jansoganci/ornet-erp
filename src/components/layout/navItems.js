@@ -95,6 +95,7 @@ export const navItems = [
       { to: '/finance', icon: Receipt, labelKey: 'nav.finance.dashboard' },
       { to: '/finance/income', icon: TrendingUp, labelKey: 'nav.finance.income' },
       { to: '/finance/expenses', icon: TrendingDown, labelKey: 'nav.finance.expenses' },
+      { to: '/finance/recurring', icon: RefreshCw, labelKey: 'nav.finance.recurring', canWriteOnly: true },
       { to: '/finance/receivables', icon: Landmark, labelKey: 'nav.finance.receivables', canWriteOnly: true },
       { to: '/finance/collections', icon: Banknote, labelKey: 'finance:tahsilat.title', canWriteOnly: true },
     ],
@@ -111,7 +112,6 @@ export const navItems = [
       { to: '/customers/parasut-matching', icon: Link2, labelKey: 'customers:parasutMatching.nav', adminOnly: true },
       { to: '/finance/vat', icon: Percent, labelKey: 'nav.finance.vat', canWriteOnly: true },
       { to: '/finance/exchange', icon: DollarSign, labelKey: 'nav.finance.exchange', canWriteOnly: true },
-      { to: '/finance/recurring', icon: RefreshCw, labelKey: 'nav.finance.recurring', canWriteOnly: true },
       // Future: { to: '/users', icon: UserCog, labelKey: 'users', adminOnly: true }
       // Future: { to: '/company', icon: Building2, labelKey: 'companySettings', adminOnly: true }
     ],

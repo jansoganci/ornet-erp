@@ -11,8 +11,6 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
-  ArrowLeft,
-  ArrowRight,
   CalendarClock,
   Eye,
   Pencil,
@@ -26,7 +24,6 @@ import {
   Select,
   Textarea,
   Card,
-  Spinner,
   FormSkeleton,
   UnsavedChangesModal,
   Modal,
@@ -40,8 +37,6 @@ import {
   useProposalAnnualFixedCosts,
   useCreateProposal,
   useUpdateProposal,
-  useUpdateProposalSectionsAndItems,
-  useUpdateProposalAnnualFixedCosts,
 } from './hooks';
 import { useFinanceSettings, useLatestRate } from '../finance/hooks';
 import { useCustomer, customerKeys } from '../customers/hooks';
@@ -51,12 +46,34 @@ import { CustomerSiteSelector } from '../workOrders/CustomerSiteSelector';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { ProposalItemsEditor } from './components/ProposalItemsEditor';
 import { ProposalAnnualFixedCostsEditor } from './components/ProposalAnnualFixedCostsEditor';
-import { ProposalStepper } from './components/ProposalStepper';
 import { ProposalLivePreview } from './components/ProposalLivePreview';
 import { calcProposalTotals, calcVatTevkifatSummary } from '../../lib/proposalCalc';
 import { cn } from '../../lib/utils';
 
-/** Maps Zod issue path to Turkish context for toast (step validation used to show only a generic message). */
+const TERMS_FIELD_KEYS = [
+  'terms_engineering',
+  'terms_pricing',
+  'terms_warranty',
+  'terms_other',
+  'terms_attachments',
+];
+
+const TERMS_FIELD_LABEL_KEYS = {
+  terms_engineering: 'termsEngineering',
+  terms_pricing: 'termsPricing',
+  terms_warranty: 'termsWarranty',
+  terms_other: 'termsOther',
+  terms_attachments: 'termsAttachments',
+};
+
+const TERMS_FIELD_ROWS = {
+  terms_engineering: 8,
+  terms_pricing: 8,
+  terms_warranty: 4,
+  terms_other: 5,
+  terms_attachments: 2,
+};
+
 function formatProposalValidationToast(issue, t) {
   const path = issue.path;
   const p0 = path[0];
@@ -83,29 +100,6 @@ function formatProposalValidationToast(issue, t) {
   return t('proposals:form.validation.toastLine', { where, message: issue.message });
 }
 
-function getStepIndexForProposalIssue(issue) {
-  const p0 = issue.path[0];
-  if (p0 === 'items' || p0 === 'annual_fixed_costs') return 1;
-  if (
-    p0 === 'site_id'
-    || p0 === 'title'
-    || p0 === 'currency'
-    || p0 === 'proposal_date'
-    || p0 === 'survey_date'
-    || p0 === 'vat_rate'
-    || p0 === 'scope_of_work'
-    || p0 === 'authorized_person'
-    || p0 === 'customer_representative'
-    || p0 === 'has_vat'
-    || p0 === 'has_tevkifat'
-    || p0 === 'installation_date'
-    || p0 === 'completion_date'
-  ) {
-    return 0;
-  }
-  return 1;
-}
-
 export function ProposalFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -118,10 +112,9 @@ export function ProposalFormPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [termsOpen, setTermsOpen] = useState(false);
   const [annualFixedOpen, setAnnualFixedOpen] = useState(true);
+  const [financeSettingsOpen, setFinanceSettingsOpen] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState([]);
   const [showTevkifatConfirmModal, setShowTevkifatConfirmModal] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(null);
 
@@ -138,8 +131,6 @@ export function ProposalFormPage() {
   const { data: latestUsdRate } = useLatestRate('USD');
   const createMutation = useCreateProposal();
   const updateMutation = useUpdateProposal();
-  const updateSectionsAndItemsMutation = useUpdateProposalSectionsAndItems();
-  const updateAnnualFixedMutation = useUpdateProposalAnnualFixedCosts();
   const closeOperationsItemMutation = useCloseOperationsItem();
 
   const sourceCustomerId = searchParams.get('customerId') || '';
@@ -155,7 +146,6 @@ export function ProposalFormPage() {
     watch,
     getValues,
     setValue,
-    trigger,
     formState: { errors, isSubmitting, isDirty },
   } = useForm({
     resolver: zodResolver(proposalSchema),
@@ -190,29 +180,25 @@ export function ProposalFormPage() {
 
   const selectedCurrency = watch('currency') ?? 'USD';
   const hasVat = watch('has_vat');
+  const hasTevkifat = watch('has_tevkifat');
   const vatRate = watch('vat_rate');
+  const watchedValues = watch();
 
-  // Logic: When has_vat is checked, default vat_rate to 20 if it's 0 or empty
   useEffect(() => {
     if (hasVat && (vatRate === 0 || vatRate === '0' || !vatRate)) {
       setValue('vat_rate', 20);
     }
   }, [hasVat, vatRate, setValue]);
 
-  // Watch all values for live preview
-  const watchedValues = watch();
-
-  // Populate form when editing
   useEffect(() => {
     if (isEdit) {
       if (!hasInitialized && proposal && !isProposalLoading && !isItemsLoading && !isSectionsLoading && !isAnnualFixedLoading) {
         const itemCurrency = proposal.currency === 'USD' ? 'USD' : 'TRY';
 
-        // Use DB section id as _local_id so items can reference it directly
-        const sections = existingSections.map((s) => ({
-          _local_id: s.id,
-          title: s.title || '',
-          discount_percent: Number(s.discount_percent) || 0,
+        const sections = existingSections.map((section) => ({
+          _local_id: section.id,
+          title: section.title || '',
+          discount_percent: Number(section.discount_percent) || 0,
         }));
 
         const items = existingItems.length > 0
@@ -233,16 +219,15 @@ export function ProposalFormPage() {
             }))
           : proposalDefaultValues.items;
 
-        const annual_fixed_costs =
-          existingAnnualFixed.length > 0
-            ? existingAnnualFixed.map((row) => ({
-                description: row.description || '',
-                quantity: row.quantity ?? 1,
-                unit: row.unit || 'adet',
-                unit_price: Number(row.unit_price) || 0,
-                currency: row.currency || 'TRY',
-              }))
-            : [];
+        const annualFixedCosts = existingAnnualFixed.length > 0
+          ? existingAnnualFixed.map((row) => ({
+              description: row.description || '',
+              quantity: row.quantity ?? 1,
+              unit: row.unit || 'adet',
+              unit_price: Number(row.unit_price) || 0,
+              currency: row.currency || 'TRY',
+            }))
+          : [];
 
         reset({
           site_id: proposal.site_id || '',
@@ -267,26 +252,20 @@ export function ProposalFormPage() {
           terms_attachments: proposal.terms_attachments || '',
           sections,
           items,
-          annual_fixed_costs,
+          annual_fixed_costs: annualFixedCosts,
         });
-
         setSelectedCustomerId(proposal.customer_id ?? '');
         setHasInitialized(true);
-        // In edit mode, all steps are accessible
-        setCompletedSteps([0, 1]);
-        setCurrentStep(0);
       }
     } else {
       if (!hasInitialized) {
-        const nextValues = {
+        reset({
           ...proposalDefaultValues,
           site_id: sourceSiteId,
           title: sourceDescription,
           scope_of_work: sourceDescription,
           notes: sourceDescription,
-        };
-
-        reset(nextValues);
+        });
         setSelectedCustomerId(sourceCustomerId);
       }
       setHasInitialized(true);
@@ -307,45 +286,6 @@ export function ProposalFormPage() {
     sourceDescription,
     sourceSiteId,
   ]);
-
-  const validateStep = useCallback(async (step) => {
-    if (step === 0) {
-      return trigger(
-        ['site_id', 'title', 'currency', 'proposal_date', 'survey_date', 'vat_rate', 'scope_of_work', 'authorized_person', 'customer_representative'],
-        { shouldFocus: true },
-      );
-    }
-    if (step === 1) {
-      return trigger(['items', 'annual_fixed_costs'], { shouldFocus: true });
-    }
-    return true;
-  }, [trigger]);
-
-  const goToStep = useCallback(async (targetStep) => {
-    // Can always go backward
-    if (targetStep < currentStep) {
-      setCurrentStep(targetStep);
-      return;
-    }
-    // Validate current step before moving forward
-    const valid = await validateStep(currentStep);
-    if (valid) {
-      setCompletedSteps((prev) => [...new Set([...prev, currentStep])]);
-      setCurrentStep(targetStep);
-    } else {
-      const parsed = proposalSchema.safeParse(getValues());
-      if (!parsed.success) {
-        const issue = parsed.error.issues[0];
-        toast.error(formatProposalValidationToast(issue, t));
-        if (issue.path[0] === 'annual_fixed_costs') setAnnualFixedOpen(true);
-      } else {
-        toast.error(t('common:validation.required'));
-      }
-    }
-  }, [currentStep, validateStep, t, getValues]);
-
-  const handleNext = () => goToStep(currentStep + 1);
-  const handlePrev = () => goToStep(currentStep - 1);
 
   const getGrossTotalTry = useCallback((data) => {
     const { grandTotal } = calcProposalTotals(data.items || [], data.discount_percent, data.currency || 'USD');
@@ -375,13 +315,13 @@ export function ProposalFormPage() {
       };
 
       if (isEdit) {
-        const updatedProposal = await updateMutation.mutateAsync({ id, ...proposalPayload });
-        await updateSectionsAndItemsMutation.mutateAsync({ proposalId: id, sections: sections ?? [], items });
-        await updateAnnualFixedMutation.mutateAsync({
-          proposalId: id,
-          rows: annualFixedCosts ?? [],
+        const updatedProposal = await updateMutation.mutateAsync({
+          id,
+          ...proposalPayload,
+          sections: sections ?? [],
+          items,
+          annual_fixed_costs: annualFixedCosts ?? [],
         });
-        // Reset form with saved values (convert DB values back to form format)
         reset({
           ...data,
           has_vat: updatedProposal.vat_rate > 0,
@@ -435,7 +375,6 @@ export function ProposalFormPage() {
       const issue = parsed.error.issues[0];
       toast.error(formatProposalValidationToast(issue, t));
       if (issue.path[0] === 'annual_fixed_costs') setAnnualFixedOpen(true);
-      setCurrentStep(getStepIndexForProposalIssue(issue));
       return;
     }
     toast.error(t('common:validation.required'));
@@ -453,9 +392,13 @@ export function ProposalFormPage() {
       };
 
       if (isEdit) {
-        await updateMutation.mutateAsync({ id, ...draftPayload });
-        await updateSectionsAndItemsMutation.mutateAsync({ proposalId: id, sections: sections ?? [], items: items ?? [] });
-        await updateAnnualFixedMutation.mutateAsync({ proposalId: id, rows: annualFixedCosts ?? [] });
+        await updateMutation.mutateAsync({
+          id,
+          ...draftPayload,
+          sections: sections ?? [],
+          items: items ?? [],
+          annual_fixed_costs: annualFixedCosts ?? [],
+        });
         reset(rawValues);
         toast.success(t('proposals:form.draftSaved'));
       } else {
@@ -480,7 +423,7 @@ export function ProposalFormPage() {
       async (data) => {
         result = await onSubmit(data, { skipNavigate: true });
       },
-      () => { result = false; }
+      () => { result = false; },
     )();
     return result;
   };
@@ -508,7 +451,7 @@ export function ProposalFormPage() {
       setEditCustomerModalOpen(false);
       queryClient.invalidateQueries({ queryKey: customerKeys.detail(selectedCustomer.id) });
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
-    } catch (err) {
+    } catch {
       toast.error('Güncelleme başarısız');
     } finally {
       setIsSavingCustomer(false);
@@ -530,395 +473,336 @@ export function ProposalFormPage() {
         ]}
       />
 
-      {/* Stepper */}
-      <ProposalStepper
-        currentStep={currentStep}
-        onStepClick={goToStep}
-        completedSteps={completedSteps}
-      />
-
-      <form
-        onSubmit={handleSubmit(onSubmit, onInvalid)}
-        className="mt-4"
-      >
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="mt-4">
         <div className="space-y-6">
+          <Card className="overflow-visible border-neutral-200/80 bg-white/95 shadow-sm dark:border-[#262626] dark:bg-[#141414]">
+            <div className="border-b border-neutral-200/80 px-6 py-5 dark:border-[#262626]">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-primary-600" />
+                <h3 className="font-semibold text-neutral-950 dark:text-neutral-50">
+                  {t('proposals:form.stepper.general')}
+                </h3>
+              </div>
+            </div>
 
-              {/* ===== STEP 0: Genel Bilgiler ===== */}
-              {currentStep === 0 && (
-                <>
-                <Card className="p-6 overflow-visible">
-                  <div className="flex items-center space-x-2 mb-6">
-                    <ClipboardList className="w-5 h-5 text-primary-600" />
-                    <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
-                      {t('proposals:form.stepper.general')}
-                    </h3>
+            <div className="px-6 py-6 space-y-6">
+              <section className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-5 dark:border-[#262626] dark:bg-[#171717]">
+                <div className="flex items-start justify-between gap-3 mb-5">
+                  <div>
+                    <h4 className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
+                      {t('proposals:form.sections.customerSite')}
+                    </h4>
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                      {t('proposals:form.sectionHelp.customerSite')}
+                    </p>
+                  </div>
+                  {selectedCustomer && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      leftIcon={<Pencil className="w-3.5 h-3.5" />}
+                      onClick={handleEditCustomerOpen}
+                      className="shrink-0"
+                    >
+                      {t('proposals:form.actions.editCustomerName')}
+                    </Button>
+                  )}
+                </div>
+
+                <Controller
+                  name="site_id"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomerSiteSelector
+                      compact
+                      selectedCustomerId={selectedCustomerId}
+                      selectedSiteId={field.value || ''}
+                      onCustomerChange={(cid) => {
+                        setSelectedCustomerId(cid || '');
+                        field.onChange('');
+                      }}
+                      onSiteChange={(sid) => field.onChange(sid || '')}
+                      onAddNewCustomer={() => navigate('/customers/new')}
+                      onAddNewSite={() => setShowSiteModal(true)}
+                      error={errors.site_id?.message}
+                    />
+                  )}
+                />
+              </section>
+
+              <section className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-[#262626] dark:bg-[#141414]">
+                <div className="mb-5">
+                  <h4 className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
+                    {t('proposals:form.sections.proposalMeta')}
+                  </h4>
+                  <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                    {t('proposals:form.sectionHelp.proposalMeta')}
+                  </p>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                    <Input
+                      label={t('proposals:form.fields.surveyDate')}
+                      type="date"
+                      {...register('survey_date')}
+                    />
+                    <Input
+                      label={t('proposals:form.fields.proposalDate')}
+                      type="date"
+                      {...register('proposal_date')}
+                    />
+                    <Select
+                      label={t('common:fields.currency')}
+                      options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
+                      error={errors.currency?.message}
+                      {...register('currency')}
+                    />
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                      <section className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4 dark:border-[#262626] dark:bg-neutral-900/30">
-                        <div className="flex items-start justify-between gap-3 mb-4">
-                          <div>
-                            <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
-                              {t('workOrders:form.sections.customerSelection')}
-                            </h4>
-                            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                              Müşteri ve lokasyonu kısa özet ile seçin.
-                            </p>
-                          </div>
-                          {selectedCustomer && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              leftIcon={<Pencil className="w-3.5 h-3.5" />}
-                              onClick={handleEditCustomerOpen}
-                              className="shrink-0"
-                            >
-                              Müşteri Adını Düzenle
-                            </Button>
-                          )}
-                        </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <Input
+                      label={t('proposals:form.fields.authorizedPerson')}
+                      {...register('authorized_person')}
+                    />
+                    <Input
+                      label={t('proposals:form.fields.customerRepresentative')}
+                      {...register('customer_representative')}
+                    />
+                  </div>
 
-                        <Controller
-                          name="site_id"
-                          control={control}
-                          render={({ field }) => (
-                            <CustomerSiteSelector
-                              compact
-                              selectedCustomerId={selectedCustomerId}
-                              selectedSiteId={field.value || ''}
-                              onCustomerChange={(cid) => {
-                                setSelectedCustomerId(cid || '');
-                                field.onChange('');
-                              }}
-                              onSiteChange={(sid) => field.onChange(sid || '')}
-                              onAddNewCustomer={() => navigate('/customers/new')}
-                              onAddNewSite={() => setShowSiteModal(true)}
-                              error={errors.site_id?.message}
-                            />
-                          )}
-                        />
-                      </section>
-
-                      <section className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4 dark:border-[#262626] dark:bg-neutral-900/30">
-                        <div className="mb-4">
-                          <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
-                            Teklif Detayları
-                          </h4>
-                          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                            Tarih, finans ve iletişim bilgilerini tek alanda düzenleyin.
-                          </p>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                              label={t('proposals:form.fields.surveyDate')}
-                              type="date"
-                              {...register('survey_date')}
-                            />
-                            <Input
-                              label={t('proposals:form.fields.proposalDate')}
-                              type="date"
-                              {...register('proposal_date')}
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-                            <Select
-                              label={t('common:fields.currency')}
-                              options={CURRENCIES.map((c) => ({ value: c, label: t(`common:currencies.${c}`) }))}
-                              error={errors.currency?.message}
-                              {...register('currency')}
-                            />
-
-                            <div className="space-y-3">
-                              <div className="flex flex-wrap items-center gap-3">
-                                <label className="flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#262626] dark:bg-[#171717]">
-                                  <input
-                                    type="checkbox"
-                                    className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                                    {...register('has_vat')}
-                                  />
-                                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                                    {t('proposals:form.fields.hasVat')}
-                                  </span>
-                                </label>
-
-                                <label className="flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#262626] dark:bg-[#171717]">
-                                  <input
-                                    type="checkbox"
-                                    className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                                    {...register('has_tevkifat')}
-                                  />
-                                  <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                                    {t('proposals:form.fields.hasTevkifat')}
-                                  </span>
-                                </label>
-                              </div>
-
-                              {hasVat && (
-                                <Input
-                                  label={t('proposals:form.fields.vatRate')}
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  step="0.01"
-                                  rightIcon={<span className="text-neutral-400 font-bold">%</span>}
-                                  error={errors.vat_rate?.message}
-                                  {...register('vat_rate')}
-                                />
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                              label={t('proposals:form.fields.authorizedPerson')}
-                              {...register('authorized_person')}
-                            />
-                            <Input
-                              label={t('proposals:form.fields.customerRepresentative')}
-                              {...register('customer_representative')}
-                            />
-                          </div>
-
-                          {isEdit && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                              <Input
-                                label={t('proposals:form.fields.installationDate')}
-                                type="date"
-                                {...register('installation_date')}
-                              />
-                              <Input
-                                label={t('proposals:form.fields.completionDate')}
-                                type="date"
-                                {...register('completion_date')}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </section>
+                  {isEdit && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <Input
+                        label={t('proposals:form.fields.installationDate')}
+                        type="date"
+                        {...register('installation_date')}
+                      />
+                      <Input
+                        label={t('proposals:form.fields.completionDate')}
+                        type="date"
+                        {...register('completion_date')}
+                      />
                     </div>
+                  )}
 
-                    <section className="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4 dark:border-[#262626] dark:bg-neutral-900/30">
-                      <div className="mb-4">
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
-                          Teklif Başlığı
-                        </h4>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 dark:border-[#262626] dark:bg-[#171717]">
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                      onClick={() => setFinanceSettingsOpen((open) => !open)}
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {t('proposals:form.sections.financialSettings')}
+                        </p>
                         <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                          Teklifin görünen başlığını ve kapsam özetini girin.
+                          {t('proposals:form.sectionHelp.financialSettings')}
                         </p>
                       </div>
+                      {financeSettingsOpen ? (
+                        <ChevronUp className="w-4 h-4 text-neutral-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-neutral-500" />
+                      )}
+                    </button>
 
-                      <div className="space-y-4">
-                        <Input
-                          label={t('proposals:form.fields.title')}
-                          placeholder={t('proposals:form.placeholders.title')}
-                          error={errors.title?.message}
-                          {...register('title')}
-                        />
+                    {financeSettingsOpen && (
+                      <fieldset
+                        disabled
+                        className="border-t border-neutral-200 px-4 py-4 dark:border-[#262626]"
+                      >
+                        <div className="space-y-4 opacity-60">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <label className="flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#303030] dark:bg-[#171717]">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600"
+                                checked={!!hasVat}
+                                readOnly
+                              />
+                              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                                {t('proposals:form.fields.hasVat')}
+                              </span>
+                            </label>
 
-                        <Textarea
-                          label={t('proposals:form.fields.scopeOfWork')}
-                          placeholder={t('proposals:form.placeholders.scopeOfWork')}
-                          rows={4}
-                          error={errors.scope_of_work?.message}
-                          {...register('scope_of_work')}
-                        />
-                      </div>
-                    </section>
+                            <label className="flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#303030] dark:bg-[#171717]">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600"
+                                checked={!!hasTevkifat}
+                                readOnly
+                              />
+                              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                                {t('proposals:form.fields.hasTevkifat')}
+                              </span>
+                            </label>
+                          </div>
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <Input
+                              label={t('proposals:form.fields.vatRate')}
+                              type="number"
+                              value={hasVat ? (vatRate ?? 0) : 0}
+                              readOnly
+                              disabled
+                              rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                            />
+                          </div>
+                        </div>
+                      </fieldset>
+                    )}
                   </div>
-                </Card>
+                </div>
+              </section>
 
-                <Modal
-                  open={editCustomerModalOpen}
-                  onClose={() => setEditCustomerModalOpen(false)}
-                  title="Müşteri Adını Düzenle"
-                  size="sm"
-                  footer={
-                    <div className="flex gap-3 w-full">
-                      <Button variant="ghost" onClick={() => setEditCustomerModalOpen(false)} className="flex-1">
-                        İptal
-                      </Button>
-                      <Button onClick={handleEditCustomerSave} loading={isSavingCustomer} className="flex-1">
-                        Kaydet
-                      </Button>
-                    </div>
-                  }
-                >
-                  <div className="space-y-4">
-                    <p className="text-sm text-neutral-500">
-                      Müşterinin görünen adını düzenleyin. Bu değişiklik customers tablosuna kaydedilir.
+              <section className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-[#262626] dark:bg-[#141414]">
+                <div className="mb-5">
+                  <h4 className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
+                    {t('proposals:form.sections.proposalIdentity')}
+                  </h4>
+                  <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                    {t('proposals:form.sectionHelp.proposalIdentity')}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <Input
+                    label={t('proposals:form.fields.title')}
+                    placeholder={t('proposals:form.placeholders.title')}
+                    error={errors.title?.message}
+                    {...register('title')}
+                  />
+
+                  <Textarea
+                    label={t('proposals:form.fields.scopeOfWork')}
+                    placeholder={t('proposals:form.placeholders.scopeOfWork')}
+                    rows={5}
+                    error={errors.scope_of_work?.message}
+                    {...register('scope_of_work')}
+                  />
+                </div>
+              </section>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <ProposalItemsEditor
+              control={control}
+              errors={errors}
+              watch={watch}
+              setValue={setValue}
+              currency={selectedCurrency}
+              fields={proposalItemFields}
+              append={appendProposalItem}
+              remove={removeProposalItem}
+              sectionFields={sectionFields}
+              appendSection={appendSection}
+              removeSection={removeSection}
+              tevkifatNumerator={Number(financeSettings?.tevkifat_rate_numerator) || 9}
+              tevkifatDenominator={Number(financeSettings?.tevkifat_rate_denominator) || 10}
+            />
+          </Card>
+
+          <Card className="p-6">
+            <button
+              type="button"
+              className="flex items-center justify-between w-full text-left"
+              onClick={() => setAnnualFixedOpen((open) => !open)}
+            >
+              <div className="flex items-center gap-2">
+                <CalendarClock className="w-5 h-5 text-primary-600 shrink-0" />
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
+                  {t('proposals:annualFixed.cardTitle')}
+                </h3>
+              </div>
+              {annualFixedOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+            {annualFixedOpen && (
+              <div className="mt-4">
+                <ProposalAnnualFixedCostsEditor
+                  control={control}
+                  register={register}
+                  errors={errors}
+                  watch={watch}
+                  fields={annualFixedFields}
+                  append={appendAnnualFixed}
+                  remove={removeAnnualFixed}
+                />
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-6">
+            <button
+              type="button"
+              className="flex items-center justify-between w-full text-left"
+              onClick={() => setTermsOpen((open) => !open)}
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary-600 shrink-0" />
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
+                  {t('proposals:form.sections.terms')}
+                </h3>
+              </div>
+              {termsOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+            {termsOpen && (
+              <div className="mt-4 space-y-6">
+                {TERMS_FIELD_KEYS.map((fieldKey) => (
+                  <div key={fieldKey}>
+                    <p className="font-bold text-neutral-900 dark:text-neutral-100 text-sm mb-2">
+                      {t(`proposals:form.fields.${TERMS_FIELD_LABEL_KEYS[fieldKey]}`)}
                     </p>
-                    <Input
-                      value={editCustomerName}
-                      onChange={(e) => setEditCustomerName(e.target.value)}
-                      placeholder="Müşteri adı"
-                      autoFocus
+                    <Textarea
+                      rows={TERMS_FIELD_ROWS[fieldKey]}
+                      {...register(fieldKey)}
                     />
                   </div>
-                </Modal>
-                </>
-              )}
+                ))}
+              </div>
+            )}
+          </Card>
 
-              {/* ===== STEP 1: Services / Items ===== */}
-              {currentStep === 1 && (
-                <>
-                  {/* Items Editor */}
-                  <Card className="p-6">
-                    <ProposalItemsEditor
-                      control={control}
-                      errors={errors}
-                      watch={watch}
-                      setValue={setValue}
-                      currency={selectedCurrency}
-                      fields={proposalItemFields}
-                      append={appendProposalItem}
-                      remove={removeProposalItem}
-                      sectionFields={sectionFields}
-                      appendSection={appendSection}
-                      removeSection={removeSection}
-                      tevkifatNumerator={Number(financeSettings?.tevkifat_rate_numerator) || 9}
-                      tevkifatDenominator={Number(financeSettings?.tevkifat_rate_denominator) || 10}
-                    />
-                  </Card>
-
-                  <Card className="p-6">
-                    <button
-                      type="button"
-                      className="flex items-center justify-between w-full text-left"
-                      onClick={() => setAnnualFixedOpen((o) => !o)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <CalendarClock className="w-5 h-5 text-primary-600 shrink-0" />
-                        <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
-                          {t('proposals:annualFixed.cardTitle')}
-                        </h3>
-                      </div>
-                      {annualFixedOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </button>
-                    {annualFixedOpen && (
-                      <div className="mt-4">
-                        <ProposalAnnualFixedCostsEditor
-                          control={control}
-                          register={register}
-                          errors={errors}
-                          watch={watch}
-                          fields={annualFixedFields}
-                          append={appendAnnualFixed}
-                          remove={removeAnnualFixed}
-                        />
-                      </div>
-                    )}
-                  </Card>
-
-                  {/* Terms (collapsible) */}
-                  <Card className="p-6">
-                    <button
-                      type="button"
-                      className="flex items-center justify-between w-full text-left"
-                      onClick={() => setTermsOpen((o) => !o)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-primary-600 shrink-0" />
-                        <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
-                          {t('proposals:form.sections.terms')}
-                        </h3>
-                      </div>
-                      {termsOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </button>
-                    {termsOpen && (
-                      <div className="mt-4 space-y-4">
-                        <Textarea
-                          label={t('proposals:form.fields.termsEngineering')}
-                          rows={3}
-                          {...register('terms_engineering')}
-                        />
-                        <Textarea
-                          label={t('proposals:form.fields.termsPricing')}
-                          rows={3}
-                          {...register('terms_pricing')}
-                        />
-                        <Textarea
-                          label={t('proposals:form.fields.termsWarranty')}
-                          rows={3}
-                          {...register('terms_warranty')}
-                        />
-                        <Textarea
-                          label={t('proposals:form.fields.termsOther')}
-                          rows={3}
-                          {...register('terms_other')}
-                        />
-                        <Textarea
-                          label={t('proposals:form.fields.termsAttachments')}
-                          rows={2}
-                          {...register('terms_attachments')}
-                        />
-                      </div>
-                    )}
-                  </Card>
-
-                  {/* Notes */}
-                  <Card
-                    header={
-                      <div className="flex items-center space-x-2">
-                        <StickyNote className="w-5 h-5 text-warning-600" />
-                        <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
-                          {t('proposals:form.sections.notes')}
-                        </h3>
-                      </div>
-                    }
-                    className="p-6"
-                  >
-                    <Textarea
-                      placeholder={t('proposals:form.placeholders.notes')}
-                      rows={3}
-                      error={errors.notes?.message}
-                      {...register('notes')}
-                    />
-                  </Card>
-                </>
-              )}
-
+          <Card
+            header={(
+              <div className="flex items-center space-x-2">
+                <StickyNote className="w-5 h-5 text-warning-600" />
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-sm">
+                  {t('proposals:form.sections.notes')}
+                </h3>
+              </div>
+            )}
+            className="p-6"
+          >
+            <Textarea
+              placeholder={t('proposals:form.placeholders.notes')}
+              rows={3}
+              error={errors.notes?.message}
+              {...register('notes')}
+            />
+          </Card>
         </div>
 
-        {/* Step Navigation + Action Bar */}
         <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white/80 dark:bg-[#171717]/80 backdrop-blur-md border-t border-neutral-200 dark:border-[#262626] z-50 flex gap-3 lg:static lg:bg-transparent lg:border-none lg:p-0 lg:pb-0 lg:justify-between lg:mt-6">
           <div className="flex gap-3 flex-1">
-            {currentStep > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handlePrev}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-                className="flex-1 lg:flex-none"
-              >
-                {tCommon('actions.back')}
-              </Button>
-            )}
-            {currentStep === 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(-1)}
-                className="flex-1 lg:flex-none"
-                leftIcon={<X className="w-4 h-4" />}
-              >
-                {tCommon('actions.cancel')}
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(-1)}
+              className="flex-1 lg:flex-none"
+              leftIcon={<X className="w-4 h-4" />}
+            >
+              {tCommon('actions.cancel')}
+            </Button>
           </div>
           <div className="flex gap-3 flex-1 justify-end flex-wrap">
             <Button
               type="button"
               variant="outline"
               onClick={handleSaveDraft}
-              loading={
-                createMutation.isPending ||
-                updateMutation.isPending
-              }
+              loading={createMutation.isPending || updateMutation.isPending}
               leftIcon={<Save className="w-4 h-4" />}
               className="flex-1 lg:flex-none"
             >
@@ -933,33 +817,14 @@ export function ProposalFormPage() {
             >
               {t('proposals:form.preview.openButton')}
             </Button>
-            {currentStep === 0 && (
-              <Button
-                type="button"
-                variant="primary"
-                onClick={handleNext}
-                rightIcon={<ArrowRight className="w-4 h-4" />}
-                className="flex-1 lg:flex-none"
-              >
-                {t('proposals:form.stepper.services')}
-              </Button>
-            )}
-            {currentStep === 1 && (
-              <Button
-                type="submit"
-                loading={
-                  isSubmitting ||
-                  createMutation.isPending ||
-                  updateMutation.isPending ||
-                  updateSectionsAndItemsMutation.isPending ||
-                  updateAnnualFixedMutation.isPending
-                }
-                className="flex-1 lg:flex-none"
-                leftIcon={<Save className="w-4 h-4" />}
-              >
-                {isEdit ? tCommon('actions.save') : tCommon('actions.create')}
-              </Button>
-            )}
+            <Button
+              type="submit"
+              loading={isSubmitting || createMutation.isPending || updateMutation.isPending}
+              className="flex-1 lg:flex-none"
+              leftIcon={<Save className="w-4 h-4" />}
+            >
+              {isEdit ? tCommon('actions.save') : tCommon('actions.create')}
+            </Button>
           </div>
         </div>
       </form>
@@ -974,17 +839,44 @@ export function ProposalFormPage() {
       <UnsavedChangesModal blocker={blocker} onSave={handleSaveAndLeave} />
 
       <Modal
+        open={editCustomerModalOpen}
+        onClose={() => setEditCustomerModalOpen(false)}
+        title="Müşteri Adını Düzenle"
+        size="sm"
+        footer={(
+          <div className="flex gap-3 w-full">
+            <Button variant="ghost" onClick={() => setEditCustomerModalOpen(false)} className="flex-1">
+              İptal
+            </Button>
+            <Button onClick={handleEditCustomerSave} loading={isSavingCustomer} className="flex-1">
+              Kaydet
+            </Button>
+          </div>
+        )}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-500">
+            Müşterinin görünen adını düzenleyin. Bu değişiklik customers tablosuna kaydedilir.
+          </p>
+          <Input
+            value={editCustomerName}
+            onChange={(e) => setEditCustomerName(e.target.value)}
+            placeholder="Müşteri adı"
+            autoFocus
+          />
+        </div>
+      </Modal>
+
+      <Modal
         open={showPreviewModal}
         onClose={() => setShowPreviewModal(false)}
         title={t('proposals:form.preview.title')}
         size="full"
         className={cn(
           'max-w-full min-h-0',
-          // Mobile: maximize height (bottom sheet + safe area + dynamic viewport)
           'h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)]',
-          // Tablet + desktop: overlay vertical padding sm:p-6 → 3rem; overrides Modal base md:max-h-[90vh]
           'sm:h-[calc(100dvh-3rem)] sm:max-h-[calc(100dvh-3rem)]',
-          'md:h-[calc(100dvh-3rem)] md:max-h-[calc(100dvh-3rem)]'
+          'md:h-[calc(100dvh-3rem)] md:max-h-[calc(100dvh-3rem)]',
         )}
         contentClassName="flex flex-col overflow-hidden !min-h-0 p-3 sm:p-4 md:p-5"
       >

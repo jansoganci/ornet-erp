@@ -4,7 +4,7 @@
 
 - **Name:** Ornet ERP
 - **Type:** Client project — V1 Client Workflow is mandatory
-- **Repo:** `/Users/jans/Desktop/nexus/ornet-erp`
+- **Repo:** `/Users/jans/Desktop/voxus-systems/ornet-erp`
 - **Classification:** Turkish security company ERP — work order management, finance ledger, proposals, subscriptions, SIM inventory
 
 ## Source Of Truth

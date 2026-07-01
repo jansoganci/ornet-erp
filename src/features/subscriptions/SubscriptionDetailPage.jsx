@@ -156,10 +156,16 @@ export function SubscriptionDetailPage() {
     reactivateMutation.mutate(id);
   };
 
+  const customerName = subscription.company_name || t('subscriptions:detail.title');
+  const pageTitle = subscription.site_name || customerName;
+  const showCustomerSubtitle = pageTitle !== customerName;
+  const serviceTypeLabel = subscription.service_type
+    ? t(`subscriptions:serviceTypes.${subscription.service_type}`)
+    : null;
+
   const breadcrumbs = [
     { label: t('subscriptions:list.title'), to: '/subscriptions' },
-    { label: subscription.company_name, to: `/customers/${subscription.customer_id}` },
-    { label: subscription.site_name || t('subscriptions:detail.title') },
+    { label: customerName, to: `/customers/${subscription.customer_id}` },
   ];
 
   return (
@@ -177,16 +183,36 @@ export function SubscriptionDetailPage() {
           </button>
           <div className="flex-1 min-w-0 px-3">
             <p className="text-sm font-bold text-neutral-900 dark:text-neutral-50 truncate">
-              {subscription.company_name}
+              {pageTitle}
             </p>
-            <div className="flex items-center gap-1.5">
-              <span className={cn(
-                'w-1.5 h-1.5 rounded-full animate-pulse',
-                subscription.status === 'active' && 'bg-success-500',
-                subscription.status === 'paused' && 'bg-amber-400',
-                subscription.status === 'cancelled' && 'bg-error-500',
-              )} />
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+            <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+              {showCustomerSubtitle && (
+                <>
+                  <span className="min-w-0 truncate">{customerName}</span>
+                  {(serviceTypeLabel || subscription.status) && (
+                    <span className="shrink-0 text-neutral-300 dark:text-neutral-600" aria-hidden>
+                      ·
+                    </span>
+                  )}
+                </>
+              )}
+              {serviceTypeLabel && (
+                <span className="shrink-0 truncate">{serviceTypeLabel}</span>
+              )}
+              {serviceTypeLabel && subscription.status && (
+                <span className="shrink-0 text-neutral-300 dark:text-neutral-600" aria-hidden>
+                  ·
+                </span>
+              )}
+              <span className="inline-flex shrink-0 items-center gap-1">
+                <span
+                  className={cn(
+                    'h-1.5 w-1.5 rounded-full',
+                    subscription.status === 'active' && 'animate-pulse bg-success-500',
+                    subscription.status === 'paused' && 'bg-amber-400',
+                    subscription.status === 'cancelled' && 'bg-error-500',
+                  )}
+                />
                 {t(`subscriptions:statuses.${subscription.status}`)}
               </span>
             </div>
@@ -277,20 +303,26 @@ export function SubscriptionDetailPage() {
           {breadcrumbs.map((crumb, index) => {
             const isLast = index === breadcrumbs.length - 1;
             return (
-              <div key={`${crumb.label}-${index}`} className="flex items-center gap-2">
+              <div key={`${crumb.label}-${index}`} className="flex min-w-0 items-center gap-2">
                 {index > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-70" />}
-                {crumb.to && !isLast ? (
+                {crumb.to ? (
                   <Link
                     to={crumb.to}
-                    className="transition-colors hover:text-neutral-800 dark:hover:text-neutral-200"
+                    className={cn(
+                      'min-w-0 transition-colors hover:text-neutral-800 dark:hover:text-neutral-200',
+                      isLast && 'max-w-[14rem] truncate font-medium text-neutral-800 sm:max-w-xs dark:text-neutral-100',
+                    )}
+                    title={crumb.label}
                   >
                     {crumb.label}
                   </Link>
                 ) : (
                   <span
                     className={cn(
-                      isLast ? 'font-medium text-neutral-800 dark:text-neutral-100' : '',
+                      'min-w-0 truncate',
+                      isLast ? 'max-w-[14rem] font-medium text-neutral-800 sm:max-w-xs dark:text-neutral-100' : '',
                     )}
+                    title={crumb.label}
                   >
                     {crumb.label}
                   </span>
@@ -301,28 +333,36 @@ export function SubscriptionDetailPage() {
         </nav>
 
         <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <h1 className="min-w-0 text-xl font-bold tracking-tight text-neutral-900 break-words sm:text-2xl dark:text-neutral-50">
-                {subscription.company_name || t('subscriptions:detail.title')}
-              </h1>
-              <SubscriptionStatusBadge status={subscription.status} />
-            </div>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-600 dark:text-neutral-300">
-              {subscription.service_type && (
-                <span className="font-medium text-neutral-700 dark:text-neutral-200">
-                  {t(`subscriptions:serviceTypes.${subscription.service_type}`)}
-                </span>
-              )}
-              {subscription.site_name && (
-                <>
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <h1
+              className="min-w-0 truncate text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl dark:text-neutral-50"
+              title={pageTitle}
+            >
+              {pageTitle}
+            </h1>
+            {showCustomerSubtitle && (
+              <p
+                className="min-w-0 truncate text-sm text-neutral-600 dark:text-neutral-300"
+                title={customerName}
+              >
+                {customerName}
+              </p>
+            )}
+            {(serviceTypeLabel || subscription.status) && (
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-600 dark:text-neutral-300">
+                {serviceTypeLabel && (
+                  <span className="font-medium text-neutral-700 dark:text-neutral-200">
+                    {serviceTypeLabel}
+                  </span>
+                )}
+                {serviceTypeLabel && subscription.status && (
                   <span className="text-neutral-300 dark:text-neutral-600" aria-hidden>
                     ·
                   </span>
-                  <span>{subscription.site_name}</span>
-                </>
-              )}
-            </div>
+                )}
+                {subscription.status && <SubscriptionStatusBadge status={subscription.status} />}
+              </div>
+            )}
           </div>
 
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 lg:shrink-0">
@@ -415,16 +455,6 @@ export function SubscriptionDetailPage() {
           <p className="text-[10px] uppercase tracking-widest text-neutral-500 dark:text-neutral-400 font-bold">
             {t('subscriptions:detail.sections.quickInfo')}
           </p>
-          <div>
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-50 leading-tight">
-              {subscription.company_name}
-            </h2>
-            {subscription.service_type && (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                {t(`subscriptions:serviceTypes.${subscription.service_type}`)}
-              </p>
-            )}
-          </div>
           {subscription.site_address && (
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-neutral-400 dark:text-neutral-500" />

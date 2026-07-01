@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, Info } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -57,6 +57,8 @@ export function KpiCard({
   chartData,
   chartFormatter,
   chartType = 'positive',
+  infoTooltip,
+  infoPlacement = 'inline',
   className,
 }) {
   const isAlert = variant === 'alert';
@@ -130,19 +132,33 @@ export function KpiCard({
     );
   }
 
+  const floatingInfo = infoTooltip && infoPlacement === 'bottom-right';
+
   const header = (
     <div className="flex items-start justify-between gap-2 mb-3 min-w-0">
       <span className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-500 break-words min-w-0 line-clamp-2">
         {title}
       </span>
-      {Icon &&
-        (showIconBox ? (
-          <div className={cn('p-2 rounded-xl flex-shrink-0', ICON_BOX_VARIANTS[variant])}>
-            <Icon className="w-4 h-4" />
-          </div>
-        ) : (
-          <Icon className="w-4 h-4 flex-shrink-0 text-neutral-400 dark:text-neutral-600" />
-        ))}
+      <div className="flex items-start gap-2 shrink-0">
+        {infoTooltip && !floatingInfo && (
+          <span className="relative group/info">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 bg-white/70 dark:bg-neutral-900/50">
+              <Info className="w-3.5 h-3.5" />
+            </span>
+            <span className="pointer-events-none absolute right-0 top-6 z-30 hidden w-56 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2.5 py-2 text-[11px] leading-4 text-neutral-700 dark:text-neutral-200 shadow-lg group-hover/info:block">
+              {infoTooltip}
+            </span>
+          </span>
+        )}
+        {Icon &&
+          (showIconBox ? (
+            <div className={cn('p-2 rounded-xl flex-shrink-0', ICON_BOX_VARIANTS[variant])}>
+              <Icon className="w-4 h-4" />
+            </div>
+          ) : (
+            <Icon className="w-4 h-4 flex-shrink-0 text-neutral-400 dark:text-neutral-600" />
+          ))}
+      </div>
     </div>
   );
 
@@ -232,6 +248,16 @@ export function KpiCard({
           className="alert-accent-border absolute inset-y-0 left-0 w-1 rounded-l-xl bg-red-500"
           aria-hidden="true"
         />
+      )}
+      {floatingInfo && (
+        <span className="absolute right-3 bottom-3 z-20 group/info">
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-neutral-300 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 bg-white/80 dark:bg-neutral-900/70">
+            <Info className="w-3.5 h-3.5" />
+          </span>
+          <span className="pointer-events-none absolute right-0 bottom-7 hidden w-56 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2.5 py-2 text-[11px] leading-4 text-neutral-700 dark:text-neutral-200 shadow-lg group-hover/info:block">
+            {infoTooltip}
+          </span>
+        </span>
       )}
     </>
   );

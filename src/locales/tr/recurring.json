@@ -1,5 +1,5 @@
 {
-  "title": "Tekrarlanan Ödemeler",
+  "title": "Rutin Giderler",
   "badges": {
     "variable": "Değişken"
   },
@@ -63,8 +63,17 @@
   },
   "generate": {
     "button": "Bu Ay Oluştur",
-    "success": "{{count}} tekrarlayan gider kaydı oluşturuldu.",
-    "successGeneric": "Tekrarlayan giderler oluşturuldu.",
-    "noTemplates": "Oluşturulacak aktif şablon yok."
+    "success": "{{count}} rutin gider kaydı oluşturuldu.",
+    "successGeneric": "Rutin giderler oluşturuldu.",
+    "alreadyComplete": "Bu ay zaten oluşturulmuş, yeni kayıt eklenmedi.",
+    "noTemplates": "Oluşturulacak aktif şablon yok.",
+    "alreadyCompleteTooltip": "Bu ayın tüm rutin giderleri zaten oluşturulmuş."
+  },
+  "monthStatus": {
+    "title": "Bu Ayın Durumu",
+    "complete": "{{period}} — tüm rutin giderler oluşturuldu ({{generated}}/{{total}})",
+    "incomplete": "{{period}} — {{missing}} şablon henüz oluşturulmadı ({{generated}}/{{total}})",
+    "missingList": "Eksik şablonlar",
+    "andMore": "ve {{count}} tane daha"
   }
 }

@@ -52,9 +52,12 @@
     "activeSubscriptions": "Aktif Abone Sayısı",
     "mrr": "Aylık Tekrar Eden Gelir",
     "uncollectedPayments": "Gecikmiş Abonelik Borcu",
-    "netProfit": "Bu Ayki Net Kâr",
+    "netProfit": "Defter Kârı",
     "subscriptionRevenue": "Abonelik Geliri",
     "waitingLabel": "bekliyor"
+  },
+  "kpiInfo": {
+    "ledgerProfit": "Bu değer, bu ay deftere yazılmış gelir eksi gider toplamını gösterir. Yönetim net kârı değildir."
   },
   "sparkline": {
     "monthlyRevenue": "Aylık Toplam Gelir",

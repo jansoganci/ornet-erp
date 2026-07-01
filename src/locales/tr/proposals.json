@@ -169,14 +169,28 @@
       "termsPricing": "Fiyatlandırma",
       "termsWarranty": "Garanti",
       "termsOther": "Diğer",
-      "termsAttachments": "Ekler"
+      "termsAttachments": "Ekler",
+      "termsDocument": "Şartlar ve Koşullar Metni"
     },
     "placeholders": {
       "title": "ör. Güvenlik Kamera Sistemi Kurulumu",
       "scopeOfWork": "İş kapsamını açıklayın...",
       "notes": "Sadece dahili kullanım..."
     },
+    "actions": {
+      "editCustomerName": "Müşteri Adını Düzenle"
+    },
+    "sectionHelp": {
+      "customerSite": "Müşteri ve lokasyonu kısa özet ile seçin.",
+      "proposalMeta": "Tarih, para birimi ve iletişim bilgilerini tek alanda düzenleyin.",
+      "proposalIdentity": "Teklifin görünen başlığını ve kapsam özetini girin.",
+      "financialSettings": "KDV ve tevkifat alanları şimdilik pasif tutuluyor."
+    },
     "sections": {
+      "customerSite": "Müşteri ve Lokasyon",
+      "proposalMeta": "Teklif Detayları",
+      "proposalIdentity": "Teklif Başlığı ve Kapsam",
+      "financialSettings": "Gelişmiş Finans Ayarları",
       "items": "Malzemeler",
       "notes": "Notlar",
       "logoAndHeader": "Logo ve PDF Başlık Bilgileri",

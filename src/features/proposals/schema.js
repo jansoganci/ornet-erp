@@ -154,24 +154,25 @@ export const defaultProposalItem = {
 };
 
 // Default terms text (from ORNEK-TEKLIF-FORMU-010724.pdf) – user can edit or delete
-const defaultTermsEngineering = `1) Sistem de uzak erişim için gerekecek olan internet müşteride çalışır ve IP'si sabitlenmiş halde olduğu kabul edilmiştir. Teklife internet için yapılacak işlem veya işlemlerin tutarı eklenmemiştir. Gerekebilecek olan ek işlemler için fiyatlandırma ayrıca yapılacaktır.
-2) İnternet bağlantısının olmaması veya sağlıklı çalışmamasından dolayı tekrar servis gerekmesi halinde ayrıca fiyatlandırılacaktır.
-3) Sistemin montajı için montajcı firmanın elinde olmayan bir sebep veya sebeplerden dolayı oluşan gecikmeler (tekrar gelmeyi gerektirecek durumlar) ayrıca fiyatlandırılacaktır.
-4) Sistemin montajı sahadaki uç elemanlarının merkeze tanıtılmasını, kullanım için gerekli program ve ayarların istenilen ürünlere yüklenmesini ve kullanıcı eğitimlerinin verilmesini kapsamaktadır.
-5) Sistemin montaj bedeli mesai saatleri için fiyatlandırılmıştır. Mesai saati dışı montaj istekleri farklı fiyatlandırılacaktır.`;
+const defaultTermsEngineering = `1. Sistemde uzak erişim için gerekli olan internet bağlantısının müşteri tarafında aktif olarak çalıştığı ve IP adresinin sabitlendiği kabul edilmiştir. Teklif bedeline internet altyapısına yönelik işlem veya işlemler dahil edilmemiştir. Gerekebilecek ilave işlemler ayrıca fiyatlandırılacaktır.
+2. İnternet bağlantısının bulunmaması veya sağlıklı çalışmaması nedeniyle ilave servis ihtiyacı doğması halinde, ilgili hizmet ayrıca fiyatlandırılacaktır.
+3. Sistemin montajı sırasında, yüklenici firmanın kontrolü dışında gelişen nedenlerden kaynaklanan gecikmeler ve tekrar servis gerektiren saha koşulları ayrıca fiyatlandırılacaktır.
+4. Sistem montajı; sahadaki uç elemanlarının merkeze tanıtılmasını, kullanım için gerekli yazılım ve ayarların ilgili ürünlere yüklenmesini ve kullanıcı eğitimlerinin verilmesini kapsamaktadır.
+5. Sistem montaj bedeli resmi mesai saatleri esas alınarak hesaplanmıştır. Mesai saatleri dışında talep edilecek montaj hizmetleri ayrıca fiyatlandırılacaktır.`;
 
-const defaultTermsPricing = `1) Sistemde kullanılacak kablo ve kablo kanalı birim fiyatları verilmiş olup kullanıldığı kadar faturalandırılacaktır.
-2) Sistem iş tesliminde TCMB Efektif Döviz Satış Kuru esas alınarak faturalandırılır.
-3) Fiyatlar peşin ödeme için verilmiştir.
-4) Sözleşmenin onaylanmasına takiben montaj öncesi %40 kablolama ve ürün tesliminde %40 ve sistem tesliminde %20 şeklindedir.
-5) Fiyatlara KDV dahil değildir.`;
+const defaultTermsPricing = `1. Sistemde kullanılacak kablo ve kablo kanalı birim fiyatları belirtilmiş olup, fiili kullanım miktarına göre net metraj üzerinden faturalandırılacaktır.
+2. Sistem, faturanın düzenlendiği tarihte geçerli olan TCMB Efektif Döviz Satış Kuru esas alınarak faturalandırılır.
+3. Belirtilen fiyatlar peşin ödeme esasına göre hazırlanmıştır.
+4. Ödeme planı şu şekildedir: sözleşme onayını takiben %40 avans, kablolama aşaması ve ürünlerin sahaya sevki sırasında %40, test, devreye alma ve nihai sistem tesliminde %20.
+5. Fiyatlara KDV dahil değildir.`;
 
-const defaultTermsWarranty = `1) Teklifimizdeki malzemeler fatura tarihinden itibaren 24 ay süre ile orjinalden doğan (fabrikasyon) hatalarına karşı garantilidir.`;
+const defaultTermsWarranty = `1. Teklifte yer alan malzemeler, fatura tarihinden itibaren 24 ay süreyle üretim ve fabrikasyon hatalarına karşı garanti kapsamındadır.
+2. Kullanıcı hataları, şebeke voltaj dalgalanmaları, yıldırım düşmesi ve dış etkenlerden kaynaklanan arızalar garanti kapsamı dışındadır.`;
 
-const defaultTermsOther = `1) Teklifimiz taşıdığı tarihten itibaren 15 gün geçerlidir.
-2) Müşteri iş kabulünden sonra veya sistemin montajı aşamasında; sözleşmenin feshi halinde kablolama ve işçilik bedeli karşılığı genel toplam tutarının %20 sini peşinen ödemeyi kabul ve taahhüt eder.`;
+const defaultTermsOther = `1. İşbu teklif, düzenlenme tarihinden itibaren 15 gün süreyle geçerlidir.
+2. Müşteri; iş kabulünden sonra veya sistemin montaj aşamasında sözleşmenin feshedilmesi halinde, yapılan masraflar ile kablolama ve işçilik bedellerine karşılık, genel toplam tutarın %20’sini cayma tazminatı olarak ödemeyi kabul ve taahhüt eder. Bu tutar, önceden tahsil edilmiş avans ödemelerinden mahsup edilir.`;
 
-const defaultTermsAttachments = `1) Fiyat Teklifimiz.`;
+const defaultTermsAttachments = `1. Fiyat Teklifi Detayları (Ürün ve Hizmet Listesi)`;
 
 export const proposalDefaultValues = {
   site_id: '',

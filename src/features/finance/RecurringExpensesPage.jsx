@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Repeat, Play } from 'lucide-react';
+import { Plus, Repeat, Play, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, EmptyState, ErrorState, Modal } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
@@ -12,6 +12,7 @@ import {
   useUpdateRecurringTemplate,
   useDeleteRecurringTemplate,
   useTriggerRecurringGeneration,
+  useRecurringMonthStatus,
 } from './recurringHooks';
 import { RecurringTemplateRow } from './recurring/RecurringTemplateRow';
 import { RecurringTemplateFormModal } from './recurring/RecurringTemplateFormModal';
@@ -41,6 +42,28 @@ export function RecurringExpensesPage() {
 
   const activeTemplates = templates.filter((t) => t.is_active);
   const inactiveTemplates = templates.filter((t) => !t.is_active);
+
+  const currentPeriod = useMemo(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  }, []);
+
+  const { data: monthStatus } = useRecurringMonthStatus(currentPeriod);
+
+  const periodLabel = useMemo(() => {
+    const monthNames = t('common:monthsFull', { returnObjects: true });
+    return `${monthNames[currentPeriod.month - 1]} ${currentPeriod.year}`;
+  }, [t, currentPeriod.month, currentPeriod.year]);
+
+  const generateDisabled = activeTemplates.length === 0 || monthStatus?.isComplete;
+  const generateTooltip = activeTemplates.length === 0
+    ? t('recurring:generate.noTemplates')
+    : monthStatus?.isComplete
+      ? t('recurring:generate.alreadyCompleteTooltip')
+      : undefined;
+
+  const visibleMissing = monthStatus?.missingTemplates?.slice(0, 5) ?? [];
+  const hiddenMissingCount = Math.max(0, (monthStatus?.missingTemplates?.length ?? 0) - 5);
 
   // ── KPI data ──
   const kpis = useMemo(() => {
@@ -202,9 +225,9 @@ export function RecurringExpensesPage() {
               variant="outline"
               onClick={() => triggerGenerationMutation.mutate()}
               loading={triggerGenerationMutation.isPending}
-              disabled={activeTemplates.length === 0}
+              disabled={generateDisabled}
               className="hidden md:inline-flex gap-1.5"
-              title={activeTemplates.length === 0 ? t('recurring:generate.noTemplates') : undefined}
+              title={generateTooltip}
             >
               <Play className="w-4 h-4" />
               {t('recurring:generate.button')}
@@ -218,7 +241,8 @@ export function RecurringExpensesPage() {
             <button
               type="button"
               onClick={() => triggerGenerationMutation.mutate()}
-              disabled={activeTemplates.length === 0 || triggerGenerationMutation.isPending}
+              disabled={generateDisabled || triggerGenerationMutation.isPending}
+              title={generateTooltip}
               className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 active:scale-95 transition-transform border border-neutral-200 dark:border-neutral-700 disabled:opacity-40"
               aria-label={t('recurring:generate.button')}
             >
@@ -235,6 +259,61 @@ export function RecurringExpensesPage() {
           </div>
         }
       />
+
+      {activeTemplates.length > 0 && monthStatus && (
+        <div
+          className={`rounded-xl border px-4 py-3 ${
+            monthStatus.isComplete
+              ? 'border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-950/20'
+              : 'border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/20'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {monthStatus.isComplete ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p
+                className={`text-sm font-semibold ${
+                  monthStatus.isComplete
+                    ? 'text-emerald-800 dark:text-emerald-300'
+                    : 'text-amber-800 dark:text-amber-300'
+                }`}
+              >
+                {monthStatus.isComplete
+                  ? t('recurring:monthStatus.complete', {
+                      period: periodLabel,
+                      generated: monthStatus.generatedCount,
+                      total: monthStatus.totalActive,
+                    })
+                  : t('recurring:monthStatus.incomplete', {
+                      period: periodLabel,
+                      missing: monthStatus.missingCount,
+                      generated: monthStatus.generatedCount,
+                      total: monthStatus.totalActive,
+                    })}
+              </p>
+              {!monthStatus.isComplete && visibleMissing.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
+                    {t('recurring:monthStatus.missingList')}
+                  </p>
+                  <ul className="text-xs text-amber-800/90 dark:text-amber-300/90 list-disc list-inside space-y-0.5">
+                    {visibleMissing.map((tpl) => (
+                      <li key={tpl.id}>{tpl.name}</li>
+                    ))}
+                    {hiddenMissingCount > 0 && (
+                      <li>{t('recurring:monthStatus.andMore', { count: hiddenMissingCount })}</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Mobile KPI Strip — md:hidden ── */}
       <section className="grid grid-cols-2 gap-3 md:hidden">

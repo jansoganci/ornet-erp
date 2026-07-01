@@ -176,6 +176,8 @@ export function DashboardPage() {
             title={t('kpi.netProfit')}
             value={currencyFmt.format(financeKpis?.netProfit ?? 0)}
             icon={DollarSign}
+            infoTooltip={t('kpiInfo.ledgerProfit')}
+            infoPlacement="bottom-right"
             trendType="neutral"
             href="/finance"
             loading={isFinanceKpisLoading}

@@ -6,7 +6,21 @@ export const recurringKeys = {
   lists: () => [...recurringKeys.all, 'list'],
   list: (filters) => [...recurringKeys.lists(), filters],
   lastGenerated: () => [...recurringKeys.all, 'last_generated'],
+  monthStatus: (year, month) => [...recurringKeys.all, 'month_status', year, month],
 };
+
+function formatPeriod(year, month) {
+  return `${year}-${String(month).padStart(2, '0')}`;
+}
+
+function isFutureMonth(year, month) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  if (year > currentYear) return true;
+  if (year === currentYear && month > currentMonth) return true;
+  return false;
+}
 
 const TEMPLATE_SELECT = '*, expense_categories(id, code, name_tr)';
 
@@ -79,6 +93,41 @@ async function fetchTemplateLastGeneratedFallback() {
 export async function deleteRecurringTemplate(id) {
   const { error } = await supabase.rpc('soft_delete_recurring_template', { template_id: id });
   if (error) throw error;
+}
+
+export async function fetchRecurringMonthStatus({ year, month }) {
+  const period = formatPeriod(year, month);
+
+  const activeTemplates = await fetchRecurringTemplates({ is_active: true });
+
+  const { data: txs, error: txError } = await supabase
+    .from('financial_transactions')
+    .select('recurring_template_id')
+    .not('recurring_template_id', 'is', null)
+    .eq('period', period)
+    .is('deleted_at', null);
+
+  if (txError) throw txError;
+
+  const generatedIds = new Set((txs || []).map((r) => r.recurring_template_id));
+  const missingTemplates = activeTemplates
+    .filter((tpl) => !generatedIds.has(tpl.id))
+    .map((tpl) => ({ id: tpl.id, name: tpl.name }));
+
+  const totalActive = activeTemplates.length;
+  const generatedCount = totalActive - missingTemplates.length;
+
+  return {
+    period,
+    year,
+    month,
+    totalActive,
+    generatedCount,
+    missingCount: missingTemplates.length,
+    missingTemplates,
+    isComplete: totalActive > 0 && missingTemplates.length === 0,
+    isFutureMonth: isFutureMonth(year, month),
+  };
 }
 
 export async function triggerRecurringGeneration() {

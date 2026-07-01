@@ -116,6 +116,70 @@ function buildAnnualFixedInsertRow(proposalId, item, sortOrder) {
   };
 }
 
+function buildProposalItemPackageRow(item, sortOrder, currency) {
+  const row = buildProposalItemInsertRow(null, item, sortOrder, currency);
+  delete row.proposal_id;
+  row.sort_order = sortOrder;
+  row.section_local_id = item.section_local_id ?? null;
+  return row;
+}
+
+function buildSectionPackageRow(section, sortOrder) {
+  return {
+    local_id: section?._local_id ?? null,
+    title: String(section?.title ?? '').trim(),
+    discount_percent: Number(section?.discount_percent) || 0,
+    sort_order: sortOrder,
+  };
+}
+
+function buildAnnualFixedPackageRow(item, sortOrder) {
+  const row = buildAnnualFixedInsertRow(null, item, sortOrder);
+  delete row.proposal_id;
+  row.sort_order = sortOrder;
+  return row;
+}
+
+function sanitizeProposalPayload(data) {
+  const payload = sanitizeDates({ ...data });
+  if (payload.site_id === '' || payload.site_id == null) payload.site_id = null;
+  return payload;
+}
+
+async function saveProposalPackage({
+  id = null,
+  items,
+  sections,
+  annual_fixed_costs: annualFixedCosts,
+  ...proposalData
+}) {
+  const payload = sanitizeProposalPayload({
+    ...proposalData,
+    currency: proposalData.currency || 'USD',
+  });
+  const currency = payload.currency || 'USD';
+
+  const sectionPayload = (sections ?? []).map((section, index) =>
+    buildSectionPackageRow(section, index),
+  );
+  const itemPayload = (items ?? []).map((item, index) =>
+    buildProposalItemPackageRow(item, index, currency),
+  );
+  const annualPayload = filterPersistableAnnualFixedRows(annualFixedCosts).map((row, index) =>
+    buildAnnualFixedPackageRow(row, index),
+  );
+
+  const { data: savedId, error } = await supabase.rpc('fn_save_proposal_package', {
+    p_proposal_id: id,
+    p_proposal: payload,
+    p_sections: sectionPayload,
+    p_items: itemPayload,
+    p_annual_fixed_costs: annualPayload,
+  });
+  if (error) throw error;
+  return fetchProposal(savedId);
+}
+
 /**
  * Inserts sections for a proposal and returns a map of _local_id → db id.
  * Sections are inserted in sort_order order and correlated by index.
@@ -355,88 +419,16 @@ export async function fetchProposalItems(proposalId) {
  * Create a new proposal with sections and items (two-phase insert for sections).
  */
 export async function createProposal({ items, sections, annual_fixed_costs: annualFixedCosts, ...proposalData }) {
-  const { data: noResult, error: noError } = await supabase.rpc('generate_proposal_no');
-  if (noError) throw noError;
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const payload = sanitizeDates({
+  return saveProposalPackage({
+    items,
+    sections,
+    annual_fixed_costs: annualFixedCosts,
     ...proposalData,
-    proposal_no: noResult,
-    created_by: user?.id,
-    currency: proposalData.currency || 'USD',
-    total_amount: 0,
-    total_amount_usd: 0,
   });
-  if (payload.site_id === '' || payload.site_id == null) payload.site_id = null;
-
-  const { data: proposal, error: proposalError } = await supabase
-    .from('proposals')
-    .insert(payload)
-    .select(PROPOSAL_DETAIL_SELECT)
-    .single();
-
-  if (proposalError) throw proposalError;
-
-  // Phase 1: insert sections
-  const localIdToDbId = await insertSections(proposal.id, sections ?? []);
-
-  // Phase 2: insert items with resolved section_id
-  if (items?.length > 0) {
-    const _currency = proposalData.currency || 'USD';
-    const itemsToInsert = items.map((item, index) => {
-      const row = buildProposalItemInsertRow(proposal.id, item, index, _currency);
-      row.section_id = localIdToDbId[item.section_local_id] ?? null;
-      return row;
-    });
-
-    const { error: itemsError } = await supabase.from('proposal_items').insert(itemsToInsert);
-    if (itemsError) throw itemsError;
-
-    const itemsBySectionLocalId2 = {};
-    for (const item of items) {
-      const key = item.section_local_id ?? '__none__';
-      if (!itemsBySectionLocalId2[key]) itemsBySectionLocalId2[key] = [];
-      itemsBySectionLocalId2[key].push(item);
-    }
-    const total = (sections || []).reduce((sum, s) => {
-      const sItems = itemsBySectionLocalId2[s._local_id] || [];
-      const sub = sItems.reduce((s2, i) => s2 + lineTotalForProposalItem(i), 0);
-      const pct = Math.min(Math.max(Number(s.discount_percent) || 0, 0), 100);
-      return sum + Math.round((sub - Math.round(sub * pct / 100 * 100) / 100) * 100) / 100;
-    }, 0);
-    const cur = (proposalData.currency || 'USD').toUpperCase();
-    const totalPayload = cur === 'USD'
-      ? { total_amount_usd: total, total_amount: 0 }
-      : { total_amount: total, total_amount_usd: 0 };
-
-    const { error: updateError } = await supabase.from('proposals').update(totalPayload).eq('id', proposal.id);
-    if (updateError) throw updateError;
-  }
-
-  const annualRows = filterPersistableAnnualFixedRows(annualFixedCosts);
-  if (annualRows.length > 0) {
-    const annualPayload = annualRows.map((row, index) => buildAnnualFixedInsertRow(proposal.id, row, index));
-    const { error: annualError } = await supabase.from('proposal_annual_fixed_costs').insert(annualPayload);
-    if (annualError) throw annualError;
-  }
-
-  return proposal;
 }
 
 export async function updateProposal({ id, ...proposalData }) {
-  const updates = sanitizeDates({ ...proposalData });
-  if (updates.site_id === '' || updates.site_id == null) updates.site_id = null;
-
-  const { data, error } = await supabase
-    .from('proposals')
-    .update(updates)
-    .eq('id', id)
-    .select(PROPOSAL_DETAIL_SELECT)
-    .single();
-
-  if (error) throw error;
-  return data;
+  return saveProposalPackage({ id, ...proposalData });
 }
 
 export async function updateProposalStatus({ id, status }) {
@@ -507,7 +499,11 @@ export async function duplicateProposal(proposalId) {
   const currency = original.currency || 'USD';
 
   // Build sections with _local_id = existing DB id (createProposal maps them)
-  const sections = origSections.map((s) => ({ _local_id: s.id, title: s.title }));
+  const sections = origSections.map((s) => ({
+    _local_id: s.id,
+    title: s.title,
+    discount_percent: Number(s.discount_percent) || 0,
+  }));
 
   const items = (origItems || []).map((item) => ({
     section_local_id: item.section_id ?? null,

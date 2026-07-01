@@ -2,14 +2,14 @@
 
 <!-- UPDATED: replaced Vite template; project overview and setup -->
 
-Ornet ERP is a live React + Supabase ERP for a Turkish security company, used to run field operations, subscriptions, SIM inventory, proposals, and finance in one system ([live app](https://ornet-erp.pages.dev/)).
+Ornet ERP is a live React + Supabase ERP for a Turkish security company, used to run field operations, subscriptions, SIM inventory, proposals, collections, and finance in one system ([live app](https://ornet-erp.pages.dev/)).
 
 ## What it does
 
 - Tracks customers, sites, work orders, and daily field progress so office and field teams stay synced on the same records.
-- Automates subscription billing flows, collection screens, and SIM inventory operations including import and invoice analysis.
+- Automates subscription billing flows, receivables/collection screens, and SIM inventory operations including import and invoice analysis.
 - Converts completed proposals and work orders into finance ledger entries through database triggers and functions.
-- Gives accountants/admins controlled finance views for income, expenses, VAT, exchange rates, and recurring entries.
+- Gives accountants/admins controlled finance views for income, expenses, VAT, exchange rates, recurring entries, receivables, and tahsilat workflows.
 - Runs live in production today; current public access is via Pages while custom domain restrictions are being resolved with the domain provider.
 
 ## How I built this
@@ -60,6 +60,7 @@ Defined in `src/App.jsx`. `RoleRoute` wraps paths that require `canWrite` (admin
 | Core | `/`, `/profile`, `/notifications`, `/action-board` | Action board: admin-oriented |
 | Operations | `/operations`, `/operations/import` | `canWrite` |
 | Customers | `/customers`, `/customers/import`, `/customers/new`, `/customers/:id`, `/customers/:id/edit` | |
+| Customers · Paraşüt | `/customers/parasut-matching` | `canWrite`; nav item is admin-only |
 | Work orders | `/work-orders`, `/work-orders/new`, `/work-orders/:id`, `/work-orders/:id/edit` | |
 | Daily work | `/daily-work` | |
 | Work history | `/work-history` | |
@@ -67,7 +68,9 @@ Defined in `src/App.jsx`. `RoleRoute` wraps paths that require `canWrite` (admin
 | Technical guide | `/technical-guide`, `/technical-guide/:slug` | |
 | Subscriptions | `/subscriptions`, `/subscriptions/collection`, `/subscriptions/price-revision`, `/subscriptions/import`, `/subscriptions/new`, `/subscriptions/:id`, `/subscriptions/:id/edit` | Nested layout; `canWrite` |
 | Proposals | `/proposals`, `/proposals/new`, `/proposals/:id`, `/proposals/:id/edit` | `canWrite` |
-| Finance | `/finance`, `/finance/expenses`, `/finance/income`, `/finance/vat`, `/finance/exchange`, `/finance/recurring` | `canWrite`; `/finance/reports` redirects to `/finance` |
+| Finance | `/finance`, `/finance/expenses`, `/finance/income`, `/finance/vat`, `/finance/exchange`, `/finance/recurring` | `canWrite` |
+| Finance · Collection | `/finance/receivables`, `/finance/collections` | `canWrite`; `/finance/tahsilat` redirects to `/finance/collections` |
+| Finance · Redirects | `/finance/reports` | Redirects to `/finance` |
 | Equipment | `/equipment`, `/equipment/import` | Site assets UI |
 | SIM cards | `/sim-cards`, `/sim-cards/new`, `/sim-cards/import`, `/sim-cards/invoice-analysis`, `/sim-cards/:id/edit` | `canWrite`; invoice analysis lazy-loaded |
 
@@ -108,11 +111,12 @@ Optional deploy scripts: `npm run deploy`, `npm run deploy:prod` (Vite build + `
 
 <!-- UPDATED: migration revision -->
 
-- **Migrations:** 202 SQL files in `supabase/migrations/`; latest numbered migration **`00203_*.sql`**.
+- **Migrations:** 236 SQL files in `supabase/migrations/`; latest numbered migration is **`00236_fix_proposal_completion_exchange_rate.sql`**.
 - **Primary ledger:** `financial_transactions` — all reporting reads this table; do not aggregate finance from `subscription_payments` alone.
+- **Accrual collections model:** income documents live in `financial_transactions`; cash collection events live in `financial_transaction_payments`; receivables and tahsilat screens read from this split model.
 - **Other core tables (illustrative):** `customers`, `customer_sites`, `work_orders`, `work_order_materials`, `materials`, `profiles`, `subscriptions`, `subscription_payments`, `sim_cards`, `sim_static_ips`, `proposals`, `proposal_items`, `proposal_work_orders`, `site_assets`, `expense_categories`, `exchange_rates`, `recurring_expense_templates`, `payment_methods`, `notifications`, `audit_logs` (plus operations/plan-items tables from recent migrations—inspect schema in repo as needed).
 
-Applied behavior for automated finance is defined in Postgres functions/triggers (see `CLAUDE.md`)..
+Applied behavior for automated finance is defined in Postgres functions/triggers plus completion RPCs for work orders/proposals (see `CLAUDE.md`).
 
 ## Environment Variables
 
@@ -128,5 +132,5 @@ Use `.env.local` for local development (do not commit secrets).
 
 ## Additional docs
 
-- **`CLAUDE.md`** — AI/session context: routing, finance rules, triggers, conventions.
+- **`CLAUDE.md`** — AI/session context: routing, finance rules, triggers, collections, Paraşüt conventions.
 - **`docs/`** — deeper audits and archived notes where present.

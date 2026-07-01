@@ -150,7 +150,7 @@ Subscription monthly pricing and SIM line items live on **`subscriptions`** (NET
 
 <!-- UPDATED: migration id -->
 
-- **Migrations:** **`00220`** is the latest number; **220** `.sql` files under `supabase/migrations/` (note: two files share the `00204` prefix — `materials_prices_with_currency` and `security_invoker_detail_views`). 
+- **Migrations:** **`00236`** is the latest number; **236** `.sql` files under `supabase/migrations/` (note: two files share the `00204` prefix — `materials_prices_with_currency` and `security_invoker_detail_views`). 
 - **Ledger:** `financial_transactions` (+ `financial_transaction_payments`, `expense_categories`, `exchange_rates`, `recurring_expense_templates`, …). 
 - **Collections/Paraşüt:** `v_collection_customer_summary`, `service_category_enum`, `parasut_oauth_tokens`, plus `parasut_*` columns on customers / financial tables. 
 - **SIM:** `sim_cards`, `sim_static_ips`, view `sim_cards_list` (Turkish-normalized search). 
@@ -197,26 +197,24 @@ Subscription monthly pricing and SIM line items live on **`subscriptions`** (NET
 
 ---
 
-## Recent migrations (latest 10)
+## Recent migrations
 
 <!-- UPDATED -->
 
 | # | File (short) | Purpose |
 |---|----------------|---------|
-| 00220 | `materials_description_search` | Turkish-normalized generated search column on `materials.description` |
-| 00219 | `sim_cards_list_view` | `sim_cards_list` view with normalized phone/customer search |
-| 00218 | `parasut_payment_meta` | Paraşüt payment sync columns on `financial_transaction_payments` |
-| 00217 | `parasut_sync_status` | Paraşüt invoice sync columns on `financial_transactions` |
-| 00216 | `parasut_oauth_audit` | Paraşüt OAuth token store, audit log, idempotency cache |
-| 00215 | `parasut_customer_matching` | `parasut_contact_id`/`identity_type`/`tax_office` on customers |
-| 00214 | `collection_customer_summary_profit` | `total_profit` on `v_collection_customer_summary` |
-| 00213 | `tahsilat_views` | Per-customer + per-document collection views |
-| 00212 | `tahsilat_core` | `service_category_enum`, payment tracking, categorization trigger |
-| 00211 | `fix_complete_proposal_with_rate_recalc` | Recompute `total_amount_usd` so proposal income isn’t skipped |
-| 00210 | `complete_proposal_with_rate_rpc` | User-confirmed USD rate on proposal completion |
-| 00209 | `update_proposal_trigger_unpaid` | Proposal income rows default `payment_status = 'unpaid'` (receivables) |
-| 00208 | `complete_work_order_with_payment_rpc` | WO completion + payment method → paid/unpaid |
-| 00207 | `fix_pl_view_and_hybrid_payment_schema` | Drop subscription UNION from P&L; add `payment_status` + `financial_transaction_payments` |
+| 00236 | `fix_proposal_completion_exchange_rate` | Finalize proposal completion RPC so stored exchange rate is applied correctly |
+| 00235 | `v_profit_and_loss_security_invoker_reassert` | Reassert `security_invoker` on `v_profit_and_loss` |
+| 00234 | `tahsilat_views_security_invoker_reassert` | Reassert `security_invoker` on Tahsilat views |
+| 00233 | `tahsilat_views_aggregate_rewrite` | Rewrite Tahsilat aggregates to avoid correlated payment subqueries |
+| 00232 | `search_work_history_limit_offset` | Improve work history search pagination support |
+| 00231 | `recurring_generation_guarded_rpc` | Guard recurring expense generation RPC by role |
+| 00230 | `completion_rpc_role_guards` | Guard work order/proposal completion RPCs by role |
+| 00229 | `subscription_rpc_role_guards` | Guard subscription RPC flows by role |
+| 00228 | `fetch_tcmb_rates_cron_secret` | Harden TCMB cron setup with secret-aware execution |
+| 00227 | `fix_extend_active_subscription_payments` | Fix active subscription payment extension logic |
+| 00226 | `extend_subscription_payments_cron` | Schedule subscription payment extension |
+| 00225 | `finance_rpc_role_guards` | Add role guards to finance RPCs |
 
 ---
 

@@ -1,6 +1,5 @@
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Phone, Calendar, ChevronRight, Building2, CreditCard, ShieldCheck } from 'lucide-react';
+import { MapPin, Phone, CreditCard } from 'lucide-react';
 import { cn, formatCurrency, formatDate } from '../../../lib/utils';
 
 const SURFACE =
@@ -13,24 +12,28 @@ function InfoCell({ label, value, children }) {
     <div className="min-w-0">
       <p className={cn('text-[10px] font-semibold uppercase tracking-wide', TEXT_MUTED)}>{label}</p>
       {children || (
-        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-50 break-words">{value}</p>
+        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-50" title={value}>
+          {value}
+        </p>
       )}
     </div>
   );
 }
 
 export function SubscriptionDetailInfoStrip({ subscription }) {
-  const { t } = useTranslation(['subscriptions', 'customers']);
+  const { t } = useTranslation(['subscriptions', 'common']);
 
   const alarmLine = [subscription.alarm_center, subscription.alarm_center_account && `ACC: ${subscription.alarm_center_account}`]
     .filter(Boolean)
     .join(' · ');
-  const locationLine = [subscription.site_name, subscription.site_address].filter(Boolean).join(' · ');
   const monthlyAmount = Number(subscription.base_price || 0)
     + Number(subscription.sms_fee || 0)
     + Number(subscription.line_fee || 0)
     + Number(subscription.static_ip_fee || 0)
     + Number(subscription.sim_amount || 0);
+  const billingFrequencyLabel = subscription.billing_frequency
+    ? t(`subscriptions:form.fields.${subscription.billing_frequency}`)
+    : null;
 
   return (
     <section className={cn(SURFACE, 'hidden px-5 py-4 md:block')}>
@@ -39,62 +42,58 @@ export function SubscriptionDetailInfoStrip({ subscription }) {
           {t('subscriptions:detail.heroEyebrow')}
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-7 xl:gap-5">
-        <InfoCell label={t('subscriptions:list.columns.customer')}>
-          <Link
-            to={`/customers/${subscription.customer_id}`}
-            className="group inline-flex min-w-0 items-center gap-1 text-sm font-semibold text-neutral-900 hover:text-primary-600 dark:text-neutral-50 dark:hover:text-primary-400"
-          >
-            <Building2 className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
-            <span className="truncate">{subscription.company_name || '—'}</span>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50 group-hover:opacity-100" />
-          </Link>
-        </InfoCell>
-        <InfoCell label={t('subscriptions:detail.fields.serviceType')}>
-          <div className="inline-flex items-start gap-1.5 text-sm font-medium text-neutral-900 dark:text-neutral-50">
-            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-            <span>{subscription.service_type ? t(`subscriptions:serviceTypes.${subscription.service_type}`) : '—'}</span>
-          </div>
-        </InfoCell>
-        <InfoCell label={t('subscriptions:list.columns.site')}>
-          <Link
-            to={`/customers/${subscription.customer_id}`}
-            className="group inline-flex min-w-0 items-center gap-1 text-sm font-medium text-neutral-900 hover:text-primary-600 dark:text-neutral-50 dark:hover:text-primary-400"
-          >
-            <span className="truncate">{locationLine || '—'}</span>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50 group-hover:opacity-100" />
-          </Link>
-        </InfoCell>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
         <InfoCell label={t('subscriptions:list.columns.monthly')}>
-          <div className="inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-            <CreditCard className="h-3.5 w-3.5 text-neutral-400" />
-            <span>{formatCurrency(monthlyAmount, 'TRY')}</span>
+          <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+            <CreditCard className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+            <span className="truncate">{formatCurrency(monthlyAmount, 'TRY')}</span>
           </div>
         </InfoCell>
-        {subscription.sim_phone_number && (
-          <InfoCell label={t('subscriptions:form.fields.simCard')}>
-            <a
-              href={`tel:${subscription.sim_phone_number}`}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 dark:text-primary-400"
-            >
-              <Phone className="h-3.5 w-3.5" />
-              {subscription.sim_phone_number}
-            </a>
-          </InfoCell>
-        )}
         <InfoCell
-          label={t('subscriptions:detail.fields.activationDate', 'Aktivasyon Tarihi')}
+          label={t('subscriptions:detail.fields.activationDate')}
           value={subscription.start_date ? formatDate(subscription.start_date) : null}
         />
         {alarmLine && (
           <InfoCell label={t('subscriptions:form.fields.alarmCenter')}>
-            <p className="flex items-start gap-1.5 text-sm text-neutral-700 dark:text-neutral-200">
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
-              <span>{alarmLine}</span>
+            <p
+              className="line-clamp-2 text-sm text-neutral-700 dark:text-neutral-200"
+              title={alarmLine}
+            >
+              {alarmLine}
             </p>
           </InfoCell>
         )}
+        {subscription.sim_phone_number && (
+          <InfoCell label={t('subscriptions:form.fields.simCard')}>
+            <a
+              href={`tel:${subscription.sim_phone_number}`}
+              className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-sm font-semibold text-primary-600 dark:text-primary-400"
+            >
+              <Phone className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{subscription.sim_phone_number}</span>
+            </a>
+          </InfoCell>
+        )}
+        {billingFrequencyLabel && (
+          <InfoCell
+            label={t('subscriptions:detail.fields.billingFrequency')}
+            value={billingFrequencyLabel}
+          />
+        )}
       </div>
+      {subscription.site_address && (
+        <div className="mt-4 border-t border-neutral-100 pt-4 dark:border-neutral-800">
+          <p className={cn('mb-1 text-[10px] font-semibold uppercase tracking-wide', TEXT_MUTED)}>
+            {t('common:labels.address')}
+          </p>
+          <div className="flex min-w-0 items-start gap-2">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" />
+            <p className="min-w-0 text-sm leading-relaxed text-neutral-700 break-words dark:text-neutral-200">
+              {subscription.site_address}
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

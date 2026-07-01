@@ -296,11 +296,18 @@
     "overview": {
       "totalRevenue": "Toplam gelir",
       "totalExpenses": "Toplam gider",
-      "remaining": "Kalan",
+      "remaining": "Defter Kârı",
+      "subscriptionMrr": "Abonelik MRR",
+      "simMrr": "SIM Kart MRR",
       "incomeBreakdown": "Gelir Kaynakları",
       "expenseBreakdown": "Gider Dağılımı",
       "generalExpenses": "Genel Giderler",
       "noExpenses": "Bu dönemde genel gider kaydı yok"
+    },
+    "overviewInfo": {
+      "ledgerProfit": "Bu değer, seçili dönemde deftere yazılmış gelir eksi gider toplamını gösterir. Yönetim net kârı değildir.",
+      "subscriptionMrr": "Aktif aboneliklerin aylık tekrarlayan net geliri (KDV hariç). Temel ücret, SMS, hat, statik IP ve abonelikteki SIM bedelini içerir.",
+      "simMrr": "Aktif veya aboneliğe bağlı SIM kartların satış fiyatları toplamı (KDV hariç). Operatör envanterinden aylık kiralama gelirinin tahmini değeridir."
     },
     "work": {
       "revenue": "İşlerden gelen gelir",
@@ -492,5 +499,11 @@
       "CURRENCY_MISMATCH": "Para Birimi Uyuşmazlığı",
       "MISSING_EXPENSE": "Gider Eksik"
     }
+  },
+  "recurringMonthBanner": {
+    "complete": "{{period}} rutin giderleri tamam ({{generated}}/{{total}})",
+    "incomplete": "{{period}} için {{missing}} rutin gider oluşturulmadı ({{generated}}/{{total}})",
+    "goGenerate": "Rutin Giderlere Git",
+    "viewTemplates": "Şablonları Gör"
   }
 }

@@ -1,38 +1,42 @@
 import { useTranslation } from 'react-i18next';
 import { ErrorState } from '../../../../components/ui/ErrorState';
 import { formatCurrency } from '../../../../lib/utils';
-import { useChannelMetrics } from '../../hooks';
+import { useSimFinancialStats } from '../../../simCards/hooks';
 import { ChannelKpiCard } from './ChannelKpiCard';
-import { ChannelBarChart } from './ChannelBarChart';
 
-export function SimTab({ year, month, viewMode }) {
+export function SimTab() {
   const { t } = useTranslation('finance');
 
   const {
-    data: metrics,
+    data: simStats,
     isLoading,
     error,
     refetch,
-  } = useChannelMetrics({ channel: 'sim', year, month, viewMode });
+  } = useSimFinancialStats();
 
   if (error) {
     return <ErrorState message={error.message} onRetry={refetch} />;
   }
 
-  const grossMargin = metrics?.grossMarginPct;
+  const revenue = Number(simStats?.total_monthly_revenue) || 0;
+  const costs = Number(simStats?.total_monthly_cost) || 0;
+  const profit = Number(simStats?.total_monthly_profit) || 0;
+  const grossMargin = revenue > 0
+    ? Math.round((profit / revenue) * 10000) / 100
+    : null;
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <ChannelKpiCard
           title={t('dashboardV2.sim.revenue')}
-          value={formatCurrency(metrics?.revenue ?? 0)}
+          value={formatCurrency(revenue)}
           variant="positive"
           loading={isLoading}
         />
         <ChannelKpiCard
           title={t('dashboardV2.sim.operatorCost')}
-          value={`-${formatCurrency(metrics?.costs ?? 0)}`}
+          value={`-${formatCurrency(costs)}`}
           variant="negative"
           loading={isLoading}
         />
@@ -43,14 +47,6 @@ export function SimTab({ year, month, viewMode }) {
           loading={isLoading}
         />
       </div>
-
-      <ChannelBarChart
-        title={t('dashboardV2.sim.chartTitle')}
-        data={metrics?.monthlyBreakdown || []}
-        loading={isLoading}
-        revenueLabel={t('dashboardV2.chart.revenue')}
-        costsLabel={t('dashboardV2.chart.expenses')}
-      />
     </div>
   );
 }

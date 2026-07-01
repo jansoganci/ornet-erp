@@ -21,6 +21,15 @@ export function useRecurringTemplates(filters) {
   });
 }
 
+export function useRecurringMonthStatus({ year, month }) {
+  const enabled = Number.isFinite(year) && Number.isFinite(month) && month >= 1 && month <= 12;
+  return useQuery({
+    queryKey: recurringKeys.monthStatus(year, month),
+    queryFn: () => recurringApi.fetchRecurringMonthStatus({ year, month }),
+    enabled,
+  });
+}
+
 export function useCreateRecurringTemplate() {
   const queryClient = useQueryClient();
   const { t } = useTranslation('common');
@@ -86,20 +95,34 @@ export function useTriggerRecurringGeneration() {
   const { t } = useTranslation('recurring');
 
   return useMutation({
-    mutationFn: recurringApi.triggerRecurringGeneration,
-    onSuccess: (count) => {
-      // recurring templates (last-generated dates change)
+    mutationFn: async () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+
+      const before = await recurringApi.fetchRecurringMonthStatus({ year, month });
+      if (before.isComplete) {
+        return { inserted: 0, skipped: true };
+      }
+
+      await recurringApi.triggerRecurringGeneration();
+
+      const after = await recurringApi.fetchRecurringMonthStatus({ year, month });
+      const inserted = before.missingCount - after.missingCount;
+
+      return { inserted, skipped: false };
+    },
+    onSuccess: ({ inserted, skipped }) => {
       queryClient.invalidateQueries({ queryKey: recurringKeys.all });
-      // transaction lists (new rows were inserted)
       queryClient.invalidateQueries({ queryKey: transactionKeys.all });
-      // computed reports — all three must stay in sync after generation
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: vatReportKeys.all });
-      if (typeof count === 'number') {
-        toast.success(t('generate.success', { count }));
+
+      if (skipped || inserted === 0) {
+        toast.info(t('generate.alreadyComplete'));
       } else {
-        toast.success(t('generate.successGeneric'));
+        toast.success(t('generate.success', { count: inserted }));
       }
     },
     onError: (error) => {

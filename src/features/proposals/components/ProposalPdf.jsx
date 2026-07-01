@@ -23,6 +23,7 @@ import {
   filterItemsForSection,
 } from '../proposalSectionGroups';
 import i18n from '../../../lib/i18n';
+import { formatNumberedTermsParagraphs } from '../termsFormatting';
 
 Font.register({
   family: 'Inter',
@@ -296,12 +297,12 @@ const styles = StyleSheet.create({
   termsTitle: {
     fontSize: 10,
     fontWeight: 700,
-    color: '#404040',
+    color: '#1a1a1a',
     marginBottom: 4,
   },
   termsBody: {
     fontSize: 9,
-    lineHeight: 1.4,
+    lineHeight: 1.35,
     color: '#525252',
     marginBottom: 10,
   },
@@ -365,6 +366,15 @@ function safeStr(val, maxLen = 2000) {
 function safeNum(val, fallback = 0) {
   const n = Number(val);
   return Number.isNaN(n) ? fallback : n;
+}
+
+function TermsSectionBody({ text, styles }) {
+  const paragraphs = formatNumberedTermsParagraphs(text);
+  if (!paragraphs.length) return null;
+
+  return (
+    <Text style={styles.termsBody}>{paragraphs.join('\n')}</Text>
+  );
 }
 
 /**
@@ -705,31 +715,31 @@ export function ProposalPdf({
             {safeStr(prop.terms_engineering) && (
               <View wrap={false} style={styles.termsSection}>
                 <Text style={styles.termsTitle}>MÜHENDİSLİK HİZMETLERİ</Text>
-                <Text style={styles.termsBody}>{safeStr(prop.terms_engineering)}</Text>
+                <TermsSectionBody text={prop.terms_engineering} styles={styles} />
               </View>
             )}
             {safeStr(prop.terms_pricing) && (
               <View wrap={false} style={styles.termsSection}>
                 <Text style={styles.termsTitle}>FİYATLANDIRMA</Text>
-                <Text style={styles.termsBody}>{safeStr(prop.terms_pricing)}</Text>
+                <TermsSectionBody text={prop.terms_pricing} styles={styles} />
               </View>
             )}
             {safeStr(prop.terms_warranty) && (
               <View wrap={false} style={styles.termsSection}>
                 <Text style={styles.termsTitle}>GARANTİ</Text>
-                <Text style={styles.termsBody}>{safeStr(prop.terms_warranty)}</Text>
+                <TermsSectionBody text={prop.terms_warranty} styles={styles} />
               </View>
             )}
             {safeStr(prop.terms_other) && (
               <View wrap={false} style={styles.termsSection}>
                 <Text style={styles.termsTitle}>DİĞER</Text>
-                <Text style={styles.termsBody}>{safeStr(prop.terms_other)}</Text>
+                <TermsSectionBody text={prop.terms_other} styles={styles} />
               </View>
             )}
             {safeStr(prop.terms_attachments) && (
               <View wrap={false} style={styles.termsSection}>
                 <Text style={styles.termsTitle}>EKLER</Text>
-                <Text style={styles.termsBody}>{safeStr(prop.terms_attachments)}</Text>
+                <TermsSectionBody text={prop.terms_attachments} styles={styles} />
               </View>
             )}
           </View>

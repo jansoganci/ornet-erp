@@ -14,6 +14,7 @@ import { FinanceDashboardFilters } from './components/dashboard/FinanceDashboard
 import { ChannelKpiCard } from './components/dashboard/ChannelKpiCard';
 import { ChannelBarChart } from './components/dashboard/ChannelBarChart';
 import { FinanceHealthBanner } from './components/dashboard/FinanceHealthBanner';
+import { RecurringMonthBanner } from './components/dashboard/RecurringMonthBanner';
 import { ParasutHealthCard } from './components/ParasutHealthCard';
 import { QuickEntryModal } from './components/QuickEntryModal';
 import {
@@ -22,6 +23,8 @@ import {
   useIncomeBySource,
   useExpensesBySource,
 } from './hooks';
+import { useSubscriptionStats } from '../subscriptions/hooks';
+import { useSimFinancialStats } from '../simCards/hooks';
 import { fetchProfitAndLoss } from './api';
 import { formatCurrency } from '../../lib/utils';
 import { toCSV, downloadCSV } from '../../lib/csvExport';
@@ -118,6 +121,8 @@ export function FinanceDashboardPage() {
   const { data: overviewTotals, isLoading: overviewLoading } = useOverviewTotals(filterProps);
   const { data: incomeBySource = [], isLoading: incomeLoading } = useIncomeBySource(filterProps);
   const { data: expensesBySource = [], isLoading: expensesLoading } = useExpensesBySource(filterProps);
+  const { data: subStats, isLoading: subStatsLoading } = useSubscriptionStats();
+  const { data: simStats, isLoading: simStatsLoading } = useSimFinancialStats();
   const { data: revenueByMonth = [], isLoading: revenueByMonthLoading } = useRevenueExpensesByMonth({
     months: 6,
     viewMode,
@@ -131,6 +136,8 @@ export function FinanceDashboardPage() {
   const totalRevenue = overviewTotals?.totalRevenue ?? 0;
   const totalExpenses = overviewTotals?.totalExpenses ?? 0;
   const remaining = overviewTotals?.remaining ?? 0;
+  const subscriptionMrr = Number(subStats?.mrr) || 0;
+  const simMrr = Number(simStats?.total_monthly_revenue) || 0;
 
   const chartData = useMemo(
     () => revenueByMonth.map((d) => ({ period: d.period, revenue: d.revenue, costs: d.expenses })),
@@ -240,6 +247,7 @@ export function FinanceDashboardPage() {
         </div>
 
         <FinanceHealthBanner />
+        <RecurringMonthBanner year={year} month={month} />
         <ParasutHealthCard />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -261,6 +269,24 @@ export function FinanceDashboardPage() {
             loading={overviewLoading}
             variant={remaining >= 0 ? 'positive' : 'negative'}
             emphasis
+            infoTooltip={t('dashboardV2.overviewInfo.ledgerProfit')}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.subscriptionMrr')}
+            value={formatCurrency(subscriptionMrr)}
+            loading={subStatsLoading}
+            variant="positive"
+            infoTooltip={t('dashboardV2.overviewInfo.subscriptionMrr')}
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.simMrr')}
+            value={formatCurrency(simMrr)}
+            loading={simStatsLoading}
+            variant="positive"
+            infoTooltip={t('dashboardV2.overviewInfo.simMrr')}
           />
         </div>
 
@@ -356,6 +382,7 @@ export function FinanceDashboardPage() {
         />
 
         <FinanceHealthBanner />
+        <RecurringMonthBanner year={year} month={month} />
         <ParasutHealthCard />
 
         <FinanceDashboardFilters
@@ -386,6 +413,24 @@ export function FinanceDashboardPage() {
             loading={overviewLoading}
             variant={remaining >= 0 ? 'positive' : 'negative'}
             emphasis
+            infoTooltip={t('dashboardV2.overviewInfo.ledgerProfit')}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.subscriptionMrr')}
+            value={formatCurrency(subscriptionMrr)}
+            loading={subStatsLoading}
+            variant="positive"
+            infoTooltip={t('dashboardV2.overviewInfo.subscriptionMrr')}
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.simMrr')}
+            value={formatCurrency(simMrr)}
+            loading={simStatsLoading}
+            variant="positive"
+            infoTooltip={t('dashboardV2.overviewInfo.simMrr')}
           />
         </div>
 
