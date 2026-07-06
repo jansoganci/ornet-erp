@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Clock, Wifi, AlertTriangle, Phone, Mail, MapPin, FileText } from 'lucide-react';
 import { Card, Button, KpiCard } from '../../../components/ui';
 import { formatPhone } from '../../../lib/utils';
-import { useCustomerDetail } from '../CustomerDetailContext';
+import { useCustomerDetail } from '../customerDetailContextBase';
 import { CustomerAlertItem } from '../components/CustomerAlertItem';
 import { RecentWorkOrderRow } from '../components/RecentWorkOrderRow';
 import { LocationSummaryCard } from '../components/LocationSummaryCard';

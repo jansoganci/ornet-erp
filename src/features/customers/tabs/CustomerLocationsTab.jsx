@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Plus } from 'lucide-react';
 import { Button, Card, Modal, Skeleton } from '../../../components/ui';
-import { useCustomerDetail } from '../CustomerDetailContext';
+import { useCustomerDetail } from '../customerDetailContextBase';
 import { SiteCard } from '../../customerSites/SiteCard';
 import { SiteFormModal } from '../../customerSites/SiteFormModal';
 import { useDeleteSite, useUpdateSite } from '../../customerSites/hooks';

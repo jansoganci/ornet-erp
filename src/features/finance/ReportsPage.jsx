@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { FileText, Download, Filter, X } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Card, Select, ErrorState, EmptyState } from '../../components/ui';
-import { useProfitAndLoss } from './hooks';
+import { useCoverageSummary, useProfitAndLoss } from './hooks';
 import { getLastNMonths } from './api';
 import { ViewModeToggle } from './components/ViewModeToggle';
 import { formatCurrency, formatDate } from '../../lib/utils';
@@ -26,7 +26,8 @@ function aggregatePL(plData) {
     }
   }
   const grossProfit = revenue - cogs;
-  const netProfit = grossProfit - expenses;
+  // Ledger profit must come only from posted income rows minus posted expense rows.
+  const netProfit = revenue - expenses;
   return {
     revenue: Math.round(revenue * 100) / 100,
     cogs: Math.round(cogs * 100) / 100,
@@ -34,6 +35,25 @@ function aggregatePL(plData) {
     expenses: Math.round(expenses * 100) / 100,
     netProfit: Math.round(netProfit * 100) / 100,
   };
+}
+
+function CoverageCard({ label, value, tone = 'neutral', loading = false }) {
+  const valueClass = {
+    positive: 'text-green-500 dark:text-green-400',
+    negative: 'text-red-500 dark:text-red-400',
+    neutral: 'text-neutral-900 dark:text-neutral-50',
+  }[tone];
+
+  return (
+    <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-4 border border-neutral-200 dark:border-[#262626]/10">
+      <p className="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-neutral-500 dark:text-neutral-400 mb-1">
+        {label}
+      </p>
+      <p className={`font-bold text-xl tracking-tight tabular-nums ${loading ? 'text-neutral-400 dark:text-neutral-500' : valueClass}`}>
+        {loading ? '—' : formatCurrency(value)}
+      </p>
+    </div>
+  );
 }
 
 export function ReportsPage() {
@@ -71,8 +91,14 @@ export function ReportsPage() {
   }, [period, defaultPeriod, viewMode]);
 
   const { data: plData, isLoading, error, refetch } = useProfitAndLoss(period, viewMode);
+  const { data: coverageSummary, isLoading: isCoverageLoading } = useCoverageSummary({ period, viewMode });
 
   const pl = useMemo(() => aggregatePL(plData), [plData]);
+  const coverage = coverageSummary || {
+    laborRevenue: 0,
+    laborBurden: 0,
+    laborCoverage: 0,
+  };
 
   const hasData = pl.revenue > 0 || pl.expenses > 0;
 
@@ -313,6 +339,26 @@ export function ReportsPage() {
         />
       ) : (
         <>
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <CoverageCard
+              label={t('finance:coverage.laborRevenue')}
+              value={coverage.laborRevenue}
+              loading={isCoverageLoading}
+            />
+            <CoverageCard
+              label={t('finance:coverage.laborBurden')}
+              value={coverage.laborBurden}
+              tone="negative"
+              loading={isCoverageLoading}
+            />
+            <CoverageCard
+              label={t('finance:coverage.laborCoverage')}
+              value={coverage.laborCoverage}
+              tone={coverage.laborCoverage >= 0 ? 'positive' : 'negative'}
+              loading={isCoverageLoading}
+            />
+          </section>
+
           {/* ── Mobile P&L Card — md:hidden ── */}
           <section className="md:hidden">
             <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-neutral-200 dark:border-[#262626]/10 overflow-hidden">

@@ -5,6 +5,8 @@ const toNumber = (val) => (val === '' || val === undefined || val === null ? und
 
 export const WORK_TYPES = ['survey', 'installation', 'service', 'maintenance', 'other'];
 export const CURRENCIES = ['TRY', 'USD'];
+export const WORK_ORDER_REVENUE_TYPES = ['material', 'labor_service', 'other'];
+export const WORK_ORDER_SOURCE_TYPES = ['proposal_item', 'manual_extra', 'legacy'];
 
 /** Must match `proposalItemSchema.unit` and the shared unit dropdown in line-item editors. */
 export const WORK_ORDER_ITEM_UNITS = [
@@ -30,6 +32,41 @@ export function normalizeWorkOrderItemUnit(val) {
   return 'adet';
 }
 
+function parseFiniteNumber(val) {
+  if (val === '' || val === undefined || val === null) return null;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function isBlankWorkOrderItem(item) {
+  if (!item || typeof item !== 'object') return true;
+  const description = String(item.description ?? '').trim();
+  const materialId = item.material_id ?? null;
+  const quantity = parseFiniteNumber(item.quantity);
+  const unitPrice = parseFiniteNumber(item.unit_price);
+  const cost = parseFiniteNumber(item.cost);
+
+  return (
+    description === '' &&
+    !materialId &&
+    (quantity === null || quantity === 1) &&
+    (unitPrice === null || unitPrice === 0) &&
+    (cost === null || cost === 0)
+  );
+}
+
+export function sanitizeWorkOrderItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items.filter((item) => !isBlankWorkOrderItem(item));
+}
+
+export function sanitizePersistableWorkOrderItems(items) {
+  return sanitizeWorkOrderItems(items).filter((item) => {
+    const quantity = parseFiniteNumber(item?.quantity);
+    return quantity != null && quantity > 0;
+  });
+}
+
 export const workOrderSchema = z.object({
   site_id: z.union([z.literal(''), z.string().uuid()]),
   form_no: z.string().optional().or(z.literal('')),
@@ -42,15 +79,25 @@ export const workOrderSchema = z.object({
   notes: z.string().optional().or(z.literal('')),
   /** Stored for API/list; not edited in form — revenue from line items or DB trigger. */
   currency: z.enum(CURRENCIES).default('TRY'),
-  items: z.array(z.object({
-    description: z.string().min(1, i18n.t('errors:validation.required')),
-    quantity: z.coerce.number().positive(),
-    unit: z.preprocess(normalizeWorkOrderItemUnit, workOrderItemUnitEnum),
-    unit_price: z.coerce.number().min(0),
-    material_id: z.string().uuid().optional().nullable().or(z.literal('')),
-    cost: z.coerce.number().min(0).optional().nullable(),
-  })).min(0),
+  items: z.preprocess(
+    sanitizeWorkOrderItems,
+    z.array(z.object({
+      description: z.string().min(1, i18n.t('errors:validation.required')),
+      quantity: z.coerce.number().min(0),
+      unit: z.preprocess(normalizeWorkOrderItemUnit, workOrderItemUnitEnum),
+      unit_price: z.coerce.number().min(0),
+      material_id: z.string().uuid().optional().nullable().or(z.literal('')),
+      proposal_item_id: z.string().uuid().optional().nullable().or(z.literal('')),
+      revenue_type: z.enum(['material', 'labor_service', 'other']).default('material'),
+      source_type: z.enum(['proposal_item', 'manual_extra', 'legacy']).default('manual_extra'),
+      cost: z.coerce.number().min(0).optional().nullable(),
+    })).min(0)
+  ),
   materials_discount_percent: z.coerce.number().min(0).max(100).optional().nullable(),
+  service_fee_revenue: z.preprocess(toNumber, z.number().min(0).default(0)),
+  service_fee_revenue_usd: z.preprocess(toNumber, z.number().min(0).default(0)),
+  planned_operational_labor_cost: z.preprocess(toNumber, z.number().min(0).default(0)),
+  planned_operational_labor_cost_usd: z.preprocess(toNumber, z.number().min(0).default(0)),
   has_vat: z.boolean().default(true),
   has_tevkifat: z.boolean().default(false),
   vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(20)),
@@ -78,6 +125,17 @@ export const workOrderSchema = z.object({
       message: i18n.t('errors:validation.required'),
     });
   }
+
+  data.items.forEach((item, index) => {
+    const isProposalRow = item.source_type === 'proposal_item' || !!item.proposal_item_id;
+    if (!isProposalRow && Number(item.quantity) <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['items', index, 'quantity'],
+        message: i18n.t('errors:validation.required'),
+      });
+    }
+  });
 });
 
 export const workOrderDefaultValues = {
@@ -94,9 +152,23 @@ export const workOrderDefaultValues = {
   notes: '',
   currency: 'TRY',
   items: [
-    { description: '', quantity: 1, unit: 'adet', unit_price: 0, material_id: null, cost: null },
+    {
+      description: '',
+      quantity: 1,
+      unit: 'adet',
+      unit_price: 0,
+      material_id: null,
+      proposal_item_id: null,
+      revenue_type: 'material',
+      source_type: 'manual_extra',
+      cost: null,
+    },
   ],
   materials_discount_percent: 0,
+  service_fee_revenue: 0,
+  service_fee_revenue_usd: 0,
+  planned_operational_labor_cost: 0,
+  planned_operational_labor_cost_usd: 0,
   has_vat: true,
   has_tevkifat: false,
   vat_rate: 20,

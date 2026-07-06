@@ -10,20 +10,7 @@ import { useCompleteWorkOrderWithPayment } from '../hooks';
 const PAYMENT_METHODS = ['cash', 'card', 'bank_transfer'];
 
 function computeGrandTotal(workOrder) {
-  const currency = workOrder.currency ?? 'TRY';
-  const items = workOrder.work_order_materials ?? [];
-  const discountPercent = Number(workOrder.materials_discount_percent) || 0;
-
-  const subtotal = items.reduce((sum, row) => {
-    const qty = parseFloat(row.quantity) || 0;
-    const price = currency === 'USD'
-      ? (parseFloat(row.unit_price_usd) || 0)
-      : (parseFloat(row.unit_price) || 0);
-    return sum + qty * price;
-  }, 0);
-
-  const discountAmount = subtotal * (discountPercent / 100);
-  return subtotal - discountAmount;
+  return Number(workOrder?.net_amount) || 0;
 }
 
 export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
@@ -31,22 +18,24 @@ export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
   const { data: financeSettings } = useFinanceSettings();
 
   const storedVatRate = Number(workOrder?.vat_rate) || 0;
+  const storedHasVat = !!workOrder?.has_vat;
   const hasTevkifat   = !!workOrder?.has_tevkifat;
 
   const [collectionDate, setCollectionDate] = useState(
     () => new Date().toISOString().slice(0, 10)
   );
-  const [vatEnabled, setVatEnabled]         = useState(storedVatRate > 0);
+  const [vatEnabled, setVatEnabled]         = useState(null);
   const [paymentMethod, setPaymentMethod]   = useState('cash');
 
-  const effectiveVatRate = vatEnabled ? storedVatRate : 0;
+  const isVatEnabled = vatEnabled ?? storedHasVat;
+  const effectiveVatRate = isVatEnabled ? storedVatRate : 0;
 
   const grandTotal = useMemo(() => computeGrandTotal(workOrder ?? {}), [workOrder]);
 
   const tevkifatNum = Number(financeSettings?.tevkifat_rate_numerator) || 9;
   const tevkifatDen = Number(financeSettings?.tevkifat_rate_denominator) || 10;
 
-  const { vatAmount, totalPayable } = useMemo(
+  const { vatAmount, withheldVat, totalPayable } = useMemo(
     () => calcVatTevkifatSummary(grandTotal, effectiveVatRate, hasTevkifat, tevkifatNum, tevkifatDen),
     [grandTotal, effectiveVatRate, hasTevkifat, tevkifatNum, tevkifatDen]
   );
@@ -55,27 +44,34 @@ export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
 
   const completeMutation = useCompleteWorkOrderWithPayment();
 
+  const handleClose = () => {
+    setVatEnabled(null);
+    setPaymentMethod('cash');
+    setCollectionDate(new Date().toISOString().slice(0, 10));
+    onClose?.();
+  };
+
   const handleSubmit = () => {
     completeMutation.mutate(
       {
         workOrderId:    workOrder.id,
         paymentMethod,
         collectionDate,
-        vatRate:        vatEnabled ? storedVatRate : 0,
+        vatRate:        isVatEnabled ? storedVatRate : 0,
       },
-      { onSuccess: onClose }
+      { onSuccess: handleClose }
     );
   };
 
   return (
-    <Modal
+      <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={t('workOrders:completion.title')}
       size="sm"
       footer={
         <div className="flex gap-3 w-full">
-          <Button variant="ghost" onClick={onClose} className="flex-1" disabled={completeMutation.isPending}>
+          <Button variant="ghost" onClick={handleClose} className="flex-1" disabled={completeMutation.isPending}>
             {t('common:actions.cancel')}
           </Button>
           <Button
@@ -105,11 +101,11 @@ export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
         </div>
 
         {/* VAT toggle */}
-        {storedVatRate > 0 && (
+        {(storedHasVat || storedVatRate > 0) && (
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
-              checked={vatEnabled}
+              checked={isVatEnabled}
               onChange={(e) => setVatEnabled(e.target.checked)}
               className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 accent-primary-600"
             />
@@ -133,6 +129,12 @@ export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
             <span className="text-neutral-600 dark:text-neutral-400">{t('workOrders:completion.vatAmount')}</span>
             <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(vatAmount, currency)}</span>
           </div>
+          {hasTevkifat && (
+            <div className="flex justify-between text-sm">
+              <span className="text-neutral-600 dark:text-neutral-400">{t('workOrders:detail.withheldVat')}</span>
+              <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">-{formatCurrency(withheldVat, currency)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm pt-2 border-t border-neutral-200 dark:border-neutral-700">
             <span className="font-bold text-neutral-900 dark:text-neutral-100">{t('workOrders:completion.totalAmount')}</span>
             <span className="font-mono font-bold text-lg text-primary-600 dark:text-primary-400">{formatCurrency(totalPayable, currency)}</span>

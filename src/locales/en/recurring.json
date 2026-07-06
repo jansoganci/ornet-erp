@@ -1,0 +1,87 @@
+{
+  "title": "Recurring Expenses",
+  "burdenHelp": "Coverage class is for reporting infrastructure only. Existing records are not automatically classified as labor or vehicle burden.",
+  "badges": {
+    "variable": "Variable"
+  },
+  "burdenTypes": {
+    "unassigned": "Unclassified",
+    "labor_burden": "Labor Burden",
+    "vehicle_burden": "Vehicle Burden",
+    "general_overhead": "General Administrative Expense (GYK)"
+  },
+  "templates": {
+    "title": "Active Templates",
+    "titleWithCount": "Active Templates ({{count}})",
+    "inactive": "Inactive Templates",
+    "addButton": "Add Template",
+    "empty": {
+      "title": "No Templates",
+      "description": "Create a recurring payment template to automatically generate expense records each month."
+    },
+    "dayPrefix": "Every month on the",
+    "daySuffix": "th",
+    "lastGenerated": "Last: {{date}}",
+    "neverGenerated": "Not generated yet"
+  },
+  "form": {
+    "createTitle": "Create Template",
+    "editTitle": "Edit Template",
+    "fields": {
+      "name": "Template Name",
+      "category": "Expense Category",
+      "burdenType": "Coverage Class",
+      "amount": "Amount (₺)",
+      "dayOfMonth": "Payment Day",
+      "paymentMethod": "Payment Method",
+      "hasInvoice": "Invoiced",
+      "vatRate": "VAT Rate (%)",
+      "isVariable": "Variable Amount",
+      "isActive": "Active",
+      "description": "Description Template"
+    },
+    "placeholders": {
+      "name": "e.g. Rent, Social Security, Internet",
+      "amount": "0.00",
+      "dayOfMonth": "1-31",
+      "description": "Recurring description each month..."
+    },
+    "hints": {
+      "isVariable": "Variable-amount payments can be edited",
+      "dayOfMonth": "Day 31 is treated as the last day of shorter months"
+    }
+  },
+  "paymentMethods": {
+    "card": "Card",
+    "cash": "Cash",
+    "bank_transfer": "Bank Transfer"
+  },
+  "actions": {
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "generate": "Generate"
+  },
+  "status": {
+    "active": "Active",
+    "paused": "Paused"
+  },
+  "confirm": {
+    "pauseTitle": "Pause Template",
+    "pauseMessage": "Are you sure you want to pause this template? Automatic expense generation will stop while paused."
+  },
+  "generate": {
+    "button": "Generate This Month",
+    "success": "{{count}} recurring expense records created.",
+    "successGeneric": "Recurring expenses generated.",
+    "alreadyComplete": "This month is already complete; no new records were added.",
+    "noTemplates": "No active templates to generate.",
+    "alreadyCompleteTooltip": "All recurring expenses for this month have already been generated."
+  },
+  "monthStatus": {
+    "title": "This Month's Status",
+    "complete": "{{period}} — all recurring expenses generated ({{generated}}/{{total}})",
+    "incomplete": "{{period}} — {{missing}} templates not yet generated ({{generated}}/{{total}})",
+    "missingList": "Missing templates",
+    "andMore": "and {{count}} more"
+  }
+}

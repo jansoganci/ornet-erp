@@ -3,10 +3,20 @@ import { Link } from 'react-router-dom';
 import { FileCheck, ChevronRight } from 'lucide-react';
 import { Card } from '../../../components/ui';
 
-export function WorkOrderProposalCard({ proposalId }) {
+function buildProposalContext(proposal) {
+  return [
+    proposal?.customer_company_name || proposal?.company_name,
+    proposal?.site_name,
+  ].filter(Boolean);
+}
+
+export function WorkOrderProposalCard({ proposalId, proposal = null }) {
   const { t } = useTranslation('workOrders');
 
   if (!proposalId) return null;
+
+  const primaryLabel = proposal?.proposal_no || proposal?.title || t('detail.viewProposal', 'Teklifi Görüntüle');
+  const contextLines = buildProposalContext(proposal);
 
   return (
     <Card className="p-4 bg-primary-50/50 dark:bg-primary-950/10 border-primary-100 dark:border-primary-900/20">
@@ -22,8 +32,20 @@ export function WorkOrderProposalCard({ proposalId }) {
             {t('detail.proposalLink', 'Teklif')}
           </p>
           <p className="text-sm font-bold text-primary-700 dark:text-primary-300 group-hover:text-primary-600 transition-colors truncate">
-            {t('detail.viewProposal', 'Teklifi Görüntüle')}
+            {primaryLabel}
           </p>
+          {contextLines.length > 0 && (
+            <div className="mt-1 space-y-0.5">
+              {contextLines.map((line) => (
+                <p
+                  key={line}
+                  className="text-xs text-primary-700/80 dark:text-primary-200/80 truncate"
+                >
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
         <ChevronRight className="w-4 h-4 text-primary-400 group-hover:text-primary-600 transition-colors" />
       </Link>

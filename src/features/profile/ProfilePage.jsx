@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { Globe, Lock, Users } from 'lucide-react';
@@ -109,7 +109,7 @@ export function ProfilePage() {
     defaultValues: changePasswordDefaultValues,
   });
 
-  const password = passwordForm.watch('password');
+  const password = useWatch({ control: passwordForm.control, name: 'password' });
 
   useEffect(() => {
     if (profile) {

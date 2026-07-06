@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import {
   Download,
   FileSpreadsheet,
@@ -8,6 +9,8 @@ import {
   CheckCircle2,
   XCircle,
   Info,
+  MoreVertical,
+  GitBranch,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -36,6 +39,7 @@ export function ProposalHero({
   netProfit,
   linkedWorkOrders = [],
   onEdit,
+  onRevise,
   onDelete,
   onDownloadPdf,
   isExporting,
@@ -45,6 +49,8 @@ export function ProposalHero({
 }) {
   const { t } = useTranslation(['proposals', 'common']);
   const status = proposal?.status;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const currency = proposal.currency ?? 'USD';
   const completedCount = linkedWorkOrders.filter((wo) => wo.status === 'completed').length;
@@ -68,6 +74,21 @@ export function ProposalHero({
     : proposal.rejected_at
       ? formatDate(proposal.rejected_at)
       : null;
+  const canEdit = status === 'draft' || status === 'sent';
+  const canRevise = status === 'accepted' || status === 'completed';
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [menuOpen]);
 
   return (
     <div className="space-y-3">
@@ -142,22 +163,56 @@ export function ProposalHero({
           >
             {t('proposals:detail.actions.downloadPdf')}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Edit className="w-4 h-4" />}
-            onClick={onEdit}
-          >
-            {t('proposals:detail.actions.edit')}
-          </Button>
-          <IconButton
-            icon={Trash2}
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            aria-label={t('common:actions.delete')}
-            className="text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-950/30"
-          />
+          <div className="relative" ref={menuRef}>
+            <IconButton
+              icon={MoreVertical}
+              variant="ghost"
+              size="sm"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-label={t('common:actions.more')}
+            />
+            {menuOpen && (
+              <div className="absolute right-0 top-full z-20 mt-2 min-w-[12rem] overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-[#262626] dark:bg-[#171717]">
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-neutral-800 transition-colors hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-[#1f1f1f]"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onEdit?.();
+                    }}
+                  >
+                    <Edit className="w-4 h-4" />
+                    {t('proposals:detail.actions.edit')}
+                  </button>
+                )}
+                {canRevise && (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-neutral-800 transition-colors hover:bg-neutral-50 dark:text-neutral-200 dark:hover:bg-[#1f1f1f]"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onRevise?.();
+                    }}
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    {t('proposals:detail.actions.revise')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-error-700 transition-colors hover:bg-error-50 dark:text-error-300 dark:hover:bg-error-950/20"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onDelete?.();
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {t('common:actions.delete')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

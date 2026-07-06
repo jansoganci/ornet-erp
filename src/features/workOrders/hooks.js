@@ -8,6 +8,7 @@ import { customerKeys } from '../customers/hooks';
 import { operationsApi } from '../operations/api';
 import {
   financeDashboardKeys,
+  coverageKeys,
   transactionKeys,
   profitAndLossKeys,
   financeHealthKeys,
@@ -29,7 +30,7 @@ export const workOrderKeys = {
 
 export function useUpdateWorkOrderStatus() {
   const queryClient = useQueryClient();
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'workOrders']);
   
   return useMutation({
     mutationFn: ({ id, status }) => api.updateWorkOrder({ id, status }),
@@ -39,13 +40,22 @@ export function useUpdateWorkOrderStatus() {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: operationsApi.keys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
       toast.success(t('success.statusUpdated'));
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, 'common.updateFailed'));
+      const requiresPaymentFlow =
+        error?.code === 'STANDALONE_WORK_ORDER_COMPLETION_REQUIRES_PAYMENT_FLOW' ||
+        error?.message === 'STANDALONE_WORK_ORDER_COMPLETION_REQUIRES_PAYMENT_FLOW';
+
+      toast.error(
+        requiresPaymentFlow
+          ? t('workOrders:completion.requiresPaymentFlow')
+          : getErrorMessage(error, 'common.updateFailed')
+      );
     }
   });
 }
@@ -140,6 +150,7 @@ export function useCreateWorkOrder() {
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
@@ -162,6 +173,7 @@ export function useCreateWorkOrderFromProposal() {
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
@@ -191,6 +203,7 @@ export function useUpdateWorkOrder() {
         queryClient.invalidateQueries({ queryKey: operationsApi.keys.all });
       }
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
@@ -215,6 +228,7 @@ export function useCompleteWorkOrderWithPayment() {
       queryClient.invalidateQueries({ queryKey: workOrderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: operationsApi.keys.all });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
@@ -238,6 +252,10 @@ export function useDeleteWorkOrder() {
       queryClient.removeQueries({ queryKey: workOrderKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
       toast.success(t('success.deleted'));
     },
     onError: (error) => {

@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { cn } from '../../../lib/utils';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { ChartTooltip } from '../../../components/ui/ChartTooltip';
 import { CHART_COLORS } from '../../../lib/chartTheme';
@@ -60,7 +59,6 @@ function DonutSkeleton() {
  * Segments: pending (amber), in_progress (blue), completed_this_week (green).
  */
 export function WorkOrderStatusDonut() {
-  const { t } = useTranslation('dashboard');
   const { t: tCommon } = useTranslation('common');
   const { data: stats, isLoading } = useDashboardStats();
 

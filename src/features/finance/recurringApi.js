@@ -24,6 +24,13 @@ function isFutureMonth(year, month) {
 
 const TEMPLATE_SELECT = '*, expense_categories(id, code, name_tr)';
 
+function normalizeBurdenType(data) {
+  return {
+    ...data,
+    burden_type: data?.burden_type || 'unassigned',
+  };
+}
+
 // Templates CRUD
 export async function fetchRecurringTemplates(filters = {}) {
   let query = supabase
@@ -45,7 +52,7 @@ export async function fetchRecurringTemplates(filters = {}) {
 export async function createRecurringTemplate(data) {
   const { data: result, error } = await supabase
     .from('recurring_expense_templates')
-    .insert(data)
+    .insert(normalizeBurdenType(data))
     .select(TEMPLATE_SELECT)
     .single();
 
@@ -56,7 +63,7 @@ export async function createRecurringTemplate(data) {
 export async function updateRecurringTemplate(id, data) {
   const { data: result, error } = await supabase
     .from('recurring_expense_templates')
-    .update(data)
+    .update(normalizeBurdenType(data))
     .eq('id', id)
     .select(TEMPLATE_SELECT)
     .single();

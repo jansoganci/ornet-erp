@@ -92,8 +92,17 @@
     "notAssignedYet": "Henüz atanmadı",
     "assignedCount": "{{count}} Personel",
     "amountNotEntered": "Tutar girilmedi",
-      "withheldVat": "Tevkifat",
-      "totalPayable": "Ödenecek Toplam",
+    "withheldVat": "Tevkifat",
+    "totalPayable": "Ödenecek Toplam",
+    "serviceFeeRevenue": "Hizmet Bedeli",
+    "plannedOperationalLaborCost": "Planlanan Operasyon İşçiliği",
+    "netRevenueExclVat": "Net Gelir (KDV Hariç)",
+    "discountedItemsTotal": "İskontolu Satır Toplamı",
+    "itemsCostTotal": "Toplam Satır Maliyeti",
+    "vatLine": "KDV (%{{rate}})",
+    "grossAmount": "KDV Dahil Toplam",
+    "materialMarginInternal": "Malzeme Sonrası İç Marj",
+    "operationalMarginInternal": "Planlanan İşçilik Sonrası İç Marj",
     "activity": {
       "title": "Aktivite Geçmişi",
       "subtitle": "Kayıt izi",
@@ -126,7 +135,10 @@
       "customerSelection": "Müşteri Seçimi",
       "customerInfo": "Müşteri ve Lokasyon",
       "workInfo": "İş Bilgileri",
-      "materials": "Kullanılan Malzemeler",
+      "materials": "Malzeme / Kalemler",
+      "internalPlanning": "İç Planlama",
+      "commercialSummary": "Ticari Özet",
+      "internalSummary": "İç Marj Özeti",
       "workers": "Personel Atama",
       "notes": "Dahili Notlar"
     },
@@ -149,7 +161,8 @@
       "notes": "Notlar",
       "hasVat": "KDV?",
       "hasTevkifat": "Tevkifat?",
-      "vatRate": "KDV Oranı (%)"
+      "vatRate": "KDV Oranı (%)",
+      "plannedOperationalLaborCost": "Planlanan Operasyon İşçiliği"
     },
     "noFieldWorkers": "Listelenecek saha personeli yok. Önce kullanıcıları saha personeli rolüyle ekleyin.",
     "placeholders": {
@@ -165,8 +178,10 @@
       "description": "Müşteriye iletilecek iş detayı",
       "notes": "Sadece ekibiniz görebilir, müşteriye iletilmez",
       "materialsOptional": "Keşif iş emirleri için malzeme eklenmesi zorunlu değildir",
-      "addAccountNoNeedCustomer": "Önce müşteri seçin"
+      "addAccountNoNeedCustomer": "Önce müşteri seçin",
+      "plannedOperationalLaborCost": "İç planlama maliyetidir; net tutara dahil değildir"
     },
+    "legacyServiceRevenueRow": "Hizmet Kalemi",
     "success": {
       "created": "İş emri başarıyla oluşturuldu",
       "updated": "İş emri başarıyla güncellendi"
@@ -179,13 +194,42 @@
     "materialSelect": {
       "noResults": "Malzeme bulunamadı",
       "addNew": "Yeni Malzeme Ekle",
-      "selected": "Seçili"
+      "selected": "Seçili",
+      "exchangeRateRequired": "Farklı para birimindeki malzeme için güncel USD kuru bulunamadı. Malzeme satıra eklenmedi."
     },
     "buttons": {
       "addCustomer": "Yeni Müşteri Ekle",
       "addSite": "Yeni Lokasyon Ekle",
       "addAccountNo": "Hesap No Ekle",
       "changeCustomer": "Değiştir"
+    },
+    "linkedMode": {
+      "modeTitle": "İş Emri Akışı",
+      "modeHint": "Bağımsız servis iş emri ile teklife bağlı montaj/ziyaret formunu en başta ayırın.",
+      "standaloneTitle": "Bağımsız İş Emri",
+      "standaloneHint": "Müşteri ve lokasyonu manuel seçerek normal servis iş emri oluşturun.",
+      "linkedTitle": "Teklife Bağlı İş Emri",
+      "linkedHint": "Onaylı bir teklif seçin; müşteri, lokasyon ve teklif kalemleri otomatik gelsin.",
+      "proposalLabel": "Teklif Seç",
+      "proposalHint": "Sadece onaylı, güncel ve açık teklifler listelenir.",
+      "proposalEmptyState": "Önce bağlı iş emrini hangi teklif için açacağınızı seçin.",
+      "proposalRequired": "Teklife bağlı iş emri oluşturmak için teklif seçin.",
+      "itemsLockedUntilProposal": "Kalemleri yüklemek için önce teklif seçin.",
+      "addExtraItem": "Teklif Dışı Malzeme Ekle",
+      "proposalRowLocked": "Teklif satırı",
+      "executionHint": "Teklif satırları referans olarak görünür. Bu ziyarette tamamlanan miktarı girin.",
+      "quotedQuantity": "Teklif",
+      "previouslyCompletedQuantity": "Önceden Tamamlanan",
+      "thisVisitQuantity": "Bu Ziyarette",
+      "remainingQuantity": "Kalan",
+      "loadingExecution": "Önceki tamamlanan miktarlar yükleniyor...",
+      "showCompletedRows": "Tamamlananları Göster ({{count}})",
+      "hideCompletedRows": "Tamamlananları Gizle",
+      "overEntryWarning": "Teklifte kalan miktardan fazla giriş yapıyorsunuz. Yine de kaydedebilirsiniz.",
+      "overEntryShort": "Fazla giriş",
+      "completedBadge": "Tamam",
+      "customerLabel": "Müşteri",
+      "siteLabel": "Lokasyon"
     },
     "linkedProposal": "Teklife Bağla",
     "noProposal": "Bağlama (opsiyonel)",
@@ -265,7 +309,8 @@
     "bankTransferHint": "Havale seçilirse tahsilat, 'Bekleyen Tahsilatlar' ekranında takip edilir.",
     "noMaterialsHint": "Bu iş emrinde malzeme kaydı bulunmuyor; finansal işlem oluşturulmayacak.",
     "proposalLinkedNote": "Bu iş emri bir teklife bağlı; tahsilat teklif üzerinden yönetilmektedir.",
-    "confirmButton": "Tamamla ve Kaydet"
+    "confirmButton": "Tamamla ve Kaydet",
+    "requiresPaymentFlow": "Bağımsız iş emirleri tamamlanırken tahsilat/ödeme akışı kullanılmalıdır."
   },
   "delete": {
     "title": "İş Emri Sil",
@@ -279,11 +324,15 @@
     "accountNoRequired": "Bu iş tipi için hesap numarası gerekli",
     "accountNoRequiredHint": "Bu iş tipini kaydetmek için hesap numarası girilmelidir.",
     "siteRequired": "Lokasyon seçimi zorunludur",
+    "linkedExecutionQuantityRequired": "Teklife bağlı iş emrini kaydetmek için en az bir kalemde 'Bu Ziyarette' miktarı girin veya teklif dışı malzeme ekleyin.",
+    "linkedVisitDescriptionRequired": "Bu ziyarette tamamlanan kalem yoksa, kaydetmek için İş Tanımı alanına ziyaret sonucunu yazın.",
     "assignedToMin": "En az 1 personel seçin",
     "assignedToMax": "En fazla 3 personel seçilebilir",
     "workTypeOtherRequired": "Diğer iş tipi belirtilmelidir"
   },
   "warnings": {
+    "missingAccountNo": "Hesap numarası girilmedi. Kayıt yine de yapılabilir.",
+    "missingAccountNoHint": "Alarm izleme hesabı varsa lokasyona eklenebilir; zorunlu değildir.",
     "montajNoAccountNo": "Montaj için hesap numarası girilmedi. Sonra eklenebilir.",
     "montajNoAccountNoHint": "Montaj sonrası alarm kontrol merkezinden alınan hesap numarası eklenebilir.",
     "installationNoAccountNo": "Montaj için hesap numarası girilmedi. Sonra eklenebilir.",

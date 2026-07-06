@@ -64,6 +64,8 @@ export const WO_DETAIL_SELECT = `
   *,
   work_order_materials (
     id, work_order_id, sort_order, description, quantity, unit, material_id,
+    proposal_item_id, source_type,
+    revenue_type,
     unit_price, unit_price_usd,
     cost, cost_usd,
     materials ( code, name, description, unit )
@@ -71,6 +73,36 @@ export const WO_DETAIL_SELECT = `
 `.replace(/\s+/g, ' ').trim();
 
 const WO_LIST_FETCH_LIMIT = 150;
+
+function normalizeWorkOrderRowSource(item = {}, fallback = 'manual_extra') {
+  if (item?.source_type === 'proposal_item' || item?.source_type === 'manual_extra' || item?.source_type === 'legacy') {
+    return item.source_type;
+  }
+  return item?.proposal_item_id ? 'proposal_item' : fallback;
+}
+
+function buildWorkOrderMaterialInsertRow(workOrderId, item, index, currency) {
+  return {
+    work_order_id: workOrderId,
+    sort_order: item.sort_order ?? index,
+    description: item.description,
+    quantity: item.quantity,
+    unit: item.unit || 'adet',
+    material_id: item.material_id || null,
+    proposal_item_id: item.proposal_item_id || null,
+    source_type: normalizeWorkOrderRowSource(item),
+    revenue_type: item.revenue_type || 'material',
+    ...splitWorkOrderMaterialAmounts(currency, item.unit_price ?? 0, item.cost),
+  };
+}
+
+function filterPersistableMaterialRows(items) {
+  if (!Array.isArray(items)) return [];
+  return items.filter((item) => {
+    const quantity = Number(item?.quantity);
+    return Number.isFinite(quantity) && quantity > 0;
+  });
+}
 
 export async function fetchWorkOrders(filters = {}) {
   let query = supabase
@@ -228,11 +260,25 @@ export async function fetchWorkOrderAuditLogs(workOrderId) {
 }
 
 export async function createWorkOrder(data) {
-  const { items, materials_discount_percent, ...workOrderData } = data;
+  const {
+    items,
+    materials_discount_percent,
+    service_fee_revenue,
+    service_fee_revenue_usd,
+    planned_operational_labor_cost,
+    planned_operational_labor_cost_usd,
+    has_vat,
+    ...workOrderData
+  } = data;
 
   const payload = {
     ...workOrderData,
     materials_discount_percent: materials_discount_percent ?? 0,
+    service_fee_revenue: service_fee_revenue ?? 0,
+    service_fee_revenue_usd: service_fee_revenue_usd ?? 0,
+    planned_operational_labor_cost: planned_operational_labor_cost ?? 0,
+    planned_operational_labor_cost_usd: planned_operational_labor_cost_usd ?? 0,
+    has_vat: !!has_vat,
   };
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -249,17 +295,13 @@ export async function createWorkOrder(data) {
 
   if (error) throw error;
 
-  if (items && items.length > 0) {
+  const persistableItems = filterPersistableMaterialRows(items);
+
+  if (persistableItems.length > 0) {
     const cur = payload.currency || 'TRY';
-    const materialRows = items.map((item, index) => ({
-      work_order_id: created.id,
-      sort_order: index,
-      description: item.description,
-      quantity: item.quantity,
-      unit: item.unit || 'adet',
-      material_id: item.material_id || null,
-      ...splitWorkOrderMaterialAmounts(cur, item.unit_price ?? 0, item.cost),
-    }));
+    const materialRows = persistableItems.map((item, index) =>
+      buildWorkOrderMaterialInsertRow(created.id, item, index, cur),
+    );
     const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);
     if (mError) throw mError;
   }
@@ -283,6 +325,7 @@ export async function createWorkOrderFromProposal({
   currency = 'TRY',
   materialsDiscountPercent = 0,
   vatRate = 20,
+  hasVat = vatRate > 0,
   hasTevkifat = false,
   description = null,
   notes = null,
@@ -304,6 +347,11 @@ export async function createWorkOrderFromProposal({
     amount: amount != null ? parseFloat(amount) : null,
     currency: currency || 'TRY',
     materials_discount_percent: materialsDiscountPercent ?? 0,
+    service_fee_revenue: 0,
+    service_fee_revenue_usd: 0,
+    planned_operational_labor_cost: 0,
+    planned_operational_labor_cost_usd: 0,
+    has_vat: !!hasVat,
     vat_rate: vatRate ?? 20,
     has_tevkifat: !!hasTevkifat,
     description: description?.trim() || null,
@@ -333,6 +381,9 @@ export async function createWorkOrderFromProposal({
         quantity: item.quantity ?? 1,
         unit: item.unit || 'adet',
         material_id: item.material_id || null,
+        proposal_item_id: item.id || item.proposal_item_id || null,
+        source_type: 'proposal_item',
+        revenue_type: item.revenue_type || 'material',
         ...splitWorkOrderMaterialAmounts(rowCurrency, resolvedPrice, resolvedCost),
       };
     });
@@ -357,9 +408,28 @@ export async function createWorkOrderFromProposal({
 }
 
 export async function updateWorkOrder({ id, items, materials_discount_percent, ...data }) {
+  if (data.status === 'completed') {
+    const { data: existingWorkOrder, error: existingWorkOrderError } = await supabase
+      .from('work_orders')
+      .select('proposal_id')
+      .eq('id', id)
+      .single();
+
+    if (existingWorkOrderError) throw existingWorkOrderError;
+
+    if (!existingWorkOrder?.proposal_id) {
+      const error = new Error('STANDALONE_WORK_ORDER_COMPLETION_REQUIRES_PAYMENT_FLOW');
+      error.code = 'STANDALONE_WORK_ORDER_COMPLETION_REQUIRES_PAYMENT_FLOW';
+      throw error;
+    }
+  }
+
   const updatePayload = { ...data };
   if (materials_discount_percent !== undefined) {
     updatePayload.materials_discount_percent = materials_discount_percent;
+  }
+  if (updatePayload.has_vat !== undefined) {
+    updatePayload.has_vat = !!updatePayload.has_vat;
   }
 
   const { data: updated, error } = await supabase
@@ -373,17 +443,12 @@ export async function updateWorkOrder({ id, items, materials_discount_percent, .
 
   if (items !== undefined) {
     await supabase.from('work_order_materials').delete().eq('work_order_id', id);
-    if (items.length > 0) {
+    const persistableItems = filterPersistableMaterialRows(items);
+    if (persistableItems.length > 0) {
       const cur = data.currency || updated.currency || 'TRY';
-      const materialRows = items.map((item, index) => ({
-        work_order_id: id,
-        sort_order: index,
-        description: item.description,
-        quantity: item.quantity,
-        unit: item.unit || 'adet',
-        material_id: item.material_id || null,
-        ...splitWorkOrderMaterialAmounts(cur, item.unit_price ?? 0, item.cost),
-      }));
+      const materialRows = persistableItems.map((item, index) =>
+        buildWorkOrderMaterialInsertRow(id, item, index, cur),
+      );
       const { error: mError } = await supabase.from('work_order_materials').insert(materialRows);
       if (mError) throw mError;
     }
@@ -417,6 +482,8 @@ export async function fetchWorkOrderMaterials(workOrderId) {
     .from('work_order_materials')
     .select(`
       id, work_order_id, sort_order, description, quantity, unit, material_id,
+      proposal_item_id, source_type,
+      revenue_type,
       unit_price, unit_price_usd,
       cost, cost_usd,
       materials(*)

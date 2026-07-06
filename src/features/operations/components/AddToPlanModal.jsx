@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Modal, Select, Textarea } from '../../../components/ui';
 import { PLAN_ITEM_TYPES } from '../schema';
@@ -13,13 +13,12 @@ export function AddToPlanModal({ open, onClose, item }) {
   const [notes, setNotes] = useState('');
   const [itemType, setItemType] = useState('office');
 
-  useEffect(() => {
-    if (open) {
-      setPlanDate(todayIso());
-      setNotes('');
-      setItemType('office');
-    }
-  }, [open]);
+  const handleClose = () => {
+    setPlanDate(todayIso());
+    setNotes('');
+    setItemType('office');
+    onClose();
+  };
 
   const handleSubmit = async () => {
     if (!planDate || !item) return;
@@ -32,17 +31,17 @@ export function AddToPlanModal({ open, onClose, item }) {
       operations_item_id: item.id,
     });
 
-    onClose();
+    handleClose();
   };
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={t('operations:addToPlan.title')}
       footer={(
         <>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={handleClose}>
             {t('common:actions.cancel')}
           </Button>
           <Button type="button" onClick={handleSubmit} loading={createPlanItem.isPending}>

@@ -4,7 +4,7 @@ import { Plus, Trash2, Package } from 'lucide-react';
 import { Button, MaterialCombobox } from '../../../components/ui';
 import { cn } from '../../../lib/utils';
 
-export function AssetItemsEditor({ control, register, errors, setValue }) {
+export function AssetItemsEditor({ control, errors, setValue }) {
   const { t } = useTranslation('siteAssets');
   const { fields, append, remove } = useFieldArray({
     control,

@@ -76,8 +76,8 @@ export function useDeleteSite() {
   const { t } = useTranslation('common');
 
   return useMutation({
-    mutationFn: ({ id, customerId }) => api.deleteSite(id),
-    onSuccess: (_, { customerId }) => {
+    mutationFn: ({ id, customerId: _customerId }) => api.deleteSite(id),
+    onSuccess: (_deleted, { customerId }) => {
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: siteKeys.listByCustomer(customerId) });
       toast.success(t('success.deleted'));

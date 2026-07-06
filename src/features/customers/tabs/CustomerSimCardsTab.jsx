@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { Button, Table, Badge } from '../../../components/ui';
-import { useCustomerDetail } from '../CustomerDetailContext';
+import { useCustomerDetail } from '../customerDetailContextBase';
 
 export function CustomerSimCardsTab() {
   const { t } = useTranslation(['customers', 'simCards']);

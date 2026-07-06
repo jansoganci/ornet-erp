@@ -35,7 +35,7 @@ export function useCollectionRecordPayment() {
 
   return useMutation({
     mutationFn: ({ paymentId, data }) => recordPayment(paymentId, data),
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate collection desk
       queryClient.invalidateQueries({ queryKey: collectionKeys.all });
       // Invalidate subscription caches

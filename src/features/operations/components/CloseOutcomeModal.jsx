@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Modal, Textarea } from '../../../components/ui';
 
@@ -13,14 +13,6 @@ export function CloseOutcomeModal({ open, onClose, onConfirm, isSubmitting = fal
   const { t } = useTranslation(['operations', 'common']);
   const [outcomeType, setOutcomeType] = useState('field_resolved');
   const [notes, setNotes] = useState('');
-
-  // Reset form when modal opens
-  useEffect(() => {
-    if (open) {
-      setOutcomeType('field_resolved');
-      setNotes('');
-    }
-  }, [open]);
 
   const handleClose = () => {
     setOutcomeType('field_resolved');

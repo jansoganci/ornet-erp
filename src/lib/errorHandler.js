@@ -39,6 +39,9 @@ export function getErrorMessage(error, fallbackKey = 'common.unexpected') {
     if (/idx_subscriptions_active_site|subscriptions.*unique|subscription.*duplicate/i.test(msg)) {
       return i18n.t('errors:subscriptions.duplicateActive');
     }
+    if (/idx_ret_name_active|recurring_expense_templates.*name/i.test(msg)) {
+      return i18n.t('errors:recurring.duplicateActive');
+    }
     return i18n.t('errors:db.duplicate');
   }
 

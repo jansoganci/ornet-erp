@@ -3,12 +3,21 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/errorHandler';
 import {
+  financeDashboardKeys,
+  coverageKeys,
+  transactionKeys,
+  profitAndLossKeys,
+  financeHealthKeys,
+  receivableKeys,
+} from '../finance/api';
+import {
   fetchProposals,
   fetchProposal,
   fetchProposalItems,
   fetchProposalSections,
   fetchProposalAnnualFixedCosts,
   createProposal,
+  reviseProposal,
   updateProposal,
   updateProposalSectionsAndItems,
   updateProposalAnnualFixedCosts,
@@ -16,7 +25,12 @@ import {
   completeProposalWithRate,
   deleteProposal,
   duplicateProposal,
+  fetchProposalRevisionLinks,
+  fetchLatestProposalRevision,
   fetchProposalsBySite,
+  fetchSelectableLinkedWorkOrderProposals,
+  fetchLinkedWorkOrderProposalScope,
+  fetchLinkedWorkOrderExecutionSummary,
   fetchProposalWorkOrders,
   linkWorkOrderToProposal,
   unlinkWorkOrderFromProposal,
@@ -32,7 +46,17 @@ export const proposalKeys = {
   sections: (id) => [...proposalKeys.all, 'sections', id],
   annualFixed: (id) => [...proposalKeys.all, 'annualFixed', id],
   workOrders: (id) => [...proposalKeys.all, 'workOrders', id],
+  revisionLinks: (id, revisedFromProposalId = null) => [...proposalKeys.all, 'revisionLinks', id, revisedFromProposalId],
+  latestRevision: (id) => [...proposalKeys.all, 'latestRevision', id],
   bySite: (siteId) => [...proposalKeys.all, 'bySite', siteId],
+  selectableForLinkedWorkOrder: () => [...proposalKeys.all, 'selectableForLinkedWorkOrder'],
+  linkedWorkOrderScope: (proposalId) => [...proposalKeys.all, 'linkedWorkOrderScope', proposalId],
+  linkedWorkOrderExecutionSummary: (proposalId, excludeWorkOrderId = null) => [
+    ...proposalKeys.all,
+    'linkedWorkOrderExecutionSummary',
+    proposalId,
+    excludeWorkOrderId,
+  ],
 };
 
 /** List proposals; `filters` is the React Query key — pass `statusGroup: 'active' | 'archive'` for tabbed lists (distinct cache per tab). */
@@ -92,6 +116,28 @@ export function useCreateProposal() {
   });
 }
 
+export function useReviseProposal() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('common');
+
+  return useMutation({
+    mutationFn: reviseProposal,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.latestRevision(variables.sourceProposalId) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.revisionLinks(variables.sourceProposalId) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.revisionLinks(data.id) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.detail(variables.sourceProposalId) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.selectableForLinkedWorkOrder() });
+      toast.success(t('success.created'));
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'common.createFailed'));
+    },
+  });
+}
+
 export function useUpdateProposal() {
   const queryClient = useQueryClient();
   const { t } = useTranslation('common');
@@ -101,6 +147,7 @@ export function useUpdateProposal() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
       queryClient.invalidateQueries({ queryKey: proposalKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.selectableForLinkedWorkOrder() });
       toast.success(t('success.updated'));
     },
     onError: (error) => {
@@ -152,6 +199,8 @@ export function useUpdateProposalStatus() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
       queryClient.invalidateQueries({ queryKey: proposalKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.selectableForLinkedWorkOrder() });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.linkedWorkOrderScope(data.id) });
       toast.success(t('success.statusUpdated'));
     },
     onError: (error) => {
@@ -169,6 +218,14 @@ export function useCompleteProposalWithRate() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
       queryClient.invalidateQueries({ queryKey: proposalKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.selectableForLinkedWorkOrder() });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.linkedWorkOrderScope(data.id) });
+      queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: profitAndLossKeys.all });
+      queryClient.invalidateQueries({ queryKey: financeHealthKeys.all });
+      queryClient.invalidateQueries({ queryKey: receivableKeys.lists() });
       toast.success(t('success.statusUpdated'));
     },
     onError: (error) => {
@@ -185,6 +242,8 @@ export function useDeleteProposal() {
     mutationFn: deleteProposal,
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: proposalKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.selectableForLinkedWorkOrder() });
+      queryClient.invalidateQueries({ queryKey: proposalKeys.linkedWorkOrderScope(id) });
       queryClient.removeQueries({ queryKey: proposalKeys.detail(id) });
       toast.success(t('success.deleted'));
     },
@@ -218,10 +277,50 @@ export function useProposalsBySite(siteId) {
   });
 }
 
+export function useSelectableLinkedWorkOrderProposals() {
+  return useQuery({
+    queryKey: proposalKeys.selectableForLinkedWorkOrder(),
+    queryFn: fetchSelectableLinkedWorkOrderProposals,
+    refetchOnMount: 'always',
+  });
+}
+
+export function useLinkedWorkOrderProposalScope(proposalId) {
+  return useQuery({
+    queryKey: proposalKeys.linkedWorkOrderScope(proposalId),
+    queryFn: () => fetchLinkedWorkOrderProposalScope(proposalId),
+    enabled: !!proposalId,
+  });
+}
+
+export function useLinkedWorkOrderExecutionSummary(proposalId, excludeWorkOrderId = null) {
+  return useQuery({
+    queryKey: proposalKeys.linkedWorkOrderExecutionSummary(proposalId, excludeWorkOrderId),
+    queryFn: () => fetchLinkedWorkOrderExecutionSummary(proposalId, { excludeWorkOrderId }),
+    enabled: !!proposalId,
+  });
+}
+
 export function useProposalWorkOrders(proposalId) {
   return useQuery({
     queryKey: proposalKeys.workOrders(proposalId),
     queryFn: () => fetchProposalWorkOrders(proposalId),
+    enabled: !!proposalId,
+  });
+}
+
+export function useProposalRevisionLinks(proposalId, revisedFromProposalId = null) {
+  return useQuery({
+    queryKey: proposalKeys.revisionLinks(proposalId, revisedFromProposalId),
+    queryFn: () => fetchProposalRevisionLinks({ proposalId, revisedFromProposalId }),
+    enabled: !!proposalId,
+  });
+}
+
+export function useLatestProposalRevision(proposalId) {
+  return useQuery({
+    queryKey: proposalKeys.latestRevision(proposalId),
+    queryFn: () => fetchLatestProposalRevision(proposalId),
     enabled: !!proposalId,
   });
 }

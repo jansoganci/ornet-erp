@@ -9,6 +9,7 @@ import {
   rateKeys,
   profitAndLossKeys,
   vatReportKeys,
+  coverageKeys,
   financeDashboardKeys,
   dashboardV2Keys,
   financeSettingsKeys,
@@ -48,6 +49,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: dashboardV2Keys.all });
       queryClient.invalidateQueries({ queryKey: vatReportKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       toast.success(t('success.created'));
     },
     onError: (error) => {
@@ -71,6 +73,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: dashboardV2Keys.all });
       queryClient.invalidateQueries({ queryKey: vatReportKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       toast.success(t('success.updated'));
     },
     onError: (error) => {
@@ -93,6 +96,7 @@ export function useDeleteTransaction() {
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: dashboardV2Keys.all });
       queryClient.invalidateQueries({ queryKey: vatReportKeys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       toast.success(t('success.deleted'));
     },
     onError: (error) => {
@@ -252,6 +256,15 @@ export function useVatReport({ period, viewMode = 'total', periodType = 'month' 
   });
 }
 
+export function useCoverageSummary({ period, year, month, viewMode = 'total' } = {}) {
+  const scope = period || `${year || 'all'}-${month || 'all'}`;
+  return useQuery({
+    queryKey: coverageKeys.summary(scope, viewMode),
+    queryFn: () => api.fetchCoverageSummary({ period, year, month, viewMode }),
+    enabled: !!period || !!year,
+  });
+}
+
 // Finance Dashboard
 export function useFinanceDashboardKpis({ period, viewMode = 'total' } = {}) {
   return useQuery({
@@ -393,6 +406,7 @@ export function useCreateTransactionPayment() {
       queryClient.invalidateQueries({ queryKey: transactionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
       queryClient.invalidateQueries({ queryKey: dashboardV2Keys.all });
+      queryClient.invalidateQueries({ queryKey: coverageKeys.all });
       toast.success(t('receivables.addPayment.confirmButton'));
     },
     onError: (error) => {

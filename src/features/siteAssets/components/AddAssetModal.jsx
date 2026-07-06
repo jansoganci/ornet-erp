@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
@@ -9,19 +9,12 @@ import { useCustomer } from '../../customers/hooks';
 import { useSitesByCustomer } from '../../customerSites/hooks';
 import { useSubscriptionsBySite } from '../../subscriptions/hooks';
 import { assetSchema, assetDefaultValues, batchAssetSchema, batchAssetDefaultValues } from '../schema';
-import { useCreateAsset, useUpdateAsset, useBulkCreateAssets } from '../hooks';
+import { useUpdateAsset, useBulkCreateAssets } from '../hooks';
 import { AssetItemsEditor } from './AssetItemsEditor';
 
 export function AddAssetModal({ open, onClose, siteId, customerId, asset = null }) {
   const { t } = useTranslation(['siteAssets', 'common']);
   const isEditing = !!asset;
-  const [selectedCustomerId, setSelectedCustomerId] = useState(customerId || asset?.customer_id || '');
-  const [selectedSiteId, setSelectedSiteId] = useState(siteId || asset?.site_id || '');
-
-  const { data: selectedCustomer } = useCustomer(selectedCustomerId);
-  const { data: sites = [] } = useSitesByCustomer(selectedCustomerId);
-  const { data: siteSubscriptions = [] } = useSubscriptionsBySite(selectedSiteId);
-  const isSiteCancelled = siteSubscriptions.some((s) => s.status === 'cancelled');
 
   const singleForm = useForm({
     resolver: zodResolver(assetSchema),
@@ -35,26 +28,23 @@ export function AddAssetModal({ open, onClose, siteId, customerId, asset = null 
 
   const form = isEditing ? singleForm : batchForm;
   const { register, handleSubmit, reset, setValue, control, formState: { errors, isSubmitting } } = form;
+  const selectedCustomerId = useWatch({ control, name: 'customer_id' }) || customerId || asset?.customer_id || '';
+  const selectedSiteId = useWatch({ control, name: 'site_id' }) || siteId || asset?.site_id || '';
+  const { data: selectedCustomer } = useCustomer(selectedCustomerId);
+  const { data: sites = [] } = useSitesByCustomer(selectedCustomerId);
+  const { data: siteSubscriptions = [] } = useSubscriptionsBySite(selectedSiteId);
+  const isSiteCancelled = siteSubscriptions.some((s) => s.status === 'cancelled');
 
   useEffect(() => {
     if (open) {
       if (asset) {
         reset({ ...assetDefaultValues, ...asset });
-        setSelectedCustomerId(asset.customer_id || '');
-        setSelectedSiteId(asset.site_id || '');
       } else {
-        reset({ ...batchAssetDefaultValues, site_id: siteId || selectedSiteId || '' });
-        setSelectedCustomerId(customerId || '');
-        setSelectedSiteId(siteId || '');
+        reset({ ...batchAssetDefaultValues, site_id: siteId || '', customer_id: customerId || '' });
       }
     }
   }, [open, siteId, customerId, asset, reset]);
 
-  useEffect(() => {
-    if (selectedSiteId) setValue('site_id', selectedSiteId);
-  }, [selectedSiteId, setValue]);
-
-  const createMutation = useCreateAsset();
   const updateMutation = useUpdateAsset();
   const bulkCreateMutation = useBulkCreateAssets();
 
@@ -129,8 +119,7 @@ export function AddAssetModal({ open, onClose, siteId, customerId, asset = null 
                 value={selectedCustomerId}
                 selectedCustomer={selectedCustomer}
                 onChange={(id) => {
-                  setSelectedCustomerId(id || '');
-                  setSelectedSiteId('');
+                  setValue('customer_id', id || '');
                   setValue('site_id', '');
                 }}
                 placeholder={t('siteAssets:placeholders.searchCustomer')}
@@ -142,9 +131,7 @@ export function AddAssetModal({ open, onClose, siteId, customerId, asset = null 
               options={siteOptions}
               value={selectedSiteId}
               onChange={(e) => {
-                const v = e.target.value;
-                setSelectedSiteId(v);
-                setValue('site_id', v);
+                setValue('site_id', e.target.value);
               }}
               disabled={!selectedCustomerId}
               error={errors.site_id?.message}

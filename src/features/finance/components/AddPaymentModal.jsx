@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button } from '../../../components/ui';
 import { formatCurrency } from '../../../lib/utils';
+import { grossCollectibleTotal, grossRemainingCollectible } from '../utils';
 import { useCreateTransactionPayment, useTransactionPayments } from '../hooks';
 
 const PAYMENT_METHODS = ['bank_transfer', 'cash', 'card'];
@@ -20,17 +21,17 @@ export function AddPaymentModal({ open, onClose, transaction }) {
 
   const amountTry   = Number(transaction?.amount_try)  || 0;
   const outputVat   = Number(transaction?.output_vat)  || 0;
-  const documentTotal = amountTry + outputVat;
+  const documentTotal = grossCollectibleTotal(amountTry, outputVat);
 
   const { data: existingPayments = [] } = useTransactionPayments(
     open ? transaction?.id : null
   );
 
   const alreadyPaid = existingPayments.reduce(
-    (sum, p) => sum + (Number(p.amount_try) || 0),
+    (sum, p) => sum + (Number(p.amount ?? p.amount_try) || 0),
     0
   );
-  const remaining = Math.max(0, documentTotal - alreadyPaid);
+  const remaining = grossRemainingCollectible(amountTry, outputVat, alreadyPaid);
 
   const [amount, setAmount]               = useState('');
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
@@ -95,14 +96,20 @@ export function AddPaymentModal({ open, onClose, transaction }) {
             <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(outputVat, 'TRY')}</span>
           </div>
           <div className="flex justify-between text-sm pt-2 border-t border-neutral-200 dark:border-neutral-700">
-            <span className="font-bold text-neutral-900 dark:text-neutral-100">{t('finance:receivables.columns.totalAmount')}</span>
+            <span className="font-bold text-neutral-900 dark:text-neutral-100">{t('finance:receivables.columns.documentTotal')}</span>
             <span className="font-mono font-bold text-lg text-neutral-900 dark:text-neutral-100">{formatCurrency(documentTotal, 'TRY')}</span>
           </div>
           {alreadyPaid > 0 && (
-            <div className="flex justify-between text-sm pt-2 border-t border-neutral-200 dark:border-neutral-700">
-              <span className="text-neutral-500 dark:text-neutral-400">Kalan</span>
-              <span className="font-mono font-bold text-warning-600 dark:text-warning-400">{formatCurrency(remaining, 'TRY')}</span>
-            </div>
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-neutral-600 dark:text-neutral-400">{t('finance:receivables.columns.collected')}</span>
+                <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(alreadyPaid, 'TRY')}</span>
+              </div>
+              <div className="flex justify-between text-sm pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                <span className="font-bold text-neutral-900 dark:text-neutral-100">{t('finance:receivables.columns.remainingCollectible')}</span>
+                <span className="font-mono font-bold text-warning-600 dark:text-warning-400">{formatCurrency(remaining, 'TRY')}</span>
+              </div>
+            </>
           )}
         </div>
 

@@ -121,6 +121,83 @@ export function calcSectionTotal(items = [], discountPercent = 0, proposalCurren
   return { subtotal, discountAmount, sectionTotal };
 }
 
+export const PROPOSAL_REVENUE_TYPE_KEYS = ['material', 'labor_service', 'other'];
+
+export function normalizeProposalRevenueTypeForCalc(type) {
+  if (type === 'material' || type === 'labor_service' || type === 'other') return type;
+  return 'other';
+}
+
+function getItemSectionKey(item) {
+  return item?.section_local_id ?? item?.section_id ?? null;
+}
+
+function getSectionBucketKey(section) {
+  return section?._local_id ?? section?.id ?? null;
+}
+
+function applyRevenueTypeBucket(totals, bucketItems, discountPercent, proposalCurrency) {
+  if (!bucketItems.length) return;
+
+  const { sectionTotal, subtotal } = calcSectionTotal(bucketItems, discountPercent, proposalCurrency);
+  const typeSubtotals = { material: 0, labor_service: 0, other: 0 };
+
+  for (const item of bucketItems) {
+    const type = normalizeProposalRevenueTypeForCalc(item.revenue_type);
+    typeSubtotals[type] += resolveProposalItemLineTotal(item, proposalCurrency);
+  }
+
+  if (subtotal <= 0) {
+    for (const type of PROPOSAL_REVENUE_TYPE_KEYS) {
+      totals[type] += round2(typeSubtotals[type]);
+    }
+    return;
+  }
+
+  for (const type of PROPOSAL_REVENUE_TYPE_KEYS) {
+    totals[type] += round2((sectionTotal * typeSubtotals[type]) / subtotal);
+  }
+}
+
+/**
+ * Net revenue subtotals per revenue_type after section discounts (proportional split).
+ * @param {Array<object>} items
+ * @param {Array<object>} sections — form sections (`_local_id`) or DB sections (`id`)
+ * @param {string} [proposalCurrency]
+ * @returns {{ material: number, labor_service: number, other: number }}
+ */
+export function calcRevenueByType(items = [], sections = [], proposalCurrency = 'USD') {
+  const totals = { material: 0, labor_service: 0, other: 0 };
+  const list = items || [];
+  const sectionList = sections || [];
+
+  if (sectionList.length === 0) {
+    applyRevenueTypeBucket(totals, list, 0, proposalCurrency);
+  } else {
+    const sectionKeys = new Set(
+      sectionList.map((section) => getSectionBucketKey(section)).filter(Boolean),
+    );
+
+    for (const section of sectionList) {
+      const key = getSectionBucketKey(section);
+      const bucketItems = list.filter((item) => getItemSectionKey(item) === key);
+      applyRevenueTypeBucket(totals, bucketItems, section.discount_percent, proposalCurrency);
+    }
+
+    const ungroupedItems = list.filter((item) => {
+      const key = getItemSectionKey(item);
+      return key == null || !sectionKeys.has(key);
+    });
+    applyRevenueTypeBucket(totals, ungroupedItems, 0, proposalCurrency);
+  }
+
+  return {
+    material: round2(totals.material),
+    labor_service: round2(totals.labor_service),
+    other: round2(totals.other),
+  };
+}
+
 /**
  * VAT + Tevkifat summary for a net amount.
  * @param {number} netAmount

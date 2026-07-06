@@ -3,7 +3,7 @@ import { normalizeForSearch } from '../../lib/normalizeForSearch';
 
 /** Status groups for Active / Archive tabs (list fetch filtering). */
 export const PROPOSAL_ACTIVE_STATUSES = ['draft', 'sent', 'accepted'];
-export const PROPOSAL_ARCHIVE_STATUSES = ['completed', 'rejected', 'cancelled'];
+export const PROPOSAL_ARCHIVE_STATUSES = ['completed', 'rejected', 'cancelled', 'revised'];
 
 const DATE_FIELDS = ['proposal_date', 'survey_date', 'installation_date', 'completion_date'];
 
@@ -35,6 +35,10 @@ function toNullableNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function normalizeProposalRevenueType(value) {
+  return ['material', 'labor_service', 'other'].includes(value) ? value : 'material';
+}
+
 /**
  * Build one proposal_items row for insert (numbers + nulls safe for PostgREST / Postgres).
  * Note: section_id is NOT set here — caller resolves it from the localId→dbId map and adds it.
@@ -64,6 +68,7 @@ function buildProposalItemInsertRow(proposalId, item, sortOrder, currency) {
     unit_price: _currency === 'USD' ? 0 : unitPrice,
     unit_price_usd: _currency === 'USD' ? unitPrice : 0,
     material_id: coalesceUuid(item.material_id),
+    revenue_type: normalizeProposalRevenueType(item.revenue_type),
     cost: _currency === 'USD' ? null : cost,
     cost_usd: _currency === 'USD' ? cost : null,
     margin_percent: marginPercent,
@@ -143,6 +148,9 @@ function buildAnnualFixedPackageRow(item, sortOrder) {
 function sanitizeProposalPayload(data) {
   const payload = sanitizeDates({ ...data });
   if (payload.site_id === '' || payload.site_id == null) payload.site_id = null;
+  if (payload.revised_from_proposal_id === '' || payload.revised_from_proposal_id == null) {
+    payload.revised_from_proposal_id = null;
+  }
   return payload;
 }
 
@@ -379,14 +387,30 @@ export async function fetchProposals({
 export const PROPOSAL_DETAIL_SELECT = `*`.replace(/\s+/g, ' ').trim();
 
 export async function fetchProposal(id) {
-  const { data, error } = await supabase
-    .from('proposals_detail')
-    .select(PROPOSAL_DETAIL_SELECT)
-    .eq('id', id)
-    .single();
+  const [
+    { data: detailData, error: detailError },
+    { data: baseData, error: baseError },
+  ] = await Promise.all([
+    supabase
+      .from('proposals_detail')
+      .select(PROPOSAL_DETAIL_SELECT)
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('proposals')
+      .select('revised_from_proposal_id, deleted_at')
+      .eq('id', id)
+      .single(),
+  ]);
 
-  if (error) throw error;
-  return data;
+  if (detailError) throw detailError;
+  if (baseError) throw baseError;
+
+  return {
+    ...detailData,
+    revised_from_proposal_id: baseData?.revised_from_proposal_id ?? null,
+    deleted_at: baseData?.deleted_at ?? null,
+  };
 }
 
 /**
@@ -398,6 +422,7 @@ export async function fetchProposalItems(proposalId) {
     .from('proposal_items')
     .select(`
       id, proposal_id, sort_order, section_id, description, quantity, unit, material_id,
+      revenue_type,
       unit_price, unit_price_usd,
       cost, cost_usd,
       product_cost, product_cost_usd,
@@ -429,6 +454,42 @@ export async function createProposal({ items, sections, annual_fixed_costs: annu
 
 export async function updateProposal({ id, ...proposalData }) {
   return saveProposalPackage({ id, ...proposalData });
+}
+
+export async function reviseProposal({
+  sourceProposalId,
+  items,
+  sections,
+  annual_fixed_costs: annualFixedCosts,
+  ...proposalData
+}) {
+  const payload = sanitizeProposalPayload({
+    ...proposalData,
+    status: 'draft',
+    revised_from_proposal_id: sourceProposalId,
+    currency: proposalData.currency || 'USD',
+  });
+  const currency = payload.currency || 'USD';
+
+  const sectionPayload = (sections ?? []).map((section, index) =>
+    buildSectionPackageRow(section, index),
+  );
+  const itemPayload = (items ?? []).map((item, index) =>
+    buildProposalItemPackageRow(item, index, currency),
+  );
+  const annualPayload = filterPersistableAnnualFixedRows(annualFixedCosts).map((row, index) =>
+    buildAnnualFixedPackageRow(row, index),
+  );
+
+  const { data: newProposalId, error } = await supabase.rpc('revise_proposal_package', {
+    p_source_proposal_id: sourceProposalId,
+    p_new_proposal: payload,
+    p_sections: sectionPayload,
+    p_items: itemPayload,
+    p_annual_fixed_costs: annualPayload,
+  });
+  if (error) throw error;
+  return fetchProposal(newProposalId);
 }
 
 export async function updateProposalStatus({ id, status }) {
@@ -484,7 +545,7 @@ export async function duplicateProposal(proposalId) {
   // Fetch original items
   const { data: origItems, error: itemsError } = await supabase
     .from('proposal_items')
-    .select('section_id, description, quantity, unit, unit_price, unit_price_usd, material_id, cost, cost_usd, margin_percent, product_cost, product_cost_usd, labor_cost, labor_cost_usd, shipping_cost, shipping_cost_usd, material_cost, material_cost_usd, misc_cost, misc_cost_usd')
+    .select('section_id, description, quantity, unit, unit_price, unit_price_usd, material_id, revenue_type, cost, cost_usd, margin_percent, product_cost, product_cost_usd, labor_cost, labor_cost_usd, shipping_cost, shipping_cost_usd, material_cost, material_cost_usd, misc_cost, misc_cost_usd')
     .eq('proposal_id', proposalId)
     .order('sort_order', { ascending: true });
   if (itemsError) throw itemsError;
@@ -512,6 +573,7 @@ export async function duplicateProposal(proposalId) {
     unit: item.unit || 'adet',
     unit_price: currency === 'USD' ? (item.unit_price_usd ?? 0) : (item.unit_price ?? 0),
     material_id: coalesceUuid(item.material_id),
+    revenue_type: normalizeProposalRevenueType(item.revenue_type),
     cost: currency === 'USD' ? item.cost_usd : item.cost,
     margin_percent: item.margin_percent,
     product_cost: currency === 'USD' ? item.product_cost_usd : item.product_cost,
@@ -539,15 +601,157 @@ export async function duplicateProposal(proposalId) {
   return createProposal({ ...copyData, sections, items, annual_fixed_costs });
 }
 
-export async function fetchProposalsBySite(siteId) {
-  const { data, error } = await supabase
+export async function fetchProposalRevisionLinks({ proposalId, revisedFromProposalId = null }) {
+  if (!proposalId) {
+    return { previous: null, next: [] };
+  }
+
+  const revisionSummarySelect = 'id, proposal_no, title, status, created_at, revised_from_proposal_id';
+  const nextQuery = supabase
     .from('proposals')
-    .select('id, proposal_no, title, status')
-    .eq('site_id', siteId)
-    .in('status', ['accepted', 'completed'])
+    .select(revisionSummarySelect)
+    .eq('revised_from_proposal_id', proposalId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
+  const queries = [nextQuery];
+
+  if (revisedFromProposalId) {
+    queries.unshift(
+      supabase
+        .from('proposals')
+        .select(revisionSummarySelect)
+        .eq('id', revisedFromProposalId)
+        .is('deleted_at', null)
+        .maybeSingle(),
+    );
+  }
+
+  const results = await Promise.all(queries);
+
+  if (revisedFromProposalId) {
+    const [
+      { data: previous, error: previousError },
+      { data: next, error: nextError },
+    ] = results;
+
+    if (previousError) throw previousError;
+    if (nextError) throw nextError;
+
+    return {
+      previous: previous ?? null,
+      next: next ?? [],
+    };
+  }
+
+  const [{ data: next, error: nextError }] = results;
+  if (nextError) throw nextError;
+
+  return {
+    previous: null,
+    next: next ?? [],
+  };
+}
+
+export async function fetchLatestProposalRevision(proposalId) {
+  if (!proposalId) return null;
+
+  const revisionSummarySelect = 'id, proposal_no, title, status, created_at, revised_from_proposal_id';
+  const { data, error } = await supabase
+    .from('proposals')
+    .select(revisionSummarySelect)
+    .eq('revised_from_proposal_id', proposalId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   if (error) throw error;
+  return data ?? null;
+}
+
+function filterSupersededProposals(rows, supersededIds) {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  return rows.filter((row) => !supersededIds.has(row.id));
+}
+
+export async function fetchProposalsBySite(siteId) {
+  const proposalQuery = supabase
+    .from('proposals_detail')
+    .select('id, proposal_no, title, status, customer_company_name, company_name, site_name')
+    .eq('site_id', siteId)
+    .eq('status', 'accepted')
+    .order('created_at', { ascending: false });
+
+  const revisionQuery = supabase
+    .from('proposals')
+    .select('revised_from_proposal_id')
+    .eq('site_id', siteId)
+    .is('deleted_at', null)
+    .not('revised_from_proposal_id', 'is', null);
+
+  const [
+    { data: proposals, error: proposalsError },
+    { data: revisionRows, error: revisionError },
+  ] = await Promise.all([proposalQuery, revisionQuery]);
+
+  if (proposalsError) throw proposalsError;
+  if (revisionError) throw revisionError;
+
+  const supersededIds = new Set(
+    (revisionRows ?? [])
+      .map((row) => row.revised_from_proposal_id)
+      .filter(Boolean),
+  );
+
+  return filterSupersededProposals(proposals ?? [], supersededIds);
+}
+
+export async function fetchSelectableLinkedWorkOrderProposals() {
+  const { data, error } = await supabase.rpc('get_selectable_linked_work_order_proposals');
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchLinkedWorkOrderProposalScope(proposalId) {
+  if (!proposalId) return null;
+  const { data, error } = await supabase.rpc('get_linked_work_order_proposal_scope', {
+    p_proposal_id: proposalId,
+  });
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function fetchLinkedWorkOrderExecutionSummary(proposalId, options = {}) {
+  if (!proposalId) return [];
+
+  const excludeWorkOrderId = options.excludeWorkOrderId || null;
+
+  let query = supabase
+    .from('work_orders')
+    .select(`
+      id,
+      status,
+      scheduled_date,
+      created_at,
+      work_order_materials (
+        proposal_item_id,
+        source_type,
+        quantity
+      )
+    `)
+    .eq('proposal_id', proposalId)
+    .eq('status', 'completed')
+    .order('scheduled_date', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (excludeWorkOrderId) {
+    query = query.neq('id', excludeWorkOrderId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
   return data ?? [];
 }
 
@@ -563,7 +767,7 @@ export async function fetchProposalWorkOrders(proposalId) {
   const woIds = data.map((r) => r.work_order_id);
   const { data: workOrders, error: woError } = await supabase
     .from('work_orders_detail')
-    .select('id, form_no, status, work_type, scheduled_date, description')
+    .select('id, form_no, status, work_type, scheduled_date, created_at, description')
     .in('id', woIds)
     .order('scheduled_date', { ascending: true });
 

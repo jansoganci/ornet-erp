@@ -1,7 +1,14 @@
 {
   "title": "Rutin Giderler",
+  "burdenHelp": "Kapsama sınıfı yalnızca raporlama altyapısı içindir. Mevcut kayıtlar otomatik olarak personel veya araç yükü olarak sınıflandırılmaz.",
   "badges": {
     "variable": "Değişken"
+  },
+  "burdenTypes": {
+    "unassigned": "Sınıflandırılmadı",
+    "labor_burden": "Personel Yükü",
+    "vehicle_burden": "Araç Yükü",
+    "general_overhead": "Genel Yönetim Gideri (GYK)"
   },
   "templates": {
     "title": "Aktif Şablonlar",
@@ -23,6 +30,7 @@
     "fields": {
       "name": "Şablon Adı",
       "category": "Gider Kategorisi",
+      "burdenType": "Kapsama Sınıfı",
       "amount": "Tutar (₺)",
       "dayOfMonth": "Ödeme Günü",
       "paymentMethod": "Ödeme Yöntemi",

@@ -3,6 +3,11 @@ import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Pencil, Pause, Play, Trash2 } from 'lucide-react';
 import { Badge, IconButton } from '../../../components/ui';
+import {
+  RECURRING_TABLE_GRID_CLASS,
+  RECURRING_AMOUNT_COLUMN_BORDER,
+  RECURRING_ACTIONS_COLUMN_BORDER,
+} from './recurringTableLayout';
 
 function formatCurrency(amount) {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
@@ -13,10 +18,24 @@ function formatLastGenerated(dateStr) {
   return format(parseISO(dateStr), 'MMM yyyy', { locale: tr });
 }
 
+function getBurdenBadgeVariant(burdenType) {
+  switch (burdenType) {
+    case 'labor_burden':
+      return 'warning';
+    case 'vehicle_burden':
+      return 'info';
+    case 'general_overhead':
+      return 'primary';
+    default:
+      return 'default';
+  }
+}
+
 export function RecurringTemplateRow({ template, lastGenerated, onEdit, onToggleActive, onDelete }) {
   const { t } = useTranslation('recurring');
 
   const categoryName = template.expense_categories?.name_tr || '-';
+  const burdenType = template.burden_type || 'unassigned';
 
   const handleRowClick = () => onEdit(template);
   const stopPropagation = (e) => e.stopPropagation();
@@ -30,7 +49,7 @@ export function RecurringTemplateRow({ template, lastGenerated, onEdit, onToggle
       className="border-b border-neutral-100 dark:border-[#222] last:border-b-0 hover:bg-neutral-50 dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer"
     >
       {/* Desktop row */}
-      <div className="hidden md:grid md:grid-cols-[3fr_2fr_1.5fr_1fr_1.5fr_1fr] gap-3 items-center px-4 py-3">
+      <div className={`hidden md:grid ${RECURRING_TABLE_GRID_CLASS} gap-3 items-center px-4 py-3`}>
         {/* Name + variable badge + last generated */}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -51,12 +70,26 @@ export function RecurringTemplateRow({ template, lastGenerated, onEdit, onToggle
         </div>
 
         {/* Category */}
-        <span className="text-sm text-neutral-600 dark:text-neutral-400 truncate">
-          {categoryName}
-        </span>
+        <div className="min-w-0">
+          <Badge variant="default" size="sm" className="max-w-full truncate">
+            {categoryName}
+          </Badge>
+        </div>
+
+        {/* Coverage class */}
+        <div className="min-w-0">
+          <Badge
+            variant={getBurdenBadgeVariant(burdenType)}
+            size="sm"
+            dot={burdenType === 'unassigned'}
+            className="max-w-full truncate"
+          >
+            {t(`burdenTypes.${burdenType}`)}
+          </Badge>
+        </div>
 
         {/* Amount */}
-        <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-50 text-right tabular-nums">
+        <span className={`text-sm font-semibold text-neutral-900 dark:text-neutral-50 text-right tabular-nums ${RECURRING_AMOUNT_COLUMN_BORDER}`}>
           {formatCurrency(template.amount)}
           {template.is_variable && <span className="text-neutral-400">~</span>}
         </span>
@@ -78,7 +111,7 @@ export function RecurringTemplateRow({ template, lastGenerated, onEdit, onToggle
         </span>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-0.5" onClick={stopPropagation}>
+        <div className={`flex items-center justify-end gap-0.5 ${RECURRING_ACTIONS_COLUMN_BORDER}`} onClick={stopPropagation}>
           <IconButton
             icon={Pencil}
             size="sm"
@@ -121,8 +154,21 @@ export function RecurringTemplateRow({ template, lastGenerated, onEdit, onToggle
                 <Badge variant="secondary" size="sm">{t('status.paused')}</Badge>
               )}
             </div>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-              {categoryName} · {t('templates.dayPrefix')} {template.day_of_month}{t('templates.daySuffix')}
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <Badge variant="default" size="sm" className="max-w-full truncate">
+                {categoryName}
+              </Badge>
+              <Badge
+                variant={getBurdenBadgeVariant(burdenType)}
+                size="sm"
+                dot={burdenType === 'unassigned'}
+                className="max-w-full truncate"
+              >
+                {t(`burdenTypes.${burdenType}`)}
+              </Badge>
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">
+              {t('templates.dayPrefix')} {template.day_of_month}{t('templates.daySuffix')}
             </p>
           </div>
           <span className="text-red-400 font-bold text-lg shrink-0 tabular-nums">

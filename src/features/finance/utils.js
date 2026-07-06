@@ -1,3 +1,17 @@
+/** Gross collectible total: net + output VAT. */
+export function grossCollectibleTotal(amountTry, outputVat) {
+  return (Number(amountTry) || 0) + (Number(outputVat) || 0);
+}
+
+/** Remaining gross collectible after payments. */
+export function grossRemainingCollectible(amountTry, outputVat, totalCollected) {
+  return Math.max(0, grossCollectibleTotal(amountTry, outputVat) - (Number(totalCollected) || 0));
+}
+
+export function isPartialPaymentStatus(status) {
+  return status === 'partial' || status === 'partially_paid';
+}
+
 /**
  * Compute total COGS in USD from proposal items.
  * Per spec: IF any of (product_cost_usd, labor_cost_usd, material_cost_usd, shipping_cost_usd, misc_cost_usd) filled:

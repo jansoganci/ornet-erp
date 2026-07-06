@@ -37,14 +37,15 @@ function amountsEqual(a, b) {
 export function QuickMaterialPriceField({ material, field, onUpdate, label }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const serverStr = toInputString(material[field]);
+  const fieldValue = material[field];
+  const serverStr = toInputString(fieldValue);
   const [local, setLocal] = useState(() => serverStr);
   const focusedRef = useRef(false);
 
   useEffect(() => {
     if (focusedRef.current) return;
-    setLocal(toInputString(material[field]));
-  }, [material.id, material[field], field]);
+    setLocal(toInputString(fieldValue));
+  }, [material.id, fieldValue]);
 
   const commitIfChanged = async () => {
     const parsed = parseAmount(local);

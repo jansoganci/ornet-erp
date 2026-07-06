@@ -33,6 +33,11 @@ export const vatReportKeys = {
   list: (period, viewMode, periodType) => [...vatReportKeys.all, period, viewMode, periodType],
 };
 
+export const coverageKeys = {
+  all: ['coverage_reporting'],
+  summary: (scope, viewMode) => [...coverageKeys.all, 'summary', scope, viewMode],
+};
+
 export const financeDashboardKeys = {
   all: ['finance_dashboard'],
   kpis: (period, viewMode) => [...financeDashboardKeys.all, 'kpis', period, viewMode],
@@ -69,6 +74,37 @@ function quarterToMonths(q) {
     const m = startMonth + offset - 1;
     return `${year}-${String(m).padStart(2, '0')}`;
   });
+}
+
+function buildCoverageScope({ period, year, month }) {
+  if (period) return [period];
+  if (year) return buildPeriodFilter(year, month);
+  return [];
+}
+
+function aggregateCoverageRows(rows = []) {
+  let laborRevenue = 0;
+  let laborBurden = 0;
+  let vehicleBurden = 0;
+
+  for (const row of rows) {
+    const amount = Number(row.amount_try) || 0;
+    if (row.coverage_bucket === 'labor_revenue') laborRevenue += amount;
+    else if (row.coverage_bucket === 'labor_burden') laborBurden += amount;
+    else if (row.coverage_bucket === 'vehicle_burden') vehicleBurden += amount;
+  }
+
+  laborRevenue = Math.round(laborRevenue * 100) / 100;
+  laborBurden = Math.round(laborBurden * 100) / 100;
+  vehicleBurden = Math.round(vehicleBurden * 100) / 100;
+
+  return {
+    laborRevenue,
+    laborBurden,
+    vehicleBurden,
+    laborCoverage: Math.round((laborRevenue - laborBurden) * 100) / 100,
+    fieldCoverageBase: Math.round((laborRevenue - laborBurden - vehicleBurden) * 100) / 100,
+  };
 }
 
 // financial_transactions
@@ -416,6 +452,30 @@ export async function fetchVatReport({ period, viewMode = 'total', periodType = 
     .sort((a, b) => a.period.localeCompare(b.period));
 }
 
+const COVERAGE_SELECT = 'coverage_bucket, amount_try';
+
+export async function fetchCoverageSummary({ period, year, month, viewMode = 'total' } = {}) {
+  const periods = buildCoverageScope({ period, year, month });
+  if (!periods.length) {
+    return aggregateCoverageRows([]);
+  }
+
+  let query = supabase
+    .from('v_coverage_reporting_base')
+    .select(COVERAGE_SELECT)
+    .in('period', periods);
+
+  if (viewMode === 'official') {
+    query = query.eq('is_official', true);
+  } else if (viewMode === 'unofficial') {
+    query = query.eq('is_official', false);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return aggregateCoverageRows(data || []);
+}
+
 // finance_dashboard
 export async function fetchFinanceDashboardKpis({ period, viewMode = 'total' } = {}) {
   const [statsRes, plRes] = await Promise.all([
@@ -448,7 +508,7 @@ export async function fetchFinanceDashboardKpis({ period, viewMode = 'total' } =
   }
 
   const grossMarginPct = revenue > 0 ? Math.round(((revenue - cogs) / revenue) * 10000) / 100 : null;
-  const netProfit = Math.round((revenue - expenses) * 100) / 100;
+  const ledgerProfit = Math.round((revenue - expenses) * 100) / 100;
   const vatPayable = Math.round((outputVat - inputVat) * 100) / 100;
   const materialCostPct = revenue > 0 ? Math.round((cogs / revenue) * 10000) / 100 : null;
 
@@ -473,7 +533,8 @@ export async function fetchFinanceDashboardKpis({ period, viewMode = 'total' } =
     mrr,
     arpc,
     grossMarginPct,
-    netProfit,
+    ledgerProfit,
+    netProfit: ledgerProfit,
     vatPayable,
     materialCostPct,
     simNetProfit,
@@ -683,9 +744,9 @@ export async function fetchOverviewTotals({ year, month, viewMode = 'total' }) {
 
   totalRevenue = Math.round(totalRevenue * 100) / 100;
   totalExpenses = Math.round(totalExpenses * 100) / 100;
-  const remaining = Math.round((totalRevenue - totalExpenses) * 100) / 100;
+  const ledgerProfit = Math.round((totalRevenue - totalExpenses) * 100) / 100;
 
-  return { totalRevenue, totalExpenses, remaining };
+  return { totalRevenue, totalExpenses, remaining: ledgerProfit, ledgerProfit };
 }
 
 export async function fetchGeneralExpenses({ year, month, viewMode = 'total' }) {
@@ -859,7 +920,29 @@ export async function fetchReceivables(filters = {}) {
 
   const { data, error } = await query.limit(200);
   if (error) throw error;
-  return data ?? [];
+
+  const rows = data ?? [];
+  if (rows.length === 0) return rows;
+
+  const ids = rows.map((row) => row.id);
+  const { data: payments, error: paymentsError } = await supabase
+    .from('financial_transaction_payments')
+    .select('transaction_id, amount, amount_try')
+    .in('transaction_id', ids)
+    .is('deleted_at', null);
+
+  if (paymentsError) throw paymentsError;
+
+  const collectedByTx = {};
+  for (const payment of payments ?? []) {
+    const paid = Number(payment.amount ?? payment.amount_try) || 0;
+    collectedByTx[payment.transaction_id] = (collectedByTx[payment.transaction_id] || 0) + paid;
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    total_collected: collectedByTx[row.id] || 0,
+  }));
 }
 
 // ── Transaction Payments ─────────────────────────────────────────────────────

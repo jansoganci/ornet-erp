@@ -305,6 +305,7 @@ export const proposalStatusVariant = {
   rejected: 'error',
   cancelled: 'default',
   completed: 'primary',
+  revised: 'warning',
 };
 
 export const paymentStatusVariant = {

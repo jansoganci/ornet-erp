@@ -3,13 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { HardDrive, Plus, Edit, Trash2 } from 'lucide-react';
 import { Card, Badge, Button, Table, IconButton, Modal } from '../../../components/ui';
 import { AddAssetModal } from './AddAssetModal';
-import { useAssetsByCustomer, useDeleteAsset, useUpdateAsset } from '../hooks';
+import { useAssetsByCustomer, useDeleteAsset } from '../hooks';
 
 export function SiteAssetsCard({ customerId, sites = [] }) {
   const { t } = useTranslation(['siteAssets', 'common']);
   const { data: assets = [], isLoading } = useAssetsByCustomer(customerId);
   const deleteAsset = useDeleteAsset();
-  const updateAsset = useUpdateAsset();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState(null);

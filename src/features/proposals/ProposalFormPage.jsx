@@ -25,17 +25,20 @@ import {
   Textarea,
   Card,
   FormSkeleton,
+  ErrorState,
   UnsavedChangesModal,
   Modal,
 } from '../../components/ui';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { proposalSchema, proposalDefaultValues, CURRENCIES } from './schema';
+import { inferProposalRevenueType } from './inferProposalRevenueType';
 import {
   useProposal,
   useProposalItems,
   useProposalSections,
   useProposalAnnualFixedCosts,
   useCreateProposal,
+  useReviseProposal,
   useUpdateProposal,
 } from './hooks';
 import { useFinanceSettings, useLatestRate } from '../finance/hooks';
@@ -100,6 +103,86 @@ function formatProposalValidationToast(issue, t) {
   return t('proposals:form.validation.toastLine', { where, message: issue.message });
 }
 
+function buildProposalFormSections(existingSections) {
+  return existingSections.map((section) => ({
+    _local_id: section.id,
+    title: section.title || '',
+    discount_percent: Number(section.discount_percent) || 0,
+  }));
+}
+
+function buildProposalFormItems(existingItems, proposalCurrency) {
+  const itemCurrency = proposalCurrency === 'USD' ? 'USD' : 'TRY';
+
+  return existingItems.length > 0
+    ? existingItems.map((item) => ({
+        section_local_id: item.section_id ?? null,
+        description: item.description || '',
+        quantity: item.quantity || 1,
+        unit: item.unit || 'adet',
+        unit_price: itemCurrency === 'USD' ? (item.unit_price_usd ?? 0) : (item.unit_price ?? 0),
+        material_id: item.material_id ?? null,
+        revenue_type: inferProposalRevenueType({
+          description: item.description,
+          materialId: item.material_id,
+          revenueType: ['material', 'labor_service', 'other'].includes(item.revenue_type)
+            ? item.revenue_type
+            : undefined,
+        }),
+        cost: item.cost ?? item.cost_usd ?? null,
+        margin_percent: item.margin_percent ?? null,
+        product_cost: itemCurrency === 'USD' ? (item.product_cost_usd ?? null) : (item.product_cost ?? null),
+        labor_cost: itemCurrency === 'USD' ? (item.labor_cost_usd ?? null) : (item.labor_cost ?? null),
+        shipping_cost: itemCurrency === 'USD' ? (item.shipping_cost_usd ?? null) : (item.shipping_cost ?? null),
+        material_cost: itemCurrency === 'USD' ? (item.material_cost_usd ?? null) : (item.material_cost ?? null),
+        misc_cost: itemCurrency === 'USD' ? (item.misc_cost_usd ?? null) : (item.misc_cost ?? null),
+      }))
+    : proposalDefaultValues.items;
+}
+
+function buildProposalAnnualFixedRows(existingAnnualFixed) {
+  return existingAnnualFixed.length > 0
+    ? existingAnnualFixed.map((row) => ({
+        description: row.description || '',
+        quantity: row.quantity ?? 1,
+        unit: row.unit || 'adet',
+        unit_price: Number(row.unit_price) || 0,
+        currency: row.currency || 'TRY',
+      }))
+    : [];
+}
+
+function buildProposalFormValues(proposalRecord, existingItems, existingSections, existingAnnualFixed, options = {}) {
+  const revisionSourceId = options.revisionSourceId || '';
+
+  return {
+    revised_from_proposal_id: revisionSourceId,
+    site_id: proposalRecord.site_id || '',
+    title: proposalRecord.title || '',
+    scope_of_work: proposalRecord.scope_of_work || '',
+    notes: proposalRecord.notes || '',
+    currency: proposalRecord.currency || 'USD',
+    proposal_date: proposalRecord.proposal_date || '',
+    survey_date: proposalRecord.survey_date || '',
+    authorized_person: proposalRecord.authorized_person || '',
+    installation_date: proposalRecord.installation_date || '',
+    customer_representative: proposalRecord.customer_representative || '',
+    completion_date: proposalRecord.completion_date || '',
+    discount_percent: proposalRecord.discount_percent ?? null,
+    has_vat: proposalRecord.vat_rate > 0,
+    has_tevkifat: !!proposalRecord.has_tevkifat,
+    vat_rate: proposalRecord.vat_rate ?? 0,
+    terms_engineering: proposalRecord.terms_engineering || '',
+    terms_pricing: proposalRecord.terms_pricing || '',
+    terms_warranty: proposalRecord.terms_warranty || '',
+    terms_other: proposalRecord.terms_other || '',
+    terms_attachments: proposalRecord.terms_attachments || '',
+    sections: buildProposalFormSections(existingSections),
+    items: buildProposalFormItems(existingItems, proposalRecord.currency),
+    annual_fixed_costs: buildProposalAnnualFixedRows(existingAnnualFixed),
+  };
+}
+
 export function ProposalFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -107,6 +190,9 @@ export function ProposalFormPage() {
   const { t } = useTranslation(['proposals', 'common', 'workOrders']);
   const { t: tCommon } = useTranslation('common');
   const isEdit = !!id;
+  const revisionSourceId = searchParams.get('reviseFrom') || '';
+  const isRevisionCreate = !isEdit && !!revisionSourceId;
+  const activeSourceProposalId = isEdit ? id : revisionSourceId;
 
   const [showSiteModal, setShowSiteModal] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -118,10 +204,10 @@ export function ProposalFormPage() {
   const [showTevkifatConfirmModal, setShowTevkifatConfirmModal] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(null);
 
-  const { data: proposal, isLoading: isProposalLoading } = useProposal(id);
-  const { data: existingItems = [], isLoading: isItemsLoading } = useProposalItems(id);
-  const { data: existingSections = [], isLoading: isSectionsLoading } = useProposalSections(id);
-  const { data: existingAnnualFixed = [], isLoading: isAnnualFixedLoading } = useProposalAnnualFixedCosts(id);
+  const { data: proposal, isLoading: isProposalLoading } = useProposal(activeSourceProposalId);
+  const { data: existingItems = [], isLoading: isItemsLoading } = useProposalItems(activeSourceProposalId);
+  const { data: existingSections = [], isLoading: isSectionsLoading } = useProposalSections(activeSourceProposalId);
+  const { data: existingAnnualFixed = [], isLoading: isAnnualFixedLoading } = useProposalAnnualFixedCosts(activeSourceProposalId);
   const { data: selectedCustomer } = useCustomer(selectedCustomerId);
   const queryClient = useQueryClient();
   const [editCustomerModalOpen, setEditCustomerModalOpen] = useState(false);
@@ -130,8 +216,11 @@ export function ProposalFormPage() {
   const { data: financeSettings } = useFinanceSettings();
   const { data: latestUsdRate } = useLatestRate('USD');
   const createMutation = useCreateProposal();
+  const reviseMutation = useReviseProposal();
   const updateMutation = useUpdateProposal();
   const closeOperationsItemMutation = useCloseOperationsItem();
+  const isSavingProposal =
+    createMutation.isPending || reviseMutation.isPending || updateMutation.isPending;
 
   const sourceCustomerId = searchParams.get('customerId') || '';
   const sourceSiteId = searchParams.get('siteId') || '';
@@ -193,72 +282,25 @@ export function ProposalFormPage() {
   useEffect(() => {
     if (isEdit) {
       if (!hasInitialized && proposal && !isProposalLoading && !isItemsLoading && !isSectionsLoading && !isAnnualFixedLoading) {
-        const itemCurrency = proposal.currency === 'USD' ? 'USD' : 'TRY';
-
-        const sections = existingSections.map((section) => ({
-          _local_id: section.id,
-          title: section.title || '',
-          discount_percent: Number(section.discount_percent) || 0,
+        reset(buildProposalFormValues(proposal, existingItems, existingSections, existingAnnualFixed, {
+          revisionSourceId: proposal.revised_from_proposal_id || '',
         }));
-
-        const items = existingItems.length > 0
-          ? existingItems.map((item) => ({
-              section_local_id: item.section_id ?? null,
-              description: item.description || '',
-              quantity: item.quantity || 1,
-              unit: item.unit || 'adet',
-              unit_price: itemCurrency === 'USD' ? (item.unit_price_usd ?? 0) : (item.unit_price ?? 0),
-              material_id: item.material_id ?? null,
-              cost: item.cost ?? item.cost_usd ?? null,
-              margin_percent: item.margin_percent ?? null,
-              product_cost: itemCurrency === 'USD' ? (item.product_cost_usd ?? null) : (item.product_cost ?? null),
-              labor_cost: itemCurrency === 'USD' ? (item.labor_cost_usd ?? null) : (item.labor_cost ?? null),
-              shipping_cost: itemCurrency === 'USD' ? (item.shipping_cost_usd ?? null) : (item.shipping_cost ?? null),
-              material_cost: itemCurrency === 'USD' ? (item.material_cost_usd ?? null) : (item.material_cost ?? null),
-              misc_cost: itemCurrency === 'USD' ? (item.misc_cost_usd ?? null) : (item.misc_cost ?? null),
-            }))
-          : proposalDefaultValues.items;
-
-        const annualFixedCosts = existingAnnualFixed.length > 0
-          ? existingAnnualFixed.map((row) => ({
-              description: row.description || '',
-              quantity: row.quantity ?? 1,
-              unit: row.unit || 'adet',
-              unit_price: Number(row.unit_price) || 0,
-              currency: row.currency || 'TRY',
-            }))
-          : [];
-
-        reset({
-          site_id: proposal.site_id || '',
-          title: proposal.title || '',
-          scope_of_work: proposal.scope_of_work || '',
-          notes: proposal.notes || '',
-          currency: proposal.currency || 'USD',
-          proposal_date: proposal.proposal_date || '',
-          survey_date: proposal.survey_date || '',
-          authorized_person: proposal.authorized_person || '',
-          installation_date: proposal.installation_date || '',
-          customer_representative: proposal.customer_representative || '',
-          completion_date: proposal.completion_date || '',
-          discount_percent: proposal.discount_percent ?? null,
-          has_vat: proposal.vat_rate > 0,
-          has_tevkifat: !!proposal.has_tevkifat,
-          vat_rate: proposal.vat_rate ?? 0,
-          terms_engineering: proposal.terms_engineering || '',
-          terms_pricing: proposal.terms_pricing || '',
-          terms_warranty: proposal.terms_warranty || '',
-          terms_other: proposal.terms_other || '',
-          terms_attachments: proposal.terms_attachments || '',
-          sections,
-          items,
-          annual_fixed_costs: annualFixedCosts,
-        });
         setSelectedCustomerId(proposal.customer_id ?? '');
         setHasInitialized(true);
       }
     } else {
       if (!hasInitialized) {
+        if (isRevisionCreate) {
+          if (proposal && !isProposalLoading && !isItemsLoading && !isSectionsLoading && !isAnnualFixedLoading) {
+            reset(buildProposalFormValues(proposal, existingItems, existingSections, existingAnnualFixed, {
+              revisionSourceId,
+            }));
+            setSelectedCustomerId(proposal.customer_id ?? sourceCustomerId);
+            setHasInitialized(true);
+          }
+          return;
+        }
+
         reset({
           ...proposalDefaultValues,
           site_id: sourceSiteId,
@@ -267,11 +309,12 @@ export function ProposalFormPage() {
           notes: sourceDescription,
         });
         setSelectedCustomerId(sourceCustomerId);
+        setHasInitialized(true);
       }
-      setHasInitialized(true);
     }
   }, [
     isEdit,
+    isRevisionCreate,
     proposal,
     existingItems,
     existingSections,
@@ -282,6 +325,7 @@ export function ProposalFormPage() {
     isAnnualFixedLoading,
     reset,
     hasInitialized,
+    revisionSourceId,
     sourceCustomerId,
     sourceDescription,
     sourceSiteId,
@@ -331,6 +375,20 @@ export function ProposalFormPage() {
         if (!skipNavigate) {
           justSavedRef.current = true;
           navigate(`/proposals/${id}`);
+        }
+      } else if (isRevisionCreate) {
+        const revisedProposal = await reviseMutation.mutateAsync({
+          sourceProposalId: revisionSourceId,
+          ...proposalPayload,
+          sections: sections ?? [],
+          items,
+          annual_fixed_costs: annualFixedCosts ?? [],
+        });
+
+        reset(data);
+        if (!skipNavigate) {
+          justSavedRef.current = true;
+          navigate(`/proposals/${revisedProposal.id}`);
         }
       } else {
         const newProposal = await createMutation.mutateAsync({
@@ -401,6 +459,17 @@ export function ProposalFormPage() {
         });
         reset(rawValues);
         toast.success(t('proposals:form.draftSaved'));
+      } else if (isRevisionCreate) {
+        const revisedProposal = await reviseMutation.mutateAsync({
+          sourceProposalId: revisionSourceId,
+          ...draftPayload,
+          sections: sections ?? [],
+          items: items ?? [],
+          annual_fixed_costs: annualFixedCosts ?? [],
+        });
+        reset(rawValues);
+        justSavedRef.current = true;
+        navigate(`/proposals/${revisedProposal.id}`);
       } else {
         const newProposal = await createMutation.mutateAsync({
           ...draftPayload,
@@ -458,23 +527,71 @@ export function ProposalFormPage() {
     }
   };
 
-  if (isEdit && (isProposalLoading || isItemsLoading || isSectionsLoading || isAnnualFixedLoading)) {
+  if ((isEdit || isRevisionCreate) && (isProposalLoading || isItemsLoading || isSectionsLoading || isAnnualFixedLoading)) {
     return <FormSkeleton />;
   }
+
+  if (isEdit && proposal?.status === 'revised') {
+    return (
+      <PageContainer maxWidth="full" padding="default">
+        <ErrorState
+          message={t('proposals:form.revisedEditBlocked')}
+          onRetry={() => navigate(`/proposals/${id}`)}
+        />
+      </PageContainer>
+    );
+  }
+
+  if (isRevisionCreate && proposal && !['accepted', 'completed'].includes(proposal.status)) {
+    return (
+      <PageContainer maxWidth="full" padding="default">
+        <ErrorState
+          message={t('proposals:form.invalidRevisionSource')}
+          onRetry={() => navigate(`/proposals/${proposal.id}`)}
+        />
+      </PageContainer>
+    );
+  }
+
+  const pageTitle = isEdit
+    ? t('proposals:form.editTitle')
+    : isRevisionCreate
+      ? t('proposals:form.revisionTitle')
+      : t('proposals:form.addTitle');
+
+  const submitLabel = isEdit
+    ? tCommon('actions.save')
+    : isRevisionCreate
+      ? t('proposals:form.saveRevision')
+      : tCommon('actions.create');
 
   return (
     <PageContainer maxWidth="full" padding="default" className="space-y-6 pb-24">
       <PageHeader
-        title={isEdit ? t('proposals:form.editTitle') : t('proposals:form.addTitle')}
+        title={pageTitle}
         breadcrumbs={[
           { label: t('proposals:list.title'), to: '/proposals' },
           ...(isEdit && proposal ? [{ label: proposal.title, to: `/proposals/${id}` }] : []),
-          { label: isEdit ? t('proposals:form.editTitle') : t('proposals:form.addTitle') },
+          ...(isRevisionCreate && proposal ? [{ label: proposal.title, to: `/proposals/${proposal.id}` }] : []),
+          { label: pageTitle },
         ]}
       />
 
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="mt-4">
         <div className="space-y-6">
+          {isRevisionCreate && proposal && (
+            <Card className="border-warning-200 bg-warning-50/70 p-5 dark:border-warning-900/40 dark:bg-warning-950/10">
+              <p className="text-sm font-medium text-warning-900 dark:text-warning-100">
+                {t('proposals:form.revisionBanner.title', {
+                  proposalNo: proposal.proposal_no || proposal.title,
+                })}
+              </p>
+              <p className="mt-1 text-sm text-warning-800/80 dark:text-warning-200/80">
+                {t('proposals:form.revisionBanner.description')}
+              </p>
+            </Card>
+          )}
+
           <Card className="overflow-visible border-neutral-200/80 bg-white/95 shadow-sm dark:border-[#262626] dark:bg-[#141414]">
             <div className="border-b border-neutral-200/80 px-6 py-5 dark:border-[#262626]">
               <div className="flex items-center gap-2">
@@ -802,7 +919,7 @@ export function ProposalFormPage() {
               type="button"
               variant="outline"
               onClick={handleSaveDraft}
-              loading={createMutation.isPending || updateMutation.isPending}
+              loading={isSavingProposal}
               leftIcon={<Save className="w-4 h-4" />}
               className="flex-1 lg:flex-none"
             >
@@ -819,11 +936,11 @@ export function ProposalFormPage() {
             </Button>
             <Button
               type="submit"
-              loading={isSubmitting || createMutation.isPending || updateMutation.isPending}
+              loading={isSubmitting || isSavingProposal}
               className="flex-1 lg:flex-none"
               leftIcon={<Save className="w-4 h-4" />}
             >
-              {isEdit ? tCommon('actions.save') : tCommon('actions.create')}
+              {submitLabel}
             </Button>
           </div>
         </div>

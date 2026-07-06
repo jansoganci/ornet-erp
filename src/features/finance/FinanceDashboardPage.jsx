@@ -18,6 +18,7 @@ import { RecurringMonthBanner } from './components/dashboard/RecurringMonthBanne
 import { ParasutHealthCard } from './components/ParasutHealthCard';
 import { QuickEntryModal } from './components/QuickEntryModal';
 import {
+  useCoverageSummary,
   useOverviewTotals,
   useRevenueExpensesByMonth,
   useIncomeBySource,
@@ -119,6 +120,7 @@ export function FinanceDashboardPage() {
   const filterProps = { year, month, viewMode };
 
   const { data: overviewTotals, isLoading: overviewLoading } = useOverviewTotals(filterProps);
+  const { data: coverageSummary, isLoading: coverageLoading } = useCoverageSummary(filterProps);
   const { data: incomeBySource = [], isLoading: incomeLoading } = useIncomeBySource(filterProps);
   const { data: expensesBySource = [], isLoading: expensesLoading } = useExpensesBySource(filterProps);
   const { data: subStats, isLoading: subStatsLoading } = useSubscriptionStats();
@@ -135,9 +137,12 @@ export function FinanceDashboardPage() {
 
   const totalRevenue = overviewTotals?.totalRevenue ?? 0;
   const totalExpenses = overviewTotals?.totalExpenses ?? 0;
-  const remaining = overviewTotals?.remaining ?? 0;
+  const remaining = overviewTotals?.ledgerProfit ?? overviewTotals?.remaining ?? 0;
   const subscriptionMrr = Number(subStats?.mrr) || 0;
   const simMrr = Number(simStats?.total_monthly_revenue) || 0;
+  const laborRevenue = Number(coverageSummary?.laborRevenue) || 0;
+  const laborBurden = Number(coverageSummary?.laborBurden) || 0;
+  const laborCoverage = Number(coverageSummary?.laborCoverage) || 0;
 
   const chartData = useMemo(
     () => revenueByMonth.map((d) => ({ period: d.period, revenue: d.revenue, costs: d.expenses })),
@@ -290,6 +295,27 @@ export function FinanceDashboardPage() {
           />
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.laborRevenue')}
+            value={formatCurrency(laborRevenue)}
+            loading={coverageLoading}
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.laborBurden')}
+            value={formatCurrency(laborBurden)}
+            loading={coverageLoading}
+            variant="negative"
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.laborCoverage')}
+            value={formatCurrency(laborCoverage)}
+            loading={coverageLoading}
+            variant={laborCoverage >= 0 ? 'positive' : 'negative'}
+            infoTooltip={t('dashboardV2.overviewInfo.laborCoverage')}
+          />
+        </div>
+
         <div className="grid grid-cols-1 gap-4">
           <BreakdownCard
             title={t('dashboardV2.overview.incomeBreakdown')}
@@ -431,6 +457,27 @@ export function FinanceDashboardPage() {
             loading={simStatsLoading}
             variant="positive"
             infoTooltip={t('dashboardV2.overviewInfo.simMrr')}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.laborRevenue')}
+            value={formatCurrency(laborRevenue)}
+            loading={coverageLoading}
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.laborBurden')}
+            value={formatCurrency(laborBurden)}
+            loading={coverageLoading}
+            variant="negative"
+          />
+          <ChannelKpiCard
+            title={t('dashboardV2.overview.laborCoverage')}
+            value={formatCurrency(laborCoverage)}
+            loading={coverageLoading}
+            variant={laborCoverage >= 0 ? 'positive' : 'negative'}
+            infoTooltip={t('dashboardV2.overviewInfo.laborCoverage')}
           />
         </div>
 

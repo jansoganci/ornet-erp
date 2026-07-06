@@ -106,7 +106,6 @@ export async function fetchMonthlyRevenue(monthsBack = 7) {
   if (!isSupabaseConfigured) {
     // Mock: descending months ending today
     const months = [];
-    const labels = ['Eyl', 'Eki', 'Kas', 'Ara', 'Oca', 'Şub', 'Mar'];
     const now = new Date();
     for (let i = monthsBack - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);

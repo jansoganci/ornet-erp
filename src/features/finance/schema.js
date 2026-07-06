@@ -1,11 +1,5 @@
 import { z } from 'zod';
 import i18n from '../../lib/i18n';
-import { isoDateString } from '../../lib/zodHelpers';
-
-const isoDateSchema = z.string().regex(
-  /^\d{4}-\d{2}-\d{2}$/,
-  'Geçerli bir tarih giriniz (YYYY-AA-GG)'
-);
 
 // Constants
 export const DIRECTIONS = ['income', 'expense'];

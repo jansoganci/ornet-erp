@@ -1,53 +1,37 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Modal, Button, Input, Select, Spinner, ErrorState } from '../../../components/ui';
-import { useProposalItems, proposalKeys } from '../hooks';
-import { useCreateWorkOrderFromProposal } from '../../workOrders/hooks';
+import { Modal, Button, Input, Select } from '../../../components/ui';
 import { WorkerSelector } from '../../workOrders/WorkerSelector';
-import { useQueryClient } from '@tanstack/react-query';
 import { WORK_TYPES } from '../../workOrders/schema';
-import { getCurrencySymbol } from '../../../lib/utils';
 
-export function CreateWorkOrderFromProposalModal({ open, onClose, proposal, onSuccess }) {
+export function CreateWorkOrderFromProposalModal({ open, onClose, proposal }) {
+  const navigate = useNavigate();
   const { t } = useTranslation(['proposals', 'common']);
-  const queryClient = useQueryClient();
   const [workType, setWorkType] = useState('installation');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [assignedTo, setAssignedTo] = useState([]);
 
-  const { data: items = [], isLoading: itemsLoading, error: itemsError, refetch: refetchItems } = useProposalItems(proposal?.id);
-  const createMutation = useCreateWorkOrderFromProposal();
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!proposal?.id || !proposal?.site_id) return;
-    try {
-      const result = await createMutation.mutateAsync({
-        proposalId: proposal.id,
-        siteId: proposal.site_id,
-        workType,
-        scheduledDate: scheduledDate || null,
-        scheduledTime: scheduledTime || null,
-        assignedTo,
-        amount: proposal.currency === 'USD'
-          ? (proposal.total_amount_usd ?? null)
-          : (proposal.total_amount ?? null),
-        currency: proposal.currency ?? 'TRY',
-        materialsDiscountPercent: proposal.materials_discount_percent ?? proposal.discount_percent ?? 0,
-        vatRate: proposal.vat_rate ?? 20,
-        hasTevkifat: proposal.has_tevkifat ?? false,
-        description: proposal.title ?? null,
-        notes: proposal.notes ?? null,
-        items,
-      });
-      queryClient.invalidateQueries({ queryKey: proposalKeys.detail(proposal.id) });
-      queryClient.invalidateQueries({ queryKey: proposalKeys.workOrders(proposal.id) });
-      onSuccess?.(result?.id);
-      onClose();
-    } catch {
-      // Toast handled by hook
-    }
+    if (!proposal?.id) return;
+
+    const params = new URLSearchParams({
+      mode: 'linked',
+      proposalId: proposal.id,
+    });
+
+    if (proposal.customer_id) params.set('customerId', proposal.customer_id);
+    if (proposal.site_id) params.set('siteId', proposal.site_id);
+    if (proposal.title) params.set('description', proposal.title);
+    if (workType) params.set('workType', workType);
+    if (scheduledDate) params.set('date', scheduledDate);
+    if (scheduledTime) params.set('time', scheduledTime);
+    if (assignedTo.length > 0) params.set('assignedTo', assignedTo.join(','));
+
+    onClose();
+    navigate(`/work-orders/new?${params.toString()}`);
   };
 
   const workTypeOptions = WORK_TYPES.map((value) => ({
@@ -55,52 +39,44 @@ export function CreateWorkOrderFromProposalModal({ open, onClose, proposal, onSu
     label: t(`common:workType.${value}`),
   }));
 
-  const currencySymbol = getCurrencySymbol(proposal?.currency ?? 'TRY');
-  const amountDisplay = proposal?.currency === 'USD'
-    ? proposal?.total_amount_usd
-    : proposal?.total_amount;
-
-  const content = () => {
-    if (itemsLoading) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12">
-          <Spinner size="lg" />
-          <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
-            {t('createWorkOrder.loadingItems')}
-          </p>
-        </div>
-      );
-    }
-
-    if (itemsError) {
-      return (
-        <ErrorState
-          message={itemsError?.message || t('common:errors.loadFailed')}
-          onRetry={refetchItems}
-        />
-      );
-    }
-
-    return (
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('createWorkOrder.title')}
+      size="lg"
+      footer={(
+        <>
+          <Button type="button" variant="outline" onClick={onClose}>
+            {t('common:actions.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form="create-wo-from-proposal-form"
+            variant="primary"
+            disabled={!proposal?.id}
+          >
+            {t('createWorkOrder.submit')}
+          </Button>
+        </>
+      )}
+    >
       <form id="create-wo-from-proposal-form" onSubmit={handleSubmit} className="space-y-6">
-        {/* Read-only summary */}
-        <div className="rounded-xl bg-neutral-50 dark:bg-[#1a1a1a] p-4 space-y-2 text-sm">
-          {(proposal?.customer_company_name || proposal?.company_name || proposal?.site_name) && (
-            <p className="font-medium text-neutral-900 dark:text-neutral-50">
-              {[proposal?.customer_company_name || proposal?.company_name, proposal?.site_name].filter(Boolean).join(' · ')}
-            </p>
-          )}
-          <p className="text-neutral-600 dark:text-neutral-400">
-            {t('createWorkOrder.itemsCount', { count: items.length })}
+        <div className="rounded-xl bg-neutral-50 p-4 text-sm dark:bg-[#1a1a1a]">
+          <p className="font-medium text-neutral-900 dark:text-neutral-50">
+            {[proposal?.proposal_no, proposal?.title].filter(Boolean).join(' · ')}
           </p>
-          {amountDisplay != null && (
-            <p className="font-semibold text-neutral-900 dark:text-neutral-50">
-              {currencySymbol} {Number(amountDisplay).toLocaleString('tr-TR')}
-            </p>
-          )}
+          <p className="mt-1 text-neutral-600 dark:text-neutral-400">
+            {[
+              proposal?.customer_company_name || proposal?.company_name,
+              proposal?.site_name,
+            ].filter(Boolean).join(' · ')}
+          </p>
+          <p className="mt-3 text-neutral-500 dark:text-neutral-400">
+            {t('createWorkOrder.redirectHint')}
+          </p>
         </div>
 
-        {/* User inputs */}
         <Select
           label={t('createWorkOrder.workTypeLabel')}
           options={workTypeOptions}
@@ -125,36 +101,6 @@ export function CreateWorkOrderFromProposalModal({ open, onClose, proposal, onSu
           onChange={setAssignedTo}
         />
       </form>
-    );
-  };
-
-  const isSubmitting = createMutation.isPending;
-  const canSubmit = !itemsLoading && !itemsError && proposal?.site_id;
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={t('createWorkOrder.title')}
-      size="lg"
-      footer={
-        <>
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-            {t('common:actions.cancel')}
-          </Button>
-          <Button
-            type="submit"
-            form="create-wo-from-proposal-form"
-            variant="primary"
-            loading={isSubmitting}
-            disabled={!canSubmit || isSubmitting}
-          >
-            {t('createWorkOrder.submit')}
-          </Button>
-        </>
-      }
-    >
-      {content()}
     </Modal>
   );
 }

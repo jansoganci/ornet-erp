@@ -6,8 +6,6 @@ const isoDateSchema = z.string().regex(
   'Geçerli bir tarih giriniz (YYYY-AA-GG)'
 );
 
-const optionalString = z.union([z.string(), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v));
-
 export const assetSchema = z.object({
   site_id: z.string().min(1, i18n.t('errors:validation.required')).uuid(),
   equipment_name: z.string().min(1, i18n.t('errors:validation.required')),

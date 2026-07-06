@@ -20,6 +20,8 @@ import proposalsTr from '../locales/tr/proposals.json'
 import financeTr from '../locales/tr/finance.json'
 import notificationsTr from '../locales/tr/notifications.json'
 import recurringTr from '../locales/tr/recurring.json'
+import recurringEn from '../locales/en/recurring.json'
+import errorsEn from '../locales/en/errors.json'
 import siteAssetsTr from '../locales/tr/siteAssets.json'
 import invoiceAnalysisTr from '../locales/tr/invoiceAnalysis.json'
 import actionBoardTr from '../locales/tr/actionBoard.json'
@@ -83,6 +85,10 @@ i18n.use(initReactI18next).init({
       collection: collectionTr,
       operations: operationsTr,
       technicalGuide: technicalGuideTr,
+    },
+    en: {
+      recurring: recurringEn,
+      errors: errorsEn,
     },
   },
   interpolation: {

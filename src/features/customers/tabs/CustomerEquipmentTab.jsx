@@ -1,4 +1,4 @@
-import { useCustomerDetail } from '../CustomerDetailContext';
+import { useCustomerDetail } from '../customerDetailContextBase';
 import { SiteAssetsCard } from '../../siteAssets';
 
 export function CustomerEquipmentTab() {

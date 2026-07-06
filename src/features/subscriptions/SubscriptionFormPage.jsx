@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save, X, DollarSign, FileText, Users, StickyNote, RefreshCw, AlertTriangle } from 'lucide-react';
 import { cn, formatCurrency } from '../../lib/utils';
@@ -60,7 +60,6 @@ export function SubscriptionFormPage() {
     register,
     control,
     handleSubmit,
-    watch,
     reset,
     setValue,
     formState: { errors, isSubmitting },
@@ -69,29 +68,29 @@ export function SubscriptionFormPage() {
     defaultValues: subscriptionDefaultValues,
   });
 
-  const selectedSiteId = watch('site_id');
-  const simCardId = watch('sim_card_id');
-  const watchedFrequency = watch('billing_frequency');
-  const basePrice = watch('base_price');
-  const smsFee = watch('sms_fee');
-  const lineFee = watch('line_fee');
-  const staticIpFee = watch('static_ip_fee');
-  const vatRate = watch('vat_rate');
-  const officialInvoice = watch('official_invoice');
-  const selectedCurrency = watch('currency') || 'TRY';
+  const selectedSiteId = useWatch({ control, name: 'site_id' });
+  const simCardId = useWatch({ control, name: 'sim_card_id' });
+  const watchedFrequency = useWatch({ control, name: 'billing_frequency' });
+  const basePrice = useWatch({ control, name: 'base_price' });
+  const smsFee = useWatch({ control, name: 'sms_fee' });
+  const lineFee = useWatch({ control, name: 'line_fee' });
+  const staticIpFee = useWatch({ control, name: 'static_ip_fee' });
+  const vatRate = useWatch({ control, name: 'vat_rate' });
+  const officialInvoice = useWatch({ control, name: 'official_invoice' });
+  const selectedCurrency = useWatch({ control, name: 'currency' }) || 'TRY';
 
   const { data: siteData } = useSite(selectedSiteId);
   const { data: selectedSim } = useSimCard(simCardId);
 
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [selectedCustomerIdOverride, setSelectedCustomerIdOverride] = useState(null);
   const [conflictModal, setConflictModal] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState(null);
   const loadedUpdatedAtRef = useRef(null);
+  const selectedCustomerId = selectedCustomerIdOverride ?? (subscription?.customer_id || (!isEdit ? (urlCustomerId || '') : ''));
 
   // Preselect customer and site from URL params (create mode)
   useEffect(() => {
     if (!isEdit && urlCustomerId && urlSiteId) {
-      setSelectedCustomerId(urlCustomerId);
       setValue('site_id', urlSiteId, { shouldValidate: true });
     }
   }, [isEdit, urlCustomerId, urlSiteId, setValue]);
@@ -157,7 +156,6 @@ export function SubscriptionFormPage() {
         subscriber_title: subscription.subscriber_title || '',
         payment_start_month: subscription.payment_start_month ?? null,
       });
-      if (subscription.customer_id) setSelectedCustomerId(subscription.customer_id);
     }
   }, [subscription, isEdit, reset]);
 
@@ -267,6 +265,14 @@ export function SubscriptionFormPage() {
     }
   };
 
+  const handleSave = () => {
+    void handleSubmit(onSubmit)();
+  };
+
+  const handleFormSubmit = (event) => {
+    void handleSubmit(onSubmit)(event);
+  };
+
   if (isEdit && isSubLoading) {
     return <FormSkeleton />;
   }
@@ -276,12 +282,12 @@ export function SubscriptionFormPage() {
       <SubscriptionFormHero
         isEdit={isEdit}
         onCancel={() => navigate(-1)}
-        onSave={handleSubmit(onSubmit)}
+        onSave={handleSave}
         isSaving={isSubmitting || createMutation.isPending || updateMutation.isPending}
         selectedSite={siteData}
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleFormSubmit} className="space-y-8">
         <input type="hidden" {...register('site_id')} />
 
         {/* 1. Customer & Site Selection */}
@@ -290,9 +296,9 @@ export function SubscriptionFormPage() {
             selectedCustomerId={selectedCustomerId}
             selectedSiteId={selectedSiteId}
             onCustomerChange={(cid) => {
-            setSelectedCustomerId(cid || '');
-            setValue('site_id', '', { shouldValidate: true });
-          }}
+              setSelectedCustomerIdOverride(cid || '');
+              setValue('site_id', '', { shouldValidate: true });
+            }}
             onSiteChange={(sid) => setValue('site_id', sid, { shouldValidate: true })}
             onAddNewCustomer={() => navigate('/customers/new')}
             onAddNewSite={() => {}}
@@ -577,7 +583,7 @@ export function SubscriptionFormPage() {
                         {formatCurrency(computedPricing.total)}
                       </span>
                       <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                        {t(`common:currencies.${selectedCurrency}`)} / {t(`subscriptions:form.fields.${watch('billing_frequency')}`)}
+                        {t(`common:currencies.${selectedCurrency}`)} / {t(`subscriptions:form.fields.${watchedFrequency}`)}
                       </p>
                     </div>
                   </div>

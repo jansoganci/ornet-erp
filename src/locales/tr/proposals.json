@@ -25,7 +25,7 @@
       "activeTitle": "Aktif teklif yok",
       "activeDescription": "Taslak, gönderilmiş veya kabul edilmiş teklif bulunmuyor.",
       "archiveTitle": "Arşiv boş",
-      "archiveDescription": "Tamamlanan, reddedilen veya iptal edilen teklif bulunamadı."
+      "archiveDescription": "Tamamlanan, revize edilen, reddedilen veya iptal edilen teklif bulunamadı."
     },
     "noResults": {
       "title": "Sonuç bulunamadı",
@@ -63,6 +63,7 @@
     "proposalLink": "Teklif",
     "actions": {
       "edit": "Düzenle",
+      "revise": "Revize Et",
       "downloadPdf": "PDF İndir",
       "markSent": "Gönderildi İşaretle",
       "accept": "Onayla",
@@ -88,6 +89,7 @@
     "confirmReject": "Bu teklifi reddetmek istediğinize emin misiniz?",
     "confirmSent": "Bu teklifi gönderildi olarak işaretlemek istediğinize emin misiniz?",
     "confirmComplete": "Montaj tamamlandı olarak işaretlenecek. Emin misiniz?",
+    "completionRevisionWarning": "Gerçekleşen saha kayıtlarında teklif farkı görünüyor. İsterseniz önce revize edin, isterseniz yine de tamamlayın.",
     "netProfit": "Net Kar",
     "subtotal": "Ara Toplam",
     "pricingDiscount": "İndirim",
@@ -107,6 +109,31 @@
       "sentAt": "Gönderim",
       "acceptedOrRejectedAt": "Onay / Red",
       "contacts": "İletişim"
+    },
+    "revisions": {
+      "title": "Revizyon Zinciri",
+      "previous": "Önceki Versiyon",
+      "next": "Sonraki Revizyonlar",
+      "untitled": "Başlıksız Teklif"
+    },
+    "operationsSummary": {
+      "title": "Operasyon Özeti",
+      "revisionNeeded": "Saha gerçekleşenlerinde miktar farkı veya teklif dışı satır bulundu. Ticari belgeyi kapatmadan önce revizyon ihtiyacını kontrol edin.",
+      "visits": "Ziyaretler",
+      "visitsValue": "{{completed}}/{{total}} tamamlandı",
+      "fulfillment": "Teklif Satırları",
+      "fulfillmentValue": "{{fulfilled}}/{{total}} satır tamamlandı",
+      "quantityDifferences": "Miktar Farkları",
+      "quantityDifferencesValue": "{{shortage}} eksik · {{excess}} fazla",
+      "extraScope": "Teklif Dışı Satırlar",
+      "extraScopeValue": "{{count}} satır",
+      "latestVisitValue": "Son ziyaret: {{date}} · {{status}}",
+      "noVisits": "Henüz bağlı ziyaret kaydı yok."
+    },
+    "supersededBanner": {
+      "title": "Bu teklif revize edildi.",
+      "description": "Bu kayıt tarihsel versiyon olarak saklanır. Operasyon ve yeni iş akışı için güncel revizyonu kullanın.",
+      "action": "Güncel revizyonu aç: {{proposalNo}}"
     }
   },
   "form": {
@@ -114,6 +141,7 @@
     "noSite": "Lokasyon seçilmedi",
     "siteOptional": "(isteğe bağlı)",
     "editTitle": "Teklifi Düzenle",
+    "revisionTitle": "Teklifi Revize Et",
     "customerRequired": "Lütfen bir müşteri seçin",
     "validation": {
       "toastLine": "{{where}}: {{message}}",
@@ -198,7 +226,14 @@
       "terms": "Şartlar ve Koşullar"
     },
     "saveDraft": "Taslak Kaydet",
+    "saveRevision": "Revizeyi Kaydet",
     "draftSaved": "Taslak kaydedildi",
+    "revisedEditBlocked": "Revize edilen eski teklif doğrudan düzenlenemez. Güncel revizyonu açın veya yeni bir revizyon oluşturun.",
+    "invalidRevisionSource": "Sadece onaylanmış veya tamamlanmış teklifler üzerinden revizyon oluşturabilirsiniz.",
+    "revisionBanner": {
+      "title": "{{proposalNo}} teklifinden yeni revizyon oluşturuyorsunuz.",
+      "description": "Bu kayıt yeni bir teklif olarak kaydedilecek. Eski teklif korunur; gerekli satır ve adet değişikliklerini burada yapın."
+    },
     "tevkifatConfirm": {
       "title": "Tevkifat Onayı",
       "message": "Tutar limit üstü. Tevkifat eklemeden devam edilsin mi?",
@@ -222,6 +257,7 @@
     "unit": "Birim",
     "unitPrice": "Birim Fiyat",
     "unitCost": "Birim Maliyet",
+    "revenueType": "Gelir Tipi (Dahili)",
     "total": "Toplam",
     "salesTotal": "Satış Toplam",
     "totalCost": "Maliyet Toplam",
@@ -240,7 +276,20 @@
     "costLabor": "İşçilik",
     "costShipping": "Nakliye",
     "costMaterial": "Malzeme",
-    "costMisc": "Diğer"
+    "costMisc": "Diğer",
+    "revenueTypes": {
+      "material": "Malzeme",
+      "labor_service": "İşçilik / Hizmet",
+      "other": "Diğer"
+    },
+    "revenueTypeGroups": {
+      "product": "Malzeme satışı",
+      "service": "Hizmet geliri"
+    },
+    "revenueTypeSubtotals": {
+      "title": "Gelir tipi özeti (dahili)",
+      "hint": "Bölüm indirimleri satır tutarına oransal yansıtılır."
+    }
   },
   "status": {
     "draft": "Taslak",
@@ -248,7 +297,8 @@
     "accepted": "Onaylandı",
     "rejected": "Reddedildi",
     "cancelled": "İptal Edildi",
-    "completed": "Tamamlandı"
+    "completed": "Tamamlandı",
+    "revised": "Revize Edildi"
   },
   "dateLabels": {
     "sent": "Gönderildi",
@@ -269,7 +319,8 @@
     "workTypeLabel": "İş Tipi",
     "scheduledDate": "Planlanan Tarih",
     "scheduledTime": "Planlanan Saat",
-    "submit": "İş Emri Oluştur"
+    "submit": "İş Emri Oluştur",
+    "redirectHint": "Bu aksiyon artık ortak iş emri oluşturma ekranını açar; teklif kalemleri orada yüklenir."
   },
   "pdf": {
     "headerLabels": {

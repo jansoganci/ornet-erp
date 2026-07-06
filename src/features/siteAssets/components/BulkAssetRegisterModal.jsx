@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -70,7 +70,7 @@ export function BulkAssetRegisterModal({
 
   const selectedOwnership = useWatch({ control, name: 'ownership_type' });
   const selectedSiteId = useWatch({ control, name: 'site_id' });
-  const [selectedCustomerId, setSelectedCustomerId] = useState(customerId || '');
+  const selectedCustomerId = useWatch({ control, name: 'customer_id' }) || customerId || '';
 
   const { data: subscriptions = [], isLoading: isLoadingSubs } = useSubscriptionsBySite(selectedSiteId);
   const bulkCreateMutation = useBulkCreateAssets();
@@ -85,7 +85,6 @@ export function BulkAssetRegisterModal({
         installed_at: new Date().toISOString().split('T')[0],
         items: [defaultItem],
       });
-      setSelectedCustomerId(customerId || '');
     }
   }, [open, siteId, customerId, reset]);
 
@@ -180,7 +179,6 @@ export function BulkAssetRegisterModal({
             selectedCustomerId={selectedCustomerId}
             selectedSiteId={selectedSiteId}
             onCustomerChange={(cid) => {
-              setSelectedCustomerId(cid || '');
               setValue('customer_id', cid || '', { shouldValidate: true });
               setValue('site_id', '', { shouldValidate: true });
             }}

@@ -243,9 +243,14 @@
     "cogs": "Satış Maliyeti",
     "grossProfit": "Brüt Kar",
     "operatingExpenses": "İşletme Giderleri",
-    "netProfit": "Net Kar",
+    "netProfit": "Defter Kârı",
     "empty": "Seçilen dönemde veri yok",
     "emptyDescription": "Farklı bir dönem seçerek tekrar deneyin."
+  },
+  "coverage": {
+    "laborRevenue": "İşçilik / Hizmet Geliri",
+    "laborBurden": "Personel Yükü",
+    "laborCoverage": "Personel Kapsama"
   },
   "export": {
     "csv": "CSV İndir",
@@ -297,6 +302,9 @@
       "totalRevenue": "Toplam gelir",
       "totalExpenses": "Toplam gider",
       "remaining": "Defter Kârı",
+      "laborRevenue": "İşçilik / Hizmet Geliri",
+      "laborBurden": "Personel Yükü",
+      "laborCoverage": "Personel Kapsama",
       "subscriptionMrr": "Abonelik MRR",
       "simMrr": "SIM Kart MRR",
       "incomeBreakdown": "Gelir Kaynakları",
@@ -306,6 +314,7 @@
     },
     "overviewInfo": {
       "ledgerProfit": "Bu değer, seçili dönemde deftere yazılmış gelir eksi gider toplamını gösterir. Yönetim net kârı değildir.",
+      "laborCoverage": "İşçilik / hizmet geliri eksi recurring giderlerden sınıflandırılmış personel yükü toplamıdır. Araç yükü bu KPI'ya dahil değildir.",
       "subscriptionMrr": "Aktif aboneliklerin aylık tekrarlayan net geliri (KDV hariç). Temel ücret, SMS, hat, statik IP ve abonelikteki SIM bedelini içerir.",
       "simMrr": "Aktif veya aboneliğe bağlı SIM kartların satış fiyatları toplamı (KDV hariç). Operatör envanterinden aylık kiralama gelirinin tahmini değeridir."
     },
@@ -357,6 +366,9 @@
       "netAmount": "Net Tutar",
       "vatAmount": "KDV",
       "totalAmount": "Toplam",
+      "documentTotal": "Belge Toplamı",
+      "collected": "Tahsil Edilen",
+      "remainingCollectible": "Kalan Tahsilat",
       "cogsTry": "Maliyet",
       "profit": "Kâr",
       "status": "Durum",
@@ -371,7 +383,9 @@
     "addPayment": {
       "title": "Tahsilat Ekle",
       "applyRemainingAmount": "Tutarın tamamı",
-      "documentTotal": "Belge Tutarı",
+      "documentTotal": "Belge Toplamı",
+      "collected": "Tahsil Edilen",
+      "remainingCollectible": "Kalan Tahsilat",
       "amount": "Tahsilat Tutarı (TRY)",
       "paymentMethod": "Ödeme Yöntemi",
       "paidAt": "Tahsilat Tarihi",
@@ -400,9 +414,11 @@
     "table": {
       "customer": "Müşteri",
       "documentCount": "Belge",
-      "totalBilled": "Toplam",
+      "totalBilled": "Belge Toplamı",
       "collected": "Tahsil Edilen",
-      "outstanding": "Kalan",
+      "outstanding": "Kalan Tahsilat",
+      "documentTotal": "Belge Toplamı",
+      "remainingCollectible": "Kalan Tahsilat",
       "status": "Durum",
       "actions": "İşlem",
       "description": "Açıklama",

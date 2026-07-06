@@ -73,7 +73,7 @@ export function WorkOrderDetailPage() {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const queryClient = useQueryClient();
-  const { canWrite } = useRole();
+  const { canWrite, isFieldWorker } = useRole();
   const { data: workOrder, isLoading, error, refetch } = useWorkOrder(id);
   const updateStatusMutation = useUpdateWorkOrderStatus();
   const deleteMutation = useDeleteWorkOrder();
@@ -105,6 +105,12 @@ export function WorkOrderDetailPage() {
   }
 
   const handleStatusUpdate = () => {
+    if (statusToUpdate === 'completed' && isStandalone) {
+      setStatusToUpdate(null);
+      setShowCompletionModal(true);
+      return;
+    }
+
     if (statusToUpdate) {
       updateStatusMutation.mutate(
         { id, status: statusToUpdate },
@@ -145,16 +151,19 @@ export function WorkOrderDetailPage() {
   const items = workOrder.work_order_materials || [];
   const discountPercent = Number(workOrder.materials_discount_percent) || 0;
   const currency = workOrder.currency ?? 'TRY';
-  const subtotal = items.reduce((sum, row) => {
+  const lineItemsSubtotal = items.reduce((sum, row) => {
     const qty = parseFloat(row.quantity) || 0;
     const price = currency === 'USD'
       ? (parseFloat(row.unit_price_usd) || 0)
       : (parseFloat(row.unit_price) || 0);
     return sum + qty * price;
   }, 0);
-  const discountAmount = subtotal * (discountPercent / 100);
-  const grandTotal = subtotal - discountAmount;
-  const totalCosts = items.reduce((sum, row) => {
+  const subtotal = Number(workOrder.items_subtotal) || lineItemsSubtotal;
+  const discountAmount = Number(workOrder.discount_amount) || (subtotal * (discountPercent / 100));
+  const discountedItemsTotal = Number(workOrder.discounted_items_total) || (subtotal - discountAmount);
+  const plannedLaborAmount = Number(workOrder.planned_operational_labor_cost_amount) || 0;
+  const grandTotal = Number(workOrder.net_amount) || discountedItemsTotal;
+  const totalCosts = Number(workOrder.items_cost_total) || items.reduce((sum, row) => {
     const qty = parseFloat(row.quantity) || 0;
     const cost = currency === 'USD'
       ? (parseFloat(row.cost_usd) || 0)
@@ -162,18 +171,27 @@ export function WorkOrderDetailPage() {
     return sum + cost * qty;
   }, 0);
   const netProfit = grandTotal - totalCosts;
+  const operationalMargin = netProfit - plannedLaborAmount;
+  const hasPricingSummary =
+    items.length > 0 ||
+    discountAmount > 0 ||
+    plannedLaborAmount > 0 ||
+    grandTotal > 0;
 
-  const vatRate = Number(workOrder.vat_rate) || 0;
+  const hasVat = !!workOrder.has_vat;
+  const vatRate = hasVat ? (Number(workOrder.vat_rate) || 0) : 0;
   const hasTevkifat = !!workOrder.has_tevkifat;
   const tevkifatNum = Number(financeSettings?.tevkifat_rate_numerator) || 9;
   const tevkifatDen = Number(financeSettings?.tevkifat_rate_denominator) || 10;
-  const { vatAmount, withheldVat, totalPayable } = calcVatTevkifatSummary(
+  const { withheldVat, totalPayable } = calcVatTevkifatSummary(
     grandTotal,
     vatRate,
     hasTevkifat,
     tevkifatNum,
     tevkifatDen,
   );
+  const vatAmount = Number(workOrder.vat_amount) || 0;
+  const grossAmount = Number(workOrder.gross_amount) || (grandTotal + vatAmount);
   const vatRateLabel = (Number(vatRate) || 0).toLocaleString('tr-TR', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
@@ -206,36 +224,41 @@ export function WorkOrderDetailPage() {
         </span>
       ),
     },
-    {
-      key: 'unit_price',
-      header: t('proposals:items.unitPrice'),
-      render: (val, row) => {
-        const price = currency === 'USD'
-          ? (parseFloat(row.unit_price_usd) || 0)
-          : (parseFloat(row.unit_price) || 0);
-        return new Intl.NumberFormat('tr-TR', {
-          style: 'currency',
-          currency: currency,
-          minimumFractionDigits: 2,
-        }).format(price);
-      },
-    },
-    {
-      key: 'total',
-      header: t('proposals:items.total'),
-      render: (_, row) => {
-        const qty = parseFloat(row.quantity) || 0;
-        const price = currency === 'USD'
-          ? (parseFloat(row.unit_price_usd) || 0)
-          : (parseFloat(row.unit_price) || 0);
-        return new Intl.NumberFormat('tr-TR', {
-          style: 'currency',
-          currency: currency,
-          minimumFractionDigits: 2,
-        }).format(qty * price);
-      },
-    },
   ];
+
+  if (!isFieldWorker) {
+    materialColumns.push(
+      {
+        key: 'unit_price',
+        header: t('proposals:items.unitPrice'),
+        render: (val, row) => {
+          const price = currency === 'USD'
+            ? (parseFloat(row.unit_price_usd) || 0)
+            : (parseFloat(row.unit_price) || 0);
+          return new Intl.NumberFormat('tr-TR', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+          }).format(price);
+        },
+      },
+      {
+        key: 'total',
+        header: t('proposals:items.total'),
+        render: (_, row) => {
+          const qty = parseFloat(row.quantity) || 0;
+          const price = currency === 'USD'
+            ? (parseFloat(row.unit_price_usd) || 0)
+            : (parseFloat(row.unit_price) || 0);
+          return new Intl.NumberFormat('tr-TR', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2,
+          }).format(qty * price);
+        },
+      },
+    );
+  }
 
   return (
     <PageContainer maxWidth="full" padding="default" className="space-y-5 pb-24">
@@ -290,7 +313,7 @@ export function WorkOrderDetailPage() {
             data={items}
             emptyMessage={t('workOrders:detail.noMaterials')}
           />
-          {items.length > 0 && (
+          {!isFieldWorker && hasPricingSummary && (
             <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-[#262626] space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">
@@ -312,20 +335,30 @@ export function WorkOrderDetailPage() {
               )}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">
-                  {t('proposals:detail.pricingNetExclVat')}
+                  {t('workOrders:detail.discountedItemsTotal')}
+                </span>
+                <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                  {formatCurrency(discountedItemsTotal, currency)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600 dark:text-neutral-400">
+                  {t('workOrders:detail.netRevenueExclVat')}
                 </span>
                 <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
                   {formatCurrency(grandTotal, currency)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-neutral-600 dark:text-neutral-400">
-                  {t('proposals:detail.pricingVatAtRate', { rate: vatRateLabel })}
-                </span>
-                <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
-                  {formatCurrency(vatAmount, currency)}
-                </span>
-              </div>
+              {hasVat && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400">
+                    {t('proposals:detail.pricingVatAtRate', { rate: vatRateLabel })}
+                  </span>
+                  <span className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+                    {formatCurrency(vatAmount, currency)}
+                  </span>
+                </div>
+              )}
               {hasTevkifat && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-neutral-600 dark:text-neutral-400">
@@ -338,15 +371,25 @@ export function WorkOrderDetailPage() {
               )}
               <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-[#262626]">
                 <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wide">
-                  {t('proposals:detail.pricingGrandTotalPayable')}
+                  {hasTevkifat ? t('proposals:detail.pricingGrandTotalPayable') : t('workOrders:detail.grossAmount')}
                 </span>
                 <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
-                  {formatCurrency(totalPayable, currency)}
+                  {formatCurrency(hasTevkifat ? totalPayable : grossAmount, currency)}
                 </span>
               </div>
+              {plannedLaborAmount > 0 && (
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">
+                    {t('workOrders:detail.plannedOperationalLaborCost')}
+                  </span>
+                  <span className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+                    {formatCurrency(plannedLaborAmount, currency)}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between pt-1">
                 <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">
-                  {t('proposals:detail.netProfit')} (Dahili)
+                  {t('workOrders:detail.materialMarginInternal')}
                 </span>
                 <span
                   className={`text-base font-bold ${
@@ -358,11 +401,25 @@ export function WorkOrderDetailPage() {
                   {formatCurrency(netProfit, currency)}
                 </span>
               </div>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-sm font-semibold text-neutral-600 dark:text-neutral-400">
+                  {t('workOrders:detail.operationalMarginInternal')}
+                </span>
+                <span
+                  className={`text-base font-bold ${
+                    operationalMargin >= 0
+                      ? 'text-green-600 dark:text-green-500'
+                      : 'text-error-600 dark:text-error-400'
+                  }`}
+                >
+                  {formatCurrency(operationalMargin, currency)}
+                </span>
+              </div>
             </div>
           )}
         </Card>
 
-        <WorkOrderProposalCard proposalId={workOrder.proposal_id} />
+        <WorkOrderProposalCard proposalId={workOrder.proposal_id} proposal={linkedProposal} />
 
         {/* M2: ready-to-bill nudge — shown when all sibling WOs are settled and proposal is still open */}
         {showReadyToBillNudge && (
@@ -467,22 +524,24 @@ export function WorkOrderDetailPage() {
               </div>
             </div>
 
-            <div className="pt-6 border-t border-neutral-100 dark:border-neutral-800">
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-bold text-neutral-400 tracking-widest">
-                  {t('common:fields.amount')}
-                </span>
-                {workOrder.amount && workOrder.amount > 0 ? (
-                  <span className="text-xl font-black text-primary-600 dark:text-primary-400">
-                    {formatCurrency(workOrder.amount, currency)}
+            {!isFieldWorker && (
+              <div className="pt-6 border-t border-neutral-100 dark:border-neutral-800">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase font-bold text-neutral-400 tracking-widest">
+                    {t('common:fields.amount')}
                   </span>
-                ) : (
-                  <span className="text-sm text-neutral-500 italic">
-                    {t('workOrders:detail.amountNotEntered')}
-                  </span>
-                )}
+                  {workOrder.amount && workOrder.amount > 0 ? (
+                    <span className="text-xl font-black text-primary-600 dark:text-primary-400">
+                      {formatCurrency(workOrder.amount, currency)}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-neutral-500 italic">
+                      {t('workOrders:detail.amountNotEntered')}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </Card>
           <WorkOrderActivityTimeline workOrderId={workOrder.id} />
         </div>

@@ -174,7 +174,7 @@ export function DashboardPage() {
           <KpiCard
             className="h-full"
             title={t('kpi.netProfit')}
-            value={currencyFmt.format(financeKpis?.netProfit ?? 0)}
+            value={currencyFmt.format(financeKpis?.ledgerProfit ?? financeKpis?.netProfit ?? 0)}
             icon={DollarSign}
             infoTooltip={t('kpiInfo.ledgerProfit')}
             infoPlacement="bottom-right"

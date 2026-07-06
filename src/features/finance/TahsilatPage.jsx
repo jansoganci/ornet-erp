@@ -42,6 +42,7 @@ function docToReceivableRow(doc) {
     id: doc.transaction_id,
     amount_try: doc.sale_price_net,
     output_vat: Number(doc.vat_amount) || 0,
+    total_collected: Number(doc.total_collected) || 0,
   };
 }
 
@@ -95,13 +96,13 @@ function CustomerDocumentsPanel({ customerId, filters, onAddPayment }) {
                 {t('tahsilat.table.category')}
               </th>
               <th className="text-right py-2 px-2 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-                {t('tahsilat.table.salePrice')}
+                {t('tahsilat.table.documentTotal')}
               </th>
               <th className="text-right py-2 px-2 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-                {t('tahsilat.table.outputVat')}
+                {t('tahsilat.table.collected')}
               </th>
               <th className="text-right py-2 px-2 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-                {t('tahsilat.table.totalInclVat')}
+                {t('tahsilat.table.remainingCollectible')}
               </th>
               <th className="text-right py-2 px-2 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
                 {t('tahsilat.table.cost')}
@@ -118,7 +119,11 @@ function CustomerDocumentsPanel({ customerId, filters, onAddPayment }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
-            {documents.map((doc) => (
+            {documents.map((doc) => {
+              const collected = Number(doc.total_collected) || 0;
+              const remaining = Number(doc.remaining) || 0;
+
+              return (
               <tr key={doc.transaction_id}>
                 <td className="py-2.5 px-2 text-sm text-neutral-600 dark:text-neutral-300 whitespace-nowrap">
                   {doc.transaction_date ? formatDate(doc.transaction_date) : '—'}
@@ -131,14 +136,14 @@ function CustomerDocumentsPanel({ customerId, filters, onAddPayment }) {
                     ? t(`tahsilat.category.${doc.service_category}`, { defaultValue: doc.service_category })
                     : '—'}
                 </td>
-                <td className="py-2.5 px-2 text-right font-mono text-sm whitespace-nowrap">
-                  {formatCurrency(doc.sale_price_net, 'TRY')}
-                </td>
-                <td className="py-2.5 px-2 text-right font-mono text-sm whitespace-nowrap">
-                  {formatCurrency(doc.vat_amount, 'TRY')}
-                </td>
                 <td className="py-2.5 px-2 text-right font-mono text-sm font-semibold whitespace-nowrap">
                   {formatCurrency(doc.total_with_vat, 'TRY')}
+                </td>
+                <td className="py-2.5 px-2 text-right font-mono text-sm whitespace-nowrap">
+                  {collected > 0 ? formatCurrency(collected, 'TRY') : '—'}
+                </td>
+                <td className="py-2.5 px-2 text-right font-mono text-sm font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                  {doc.payment_status === 'paid' ? '—' : formatCurrency(remaining, 'TRY')}
                 </td>
                 <td className="py-2.5 px-2 text-right font-mono text-sm whitespace-nowrap">
                   {formatCurrency(doc.cost, 'TRY')}
@@ -162,7 +167,8 @@ function CustomerDocumentsPanel({ customerId, filters, onAddPayment }) {
                   )}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -337,13 +343,13 @@ export function TahsilatPage() {
                     {t('tahsilat.table.documentCount')}
                   </th>
                   <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-                    {t('tahsilat.table.totalBilled')}
+                    {t('tahsilat.table.documentTotal')}
                   </th>
                   <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
                     {t('tahsilat.table.collected')}
                   </th>
                   <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-                    {t('tahsilat.table.outstanding')}
+                    {t('tahsilat.table.remainingCollectible')}
                   </th>
                   <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
                     {t('tahsilat.table.cost')}

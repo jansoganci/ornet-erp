@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, XCircle } from 'lucide-react';
 import { Modal, Button, Input } from '../../../components/ui';
@@ -15,19 +15,14 @@ export function ProposalCompletionRateModal({ open, onClose, onConfirm, proposal
   const rateDate     = latestRateData?.rate_date ?? null;
   const [rateInput, setRateInput] = useState('');
 
-  useEffect(() => {
-    if (open && suggestedRate) {
-      setRateInput(String(suggestedRate));
-    }
-  }, [open, suggestedRate]);
-
   // Prefer the live-computed grandTotal passed from the detail page (always
   // accurate from DB items). Fall back to the stored column for safety.
   const totalUsd = (typeof totalUsdProp === 'number' && totalUsdProp > 0)
     ? totalUsdProp
     : (Number(proposal?.total_amount_usd) || 0);
   const isBlocked   = totalUsd <= 0;                        // M3
-  const enteredRate = parseFloat(rateInput) || 0;
+  const effectiveRateInput = rateInput || (open && suggestedRate ? String(suggestedRate) : '');
+  const enteredRate = parseFloat(effectiveRateInput) || 0;
   const amountTry   = (!isBlocked && enteredRate > 0)
     ? Math.round(totalUsd * enteredRate * 100) / 100
     : null;
@@ -95,7 +90,7 @@ export function ProposalCompletionRateModal({ open, onClose, onConfirm, proposal
           type="number"
           step="0.0001"
           min="0"
-          value={rateInput}
+          value={effectiveRateInput}
           onChange={(e) => setRateInput(e.target.value)}
           disabled={isBlocked}
           hint={

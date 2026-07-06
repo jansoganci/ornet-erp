@@ -11,6 +11,7 @@ const annualQtyPreprocess = (val) =>
 export const CURRENCIES = ['TRY', 'USD'];
 
 export const ANNUAL_FIXED_COST_CURRENCIES = ['TRY', 'USD', 'EUR'];
+export const PROPOSAL_REVENUE_TYPES = ['material', 'labor_service', 'other'];
 
 /** DB / legacy materials may store units outside this list; coerce to a safe default. */
 export const PROPOSAL_ITEM_UNITS = [
@@ -60,6 +61,7 @@ export const proposalItemSchema = z.object({
   ),
   unit_price: z.coerce.number().min(0),
   material_id: z.string().uuid().optional().nullable().or(z.literal('')),
+  revenue_type: z.enum(['material', 'labor_service', 'other']).default('material'),
   cost: z.coerce.number().min(0).optional().nullable(),
   margin_percent: z.coerce.number().min(0).max(100).optional().nullable(),
   // Cost tracking (internal only, per-unit)
@@ -82,6 +84,7 @@ export const annualFixedCostRowSchema = z.object({
 });
 
 export const proposalSchema = z.object({
+  revised_from_proposal_id: z.string().uuid().optional().nullable().or(z.literal('')),
   site_id: z.string().min(1, i18n.t('errors:validation.required')).uuid(),
   title: z.string().min(1, i18n.t('errors:validation.required')),
   scope_of_work: optionalStr(),
@@ -144,6 +147,7 @@ export const defaultProposalItem = {
   unit: 'adet',
   unit_price: 0,
   material_id: null,
+  revenue_type: 'other',
   cost: null,
   margin_percent: null,
   product_cost: null,
@@ -175,6 +179,7 @@ const defaultTermsOther = `1. İşbu teklif, düzenlenme tarihinden itibaren 15 
 const defaultTermsAttachments = `1. Fiyat Teklifi Detayları (Ürün ve Hizmet Listesi)`;
 
 export const proposalDefaultValues = {
+  revised_from_proposal_id: '',
   site_id: '',
   title: '',
   scope_of_work: '',
@@ -198,5 +203,4 @@ export const proposalDefaultValues = {
   sections: [],
   items: [],
   annual_fixed_costs: [],
-  discount_percent: null,
 };

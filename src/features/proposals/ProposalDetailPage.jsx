@@ -10,6 +10,9 @@ import {
   Download,
   Copy,
   FileSpreadsheet,
+  GitBranch,
+  Activity,
+  AlertTriangle,
 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import { toast } from 'sonner';
@@ -42,7 +45,11 @@ import {
   useCompleteProposalWithRate,
   useDeleteProposal,
   useDuplicateProposal,
+  useLinkedWorkOrderExecutionSummary,
+  useLatestProposalRevision,
+  useUpdateProposal,
   useProposalWorkOrders,
+  useProposalRevisionLinks,
   useUnlinkWorkOrder,
 } from './hooks';
 import { ProposalCompletionRateModal } from './components/ProposalCompletionRateModal';
@@ -50,7 +57,6 @@ import { ProposalPdf } from './components/ProposalPdf';
 import { ProposalHero } from './components/ProposalHero';
 import { ProposalDetailMaterials } from './components/ProposalDetailMaterials';
 import { SiteFormModal } from '../customerSites/SiteFormModal';
-import { useUpdateProposal } from './hooks';
 import { useFinanceSettings } from '../finance/hooks';
 import { resolveProposalPdfPublicImage } from '../../lib/resolvePdfImage';
 
@@ -58,6 +64,72 @@ function pickProposalItemMaterial(row) {
   const m = row?.materials;
   if (!m) return null;
   return Array.isArray(m) ? m[0] ?? null : m;
+}
+
+function getLatestWorkOrder(workOrders) {
+  if (!Array.isArray(workOrders) || workOrders.length === 0) return null;
+
+  return [...workOrders].sort((a, b) => {
+    const aDate = a?.scheduled_date || a?.created_at || '';
+    const bDate = b?.scheduled_date || b?.created_at || '';
+    return String(bDate).localeCompare(String(aDate));
+  })[0] ?? null;
+}
+
+function buildOperationsSummary(proposalItems, linkedWorkOrders, executionSummary) {
+  const hasCompletedExecution = Array.isArray(executionSummary) && executionSummary.length > 0;
+  const completedByProposalItemId = new Map();
+  let extraRowCount = 0;
+
+  for (const workOrder of executionSummary || []) {
+    for (const row of workOrder.work_order_materials || []) {
+      const quantity = Number(row.quantity) || 0;
+      if (quantity <= 0) continue;
+
+      if (row.source_type === 'proposal_item' && row.proposal_item_id) {
+        completedByProposalItemId.set(
+          row.proposal_item_id,
+          (completedByProposalItemId.get(row.proposal_item_id) || 0) + quantity,
+        );
+      } else {
+        extraRowCount += 1;
+      }
+    }
+  }
+
+  let shortageCount = 0;
+  let excessCount = 0;
+  let fulfilledCount = 0;
+
+  if (hasCompletedExecution) {
+    for (const item of proposalItems || []) {
+      const quoted = Number(item.quantity) || 0;
+      const completed = completedByProposalItemId.get(item.id) || 0;
+
+      if (completed < quoted) shortageCount += 1;
+      if (completed > quoted) excessCount += 1;
+      if (quoted > 0 && completed >= quoted) fulfilledCount += 1;
+    }
+  }
+
+  const latestWorkOrder = getLatestWorkOrder(linkedWorkOrders);
+  const completedVisitCount = (linkedWorkOrders || []).filter((wo) => wo.status === 'completed').length;
+  const openVisitCount = (linkedWorkOrders || []).filter(
+    (wo) => wo.status !== 'completed' && wo.status !== 'cancelled',
+  ).length;
+
+  return {
+    latestWorkOrder,
+    completedVisitCount,
+    totalVisitCount: linkedWorkOrders?.length || 0,
+    openVisitCount,
+    totalQuotedRows: proposalItems?.length || 0,
+    fulfilledCount,
+    shortageCount,
+    excessCount,
+    extraRowCount,
+    revisionNeeded: hasCompletedExecution && (shortageCount > 0 || excessCount > 0 || extraRowCount > 0),
+  };
 }
 
 function DetailSkeleton() {
@@ -99,6 +171,9 @@ export function ProposalDetailPage() {
   const { data: annualFixedRaw = [] } = useProposalAnnualFixedCosts(id);
   const annualFixedCostsPdf = filterPersistableAnnualFixedRows(annualFixedRaw);
   const { data: linkedWorkOrders = [] } = useProposalWorkOrders(id);
+  const { data: linkedExecutionSummary = [] } = useLinkedWorkOrderExecutionSummary(id);
+  const { data: revisionLinks } = useProposalRevisionLinks(id, proposal?.revised_from_proposal_id || null);
+  const { data: latestRevision } = useLatestProposalRevision(proposal?.status === 'revised' ? id : null);
   const statusMutation = useUpdateProposalStatus();
   const completeWithRateMutation = useCompleteProposalWithRate();
   const deleteMutation = useDeleteProposal();
@@ -136,6 +211,10 @@ export function ProposalDetailPage() {
   const hasTevkifat = !!proposal.has_tevkifat;
   const tevkifatNum = Number(financeSettings?.tevkifat_rate_numerator) || 9;
   const tevkifatDen = Number(financeSettings?.tevkifat_rate_denominator) || 10;
+  const operationsSummary = buildOperationsSummary(items, linkedWorkOrders, linkedExecutionSummary);
+  const previousRevision = revisionLinks?.previous ?? null;
+  const nextRevisions = revisionLinks?.next ?? [];
+  const supersedingRevision = latestRevision ?? nextRevisions[0] ?? null;
 
   const handleStatusChange = (newStatus) => {
     if (newStatus === 'completed' && currency !== 'USD') {
@@ -248,11 +327,13 @@ export function ProposalDetailPage() {
   };
 
   const handleEdit = () => navigate(`/proposals/${id}/edit`);
+  const handleRevise = () => navigate(`/proposals/new?reviseFrom=${id}`);
 
   const handleSiteCreated = async (newSite) => {
     // Attach the new site to this proposal, then open work order creation
     await updateProposalMutation.mutateAsync({ id, site_id: newSite.id });
     const params = new URLSearchParams({
+      mode: 'linked',
       proposalId: id,
       customerId: proposal.customer_id || '',
       siteId: newSite.id,
@@ -269,6 +350,7 @@ export function ProposalDetailPage() {
         netProfit={netProfit}
         linkedWorkOrders={linkedWorkOrders}
         onEdit={handleEdit}
+        onRevise={handleRevise}
         onDelete={() => setShowDeleteConfirm(true)}
         onDownloadPdf={handleOpenPdfFilenameModal}
         isExporting={isExporting}
@@ -276,6 +358,25 @@ export function ProposalDetailPage() {
         onFlowAction={handleFlowAction}
         flowLoading={statusMutation.isPending || completeWithRateMutation.isPending}
       />
+
+      {proposal.status === 'revised' && supersedingRevision && (
+        <Card className="border-warning-200 bg-warning-50/70 p-5 dark:border-warning-900/40 dark:bg-warning-950/10">
+          <p className="text-sm font-medium text-warning-900 dark:text-warning-100">
+            {t('proposals:detail.supersededBanner.title')}
+          </p>
+          <p className="mt-1 text-sm text-warning-800/80 dark:text-warning-200/80">
+            {t('proposals:detail.supersededBanner.description')}
+          </p>
+          <Link
+            to={`/proposals/${supersedingRevision.id}`}
+            className="mt-3 inline-flex text-sm font-semibold text-warning-900 underline underline-offset-4 dark:text-warning-100"
+          >
+            {t('proposals:detail.supersededBanner.action', {
+              proposalNo: supersedingRevision.proposal_no || supersedingRevision.title,
+            })}
+          </Link>
+        </Card>
+      )}
 
       <ProposalDetailMaterials
         items={items}
@@ -286,6 +387,136 @@ export function ProposalDetailPage() {
         tevkifatNumerator={tevkifatNum}
         tevkifatDenominator={tevkifatDen}
       />
+
+      {(previousRevision || nextRevisions.length > 0) && (
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <GitBranch className="w-4 h-4 text-primary-600" />
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+              {t('proposals:detail.revisions.title')}
+            </h3>
+          </div>
+
+          {previousRevision && (
+            <div className="rounded-xl border border-neutral-200 dark:border-[#262626] px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                {t('proposals:detail.revisions.previous')}
+              </p>
+              <Link
+                to={`/proposals/${previousRevision.id}`}
+                className="mt-2 block text-sm font-semibold text-primary-700 hover:text-primary-600 dark:text-primary-300 dark:hover:text-primary-200"
+              >
+                {(previousRevision.proposal_no || previousRevision.title) ?? t('proposals:detail.revisions.untitled')}
+              </Link>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                {previousRevision.title} · {t(`common:status.${previousRevision.status}`)}
+              </p>
+            </div>
+          )}
+
+          {nextRevisions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                {t('proposals:detail.revisions.next')}
+              </p>
+              {nextRevisions.map((revision) => (
+                <Link
+                  key={revision.id}
+                  to={`/proposals/${revision.id}`}
+                  className="flex items-center justify-between rounded-xl border border-neutral-200 px-4 py-3 text-sm transition-colors hover:bg-neutral-50 dark:border-[#262626] dark:hover:bg-[#1a1a1a]"
+                >
+                  <div>
+                    <p className="font-semibold text-neutral-900 dark:text-neutral-100">
+                      {revision.proposal_no || revision.title}
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      {revision.title}
+                    </p>
+                  </div>
+                  <Badge variant="outline" size="sm">
+                    {t(`common:status.${revision.status}`)}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {(proposal.status === 'accepted' || proposal.status === 'completed') && (
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary-600" />
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+              {t('proposals:detail.operationsSummary.title')}
+            </h3>
+          </div>
+
+          {operationsSummary.revisionNeeded && (
+            <div className="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50/80 px-4 py-3 text-sm text-warning-900 dark:border-warning-900/40 dark:bg-warning-950/10 dark:text-warning-100">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{t('proposals:detail.operationsSummary.revisionNeeded')}</p>
+            </div>
+          )}
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-xl border border-neutral-200 px-4 py-3 dark:border-[#262626]">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t('proposals:detail.operationsSummary.visits')}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {t('proposals:detail.operationsSummary.visitsValue', {
+                  completed: operationsSummary.completedVisitCount,
+                  total: operationsSummary.totalVisitCount,
+                })}
+              </p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 px-4 py-3 dark:border-[#262626]">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t('proposals:detail.operationsSummary.fulfillment')}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {t('proposals:detail.operationsSummary.fulfillmentValue', {
+                  fulfilled: operationsSummary.fulfilledCount,
+                  total: operationsSummary.totalQuotedRows,
+                })}
+              </p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 px-4 py-3 dark:border-[#262626]">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t('proposals:detail.operationsSummary.quantityDifferences')}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {t('proposals:detail.operationsSummary.quantityDifferencesValue', {
+                  shortage: operationsSummary.shortageCount,
+                  excess: operationsSummary.excessCount,
+                })}
+              </p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 px-4 py-3 dark:border-[#262626]">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t('proposals:detail.operationsSummary.extraScope')}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {t('proposals:detail.operationsSummary.extraScopeValue', {
+                  count: operationsSummary.extraRowCount,
+                })}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            {operationsSummary.latestWorkOrder
+              ? t('proposals:detail.operationsSummary.latestVisitValue', {
+                  date: operationsSummary.latestWorkOrder.scheduled_date
+                    ? formatDate(operationsSummary.latestWorkOrder.scheduled_date)
+                    : formatDate(operationsSummary.latestWorkOrder.created_at),
+                  status: t(`common:status.${operationsSummary.latestWorkOrder.status}`),
+                })
+              : t('proposals:detail.operationsSummary.noVisits')}
+          </p>
+        </Card>
+      )}
 
       {annualFixedCostsPdf.length > 0 && (
         <Card className="overflow-hidden">
@@ -484,8 +715,8 @@ export function ProposalDetailPage() {
         )}
         {proposal.status === 'accepted' && (
           <>
-            <Button variant="outline" className="flex-1" onClick={handleEdit}>
-              {t('proposals:detail.actions.edit')}
+            <Button variant="outline" className="flex-1" onClick={handleRevise}>
+              {t('proposals:detail.actions.revise')}
             </Button>
             <Button
               variant="primary"
@@ -508,12 +739,15 @@ export function ProposalDetailPage() {
           </>
         )}
         {(proposal.status === 'completed' ||
+          proposal.status === 'revised' ||
           proposal.status === 'rejected' ||
           proposal.status === 'cancelled') && (
           <>
-            <Button variant="outline" className="flex-1" onClick={handleEdit}>
-              {t('proposals:detail.actions.edit')}
-            </Button>
+            {proposal.status !== 'revised' && (
+              <Button variant="outline" className="flex-1" onClick={handleRevise}>
+                {t('proposals:detail.actions.revise')}
+              </Button>
+            )}
             {proposal.status === 'completed' && (
               <Button
                 variant="outline"
@@ -583,12 +817,19 @@ export function ProposalDetailPage() {
           </>
         }
       >
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">
-          {confirmAction === 'accepted' && t('proposals:detail.confirmAccept')}
-          {confirmAction === 'rejected' && t('proposals:detail.confirmReject')}
-          {confirmAction === 'sent' && t('proposals:detail.confirmSent')}
-          {confirmAction === 'completed' && t('proposals:detail.confirmComplete')}
-        </p>
+        <div className="space-y-3">
+          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            {confirmAction === 'accepted' && t('proposals:detail.confirmAccept')}
+            {confirmAction === 'rejected' && t('proposals:detail.confirmReject')}
+            {confirmAction === 'sent' && t('proposals:detail.confirmSent')}
+            {confirmAction === 'completed' && t('proposals:detail.confirmComplete')}
+          </p>
+          {confirmAction === 'completed' && operationsSummary.revisionNeeded && (
+            <div className="rounded-xl border border-warning-200 bg-warning-50/80 px-4 py-3 text-sm text-warning-900 dark:border-warning-900/40 dark:bg-warning-950/10 dark:text-warning-100">
+              {t('proposals:detail.completionRevisionWarning')}
+            </div>
+          )}
+        </div>
       </Modal>
 
       <Modal

@@ -88,7 +88,7 @@ export function useNotificationsList({ resolved = false, page = 1, timeFilter = 
 
       return isAfter(itemDate, boundary);
     });
-  }, [query.data, resolved, timeFilter]);
+  }, [query.data, resolved, timeFilter, dateFrom, dateTo]);
 
   return {
     data: filteredData,

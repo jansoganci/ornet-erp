@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal, Button, Input, Select } from '../../../components/ui';
 import { paymentMethodSchema, paymentMethodDefaultValues } from '../schema';
@@ -18,7 +18,7 @@ export function PaymentMethodFormModal({ open, onClose, customerId }) {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting },
   } = useForm({
@@ -26,7 +26,7 @@ export function PaymentMethodFormModal({ open, onClose, customerId }) {
     defaultValues: { ...paymentMethodDefaultValues, customer_id: customerId },
   });
 
-  const methodType = watch('method_type');
+  const methodType = useWatch({ control, name: 'method_type' });
 
   useEffect(() => {
     if (open && customerId) {

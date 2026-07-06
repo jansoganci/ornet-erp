@@ -147,8 +147,6 @@ function PaymentRow({ item, onClick, asCard }) {
 }
 
 function ProposalRow({ item, onClick, asCard }) {
-  const { t } = useTranslation('actionBoard');
-
   return (
     <div
       className={asCard
@@ -191,7 +189,6 @@ export function ActionBoardPage() {
     lateWorkOrders,
     overduePayments,
     pendingProposals,
-    isLoading,
     loading,
     errors,
     refetch,

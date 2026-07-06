@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { isToday, isYesterday, parseISO } from 'date-fns';
@@ -7,7 +8,8 @@ import { toast } from 'sonner';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Spinner, ErrorState, EmptyState } from '../../components/ui';
 import { cn } from '../../lib/utils';
-import { useActiveNotifications, useResolvedNotifications, useResolveNotification, useMarkAllAsResolved } from './hooks';
+import { fetchActiveNotifications, fetchResolvedNotifications } from './api';
+import { notificationKeys, useResolveNotification, useMarkAllAsResolved } from './hooks';
 import { NotificationFeedCard } from './components/NotificationFeedCard';
 import { NotificationSidebar } from './components/NotificationSidebar';
 
@@ -117,34 +119,36 @@ export function NotificationsCenterPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(1);
-  const [accumulatedActive, setAccumulatedActive] = useState([]);
   const [resolvedPage, setResolvedPage] = useState(1);
-  const [accumulatedResolved, setAccumulatedResolved] = useState([]);
-
-  const { data: pageData, isLoading, error, refetch } = useActiveNotifications(page);
-  const { data: resolvedPageData, isLoading: resolvedLoading, error: resolvedError, refetch: resolvedRefetch } = useResolvedNotifications(resolvedPage);
   const { mutate: resolve } = useResolveNotification();
   const markAllMutation = useMarkAllAsResolved();
 
-  // Accumulate active notifications across pages; page 1 always replaces
-  useEffect(() => {
-    if (!pageData) return;
-    setAccumulatedActive((prev) => (page === 1 ? pageData : [...prev, ...pageData]));
-  }, [pageData, page]);
+  const activeQueries = useQueries({
+    queries: Array.from({ length: page }, (_, index) => ({
+      queryKey: notificationKeys.list(index + 1),
+      queryFn: () => fetchActiveNotifications(index + 1, 20, {}),
+      staleTime: 60 * 1000,
+    })),
+  });
 
-  // Accumulate resolved notifications across pages; page 1 always replaces
-  useEffect(() => {
-    if (!resolvedPageData) return;
-    setAccumulatedResolved((prev) => (resolvedPage === 1 ? resolvedPageData : [...prev, ...resolvedPageData]));
-  }, [resolvedPageData, resolvedPage]);
+  const resolvedQueries = useQueries({
+    queries: Array.from({ length: resolvedPage }, (_, index) => ({
+      queryKey: notificationKeys.resolved(index + 1),
+      queryFn: () => fetchResolvedNotifications(index + 1, 20, {}),
+      staleTime: 60 * 1000,
+    })),
+  });
 
-  // Reset both feeds when tab changes so the user sees fresh data on return
-  useEffect(() => {
-    setPage(1);
-    setAccumulatedActive([]);
-    setResolvedPage(1);
-    setAccumulatedResolved([]);
-  }, [activeTab]);
+  const pageData = activeQueries[page - 1]?.data || [];
+  const resolvedPageData = resolvedQueries[resolvedPage - 1]?.data || [];
+  const accumulatedActive = activeQueries.flatMap((query) => query.data || []);
+  const accumulatedResolved = resolvedQueries.flatMap((query) => query.data || []);
+  const isLoading = activeQueries[0]?.isLoading || false;
+  const resolvedLoading = resolvedQueries[0]?.isLoading || false;
+  const error = activeQueries.find((query) => query.error)?.error || null;
+  const resolvedError = resolvedQueries.find((query) => query.error)?.error || null;
+  const refetch = () => Promise.all(activeQueries.map((query) => query.refetch?.()));
+  const resolvedRefetch = () => Promise.all(resolvedQueries.map((query) => query.refetch?.()));
 
   // Show "Load Older" only when the last page was full (pageSize = 20)
   const activeHasMore = pageData?.length === 20;
@@ -176,7 +180,6 @@ export function NotificationsCenterPage() {
     resolve(id, {
       onSuccess: () => {
         setPage(1);
-        setAccumulatedActive([]);
       },
     });
   }, [resolve]);
@@ -185,11 +188,16 @@ export function NotificationsCenterPage() {
     markAllMutation.mutate(undefined, {
       onSuccess: () => {
         setPage(1);
-        setAccumulatedActive([]);
         toast.success(t('common:success.updated'));
       },
     });
   }, [markAllMutation, t]);
+
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    setPage(1);
+    setResolvedPage(1);
+  }, []);
 
   const hasStoredUnresolved = accumulatedActive.some(
     (n) => n.notification_source === 'stored' && !n.resolved_at
@@ -227,19 +235,19 @@ export function NotificationsCenterPage() {
       {/* Tabs */}
       <div className="mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-[#171717] rounded-xl">
-          <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} count={counts.all}>
+          <TabButton active={activeTab === 'all'} onClick={() => handleTabChange('all')} count={counts.all}>
             {t('notifications:tabs.all')}
           </TabButton>
-          <TabButton active={activeTab === 'alerts'} onClick={() => setActiveTab('alerts')} count={counts.alerts}>
+          <TabButton active={activeTab === 'alerts'} onClick={() => handleTabChange('alerts')} count={counts.alerts}>
             {t('notifications:tabs.alerts')}
           </TabButton>
-          <TabButton active={activeTab === 'system'} onClick={() => setActiveTab('system')} count={counts.system}>
+          <TabButton active={activeTab === 'system'} onClick={() => handleTabChange('system')} count={counts.system}>
             {t('notifications:tabs.system')}
           </TabButton>
-          <TabButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} count={counts.activity}>
+          <TabButton active={activeTab === 'activity'} onClick={() => handleTabChange('activity')} count={counts.activity}>
             {t('notifications:tabs.activity')}
           </TabButton>
-          <TabButton active={activeTab === 'resolved'} onClick={() => setActiveTab('resolved')}>
+          <TabButton active={activeTab === 'resolved'} onClick={() => handleTabChange('resolved')}>
             {t('notifications:tabs.resolved')}
           </TabButton>
         </div>

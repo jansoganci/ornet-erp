@@ -46,6 +46,7 @@
     "in_progress": "Devam Ediyor",
     "completed": "Tamamlandı",
     "cancelled": "İptal Edildi",
+    "revised": "Revize Edildi",
     "active": "Aktif",
     "inactive": "Pasif"
   },

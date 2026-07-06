@@ -8,8 +8,16 @@ import { resolveProposalPdfPublicImage } from '../../../lib/resolvePdfImage';
 
 function mapWatchedToProposal(watchedValues) {
   if (!watchedValues) return {};
-  const { items, sections, annual_fixed_costs, has_vat, has_tevkifat, discount_percent, vat_rate, ...proposalFields } =
-    watchedValues;
+  const {
+    items: _items,
+    sections: _sections,
+    annual_fixed_costs: _annualFixedCosts,
+    has_vat: _hasVat,
+    has_tevkifat: _hasTevkifat,
+    discount_percent: _discountPercent,
+    vat_rate: _vatRate,
+    ...proposalFields
+  } = watchedValues;
   return proposalFields;
 }
 

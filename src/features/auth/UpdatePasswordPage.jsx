@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +27,7 @@ export function UpdatePasswordPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(updatePasswordSchema),
@@ -35,15 +35,11 @@ export function UpdatePasswordPage() {
   });
 
   // Watch password for strength indicator
-  const password = watch('password');
+  const password = useWatch({ control, name: 'password' });
 
   // Check if user came from a valid password reset link
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setPageState('error');
-      setErrorMessage(t('auth:errors.supabaseNotConfigured'));
-      return;
-    }
+    if (!isSupabaseConfigured) return undefined;
 
     // Listen for the PASSWORD_RECOVERY event from Supabase
     const { data: { subscription } } = onAuthStateChange(
@@ -101,6 +97,37 @@ export function UpdatePasswordPage() {
     }
   };
 
+  const renderErrorState = (message) => (
+    <AuthLayout>
+      <div className="text-center py-4">
+        <div className="mx-auto w-16 h-16 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center mb-4">
+          <AlertCircle className="w-8 h-8 text-error-600 dark:text-error-400" />
+        </div>
+
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50 mb-2">
+          {t('verifyEmail.error.title')}
+        </h2>
+
+        <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+          {message}
+        </p>
+
+        <Button
+          variant="primary"
+          size="lg"
+          className="w-full"
+          onClick={() => navigate('/forgot-password')}
+        >
+          {t('forgotPassword.submit')}
+        </Button>
+      </div>
+    </AuthLayout>
+  );
+
+  if (!isSupabaseConfigured) {
+    return renderErrorState(t('auth:errors.supabaseNotConfigured'));
+  }
+
   // Loading state
   if (pageState === 'loading') {
     return (
@@ -117,36 +144,7 @@ export function UpdatePasswordPage() {
 
   // Error state - invalid or expired token
   if (pageState === 'error') {
-    return (
-      <AuthLayout>
-        <div className="text-center py-4">
-          {/* Error icon */}
-          <div className="mx-auto w-16 h-16 bg-error-100 dark:bg-error-900/30 rounded-full flex items-center justify-center mb-4">
-            <AlertCircle className="w-8 h-8 text-error-600 dark:text-error-400" />
-          </div>
-
-          {/* Title */}
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50 mb-2">
-            {t('verifyEmail.error.title')}
-          </h2>
-
-          {/* Message */}
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            {errorMessage || t('auth:errors.resetTokenExpired')}
-          </p>
-
-          {/* Request new link */}
-          <Button
-            variant="primary"
-            size="lg"
-            className="w-full"
-            onClick={() => navigate('/forgot-password')}
-          >
-            {t('forgotPassword.submit')}
-          </Button>
-        </div>
-      </AuthLayout>
-    );
+    return renderErrorState(errorMessage || t('auth:errors.resetTokenExpired'));
   }
 
   // Success state

@@ -9,12 +9,18 @@ import {
   Select,
   Textarea,
 } from '../../../components/ui';
-import { templateSchema, templateDefaultValues, PAYMENT_METHODS } from '../recurringSchema';
+import {
+  templateSchema,
+  templateDefaultValues,
+  PAYMENT_METHODS,
+  BURDEN_TYPES,
+  hasActiveTemplateNameConflict,
+} from '../recurringSchema';
 import { useCategories } from '../hooks';
 import { useCreateRecurringTemplate, useUpdateRecurringTemplate } from '../recurringHooks';
 
-export function RecurringTemplateFormModal({ open, onClose, template }) {
-  const { t } = useTranslation(['recurring', 'common', 'finance']);
+export function RecurringTemplateFormModal({ open, onClose, template, existingTemplates = [] }) {
+  const { t } = useTranslation(['recurring', 'common', 'finance', 'errors']);
   const isEditMode = !!template;
   const createMutation = useCreateRecurringTemplate();
   const updateMutation = useUpdateRecurringTemplate();
@@ -25,6 +31,7 @@ export function RecurringTemplateFormModal({ open, onClose, template }) {
     handleSubmit,
     reset,
     control,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(templateSchema),
@@ -39,6 +46,7 @@ export function RecurringTemplateFormModal({ open, onClose, template }) {
         reset({
           name: template.name || '',
           expense_category_id: template.expense_category_id || '',
+          burden_type: template.burden_type || 'unassigned',
           is_variable: template.is_variable ?? false,
           amount: template.amount ?? 0,
           day_of_month: template.day_of_month ?? 1,
@@ -55,6 +63,14 @@ export function RecurringTemplateFormModal({ open, onClose, template }) {
   }, [open, reset, isEditMode, template]);
 
   const onSubmit = async (data) => {
+    if (hasActiveTemplateNameConflict(data.name, existingTemplates, template?.id)) {
+      setError('name', {
+        type: 'manual',
+        message: t('errors:recurring.duplicateActive'),
+      });
+      return;
+    }
+
     if (isEditMode) {
       await updateMutation.mutateAsync({ id: template.id, data });
     } else {
@@ -77,6 +93,11 @@ export function RecurringTemplateFormModal({ open, onClose, template }) {
   const paymentMethodOptions = PAYMENT_METHODS.map((m) => ({
     value: m,
     label: t(`recurring:paymentMethods.${m}`),
+  }));
+
+  const burdenTypeOptions = BURDEN_TYPES.map((value) => ({
+    value,
+    label: t(`recurring:burdenTypes.${value}`),
   }));
 
   const footer = (
@@ -118,6 +139,13 @@ export function RecurringTemplateFormModal({ open, onClose, template }) {
           placeholder={t('finance:expense.placeholders.category')}
           error={errors.expense_category_id?.message}
           {...register('expense_category_id')}
+        />
+
+        <Select
+          label={t('recurring:form.fields.burdenType')}
+          options={burdenTypeOptions}
+          error={errors.burden_type?.message}
+          {...register('burden_type')}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

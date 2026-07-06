@@ -16,6 +16,7 @@ import {
 } from './recurringHooks';
 import { RecurringTemplateRow } from './recurring/RecurringTemplateRow';
 import { RecurringTemplateFormModal } from './recurring/RecurringTemplateFormModal';
+import { RecurringTableHeader } from './recurring/RecurringTableHeader';
 
 export function RecurringExpensesPage() {
   const { t } = useTranslation(['recurring', 'common', 'finance']);
@@ -260,6 +261,12 @@ export function RecurringExpensesPage() {
         }
       />
 
+      <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/40 px-4 py-3">
+        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          {t('recurring:burdenHelp')}
+        </p>
+      </div>
+
       {activeTemplates.length > 0 && monthStatus && (
         <div
           className={`rounded-xl border px-4 py-3 ${
@@ -367,15 +374,7 @@ export function RecurringExpensesPage() {
           />
         ) : (
           <div className="rounded-xl border border-neutral-200 dark:border-[#262626] overflow-hidden bg-white dark:bg-[#171717]">
-            {/* Table header — hidden on mobile */}
-            <div className="hidden md:grid md:grid-cols-[3fr_2fr_1.5fr_1fr_1.5fr_1fr] gap-3 px-4 py-2.5 bg-neutral-50 dark:bg-[#111] text-xs font-medium text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-[#262626]">
-              <span>{t('recurring:form.fields.name')}</span>
-              <span>{t('recurring:form.fields.category')}</span>
-              <span className="text-right">{t('recurring:form.fields.amount')}</span>
-              <span className="text-center">{t('recurring:form.fields.dayOfMonth')}</span>
-              <span className="text-center">{t('recurring:form.fields.hasInvoice')}</span>
-              <span />
-            </div>
+            <RecurringTableHeader />
 
             {/* Mobile: card-style rows with dividers */}
             <div className="md:hidden divide-y divide-neutral-100 dark:divide-[#262626]">
@@ -427,14 +426,7 @@ export function RecurringExpensesPage() {
             {t('recurring:templates.inactive')} ({inactiveTemplates.length})
           </h2>
           <div className="rounded-xl border border-neutral-200 dark:border-[#262626] overflow-hidden bg-white dark:bg-[#171717] opacity-60">
-            <div className="hidden md:grid md:grid-cols-[3fr_2fr_1.5fr_1fr_1.5fr_1fr] gap-3 px-4 py-2.5 bg-neutral-50 dark:bg-[#111] text-xs font-medium text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-[#262626]">
-              <span>{t('recurring:form.fields.name')}</span>
-              <span>{t('recurring:form.fields.category')}</span>
-              <span className="text-right">{t('recurring:form.fields.amount')}</span>
-              <span className="text-center">{t('recurring:form.fields.dayOfMonth')}</span>
-              <span className="text-center">{t('recurring:form.fields.hasInvoice')}</span>
-              <span />
-            </div>
+            <RecurringTableHeader />
 
             {/* Mobile rows */}
             <div className="md:hidden divide-y divide-neutral-100 dark:divide-[#262626]">
@@ -487,6 +479,7 @@ export function RecurringExpensesPage() {
           setEditingTemplate(null);
         }}
         template={editingTemplate}
+        existingTemplates={templates}
       />
 
       {/* Delete Confirm Modal */}

@@ -58,7 +58,7 @@ function getMonthIndex(paymentMonth) {
   return new Date(paymentMonth).getMonth();
 }
 
-export function MonthlyPaymentGrid({ subscriptionId, subscriptionStatus, className }) {
+export function MonthlyPaymentGrid({ subscriptionId, className }) {
   const { t } = useTranslation(['subscriptions', 'common']);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());

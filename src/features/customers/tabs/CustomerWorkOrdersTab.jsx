@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { FileText, Plus } from 'lucide-react';
 import { Button, Table, Badge } from '../../../components/ui';
 import { formatDate, workOrderStatusVariant } from '../../../lib/utils';
-import { useCustomerDetail } from '../CustomerDetailContext';
+import { useCustomerDetail } from '../customerDetailContextBase';
 
 export function CustomerWorkOrdersTab() {
   const { t } = useTranslation('customers');

@@ -12,8 +12,6 @@ export function SubscriptionWorkOrdersTab({ siteId }) {
   const navigate = useNavigate();
   const { t } = useTranslation('subscriptions');
   const { t: tCommon } = useTranslation('common');
-  const { t: tWO } = useTranslation('workOrders');
-
   const { data: workOrders = [], isLoading, error } = useWorkOrdersBySite(siteId);
   const [search, setSearch] = useState('');
 

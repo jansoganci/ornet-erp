@@ -41,6 +41,9 @@
     "duplicateActive": "Bu lokasyon için bu hizmet tipinde zaten aktif bir abonelik var. Farklı bir hizmet tipi seçin veya mevcut aboneliği iptal edin.",
     "required_for_non_monthly": "Aylık dışı aboneliklerde ODEME NOTU zorunludur (örn: OCAK, TEMMUZ)"
   },
+  "recurring": {
+    "duplicateActive": "Bu isimde aktif bir rutin gider şablonu zaten var. Lütfen farklı bir ad kullanın."
+  },
   "simCards": {
     "loadFailed": "SIM kartlar yüklenemedi",
     "createFailed": "SIM kart oluşturulamadı",

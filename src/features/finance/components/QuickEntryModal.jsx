@@ -86,7 +86,6 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
     getValues,
     setValue,
     control,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(isExpense ? expenseSchema : incomeSchema),
@@ -101,21 +100,17 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
   const amountOriginal = useWatch({ control, name: 'amount_original', defaultValue: 0 });
   const exchangeRate = useWatch({ control, name: 'exchange_rate', defaultValue: undefined });
   const proposalId = useWatch({ control, name: 'proposal_id', defaultValue: '' });
+  const workOrderId = useWatch({ control, name: 'work_order_id', defaultValue: '' });
   const watchedAmountTry = useWatch({ control, name: 'amount_try', defaultValue: 0 });
   const watchedVatRate = useWatch({ control, name: 'vat_rate', defaultValue: 20 });
 
-  const selectedCustomerId = watch('customer_id') || '';
-  const selectedSiteId = watch('site_id') || '';
-  const [selectedProposal, setSelectedProposal] = useState(null);
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
+  const selectedCustomerId = useWatch({ control, name: 'customer_id', defaultValue: '' }) || '';
+  const selectedSiteId = useWatch({ control, name: 'site_id', defaultValue: '' }) || '';
 
   const { data: proposalItems = [] } = useProposalItems(proposalId || null);
 
   useEffect(() => {
     if (open) {
-      setSelectedProposal(null);
-      setSelectedWorkOrder(null);
-      if (showTabs) setActiveTab('expense');
       if (isEditMode && transaction) {
         const formData = isExpense
           ? transactionToExpenseForm(transaction)
@@ -133,10 +128,6 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
       }
     }
   }, [open, reset, isExpense, isEditMode, transaction, latestRate?.effective_rate, showTabs]);
-
-  useEffect(() => {
-    if (!open && showTabs) setActiveTab('expense');
-  }, [open, showTabs]);
 
   useEffect(() => {
     if (open && showTabs && !isEditMode) {
@@ -240,8 +231,7 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
       await createMutation.mutateAsync(payload);
     }
     if (isEditMode) {
-      reset();
-      onClose();
+      closeModal();
     } else if (addAnother) {
       const kept = {
         transaction_date: getValues('transaction_date'),
@@ -249,8 +239,7 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
       };
       reset({ ...expenseDefaultValues, ...kept });
     } else {
-      reset();
-      onClose();
+      closeModal();
     }
   };
 
@@ -262,8 +251,7 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
       await createMutation.mutateAsync(payload);
     }
     if (isEditMode) {
-      reset();
-      onClose();
+      closeModal();
     } else if (addAnother) {
       const kept = {
         transaction_date: getValues('transaction_date'),
@@ -273,8 +261,7 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
       };
       reset({ ...incomeDefaultValues, ...kept });
     } else {
-      reset();
-      onClose();
+      closeModal();
     }
   };
 
@@ -283,9 +270,14 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
   const onSubmitAndClose = (data) =>
     isExpense ? saveExpense(data, false) : saveIncome(data, false);
 
-  const handleClose = () => {
+  const closeModal = () => {
     reset();
+    if (showTabs) setActiveTab('expense');
     onClose();
+  };
+
+  const handleClose = () => {
+    closeModal();
   };
 
   const categoryOptions = categories.map((c) => ({
@@ -309,7 +301,6 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
   }));
 
   const handleProposalSelect = (proposal) => {
-    setSelectedProposal(proposal);
     if (proposal) {
       setValue('proposal_id', proposal.id);
       setValue('customer_id', proposal.customer_id || '');
@@ -320,7 +311,6 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
   };
 
   const handleWorkOrderSelect = (wo) => {
-    setSelectedWorkOrder(wo);
     setValue('work_order_id', wo?.id || '');
   };
 
@@ -660,7 +650,6 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
               </label>
               <ProposalCombobox
                 value={proposalId}
-                selectedProposal={selectedProposal}
                 onSelect={handleProposalSelect}
                 placeholder={t('finance:income.placeholders.proposal')}
               />
@@ -671,8 +660,7 @@ export function QuickEntryModal({ open, onClose, direction, transaction }) {
                 {t('finance:income.fields.workOrder')}
               </label>
               <WorkOrderCombobox
-                value={watch('work_order_id') || ''}
-                selectedWorkOrder={selectedWorkOrder}
+                value={workOrderId}
                 onSelect={handleWorkOrderSelect}
                 placeholder={t('finance:income.placeholders.workOrder')}
                 proposalId={proposalId}

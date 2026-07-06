@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Modal } from '../../../components/ui';
 
@@ -12,28 +12,27 @@ export function CarryForwardModal({ open, onClose, onConfirm, isSubmitting = fal
   const { t } = useTranslation(['operations', 'common']);
   const [newDate, setNewDate] = useState(tomorrowIso());
 
-  useEffect(() => {
-    if (open) {
-      setNewDate(tomorrowIso());
-    }
-  }, [open]);
+  const handleClose = () => {
+    setNewDate(tomorrowIso());
+    onClose();
+  };
 
   const handleConfirm = async () => {
     if (!newDate) return;
     const result = await onConfirm(newDate);
     if (result !== false) {
-      onClose();
+      handleClose();
     }
   };
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={t('operations:carryForward.title')}
       footer={(
         <>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={handleClose}>
             {t('common:actions.cancel')}
           </Button>
           <Button type="button" onClick={handleConfirm} loading={isSubmitting}>

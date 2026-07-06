@@ -8,6 +8,7 @@ import {
   resolveProposalItemUnitPrice,
 } from '../../../lib/proposalCalc';
 import { buildProposalSectionGroups, findSectionById } from '../proposalSectionGroups';
+import { ProposalRevenueTypeSubtotals } from './ProposalRevenueTypeSubtotals';
 
 const DESKTOP_ROW_GRID =
   'grid-cols-[32px_minmax(0,1fr)_52px_56px_96px_96px]';
@@ -214,7 +215,13 @@ export function ProposalDetailMaterials({
           <div className="space-y-6">
             {hasSections ? renderSectionedList() : renderFlatList()}
 
-            <div className="flex justify-end pt-4 border-t border-neutral-200 dark:border-[#262626]">
+            <div className="flex flex-col items-end gap-4 pt-4 border-t border-neutral-200 dark:border-[#262626]">
+              <ProposalRevenueTypeSubtotals
+                items={items}
+                sections={sections}
+                currency={currency}
+                className="w-full md:w-[min(100%,320px)]"
+              />
               <div className="w-full md:w-[min(100%,320px)] rounded-lg border border-neutral-200 dark:border-[#333] bg-neutral-50/80 dark:bg-[#1a1a1a]/80 px-4 py-3 space-y-1.5">
                 {totalDiscountAmount > 0 && (
                   <>

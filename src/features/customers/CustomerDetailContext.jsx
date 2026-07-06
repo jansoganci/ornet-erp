@@ -1,6 +1,4 @@
-import { createContext, useContext } from 'react';
-
-const CustomerDetailContext = createContext(null);
+import { CustomerDetailContext } from './customerDetailContextBase';
 
 export function CustomerDetailProvider({ value, children }) {
   return (
@@ -8,12 +6,4 @@ export function CustomerDetailProvider({ value, children }) {
       {children}
     </CustomerDetailContext.Provider>
   );
-}
-
-export function useCustomerDetail() {
-  const ctx = useContext(CustomerDetailContext);
-  if (!ctx) {
-    throw new Error('useCustomerDetail must be used within CustomerDetailProvider');
-  }
-  return ctx;
 }

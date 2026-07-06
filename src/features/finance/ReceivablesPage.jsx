@@ -5,6 +5,7 @@ import { ExternalLink, Clock, CheckCircle2 } from 'lucide-react';
 import { PageContainer } from '../../components/layout';
 import { Card, Skeleton, EmptyState } from '../../components/ui';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { grossCollectibleTotal, grossRemainingCollectible } from './utils';
 import { useReceivables } from './hooks';
 import { AddPaymentModal } from './components/AddPaymentModal';
 
@@ -70,19 +71,13 @@ function ReceivablesTable({ rows, onAddPayment }) {
               {t('finance:receivables.columns.workOrder')}
             </th>
             <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-              {t('finance:receivables.columns.netAmount')}
+              {t('finance:receivables.columns.documentTotal')}
             </th>
             <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-              {t('finance:receivables.columns.vatAmount')}
+              {t('finance:receivables.columns.collected')}
             </th>
             <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-              {t('finance:receivables.columns.totalAmount')}
-            </th>
-            <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-              {t('finance:receivables.columns.cogsTry')}
-            </th>
-            <th className="text-right py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
-              {t('finance:receivables.columns.profit')}
+              {t('finance:receivables.columns.remainingCollectible')}
             </th>
             <th className="text-left py-3 px-4 text-[10px] uppercase font-bold text-neutral-400 tracking-widest whitespace-nowrap">
               {t('finance:receivables.columns.status')}
@@ -95,11 +90,9 @@ function ReceivablesTable({ rows, onAddPayment }) {
         </thead>
         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/50">
           {rows.map((row) => {
-            const net   = Number(row.amount_try) || 0;
-            const vat   = Number(row.output_vat) || 0;
-            const total = net + vat;
-            const cogs = Number(row.cogs_try) || 0;
-            const profit = net - cogs;
+            const documentTotal = grossCollectibleTotal(row.amount_try, row.output_vat);
+            const collected = Number(row.total_collected) || 0;
+            const remaining = grossRemainingCollectible(row.amount_try, row.output_vat, collected);
             const customerName = row.customers?.company_name ?? '—';
 
             return (
@@ -110,20 +103,14 @@ function ReceivablesTable({ rows, onAddPayment }) {
                 <td className="py-3 px-4 whitespace-nowrap">
                   <SourceLink row={row} />
                 </td>
-                <td className="py-3 px-4 text-right font-mono text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
-                  {formatCurrency(net, 'TRY')}
+                <td className="py-3 px-4 text-right font-mono font-semibold text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+                  {formatCurrency(documentTotal, 'TRY')}
                 </td>
                 <td className="py-3 px-4 text-right font-mono text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                  {formatCurrency(vat, 'TRY')}
+                  {collected > 0 ? formatCurrency(collected, 'TRY') : '—'}
                 </td>
-                <td className="py-3 px-4 text-right font-mono font-bold text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
-                  {formatCurrency(total, 'TRY')}
-                </td>
-                <td className="py-3 px-4 text-right font-mono text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                  {formatCurrency(cogs, 'TRY')}
-                </td>
-                <td className="py-3 px-4 text-right font-mono text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
-                  {formatCurrency(profit, 'TRY')}
+                <td className="py-3 px-4 text-right font-mono font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                  {formatCurrency(remaining, 'TRY')}
                 </td>
                 <td className="py-3 px-4 whitespace-nowrap">
                   <StatusBadge status={row.payment_status} />

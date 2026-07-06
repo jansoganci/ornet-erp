@@ -26,7 +26,6 @@ export function InvoiceAnalysisPage() {
 
   const [state, setState] = useState(STATES.IDLE);
   const [errorMessage, setErrorMessage] = useState('');
-  const [invoiceFileName, setInvoiceFileName] = useState('');
   const [parseResult, setParseResult] = useState(null);
   const [comparison, setComparison] = useState(null);
   const [sourceFormat, setSourceFormat] = useState(null);
@@ -34,7 +33,6 @@ export function InvoiceAnalysisPage() {
   const handleReset = () => {
     setState(STATES.IDLE);
     setErrorMessage('');
-    setInvoiceFileName('');
     setParseResult(null);
     setComparison(null);
     setSourceFormat(null);
@@ -45,7 +43,6 @@ export function InvoiceAnalysisPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setInvoiceFileName(file.name);
     setSourceFormat(file.name.toLowerCase().endsWith('.csv') ? 'csv' : 'pdf');
     setState(STATES.PARSING);
 

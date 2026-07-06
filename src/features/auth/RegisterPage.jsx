@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -23,7 +23,7 @@ export function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -31,7 +31,7 @@ export function RegisterPage() {
   });
 
   // Watch password for strength indicator
-  const password = watch('password');
+  const password = useWatch({ control, name: 'password' });
 
   const onSubmit = async (data) => {
     try {

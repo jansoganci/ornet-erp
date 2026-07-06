@@ -4,6 +4,25 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Package, Layers, PenLine } from 'lucide-react';
 import { MaterialCombobox } from '../../../components/ui';
 import { cn, getCurrencySymbol, formatCurrency } from '../../../lib/utils';
+import { ProposalRevenueTypeSelect } from './ProposalRevenueTypeSelect';
+import { ProposalRevenueTypeSubtotals } from './ProposalRevenueTypeSubtotals';
+import { inferProposalRevenueType } from '../inferProposalRevenueType';
+
+function applyMaterialPayloadToRow(setValue, flatIndex, payload) {
+  setValue(`items.${flatIndex}.description`, payload.description);
+  setValue(`items.${flatIndex}.material_id`, payload.material_id ?? null);
+  setValue(
+    `items.${flatIndex}.revenue_type`,
+    inferProposalRevenueType({
+      description: payload.description,
+      materialId: payload.material_id,
+    }),
+    { shouldDirty: true },
+  );
+  if (payload.unit) setValue(`items.${flatIndex}.unit`, payload.unit);
+  setValue(`items.${flatIndex}.unit_price`, payload.unit_price ?? null);
+  setValue(`items.${flatIndex}.cost`, payload.cost_price ?? null);
+}
 import {
   calcSectionTotal,
   calcTotalCosts,
@@ -28,6 +47,7 @@ const BLANK_ITEM = {
   unit: 'adet',
   unit_price: 0,
   material_id: null,
+  revenue_type: 'other',
   cost: null,
   margin_percent: null,
   product_cost: null,
@@ -57,7 +77,8 @@ export function ProposalItemsEditor({
   const { t } = useTranslation('proposals');
   const symbol = getCurrencySymbol(currency);
 
-  const watchItems = watch('items') || [];
+  const watchItemsValue = watch('items');
+  const watchItems = useMemo(() => watchItemsValue || [], [watchItemsValue]);
   const watchSections = watch('sections') || [];
   const vatRate = watch('has_vat') ? (Number(watch('vat_rate')) || 0) : 0;
   const hasTevkifat = !!watch('has_tevkifat');
@@ -90,16 +111,6 @@ export function ProposalItemsEditor({
 
   const hasSections = sectionFields.length > 0;
 
-  // Per-section subtotal for display
-  const sectionSubtotal = (sectionLocalId) => {
-    const entries = itemsBySection[sectionLocalId] || [];
-    return entries.reduce((sum, { flatIndex }) => {
-      const qty = parseFloat(watchItems[flatIndex]?.quantity) || 0;
-      const price = parseFloat(watchItems[flatIndex]?.unit_price) || 0;
-      return sum + calcItemLineTotal(qty, price);
-    }, 0);
-  };
-
   const handleAddSection = () => {
     const newLocalId = crypto.randomUUID();
     appendSection({ _local_id: newLocalId, title: '' });
@@ -118,6 +129,16 @@ export function ProposalItemsEditor({
     
     // Remove the section
     removeSection(sectionIdx);
+  };
+
+  const handleDescriptionChange = (flatIndex, val) => {
+    setValue(`items.${flatIndex}.description`, val);
+    setValue(`items.${flatIndex}.material_id`, null);
+    setValue(
+      `items.${flatIndex}.revenue_type`,
+      inferProposalRevenueType({ description: val }),
+      { shouldDirty: true },
+    );
   };
 
   const handleAddItemToSection = (sectionLocalId) => {
@@ -145,18 +166,28 @@ export function ProposalItemsEditor({
               value={watchItems?.[flatIndex]?.description || ''}
               placeholder={t('items.material')}
               onMaterialSelect={(payload) => {
-                setValue(`items.${flatIndex}.description`, payload.description);
-                setValue(`items.${flatIndex}.material_id`, payload.material_id ?? null);
-                if (payload.unit) setValue(`items.${flatIndex}.unit`, payload.unit);
-                setValue(`items.${flatIndex}.unit_price`, payload.unit_price ?? null);
-                setValue(`items.${flatIndex}.cost`, payload.cost_price ?? null);
+                applyMaterialPayloadToRow(setValue, flatIndex, payload);
               }}
-              onDescriptionChange={(val) => {
-                setValue(`items.${flatIndex}.description`, val);
-                setValue(`items.${flatIndex}.material_id`, null);
-              }}
+              onDescriptionChange={(val) => handleDescriptionChange(flatIndex, val)}
               error={errors?.items?.[flatIndex]?.description?.message}
             />
+            <div className="mt-2">
+              <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                {t('items.revenueType')}
+              </label>
+              <Controller
+                control={control}
+                name={`items.${flatIndex}.revenue_type`}
+                render={({ field: f }) => (
+                  <ProposalRevenueTypeSelect
+                    value={f.value}
+                    onChange={f.onChange}
+                    onBlur={f.onBlur}
+                    className="h-8 px-2"
+                  />
+                )}
+              />
+            </div>
           </div>
           {/* Quantity */}
           <div className="px-1 relative z-10">
@@ -320,17 +351,27 @@ export function ProposalItemsEditor({
             value={watchItems?.[flatIndex]?.description || ''}
             placeholder={t('items.material')}
             onMaterialSelect={(payload) => {
-              setValue(`items.${flatIndex}.description`, payload.description);
-              setValue(`items.${flatIndex}.material_id`, payload.material_id ?? null);
-              if (payload.unit) setValue(`items.${flatIndex}.unit`, payload.unit);
-              setValue(`items.${flatIndex}.unit_price`, payload.unit_price ?? null);
-              setValue(`items.${flatIndex}.cost`, payload.cost_price ?? null);
+              applyMaterialPayloadToRow(setValue, flatIndex, payload);
             }}
-            onDescriptionChange={(val) => {
-              setValue(`items.${flatIndex}.description`, val);
-              setValue(`items.${flatIndex}.material_id`, null);
-            }}
+            onDescriptionChange={(val) => handleDescriptionChange(flatIndex, val)}
             error={errors?.items?.[flatIndex]?.description?.message}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-neutral-600 dark:text-neutral-400 mb-1">
+            {t('items.revenueType')}
+          </label>
+          <Controller
+            control={control}
+            name={`items.${flatIndex}.revenue_type`}
+            render={({ field }) => (
+              <ProposalRevenueTypeSelect
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                className="h-10 px-3"
+              />
+            )}
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -456,7 +497,6 @@ export function ProposalItemsEditor({
   function renderSectionBlock(section, sectionIdx) {
     const localId = section._local_id;
     const entries = itemsBySection[localId] || [];
-    const subtotal = sectionSubtotal(localId);
 
     return (
       <div key={section.id} className="rounded-xl border border-neutral-200 dark:border-[#262626] overflow-hidden">
@@ -660,7 +700,13 @@ export function ProposalItemsEditor({
       </button>
 
       {/* ─── Grand Totals ──────────────────────────────────────────────────── */}
-      <div className="pt-4 border-t-2 border-neutral-300 dark:border-[#333] space-y-2">
+      <div className="pt-4 border-t-2 border-neutral-300 dark:border-[#333] space-y-3">
+        <ProposalRevenueTypeSubtotals
+          items={watchItems}
+          sections={watchSections}
+          currency={currency}
+        />
+        <div className="space-y-2">
         <div className="flex items-center justify-between pt-2">
           <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300 uppercase">{t('detail.total')}</span>
           <span className="text-xl font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">{formatCurrency(grandTotal, currency)}</span>
@@ -699,6 +745,7 @@ export function ProposalItemsEditor({
           )}>
             {formatCurrency(netProfit, currency)}
           </span>
+        </div>
         </div>
       </div>
 
