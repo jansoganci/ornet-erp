@@ -20,7 +20,7 @@ USD proposals are structurally safer today because material prices are already U
 2. The form does not automatically re-convert old rows using the latest FX rate.
 3. If the user manually edits a TRY line from 150 TRY to 160 TRY, the DB stores 160 TRY.
 4. USD values are not recalculated from the manually edited TRY value.
-5. Proposal line FX rate is not currently stored.
+5. Proposal line FX rate is not cu  rrently stored.
 6. Material selection returns the material price and material currency, but the proposal item editor currently ignores the material currency.
 7. If a USD-priced material is selected into a TRY proposal, there is a risk that the USD number is copied as TRY without conversion.
 8. Changing proposal currency after lines exist does not safely convert existing rows.
