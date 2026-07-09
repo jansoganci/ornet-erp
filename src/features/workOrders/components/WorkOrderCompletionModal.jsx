@@ -1,43 +1,62 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Info } from 'lucide-react';
 import { Modal, Button } from '../../../components/ui';
 import { formatCurrency } from '../../../lib/utils';
-import { calcVatTevkifatSummary } from '../../../lib/proposalCalc';
+import { round2 } from '../../../lib/proposalCalc';
 import { useFinanceSettings } from '../../finance/hooks';
 import { useCompleteWorkOrderWithPayment } from '../hooks';
 
 const PAYMENT_METHODS = ['cash', 'card', 'bank_transfer'];
 
-function computeGrandTotal(workOrder) {
-  return Number(workOrder?.net_amount) || 0;
+function normalizeBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1') return true;
+    if (normalized === 'false' || normalized === '0' || normalized === '') return false;
+  }
+  return false;
 }
 
 export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
   const { t } = useTranslation(['workOrders', 'common']);
   const { data: financeSettings } = useFinanceSettings();
 
-  const storedVatRate = Number(workOrder?.vat_rate) || 0;
-  const storedHasVat = !!workOrder?.has_vat;
+  const storedHasVat = normalizeBoolean(workOrder?.has_vat);
+  const storedVatRate = storedHasVat ? Math.max(Number(workOrder?.vat_rate) || 0, 0) : 0;
   const hasTevkifat   = !!workOrder?.has_tevkifat;
+  const netAmount = Number(workOrder?.net_amount) || 0;
+  const grossAmount = storedHasVat ? (Number(workOrder?.gross_amount) || netAmount) : netAmount;
+  const vatAmount = storedHasVat
+    ? (Number(workOrder?.vat_amount) || Math.max(grossAmount - netAmount, 0))
+    : 0;
 
   const [collectionDate, setCollectionDate] = useState(
     () => new Date().toISOString().slice(0, 10)
   );
   const [vatEnabled, setVatEnabled]         = useState(null);
   const [paymentMethod, setPaymentMethod]   = useState('cash');
-
-  const isVatEnabled = vatEnabled ?? storedHasVat;
-  const effectiveVatRate = isVatEnabled ? storedVatRate : 0;
-
-  const grandTotal = useMemo(() => computeGrandTotal(workOrder ?? {}), [workOrder]);
+  const isVatEnabled = storedHasVat && (vatEnabled ?? storedHasVat);
+  const displayedVatRate = isVatEnabled ? storedVatRate : 0;
+  const displayedVatAmount = isVatEnabled ? vatAmount : 0;
+  const basePayableAmount = isVatEnabled ? grossAmount : netAmount;
 
   const tevkifatNum = Number(financeSettings?.tevkifat_rate_numerator) || 9;
   const tevkifatDen = Number(financeSettings?.tevkifat_rate_denominator) || 10;
 
-  const { vatAmount, withheldVat, totalPayable } = useMemo(
-    () => calcVatTevkifatSummary(grandTotal, effectiveVatRate, hasTevkifat, tevkifatNum, tevkifatDen),
-    [grandTotal, effectiveVatRate, hasTevkifat, tevkifatNum, tevkifatDen]
+  const withheldVat = useMemo(
+    () => (
+      hasTevkifat && displayedVatAmount > 0
+        ? round2(displayedVatAmount * tevkifatNum / tevkifatDen)
+        : 0
+    ),
+    [displayedVatAmount, hasTevkifat, tevkifatNum, tevkifatDen]
+  );
+  const totalPayable = useMemo(
+    () => round2(basePayableAmount - withheldVat),
+    [basePayableAmount, withheldVat]
   );
 
   const currency = workOrder?.currency ?? 'TRY';
@@ -52,12 +71,14 @@ export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
   };
 
   const handleSubmit = () => {
+    const sanitizedVatRate = storedHasVat && isVatEnabled ? storedVatRate : 0;
+
     completeMutation.mutate(
       {
         workOrderId:    workOrder.id,
         paymentMethod,
         collectionDate,
-        vatRate:        isVatEnabled ? storedVatRate : 0,
+        vatRate:        sanitizedVatRate,
       },
       { onSuccess: handleClose }
     );
@@ -101,7 +122,7 @@ export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
         </div>
 
         {/* VAT toggle */}
-        {(storedHasVat || storedVatRate > 0) && (
+        {storedHasVat && (
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -111,7 +132,7 @@ export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
             />
             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               {t('workOrders:completion.vatIncluded')}
-              <span className="ml-1 text-neutral-400 text-xs">(%{storedVatRate})</span>
+              <span className="ml-1 text-neutral-400 text-xs">(%{displayedVatRate})</span>
             </span>
           </label>
         )}
@@ -123,11 +144,11 @@ export function WorkOrderCompletionModal({ open, onClose, workOrder }) {
           </p>
           <div className="flex justify-between text-sm">
             <span className="text-neutral-600 dark:text-neutral-400">{t('workOrders:completion.netAmount')}</span>
-            <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(grandTotal, currency)}</span>
+            <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(netAmount, currency)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-neutral-600 dark:text-neutral-400">{t('workOrders:completion.vatAmount')}</span>
-            <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(vatAmount, currency)}</span>
+            <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(displayedVatAmount, currency)}</span>
           </div>
           {hasTevkifat && (
             <div className="flex justify-between text-sm">
