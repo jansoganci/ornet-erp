@@ -36,6 +36,33 @@ function sanitizeCell(val) {
   return String(val).split(/[\r\n]/)[0].trim();
 }
 
+function normalizeOptionalAccountValue(val) {
+  const s = trim(val);
+  if (!s) return '';
+  const normalized = s
+    .replace(/ğ/g, 'g')
+    .replace(/Ğ/g, 'G')
+    .replace(/ü/g, 'u')
+    .replace(/Ü/g, 'U')
+    .replace(/ş/g, 's')
+    .replace(/Ş/g, 'S')
+    .replace(/ı/g, 'i')
+    .replace(/İ/g, 'I')
+    .replace(/ö/g, 'o')
+    .replace(/Ö/g, 'O')
+    .replace(/ç/g, 'c')
+    .replace(/Ç/g, 'C')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+
+  if (['MERKEZ YOK', 'MERKEZ YOKTUR', 'YOK', 'YOKTUR', '-', '--'].includes(normalized)) {
+    return '';
+  }
+
+  return s;
+}
+
 /**
  * Convert Excel serial to UTC date string (YYYY-MM-DD).
  * Excel stores dates as days since 1900-01-01 00:00 UTC. Using UTC methods
@@ -117,18 +144,16 @@ export function validateAndMapRows(excelRows) {
 
     const company_name = get('MÜŞTERİ');
     const subscriber_title = get('ABONE ÜNVANI');
-    const alarm_center = get('MERKEZ');
-    const account_no = sanitizeCell(raw['ACC.']);
+    const alarm_center = normalizeOptionalAccountValue(get('MERKEZ'));
+    const account_no = normalizeOptionalAccountValue(sanitizeCell(raw['ACC.']));
     const site_name = get('LOKASYON');
     const city = get('İL');
     const district = get('İLÇE');
     const connection_date_raw = get('BAĞLANTI TARİHİ');
 
-    // Tüm alanlar zorunlu — her hata { rowNum, field, message }
+    // Account fields are optional: camera/internet-only sites may not have an alarm center account.
     if (!company_name) errors.push({ rowNum, field: 'MÜŞTERİ', message: 'required', rowIndex });
     if (!subscriber_title) errors.push({ rowNum, field: 'ABONE ÜNVANI', message: 'required', rowIndex });
-    if (!alarm_center) errors.push({ rowNum, field: 'MERKEZ', message: 'required', rowIndex });
-    if (!account_no) errors.push({ rowNum, field: 'ACC.', message: 'required', rowIndex });
     if (!site_name) errors.push({ rowNum, field: 'LOKASYON', message: 'required', rowIndex });
     if (!city) errors.push({ rowNum, field: 'İL', message: 'required', rowIndex });
     if (!district) errors.push({ rowNum, field: 'İLÇE', message: 'required', rowIndex });

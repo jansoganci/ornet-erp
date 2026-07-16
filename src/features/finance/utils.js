@@ -3,6 +3,29 @@ export function grossCollectibleTotal(amountTry, outputVat) {
   return (Number(amountTry) || 0) + (Number(outputVat) || 0);
 }
 
+/** Format finance period `YYYY-MM` as Turkish month label (e.g. "Mart 2026"). */
+export function formatFinancePeriodLabel(period, t) {
+  if (!period || typeof period !== 'string') return null;
+  const [year, month] = period.split('-');
+  const monthIdx = Number(month) - 1;
+  if (!year || Number.isNaN(monthIdx) || monthIdx < 0 || monthIdx > 11) return period;
+  return `${t(`common:monthsFull.${monthIdx}`)} ${year}`;
+}
+
+/**
+ * Best available "work done" date for a receivable row.
+ * Prefers work-order / proposal completion, then scheduled date, then ledger date.
+ */
+export function getReceivableWorkDate(row) {
+  return (
+    row?.work_orders?.completed_at ||
+    row?.proposals?.completed_at ||
+    row?.work_orders?.scheduled_date ||
+    row?.transaction_date ||
+    null
+  );
+}
+
 /** Remaining gross collectible after payments. */
 export function grossRemainingCollectible(amountTry, outputVat, totalCollected) {
   return Math.max(0, grossCollectibleTotal(amountTry, outputVat) - (Number(totalCollected) || 0));
@@ -10,6 +33,41 @@ export function grossRemainingCollectible(amountTry, outputVat, totalCollected) 
 
 export function isPartialPaymentStatus(status) {
   return status === 'partial' || status === 'partially_paid';
+}
+
+/** True when the finance period is before the current calendar month. */
+export function isReceivablePeriodOverdue(period) {
+  if (!period || typeof period !== 'string') return false;
+  const now = new Date();
+  const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return period < current;
+}
+
+export function getReceivableRowAmounts(row) {
+  const documentTotal = grossCollectibleTotal(row?.amount_try, row?.output_vat);
+  const collected = Number(row?.total_collected) || 0;
+  const remaining = grossRemainingCollectible(row?.amount_try, row?.output_vat, collected);
+  return { documentTotal, collected, remaining };
+}
+
+export function summarizeReceivableRows(rows = []) {
+  let totalOutstanding = 0;
+  let partialCount = 0;
+  let overdueCount = 0;
+
+  for (const row of rows) {
+    const { remaining } = getReceivableRowAmounts(row);
+    totalOutstanding += remaining;
+    if (isPartialPaymentStatus(row.payment_status)) partialCount += 1;
+    if (isReceivablePeriodOverdue(row.period)) overdueCount += 1;
+  }
+
+  return {
+    totalOutstanding,
+    documentCount: rows.length,
+    partialCount,
+    overdueCount,
+  };
 }
 
 /**

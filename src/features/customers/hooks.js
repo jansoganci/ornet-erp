@@ -7,6 +7,7 @@ import { subscriptionKeys } from '../subscriptions/hooks';
 import {
   fetchCustomers,
   fetchCustomer,
+  fetchCustomerListStats,
   fetchCustomerRelatedAuditLogs,
   createCustomer,
   updateCustomer,
@@ -18,6 +19,7 @@ export const customerKeys = {
   all: ['customers'],
   lists: () => [...customerKeys.all, 'list'],
   list: (filters) => [...customerKeys.lists(), filters],
+  stats: () => [...customerKeys.all, 'stats'],
   details: () => [...customerKeys.all, 'detail'],
   detail: (id) => [...customerKeys.details(), id],
 };
@@ -29,6 +31,13 @@ export function useCustomers({ search = '' } = {}) {
   return useQuery({
     queryKey: customerKeys.list({ search }),
     queryFn: () => fetchCustomers({ search }),
+  });
+}
+
+export function useCustomerListStats() {
+  return useQuery({
+    queryKey: customerKeys.stats(),
+    queryFn: fetchCustomerListStats,
   });
 }
 
@@ -63,6 +72,7 @@ export function useCreateCustomer() {
     mutationFn: createCustomer,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
       toast.success(t('success.created'));
     },
     onError: (error) => {
@@ -82,6 +92,7 @@ export function useUpdateCustomer() {
     mutationFn: updateCustomer,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
       queryClient.setQueryData(customerKeys.detail(data.id), data);
       toast.success(t('success.updated'));
     },
@@ -104,6 +115,7 @@ export function useImportCustomersAndSites({ onProgress } = {}) {
     mutationFn: (rows) => importCustomersAndSitesFromRows(rows, { onProgress }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       if (result.failed === 0) {
         toast.success(t('customers:import.success', { created: result.created, skipped: result.skipped }));
@@ -130,6 +142,7 @@ export function useDeleteCustomer() {
     mutationFn: deleteCustomer,
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
       queryClient.removeQueries({ queryKey: customerKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: siteKeys.listByCustomer(id) });
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });

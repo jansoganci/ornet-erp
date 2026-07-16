@@ -1,17 +1,17 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, MapPin, Upload, Download } from 'lucide-react';
+import { Plus, MapPin, Upload, Download, Users, MapPinned, Building2, CalendarX } from 'lucide-react';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSearchInput } from '../../hooks/useSearchInput';
 import { useAllSites } from '../customerSites/hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, SearchInput, Table, EmptyState, ErrorState } from '../../components/ui';
+import { Button, SearchInput, Table, EmptyState, ErrorState, KpiCard } from '../../components/ui';
 import { useRole } from '../../lib/roles';
 import { fetchCustomer } from './api';
-import { customerKeys } from './hooks';
+import { customerKeys, useCustomerListStats } from './hooks';
 
 export function CustomersListPage() {
   const { t } = useTranslation(['customers', 'common']);
@@ -21,6 +21,7 @@ export function CustomersListPage() {
   const { search, setSearch, debouncedSearch } = useSearchInput({ debounceMs: 300 });
 
   const { data: sites, isLoading, error, refetch } = useAllSites({ search: debouncedSearch, enabled: true });
+  const { data: stats, isLoading: isStatsLoading } = useCustomerListStats();
 
   const handleRowClick = (site) => {
     navigate(`/customers/${site.customer_id}`);
@@ -184,6 +185,34 @@ export function CustomersListPage() {
           )
         }
       />
+
+      <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <KpiCard
+          title={t('list.stats.totalCustomers')}
+          value={stats?.totalCustomers ?? 0}
+          icon={Users}
+          loading={isStatsLoading}
+        />
+        <KpiCard
+          title={t('list.stats.totalSites')}
+          value={stats?.totalSites ?? 0}
+          icon={MapPinned}
+          loading={isStatsLoading}
+        />
+        <KpiCard
+          title={t('list.stats.multiSiteCustomers')}
+          value={stats?.multiSiteCustomers ?? 0}
+          icon={Building2}
+          loading={isStatsLoading}
+        />
+        <KpiCard
+          title={t('list.stats.missingConnectionDate')}
+          value={stats?.missingConnectionDate ?? 0}
+          icon={CalendarX}
+          loading={isStatsLoading}
+          variant={(stats?.missingConnectionDate ?? 0) > 0 ? 'warning' : 'default'}
+        />
+      </div>
 
       <div className="mb-6 mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
         <SearchInput

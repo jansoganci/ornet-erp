@@ -355,14 +355,44 @@
   },
   "receivables": {
     "title": "Bekleyen Tahsilatlar",
-    "subtitle": "Havale / EFT bekleyen iş emirleri",
+    "subtitle": "Ödenmemiş ve kısmi tahsil edilmiş belgeler",
+    "kpi": {
+      "totalOutstanding": "Toplam Alacak",
+      "documentCount": "Belge Sayısı",
+      "overdueCount": "Geciken Dönem"
+    },
+    "filters": {
+      "search": "Müşteri veya belge ara...",
+      "period": "Dönem",
+      "status": "Durum",
+      "allPeriods": "Tüm dönemler",
+      "allStatuses": "Tüm durumlar"
+    },
+    "group": {
+      "documents": "{{count}} belge",
+      "outstanding": "Kalan"
+    },
+    "overdue": "Gecikmiş",
+    "limitWarning": "İlk {{limit}} kayıt gösteriliyor. Daha eski belgeler için Tahsilat ekranını kullanın.",
+    "noFilterResults": {
+      "title": "Sonuç bulunamadı",
+      "description": "Arama veya filtre kriterlerinizi değiştirmeyi deneyin.",
+      "clearFilters": "Filtreleri temizle"
+    },
+    "footer": {
+      "visibleDocuments": "{{count}} belge",
+      "totalOutstanding": "Toplam kalan"
+    },
     "empty": {
       "title": "Bekleyen tahsilat yok",
-      "description": "Tüm iş emirleri tahsil edildi."
+      "description": "Tüm belgeler tahsil edildi."
     },
     "columns": {
       "customer": "Müşteri",
-      "workOrder": "İş Emri",
+      "period": "Dönem",
+      "workDate": "İş Tarihi",
+      "workOrder": "Belge",
+      "incomeType": "Tür",
       "netAmount": "Net Tutar",
       "vatAmount": "KDV",
       "totalAmount": "Toplam",
@@ -372,7 +402,8 @@
       "cogsTry": "Maliyet",
       "profit": "Kâr",
       "status": "Durum",
-      "date": "Tarih"
+      "date": "Tarih",
+      "actions": "İşlem"
     },
     "status": {
       "unpaid": "Ödenmedi",
@@ -384,6 +415,9 @@
       "title": "Tahsilat Ekle",
       "applyRemainingAmount": "Tutarın tamamı",
       "documentTotal": "Belge Toplamı",
+      "customer": "Müşteri",
+      "period": "Dönem",
+      "workDate": "İş Tarihi",
       "collected": "Tahsil Edilen",
       "remainingCollectible": "Kalan Tahsilat",
       "amount": "Tahsilat Tutarı (TRY)",

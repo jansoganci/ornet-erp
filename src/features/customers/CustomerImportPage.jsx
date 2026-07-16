@@ -69,7 +69,7 @@ export function CustomerImportPage() {
       const result = await importMutation.mutateAsync(validRows);
       setImportResult(result);
       setImportProgress(null);
-      if (result.failed === 0) {
+      if (result.failed === 0 && result.skipped === 0) {
         toast.success(t('customers:import.success', { created: result.created, skipped: result.skipped }));
         setTimeout(() => navigate('/customers'), 1500);
       }
@@ -115,6 +115,20 @@ export function CustomerImportPage() {
   const uniqueDuplicateNames = [
     ...new Set(data.filter(isDuplicateRow).map((r) => r.company_name)),
   ];
+
+  const importResultRows = importResult?.results?.map((result, resultIndex) => {
+    const dataIndex = validRowIndices[resultIndex];
+    return {
+      ...result,
+      dataIndex,
+      row: data[dataIndex],
+    };
+  }) ?? [];
+
+  const skippedRows = importResultRows.filter((result) => result.status === 'skipped');
+  const hasImportIssues = !!importResult && (
+    importResult.failed > 0 || importResult.skipped > 0 || rowsWithErrors.size > 0
+  );
 
   const instructionSteps = useMemo(
     () => [
@@ -369,7 +383,7 @@ export function CustomerImportPage() {
 
             {importResult && (
               <ImportResultSummary
-                variant={importResult.failed > 0 ? 'partial' : 'success'}
+                variant={hasImportIssues ? 'partial' : 'success'}
                 title={t('common:import.summaryTitle')}
                 stats={[
                   { label: t('common:import.summaryCreated'), value: importResult.created },
@@ -390,6 +404,62 @@ export function CustomerImportPage() {
                   </ul>
                 )}
               </ImportResultSummary>
+            )}
+
+            {skippedRows.length > 0 && (
+              <Card className="overflow-hidden border-amber-200 dark:border-amber-900/40">
+                <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/40">
+                  <h4 className="font-medium text-amber-900 dark:text-amber-100 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {t('customers:import.skippedRows.title', { count: skippedRows.length })}
+                  </h4>
+                  <p className="text-sm text-amber-800 dark:text-amber-200/90 mt-1">
+                    {t('customers:import.skippedRows.description')}
+                  </p>
+                </div>
+                <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-amber-50/80 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/40 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-2 font-medium text-amber-900 dark:text-amber-100">#</th>
+                        <th className="px-4 py-2 font-medium text-amber-900 dark:text-amber-100">
+                          {t('customers:import.previewColumns.customer')}
+                        </th>
+                        <th className="px-4 py-2 font-medium text-amber-900 dark:text-amber-100">
+                          {t('customers:import.previewColumns.accountNo')}
+                        </th>
+                        <th className="px-4 py-2 font-medium text-amber-900 dark:text-amber-100">
+                          {t('customers:import.previewColumns.location')}
+                        </th>
+                        <th className="px-4 py-2 font-medium text-amber-900 dark:text-amber-100">
+                          {t('customers:import.skippedRows.reason')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-amber-100 dark:divide-amber-900/30">
+                      {skippedRows.map((result) => (
+                        <tr key={result.rowNum}>
+                          <td className="px-4 py-2 text-amber-800 dark:text-amber-200 font-mono">
+                            {result.rowNum}
+                          </td>
+                          <td className="px-4 py-2 text-neutral-900 dark:text-neutral-100 font-medium">
+                            {result.row?.company_name || '—'}
+                          </td>
+                          <td className="px-4 py-2 text-neutral-700 dark:text-neutral-300 font-mono">
+                            {result.row?.account_no || '—'}
+                          </td>
+                          <td className="px-4 py-2 text-neutral-700 dark:text-neutral-300">
+                            {result.row?.site_name || '—'}
+                          </td>
+                          <td className="px-4 py-2 text-amber-800 dark:text-amber-200">
+                            {result.message || t('customers:import.skippedRows.defaultReason')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
             )}
 
             {importMutation.isError && !importResult && (

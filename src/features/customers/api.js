@@ -52,6 +52,78 @@ export async function fetchCustomers({ search = '' } = {}) {
   });
 }
 
+async function fetchActiveSiteCustomerIds() {
+  const pageSize = 1000;
+  let from = 0;
+  const customerIds = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('customer_sites')
+      .select('id, customer_id')
+      .is('deleted_at', null)
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+
+    const rows = data ?? [];
+    customerIds.push(...rows.map((row) => row.customer_id).filter(Boolean));
+
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return customerIds;
+}
+
+/**
+ * Fetch global stats for the customer list KPI cards.
+ */
+export async function fetchCustomerListStats() {
+  const [
+    customersResult,
+    sitesResult,
+    missingConnectionDateResult,
+    siteCustomerIds,
+  ] = await Promise.all([
+    supabase
+      .from('customers')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null),
+    supabase
+      .from('customer_sites')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null),
+    supabase
+      .from('customer_sites')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .is('connection_date', null),
+    fetchActiveSiteCustomerIds(),
+  ]);
+
+  if (customersResult.error) throw customersResult.error;
+  if (sitesResult.error) throw sitesResult.error;
+  if (missingConnectionDateResult.error) throw missingConnectionDateResult.error;
+
+  const siteCountsByCustomer = new Map();
+  siteCustomerIds.forEach((customerId) => {
+    siteCountsByCustomer.set(customerId, (siteCountsByCustomer.get(customerId) ?? 0) + 1);
+  });
+
+  const multiSiteCustomers = Array.from(siteCountsByCustomer.values())
+    .filter((siteCount) => siteCount >= 2)
+    .length;
+
+  return {
+    totalCustomers: customersResult.count ?? 0,
+    totalSites: sitesResult.count ?? 0,
+    multiSiteCustomers,
+    missingConnectionDate: missingConnectionDateResult.count ?? 0,
+  };
+}
+
 /**
  * Fetch a single customer by ID
  */

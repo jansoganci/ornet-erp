@@ -20,6 +20,12 @@
     },
     "count": "{{count}} müşteri",
     "siteCount": "{{count}} lokasyon",
+    "stats": {
+      "totalCustomers": "Toplam Müşteri",
+      "totalSites": "Toplam Lokasyon",
+      "multiSiteCustomers": "Çok Lokasyonlu Müşteri",
+      "missingConnectionDate": "Bağlantı Tarihi Eksik"
+    },
     "siteColumns": {
       "company": "Müşteri",
       "subscriberTitle": "Abone Ünvanı",
@@ -327,6 +333,12 @@
       "skipped": "Atlandı",
       "validationSkipped": "Atlandı (hatalı)",
       "failed": "Hata"
+    },
+    "skippedRows": {
+      "title": "Atlanan Satırlar ({{count}})",
+      "description": "Bu satırlar içe aktarılmadı. Excel'de düzeltip sadece bu satırları tekrar yükleyebilirsiniz.",
+      "reason": "Sebep",
+      "defaultReason": "Satır atlandı"
     },
     "andMoreRows": "{{count}} satır daha...",
     "errorMessages": {

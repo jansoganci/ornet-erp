@@ -14,7 +14,7 @@ export const siteKeys = {
 /**
  * Targeted selection for site list views to improve performance.
  */
-export const SITE_LIST_SELECT = 'id, customer_id, account_no, site_name, site_type, city, district, created_at, customers ( company_name, subscriber_title )';
+export const SITE_LIST_SELECT = 'id, customer_id, account_no, alarm_center, connection_date, site_name, site_type, city, district, created_at, customers ( company_name, subscriber_title )';
 
 export async function fetchSitesByCustomer(customerId) {
   const { data, error } = await supabase

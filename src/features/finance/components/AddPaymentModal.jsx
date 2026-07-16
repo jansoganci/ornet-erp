@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button } from '../../../components/ui';
-import { formatCurrency } from '../../../lib/utils';
-import { grossCollectibleTotal, grossRemainingCollectible } from '../utils';
+import { formatCurrency, formatDate } from '../../../lib/utils';
+import {
+  formatFinancePeriodLabel,
+  getReceivableWorkDate,
+  grossCollectibleTotal,
+  grossRemainingCollectible,
+} from '../utils';
 import { useCreateTransactionPayment, useTransactionPayments } from '../hooks';
 
 const PAYMENT_METHODS = ['bank_transfer', 'cash', 'card'];
@@ -22,6 +27,9 @@ export function AddPaymentModal({ open, onClose, transaction }) {
   const amountTry   = Number(transaction?.amount_try)  || 0;
   const outputVat   = Number(transaction?.output_vat)  || 0;
   const documentTotal = grossCollectibleTotal(amountTry, outputVat);
+  const customerName = transaction?.customers?.company_name || null;
+  const periodLabel = formatFinancePeriodLabel(transaction?.period, t);
+  const workDate = getReceivableWorkDate(transaction);
 
   const { data: existingPayments = [] } = useTransactionPayments(
     open ? transaction?.id : null
@@ -87,6 +95,40 @@ export function AddPaymentModal({ open, onClose, transaction }) {
           <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest mb-3">
             {t('finance:receivables.addPayment.documentTotal')}
           </p>
+          {(customerName || periodLabel || workDate) && (
+            <div className="space-y-2 pb-2 mb-1 border-b border-neutral-200 dark:border-neutral-700">
+              {customerName && (
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400 shrink-0">
+                    {t('finance:receivables.addPayment.customer')}
+                  </span>
+                  <span className="font-medium text-neutral-900 dark:text-neutral-100 text-right">
+                    {customerName}
+                  </span>
+                </div>
+              )}
+              {periodLabel && (
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400 shrink-0">
+                    {t('finance:receivables.addPayment.period')}
+                  </span>
+                  <span className="font-bold text-neutral-900 dark:text-neutral-100 text-right">
+                    {periodLabel}
+                  </span>
+                </div>
+              )}
+              {workDate && (
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-neutral-600 dark:text-neutral-400 shrink-0">
+                    {t('finance:receivables.addPayment.workDate')}
+                  </span>
+                  <span className="font-medium text-neutral-900 dark:text-neutral-100 text-right">
+                    {formatDate(workDate)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-neutral-600 dark:text-neutral-400">{t('finance:receivables.columns.netAmount')}</span>
             <span className="font-mono font-bold text-neutral-900 dark:text-neutral-100">{formatCurrency(amountTry, 'TRY')}</span>

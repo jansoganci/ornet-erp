@@ -897,12 +897,15 @@ export const receivableKeys = {
   list: (filters) => [...receivableKeys.lists(), filters],
 };
 
+/** Safety cap for receivables list fetch; KPIs are computed from this full set. */
+export const RECEIVABLE_FETCH_LIMIT = 1000;
+
 const RECEIVABLE_SELECT = `
   id, transaction_date, period, amount_try, output_vat, cogs_try, payment_status,
   income_type, payment_method, work_order_id, proposal_id, customer_id,
   customers ( company_name ),
-  work_orders ( id, form_no ),
-  proposals ( proposal_no, title )
+  work_orders ( id, form_no, scheduled_date, completed_at ),
+  proposals ( proposal_no, title, completed_at )
 `.replace(/\s+/g, ' ').trim();
 
 export async function fetchReceivables(filters = {}) {
@@ -918,7 +921,7 @@ export async function fetchReceivables(filters = {}) {
     query = query.eq('customer_id', filters.customerId);
   }
 
-  const { data, error } = await query.limit(200);
+  const { data, error } = await query.limit(RECEIVABLE_FETCH_LIMIT);
   if (error) throw error;
 
   const rows = data ?? [];

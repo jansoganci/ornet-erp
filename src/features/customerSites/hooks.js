@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/errorHandler';
+import { customerKeys } from '../customers/hooks';
 import * as api from './api';
 import { siteKeys } from './api';
 
@@ -46,6 +47,7 @@ export function useCreateSite() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: siteKeys.lists() });
       queryClient.invalidateQueries({ queryKey: siteKeys.listByCustomer(data.customer_id) });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
       toast.success(t('success.created'));
     },
     onError: (error) => {
@@ -63,6 +65,7 @@ export function useUpdateSite() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: siteKeys.detail(data.id) });
       queryClient.invalidateQueries({ queryKey: siteKeys.listByCustomer(data.customer_id) });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
       toast.success(t('success.updated'));
     },
     onError: (error) => {
@@ -80,6 +83,7 @@ export function useDeleteSite() {
     onSuccess: (_deleted, { customerId }) => {
       queryClient.invalidateQueries({ queryKey: siteKeys.all });
       queryClient.invalidateQueries({ queryKey: siteKeys.listByCustomer(customerId) });
+      queryClient.invalidateQueries({ queryKey: customerKeys.stats() });
       toast.success(t('success.deleted'));
     },
     onError: (error) => {
