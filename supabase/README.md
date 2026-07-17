@@ -20,6 +20,7 @@ Run each file in order:
 
 ---
 
+
 ## Database Schema Overview
 
 ```
