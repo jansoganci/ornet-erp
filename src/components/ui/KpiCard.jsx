@@ -232,12 +232,12 @@ export function KpiCard({
           {valueEl}
           {trendEl}
           {subtitle && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 break-words mt-1">
+            <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300 break-words mt-1.5">
               {subtitle}
             </p>
           )}
           {hint && (
-            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 italic break-words mt-0.5">
+            <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300 break-words mt-1.5">
               {hint}
             </p>
           )}

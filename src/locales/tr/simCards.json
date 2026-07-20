@@ -154,6 +154,8 @@
     "active": "Aktif Hatlar",
     "subscription": "Abonelik Hatları",
     "monthlyProfit": "Tahmini Aylık Kar",
+    "monthlyProfitHint": "Abonelik hatları hariç",
+    "monthlyProfitInfo": "Abonelik hat geliri hariç tahmini aylık kar. Yalnızca durumu aktif olan hatların aylık satış ile maliyet farkının toplamıdır; abonelik gelirleri Abonelikler modülünden takip edilir.",
     "unassigned": "Atanmamış",
     "monthlyRevenue": "Aylık Gelir"
   },

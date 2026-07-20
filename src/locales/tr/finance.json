@@ -316,7 +316,7 @@
       "ledgerProfit": "Bu değer, seçili dönemde deftere yazılmış gelir eksi gider toplamını gösterir. Yönetim net kârı değildir.",
       "laborCoverage": "İşçilik / hizmet geliri eksi recurring giderlerden sınıflandırılmış personel yükü toplamıdır. Araç yükü bu KPI'ya dahil değildir.",
       "subscriptionMrr": "Aktif aboneliklerin aylık tekrarlayan net geliri (KDV hariç). Temel ücret, SMS, hat, statik IP ve abonelikteki SIM bedelini içerir.",
-      "simMrr": "Aktif veya aboneliğe bağlı SIM kartların satış fiyatları toplamı (KDV hariç). Operatör envanterinden aylık kiralama gelirinin tahmini değeridir."
+      "simMrr": "Durumu aktif olan (abonelik statüsü hariç) SIM kartların aylık satış fiyatları toplamı (KDV hariç). Abonelik hat geliri Abonelik MRR KPI'sında yer alır."
     },
     "work": {
       "revenue": "İşlerden gelen gelir",

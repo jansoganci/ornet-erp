@@ -15,7 +15,6 @@ import {
   ChevronRight,
   ChevronDown,
   Package,
-  CheckCircle2,
   TrendingUp,
   CreditCard,
   ArrowLeft,
@@ -311,6 +310,15 @@ export function SimCardsListPage() {
     pageSize,
   } = useSimCardsPaginated(filters, page);
   const { data: simStats } = useSimFinancialStats();
+  const estimatedMonthlyProfit = useMemo(() => {
+    if (simStats?.total_monthly_profit != null) {
+      return Number(simStats.total_monthly_profit) || 0;
+    }
+    return (simCards || []).reduce((acc, curr) => {
+      if (curr.status !== 'active') return acc;
+      return acc + ((curr.sale_price || 0) - (curr.cost_price || 0));
+    }, 0);
+  }, [simStats?.total_monthly_profit, simCards]);
   const { data: providerCompanies } = useProviderCompanies();
   const cancelSimMutation = useCancelSimCard();
   const updateSimCardMutation = useUpdateSimCard();
@@ -865,7 +873,7 @@ export function SimCardsListPage() {
             </span>
           </div>
           <span className="text-2xl font-extrabold tracking-tight text-success-600 dark:text-success-400">
-            {simStats?.active_sim_count ?? 0}
+            {simStats?.active_count ?? simCards?.filter((s) => s.status === 'active').length ?? 0}
           </span>
         </div>
         <div className="rounded-xl border border-neutral-200/80 dark:border-[#262626] bg-white dark:bg-[#171717] p-4 flex flex-col justify-between min-h-[90px]">
@@ -878,10 +886,13 @@ export function SimCardsListPage() {
         </div>
         <div className="rounded-xl border border-neutral-200/80 dark:border-[#262626] bg-white dark:bg-[#171717] p-4 flex flex-col justify-between min-h-[90px]">
           <span className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 dark:text-neutral-400">
-            {t('stats.monthlyRevenue')}
+            {t('stats.monthlyProfit')}
           </span>
           <span className="text-2xl font-extrabold tracking-tight text-primary-600 dark:text-primary-400">
-            {formatCurrency(simStats?.total_monthly_profit ?? 0)}
+            {formatCurrency(estimatedMonthlyProfit)}
+          </span>
+          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+            {t('stats.monthlyProfitHint')}
           </span>
         </div>
       </div>
@@ -902,7 +913,7 @@ export function SimCardsListPage() {
         />
         <KpiCard
           title={t('stats.active')}
-          value={simStats?.active_sim_count ?? simCards?.filter((s) => s.status === 'active').length ?? 0}
+          value={simStats?.active_count ?? simCards?.filter((s) => s.status === 'active').length ?? 0}
           icon={TrendingUp}
           variant="info"
         />
@@ -914,11 +925,11 @@ export function SimCardsListPage() {
         />
         <KpiCard
           title={t('stats.monthlyProfit')}
-          value={new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(
-            simStats?.total_monthly_profit ?? (simCards || []).reduce((acc, curr) => acc + ((curr.sale_price || 0) - (curr.cost_price || 0)), 0)
-          )}
-          icon={CheckCircle2}
-          variant="success"
+          value={new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(estimatedMonthlyProfit)}
+          variant="default"
+          infoTooltip={t('stats.monthlyProfitInfo')}
+          infoPlacement="bottom-right"
+          subtitle={t('stats.monthlyProfitHint')}
         />
       </div>
 
