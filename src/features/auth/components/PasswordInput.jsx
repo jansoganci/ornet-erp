@@ -14,34 +14,33 @@ export const PasswordInput = forwardRef(function PasswordInput(
 
   const toggleVisibility = (e) => {
     e.preventDefault();
-    setShowPassword(!showPassword);
+    setShowPassword((prev) => !prev);
   };
 
   return (
-    <div className="relative">
-      <Input
-        ref={ref}
-        type={showPassword ? 'text' : 'password'}
-        label={label}
-        error={error}
-        hint={hint}
-        className={className}
-        {...props}
-      />
-      {/* Toggle button positioned inside the input */}
-      <button
-        type="button"
-        onClick={toggleVisibility}
-        tabIndex={-1}
-        className="absolute right-3 top-[38px] p-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
-        aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
-      >
-        {showPassword ? (
-          <EyeOff className="w-5 h-5" />
-        ) : (
-          <Eye className="w-5 h-5" />
-        )}
-      </button>
-    </div>
+    <Input
+      ref={ref}
+      type={showPassword ? 'text' : 'password'}
+      label={label}
+      error={error}
+      hint={hint}
+      className={className}
+      rightIcon={
+        <button
+          type="button"
+          onClick={toggleVisibility}
+          tabIndex={-1}
+          className="pointer-events-auto flex items-center justify-center border-0 bg-transparent p-0 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
+          aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+        >
+          {showPassword ? (
+            <EyeOff className="w-5 h-5" />
+          ) : (
+            <Eye className="w-5 h-5" />
+          )}
+        </button>
+      }
+      {...props}
+    />
   );
 });

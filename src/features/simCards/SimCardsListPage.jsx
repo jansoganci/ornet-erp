@@ -46,6 +46,7 @@ import { QuickStatusSelect } from './components/QuickStatusSelect';
 import { QuickProviderSelect } from './components/QuickProviderSelect';
 import { QuickActivationDateField } from './components/QuickActivationDateField';
 import { QuickSalePriceField } from './components/QuickSalePriceField';
+import { QuickCustomerLabelField } from './components/QuickCustomerLabelField';
 
 /** Uniform trigger height in SIM list filter controls (matches `SearchInput` / `Input` sm). */
 const SIM_FILTER_LISTBOX_TRIGGER = 'h-10 min-h-[2.5rem] md:h-10';
@@ -347,7 +348,7 @@ export function SimCardsListPage() {
         [t('list.columns.operator')]: t(`operators.${sim.operator}`),
         [t('list.columns.gprsSerialNo')]: sim.gprs_serial_no || '-',
         [t('list.columns.accountNo')]: sim.account_no || '-',
-        [t('list.columns.customerLabel')]: sim.customers?.company_name || sim.customer_label || '-',
+        [t('list.columns.customerLabel')]: sim.customer_label || sim.customers?.company_name || '-',
         [t('list.columns.activationDate')]: sim.activation_date ? formatDate(sim.activation_date) : '-',
         [t('list.columns.costPrice')]: sim.cost_price,
         [t('list.columns.salePrice')]: sim.sale_price,
@@ -478,7 +479,29 @@ export function SimCardsListPage() {
     );
   }
 
-  const columns = [
+  const renderActionsColumn = (_, row) => (
+    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+      <IconButton
+        icon={Edit2}
+        size="sm"
+        variant="ghost"
+        onClick={() => handleEdit(row.id)}
+        aria-label={t('actions.edit')}
+      />
+      {row.status !== 'cancelled' && (
+        <IconButton
+          icon={Trash2}
+          size="sm"
+          variant="ghost"
+          onClick={() => handleCancel(row)}
+          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-900/20"
+          aria-label={t('actions.cancel')}
+        />
+      )}
+    </div>
+  );
+
+  const normalColumns = [
     {
       header: t('list.columns.phoneNumber'),
       accessor: 'phone_number',
@@ -524,58 +547,33 @@ export function SimCardsListPage() {
       cellClassName: 'whitespace-normal break-words align-top',
       render: (_, row) => (
         <span className="break-words">
-          {row.customers?.company_name || row.customer_label || '-'}
+          {row.customer_label || row.customers?.company_name || '-'}
         </span>
       ),
     },
     {
       header: t('list.columns.provider'),
       accessor: 'provider_company',
-      render: (_, row) =>
-        quickEditMode ? (
-          <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
-            <QuickProviderSelect
-              sim={row}
-              companies={providerCompanies}
-              onUpdate={handleQuickFieldUpdate}
-              t={t}
-            />
-          </div>
-        ) : (
-          <span className="text-neutral-600 dark:text-neutral-400">
-            {row.provider_company?.name || '-'}
-          </span>
-        ),
+      render: (_, row) => (
+        <span className="text-neutral-600 dark:text-neutral-400">
+          {row.provider_company?.name || '-'}
+        </span>
+      ),
     },
     {
       header: t('list.columns.activationDate'),
       accessor: 'activation_date',
-      render: (value, row) =>
-        quickEditMode ? (
-          <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
-            <QuickActivationDateField
-              sim={row}
-              onUpdate={handleQuickFieldUpdate}
-              onDraftDirty={handleDateDraftDirty}
-            />
-          </div>
-        ) : (
-          <span className="text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-            {value ? formatDate(value) : '-'}
-          </span>
-        ),
+      render: (value) => (
+        <span className="text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+          {value ? formatDate(value) : '-'}
+        </span>
+      ),
     },
     {
       header: t('list.columns.status'),
       accessor: 'status',
-      render: (value, row) => (
-        <div onClick={quickEditMode ? (e) => e.stopPropagation() : undefined}>
-          {quickEditMode && row.status !== 'subscription' ? (
-            <QuickStatusSelect sim={row} onStatusChange={handleQuickStatusChange} t={t} />
-          ) : (
-            <Badge variant={getStatusVariant(value)}>{t(`status.${value}`)}</Badge>
-          )}
-        </div>
+      render: (value) => (
+        <Badge variant={getStatusVariant(value)}>{t(`status.${value}`)}</Badge>
       ),
     },
     {
@@ -590,48 +588,105 @@ export function SimCardsListPage() {
     {
       header: t('list.columns.salePrice'),
       accessor: 'sale_price',
-      render: (value, row) =>
-        quickEditMode ? (
-          <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-            <QuickSalePriceField
-              sim={row}
-              onUpdate={handleQuickFieldUpdate}
-              label={t('list.columns.salePrice')}
-            />
-          </div>
-        ) : (
-          <span className="font-medium text-neutral-900 dark:text-neutral-50">
-            {formatCurrency(value ?? 0, row.currency ?? 'TRY')}
-          </span>
-        ),
+      render: (value, row) => (
+        <span className="font-medium text-neutral-900 dark:text-neutral-50">
+          {formatCurrency(value ?? 0, row.currency ?? 'TRY')}
+        </span>
+      ),
     },
     {
       header: t('common:actions.actionsColumn'),
       accessor: 'id',
       align: 'right',
+      render: renderActionsColumn,
+    },
+  ];
+
+  const quickEditColumns = [
+    {
+      header: t('list.columns.phoneNumber'),
+      accessor: 'phone_number',
+      render: (value) => (
+        <div className="font-medium text-neutral-900 dark:text-neutral-50">{value}</div>
+      ),
+    },
+    {
+      header: t('list.columns.customerLabel'),
+      accessor: 'customers',
+      minWidth: 360,
+      cellClassName: 'whitespace-normal break-words align-top',
       render: (_, row) => (
-        <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-          <IconButton
-            icon={Edit2}
-            size="sm"
-            variant="ghost"
-            onClick={() => handleEdit(row.id)}
-            aria-label={t('actions.edit')}
+        <div className="min-w-0 w-full max-w-full" onClick={(e) => e.stopPropagation()}>
+          <QuickCustomerLabelField
+            sim={row}
+            onUpdate={handleQuickFieldUpdate}
+            label={t('list.columns.customerLabel')}
           />
-          {row.status !== 'cancelled' && (
-            <IconButton
-              icon={Trash2}
-              size="sm"
-              variant="ghost"
-              onClick={() => handleCancel(row)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-900/20"
-              aria-label={t('actions.cancel')}
-            />
+        </div>
+      ),
+    },
+    {
+      header: t('list.columns.provider'),
+      accessor: 'provider_company',
+      render: (_, row) => (
+        <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+          <QuickProviderSelect
+            sim={row}
+            companies={providerCompanies}
+            onUpdate={handleQuickFieldUpdate}
+            t={t}
+          />
+        </div>
+      ),
+    },
+    {
+      header: t('list.columns.activationDate'),
+      accessor: 'activation_date',
+      render: (_, row) => (
+        <div className="min-w-0" onClick={(e) => e.stopPropagation()}>
+          <QuickActivationDateField
+            sim={row}
+            onUpdate={handleQuickFieldUpdate}
+            onDraftDirty={handleDateDraftDirty}
+          />
+        </div>
+      ),
+    },
+    {
+      header: t('list.columns.status'),
+      accessor: 'status',
+      render: (value, row) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          {row.status !== 'subscription' ? (
+            <QuickStatusSelect sim={row} onStatusChange={handleQuickStatusChange} t={t} />
+          ) : (
+            <Badge variant={getStatusVariant(value)}>{t(`status.${value}`)}</Badge>
           )}
         </div>
       ),
     },
+    {
+      header: t('list.columns.salePrice'),
+      accessor: 'sale_price',
+      render: (_, row) => (
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <QuickSalePriceField
+            sim={row}
+            onUpdate={handleQuickFieldUpdate}
+            label={t('list.columns.salePrice')}
+          />
+        </div>
+      ),
+    },
+    {
+      header: t('common:actions.actionsColumn'),
+      accessor: 'id',
+      align: 'right',
+      render: renderActionsColumn,
+    },
   ];
+
+  const columns = quickEditMode ? quickEditColumns : normalColumns;
 
   const activationPeriodBoundaryFields = (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1103,7 +1158,7 @@ export function SimCardsListPage() {
               const isActive = sim.status === 'active' || sim.status === 'subscription';
               const isAvailable = sim.status === 'available';
               const isCancelled = sim.status === 'cancelled';
-              const customerName = sim.customers?.company_name || sim.customer_label;
+              const customerName = sim.customer_label || sim.customers?.company_name;
 
               return (
                 <button

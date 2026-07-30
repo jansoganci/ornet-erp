@@ -100,6 +100,7 @@
     "salePrice": "Aylık Satış Fiyatı",
     "vatRate": "KDV Oranı (%)",
     "customerLabel": "Abone Adı",
+    "activationDate": "Aktivasyon Tarihi",
     "notes": "Notlar",
     "placeholders": {
       "selectProvider": "Ana şirket seçin...",

@@ -1,11 +1,20 @@
 import { supabase } from '../../lib/supabase';
 
-export async function runParasutBulkMatch() {
+export async function runParasutBulkMatch(offset = 0) {
   const { data, error } = await supabase.functions.invoke('parasut-dispatch', {
-    body: { action: 'bulk-match' },
+    body: { action: 'bulk-match', payload: { offset } },
   });
   if (error) throw error;
   if (data?.ok === false) throw new Error(data.error || 'Paraşüt eşleştirme başarısız');
+  return data?.data;
+}
+
+export async function runParasutBulkMatchNameFallback() {
+  const { data, error } = await supabase.functions.invoke('parasut-dispatch', {
+    body: { action: 'bulk-match-name-fallback' },
+  });
+  if (error) throw error;
+  if (data?.ok === false) throw new Error(data.error || 'Paraşüt isimle eşleştirme başarısız');
   return data?.data;
 }
 

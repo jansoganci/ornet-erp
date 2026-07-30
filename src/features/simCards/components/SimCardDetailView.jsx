@@ -11,7 +11,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { Badge, Button, Card, EmptyState } from '../../../components/ui';
-import { cn, formatCurrency, formatDateTime, formatPhone } from '../../../lib/utils';
+import { cn, formatCurrency, formatDate, formatDateTime, formatPhone } from '../../../lib/utils';
 import { useSimCardHistory } from '../hooks';
 import { fetchActiveStaticIp, fetchStaticIpHistory } from '../staticIpApi';
 
@@ -112,6 +112,10 @@ export function SimCardDetailView({ simCard, site, onBack, onEdit }) {
           {t(`simCards:status.${simCard?.status}`)}
         </Badge>
       ),
+    },
+    {
+      label: t('simCards:form.activationDate'),
+      value: simCard?.activation_date ? formatDate(simCard.activation_date) : null,
     },
     {
       label: t('simCards:list.columns.customer'),

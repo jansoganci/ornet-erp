@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ParasutError, toErrorMessage } from "./core/errors.ts";
 import { auditLog } from "./core/logger.ts";
-import { bulkMatch } from "./handlers/bulk-match.ts";
+import { bulkMatch, bulkMatchNameFallback } from "./handlers/bulk-match.ts";
 import { cancelDraft } from "./handlers/cancel-draft.ts";
 import { createContact } from "./handlers/create-contact.ts";
 import { deletePayment } from "./handlers/delete-payment.ts";
@@ -67,7 +67,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
         data = await ping({ supabase, correlationId, actorId });
         break;
       case "bulk-match":
-        data = await bulkMatch({ supabase, correlationId, actorId });
+        data = await bulkMatch({ supabase, correlationId, actorId, payload: body.payload });
+        break;
+      case "bulk-match-name-fallback":
+        data = await bulkMatchNameFallback({ supabase, correlationId, actorId });
         break;
       case "create-contact":
         data = await createContact({ supabase, correlationId, actorId, payload: body.payload });

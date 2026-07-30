@@ -899,7 +899,7 @@ export const receivableKeys = {
 
 const RECEIVABLE_SELECT = `
   id, transaction_date, period, amount_try, output_vat, cogs_try, payment_status,
-  income_type, payment_method, work_order_id, proposal_id, customer_id,
+  income_type, payment_method, description, work_order_id, proposal_id, customer_id,
   customers ( company_name ),
   work_orders ( id, form_no ),
   proposals ( proposal_no, title )

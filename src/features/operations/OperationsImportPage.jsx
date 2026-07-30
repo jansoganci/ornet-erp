@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Upload, Download, CheckCircle2, AlertCircle, X, Save } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, Save } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { ImportInstructionCard, ImportResultSummary } from '../../components/import';
+import { ImportInstructionCard, ImportResultSummary, ImportDropzone } from '../../components/import';
 import { Button, Card, Spinner, ErrorState, Badge } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { parseOperationsWorkbook, validateAndMapImportRows, buildTemplateBlob } from './importUtils';
@@ -12,7 +12,6 @@ import { useImportOperationsItems } from './hooks';
 export function OperationsImportPage() {
   const { t } = useTranslation(['operations', 'common']);
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
   const [rows, setRows] = useState([]);
   const [errors, setErrors] = useState([]);
   const [importResult, setImportResult] = useState(null);
@@ -44,10 +43,7 @@ export function OperationsImportPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleFileChange = (file) => {
     setIsParsing(true);
     setImportResult(null);
     const reader = new FileReader();
@@ -67,7 +63,6 @@ export function OperationsImportPage() {
     };
 
     reader.readAsArrayBuffer(file);
-    e.target.value = '';
   };
 
   const handleReset = () => {
@@ -75,7 +70,6 @@ export function OperationsImportPage() {
     setErrors([]);
     setImportResult(null);
     setImportProgress(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleImport = async () => {
@@ -111,32 +105,15 @@ export function OperationsImportPage() {
               intro={t('operations:import.instructions.intro')}
               steps={instructionSteps}
             />
-            <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
-              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
-                <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-                {t('operations:import.uploadTitle')}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-                {t('operations:import.uploadDescription')}
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button variant="outline" onClick={handleDownloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
-                  {t('operations:import.downloadTemplate')}
-                </Button>
-                <Button onClick={() => fileInputRef.current?.click()}>
-                  {t('operations:import.selectFile')}
-                </Button>
-              </div>
-            </Card>
+            <ImportDropzone
+              title={t('operations:import.uploadTitle')}
+              description={t('operations:import.uploadDescription')}
+              accept=".xlsx,.xls"
+              onFile={handleFileChange}
+              selectLabel={t('operations:import.selectFile')}
+              templateLabel={t('operations:import.downloadTemplate')}
+              onDownloadTemplate={handleDownloadTemplate}
+            />
           </div>
         ) : (
           <div className="space-y-6">

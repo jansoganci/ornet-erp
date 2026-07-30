@@ -12,6 +12,8 @@ type RequestOptions = {
   actorId?: string | null;
   erpRecordId?: string | null;
   idempotencyKey?: string | null;
+  /** Set false for user-scoped endpoints like /me that don't take a {company_id} prefix. Defaults to true. */
+  companyScoped?: boolean;
 };
 
 const RATE_WINDOW_MS = 10_000;
@@ -48,9 +50,9 @@ async function reserveRateSlot(): Promise<void> {
   requestCount += 1;
 }
 
-function expandPath(path: string): string {
+function expandPath(path: string, companyScoped: boolean): string {
   const suffix = path.startsWith("/") ? path : `/${path}`;
-  return `${baseUrl()}/${companyId()}${suffix}`;
+  return companyScoped ? `${baseUrl()}/${companyId()}${suffix}` : `${baseUrl()}${suffix}`;
 }
 
 async function parseResponse(response: Response): Promise<unknown> {
@@ -69,7 +71,7 @@ export async function parasutRequest(
 ): Promise<unknown> {
   let lastPayload: unknown = null;
   const method = options.method ?? "GET";
-  const url = expandPath(options.path);
+  const url = expandPath(options.path, options.companyScoped ?? true);
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await reserveRateSlot();
@@ -104,7 +106,17 @@ export async function parasutRequest(
 
     if (response.ok) return payload;
 
-    if (response.status === 429 || response.status >= 500) {
+    // 429 is always safe to retry — Paraşüt's rate limiter rejects before
+    // doing any work, so nothing could have happened server-side. A 5xx on
+    // a non-idempotent method (POST/PATCH/DELETE) is ambiguous — Paraşüt
+    // may have created/mutated the resource before the error occurred, so
+    // blindly retrying risks a duplicate (e.g. two sales_invoices drafts
+    // for one prepare-invoice call). Only auto-retry 5xx for GET, which
+    // has no side effects to duplicate. Confirmed bug, independent audit
+    // 2026-07-23 — the caller's idempotency layer (idempotency.ts) is
+    // responsible for safe retries of non-GET calls, not this client.
+    const isRetryable = response.status === 429 || (response.status >= 500 && method === "GET");
+    if (isRetryable) {
       await sleep((2 ** attempt) * 750 + Math.floor(Math.random() * 250));
       continue;
     }

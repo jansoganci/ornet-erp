@@ -1,15 +1,15 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
-import { Upload, AlertCircle, CheckCircle2, X, Save, HelpCircle, Download } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X, Save, HelpCircle } from 'lucide-react';
 import { useBulkCreateSimCards, useCreateProviderCompany } from './hooks';
 import { fetchProviderCompanies, fetchExistingSimIdentifiers } from './api';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { useQueryClient } from '@tanstack/react-query';
 import { providerCompanyKeys } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { ImportInstructionCard, ImportResultSummary } from '../../components/import';
+import { ImportInstructionCard, ImportResultSummary, ImportDropzone } from '../../components/import';
 import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { toast } from 'sonner';
@@ -70,7 +70,6 @@ export function SimCardImportPage() {
   const { t } = useTranslation(['simCards', 'common']);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const fileInputRef = useRef(null);
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -78,10 +77,7 @@ export function SimCardImportPage() {
   const bulkCreateMutation = useBulkCreateSimCards();
   const createProviderMutation = useCreateProviderCompany();
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const handleFileUpload = (file) => {
     setIsParsing(true);
     setImportResult(null);
     const reader = new FileReader();
@@ -314,7 +310,6 @@ export function SimCardImportPage() {
     setData([]);
     setErrors([]);
     setImportResult(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const downloadTemplate = () => {
@@ -360,32 +355,15 @@ export function SimCardImportPage() {
               intro={t('common:import.instructionIntro')}
               steps={instructionSteps}
             />
-            <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
-              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
-                <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-                {t('simCards:import.uploadTitle')}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-                {t('simCards:import.uploadDescription')}
-              </p>
-              <input
-                type="file"
-                accept=".xlsx, .xls"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-              />
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button type="button" onClick={() => fileInputRef.current?.click()}>
-                  {t('simCards:import.selectFile')}
-                </Button>
-                <Button type="button" variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
-                  {t('simCards:import.downloadTemplate')}
-                </Button>
-              </div>
-            </Card>
+            <ImportDropzone
+              title={t('simCards:import.uploadTitle')}
+              description={t('simCards:import.uploadDescription')}
+              accept=".xlsx, .xls"
+              onFile={handleFileUpload}
+              selectLabel={t('simCards:import.selectFile')}
+              templateLabel={t('simCards:import.downloadTemplate')}
+              onDownloadTemplate={downloadTemplate}
+            />
 
             <Card className="p-4 bg-neutral-50 dark:bg-neutral-800/30 border-neutral-200 dark:border-neutral-700">
               <h4 className="font-medium text-neutral-900 dark:text-neutral-50 mb-3 flex items-center gap-2">

@@ -6,10 +6,12 @@ export async function ping(params: {
   correlationId: string;
   actorId?: string | null;
 }): Promise<unknown> {
+  // /me is user-scoped, not company-scoped — no {company_id} prefix.
   return parasutRequest(params.supabase, {
-    path: "/me",
+    path: "/me?include=companies",
     operation: "ping",
     correlationId: params.correlationId,
     actorId: params.actorId,
+    companyScoped: false,
   });
 }

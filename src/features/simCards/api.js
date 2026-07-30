@@ -286,11 +286,12 @@ export async function fetchSimCardsForSubscription(siteId, search = '') {
 
 /**
  * Fetch ALL Turkcell SIM cards for invoice analysis (bypasses default pagination).
+ * Narrow select — the invoice analysis screen only needs phone_number/status/sale_price.
  */
 export async function fetchAllTurkcellSimCards() {
   const { data, error } = await supabase
     .from('sim_cards')
-    .select(SIM_CARD_SELECT)
+    .select('phone_number, status, sale_price')
     .is('deleted_at', null)
     .eq('operator', 'TURKCELL')
     .order('phone_number', { ascending: true });

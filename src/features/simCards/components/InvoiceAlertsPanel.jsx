@@ -1,245 +1,208 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { Card, Badge } from '../../../components/ui';
-import { cn } from '../../../lib/utils';
-import { formatCurrency } from '../../../lib/utils';
+import { Download } from 'lucide-react';
+import { Card, Button, SearchInput, Table } from '../../../components/ui';
+import { cn, formatCurrency } from '../../../lib/utils';
+import { toCSV, downloadCSV } from '../../../lib/csvExport';
 
-const SEVERITY_BAR = {
-  error:   'bg-error-500',
-  warning: 'bg-warning-400',
-  info:    'bg-info-400',
-};
+const PAGE_SIZE = 50;
+const SEARCH_THRESHOLD = 20;
+const STATUS_ORDER = { active: 0, subscription: 1, available: 2, cancelled: 3 };
 
-function AlertSection({ severity = 'info', title, description, count, defaultOpen, children }) {
-  const [open, setOpen] = useState(defaultOpen);
+function ResultSection({
+  title,
+  description,
+  accentClassName,
+  rows,
+  columns,
+  csvRows,
+  csvColumns,
+  csvFilename,
+  getHatNo,
+  emptyMessage,
+}) {
+  const { t } = useTranslation('invoiceAnalysis');
+  const [search, setSearch] = useState('');
+  const [shown, setShown] = useState(PAGE_SIZE);
 
-  if (count === 0) return null;
+  const filtered = useMemo(() => {
+    const term = search.replace(/\D/g, '');
+    if (!term) return rows;
+    return rows.filter((row) => getHatNo(row).includes(term));
+  }, [rows, search, getHatNo]);
+
+  const visible = filtered.slice(0, shown);
+  const remaining = filtered.length - shown;
+
+  const handleDownload = () => {
+    downloadCSV(toCSV(csvRows, csvColumns), csvFilename);
+  };
 
   return (
-    <Card className="overflow-hidden border-neutral-200/60 dark:border-neutral-800/60">
-      <button
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <div className="flex items-start gap-3 min-w-0">
-          {/* Severity indicator bar */}
-          <div className={cn('w-1 self-stretch rounded-full flex-shrink-0 mt-0.5', SEVERITY_BAR[severity])} />
-          <div className="min-w-0">
-            <p className="font-semibold text-neutral-900 dark:text-neutral-50 flex items-center gap-2 flex-wrap">
-              {title}
-              <Badge size="sm" variant="default">{count}</Badge>
-            </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{description}</p>
-          </div>
+    <Card className="p-5 mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div>
+          <h3 className={cn('text-base font-semibold', accentClassName)}>
+            {title} <span className="text-neutral-400 dark:text-neutral-500 font-normal">({rows.length})</span>
+          </h3>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{description}</p>
         </div>
-        {open ? (
-          <ChevronUp className="w-5 h-5 text-neutral-400 shrink-0 ml-2" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-neutral-400 shrink-0 ml-2" />
+        {rows.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="w-4 h-4" />}
+            onClick={handleDownload}
+          >
+            {t('filters.downloadCsv')}
+          </Button>
         )}
-      </button>
+      </div>
 
-      {open && (
-        <div className="border-t border-neutral-200 dark:border-neutral-800">
-          {children}
-        </div>
+      {rows.length === 0 ? (
+        <p className="text-sm font-medium text-success-600 dark:text-success-400 py-2">
+          {emptyMessage}
+        </p>
+      ) : (
+        <>
+          {rows.length > SEARCH_THRESHOLD && (
+            <div className="mb-4">
+              <SearchInput
+                value={search}
+                onChange={(v) => { setSearch(v); setShown(PAGE_SIZE); }}
+                placeholder={t('filters.searchPlaceholder')}
+              />
+            </div>
+          )}
+
+          <Table columns={columns} data={visible} keyExtractor={(row, i) => `${getHatNo(row)}-${i}`} />
+
+          {remaining > 0 && (
+            <div className="mt-3 text-center">
+              <button
+                onClick={() => setShown((s) => s + PAGE_SIZE)}
+                className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
+              >
+                {t('filters.showMore', { count: Math.min(remaining, PAGE_SIZE) })}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </Card>
   );
 }
 
-function AlertTable({ rows, columns }) {
-  return (
-    <div className="overflow-x-auto max-h-64 overflow-y-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-neutral-50 dark:bg-neutral-800/50 sticky top-0">
-          <tr>
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className="px-4 py-2 text-left font-medium text-neutral-600 dark:text-neutral-400 whitespace-nowrap"
-              >
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-          {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/20">
-              {columns.map((col) => (
-                <td key={col.key} className="px-4 py-2 text-neutral-800 dark:text-neutral-200">
-                  {col.render ? col.render(row) : row[col.key]}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-const costDiffColumnsFactory = (t) => [
-  { key: 'hatNo', label: t('table.hatNo') },
-  { key: 'tariff', label: t('table.tariff') },
-  {
-    key: 'invoiceAmount',
-    label: t('table.invoiceAmount'),
-    render: (row) => formatCurrency(row.invoiceAmount),
-  },
-  {
-    key: 'costPrice',
-    label: t('table.costPrice'),
-    render: (row) => formatCurrency(row.costPrice),
-  },
-  {
-    key: 'priceDiff',
-    label: t('table.diff'),
-    render: (row) => (
-      <span className="text-warning-600 dark:text-warning-400 font-medium">
-        +{formatCurrency(row.priceDiff)}
-      </span>
-    ),
-  },
-  { key: 'buyer', label: t('table.buyer'), render: (row) => row.buyer || '—' },
-];
-
-export function InvoiceAlertsPanel({
-  invoiceOnly,
-  costDiffHigh = [],
-  costDiffMedium = [],
-  costDiffLow = [],
-  lossLines,
-  inventoryOnly,
-}) {
+export function InvoiceAlertsPanel({ lossLines, invoiceOnly, inventoryOnly }) {
   const { t } = useTranslation('invoiceAnalysis');
-  const costDiffColumns = costDiffColumnsFactory(t);
 
-  const invoiceOnlyColumns = [
-    { key: 'hatNo', label: t('table.hatNo') },
-    { key: 'tariff', label: t('table.tariff') },
-    {
-      key: 'invoiceAmount',
-      label: t('table.invoiceAmount'),
-      render: (row) => formatCurrency(row.invoiceAmount),
-    },
-  ];
+  const sortedLoss = useMemo(
+    () => [...lossLines].sort((a, b) => a.profit - b.profit),
+    [lossLines]
+  );
+  const sortedInvoiceOnly = useMemo(
+    () => [...invoiceOnly].sort((a, b) => b.invoiceAmount - a.invoiceAmount),
+    [invoiceOnly]
+  );
+  const sortedInventoryOnly = useMemo(
+    () => [...inventoryOnly].sort(
+      (a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9)
+    ),
+    [inventoryOnly]
+  );
+
+  const statusLabel = (status) => t(`status.${status}`, { defaultValue: status });
 
   const lossColumns = [
-    { key: 'hatNo', label: t('table.hatNo') },
-    { key: 'tariff', label: t('table.tariff') },
-    {
-      key: 'invoiceAmount',
-      label: t('table.invoiceAmount'),
-      render: (row) => formatCurrency(row.invoiceAmount),
-    },
-    {
-      key: 'costPrice',
-      label: t('table.costPrice'),
-      render: (row) => row.hasUnknownCost ? (
-        <Badge variant="warning" size="sm">{t('table.unknownCost')}</Badge>
-      ) : (
-        formatCurrency(row.costPrice)
-      ),
-    },
-    {
-      key: 'salePrice',
-      label: t('table.salePrice'),
-      render: (row) => formatCurrency(row.salePrice),
-    },
+    { key: 'hatNo', header: t('table.hatNo') },
+    { key: 'tariff', header: t('table.tariff') },
+    { key: 'invoiceAmount', header: t('table.invoiceAmount'), align: 'right', render: (v) => formatCurrency(v) },
+    { key: 'salePrice', header: t('table.salePrice'), align: 'right', render: (v) => formatCurrency(v) },
     {
       key: 'profit',
-      label: t('table.profitLoss'),
-      render: (row) => (
-        <span className="text-error-600 dark:text-error-400 font-medium">
-          {formatCurrency(row.profit)}
+      header: t('table.loss'),
+      align: 'right',
+      render: (v) => (
+        <span className="text-error-600 dark:text-error-400 font-semibold">
+          {formatCurrency(Math.abs(v))}
         </span>
       ),
     },
-    { key: 'buyer', label: t('table.buyer'), render: (row) => row.buyer || '—' },
+  ];
+
+  const invoiceOnlyColumns = [
+    { key: 'hatNo', header: t('table.hatNo') },
+    { key: 'tariff', header: t('table.tariff') },
+    { key: 'invoiceAmount', header: t('table.invoiceAmount'), align: 'right', render: (v) => formatCurrency(v) },
   ];
 
   const inventoryOnlyColumns = [
-    {
-      key: 'phone_number',
-      label: t('table.hatNo'),
-      render: (row) => row.phone_number,
-    },
-    {
-      key: 'buyer',
-      label: t('table.buyer'),
-      render: (row) => row.buyer?.company_name || '—',
-    },
-    {
-      key: 'cost_price',
-      label: t('table.costPrice'),
-      render: (row) => formatCurrency(row.cost_price || 0),
-    },
+    { key: 'phone_number', header: t('table.hatNo') },
+    { key: 'status', header: t('table.status'), render: (v) => statusLabel(v) },
   ];
 
   return (
-    <div className="space-y-2 mb-6">
-      <AlertSection
-        severity="error"
-        title={t('alerts.invoiceOnly.title')}
-        description={t('alerts.invoiceOnly.description')}
-        count={invoiceOnly.length}
-        defaultOpen={true}
-      >
-        <AlertTable rows={invoiceOnly} columns={invoiceOnlyColumns} />
-      </AlertSection>
-
-      <AlertSection
-        severity="error"
-        title={t('alerts.costDiffHigh.title')}
-        description={t('alerts.costDiffHigh.description')}
-        count={costDiffHigh.length}
-        defaultOpen={true}
-      >
-        <AlertTable rows={costDiffHigh} columns={costDiffColumns} />
-      </AlertSection>
-
-      <AlertSection
-        severity="warning"
-        title={t('alerts.costDiffMedium.title')}
-        description={t('alerts.costDiffMedium.description')}
-        count={costDiffMedium.length}
-        defaultOpen={true}
-      >
-        <AlertTable rows={costDiffMedium} columns={costDiffColumns} />
-      </AlertSection>
-
-      <AlertSection
-        severity="info"
-        title={t('alerts.costDiffLow.title')}
-        description={t('alerts.costDiffLow.description')}
-        count={costDiffLow.length}
-        defaultOpen={false}
-      >
-        <AlertTable rows={costDiffLow} columns={costDiffColumns} />
-      </AlertSection>
-
-      <AlertSection
-        severity="error"
+    <div>
+      <ResultSection
         title={t('alerts.loss.title')}
         description={t('alerts.loss.description')}
-        count={lossLines.length}
-        defaultOpen={false}
-      >
-        <AlertTable rows={lossLines} columns={lossColumns} />
-      </AlertSection>
+        accentClassName="text-error-700 dark:text-error-400"
+        rows={sortedLoss}
+        columns={lossColumns}
+        csvRows={sortedLoss.map((r) => ({
+          hatNo: r.hatNo,
+          tariff: r.tariff,
+          invoiceAmount: r.invoiceAmount,
+          salePrice: r.salePrice,
+          loss: Math.abs(r.profit),
+        }))}
+        csvColumns={[
+          { key: 'hatNo', header: t('table.hatNo') },
+          { key: 'tariff', header: t('table.tariff') },
+          { key: 'invoiceAmount', header: t('table.invoiceAmount') },
+          { key: 'salePrice', header: t('table.salePrice') },
+          { key: 'loss', header: t('table.loss') },
+        ]}
+        csvFilename={t('alerts.loss.csvFilename')}
+        getHatNo={(r) => r.hatNo}
+        emptyMessage={t('alerts.loss.empty')}
+      />
 
-      <AlertSection
-        severity="info"
+      <ResultSection
+        title={t('alerts.invoiceOnly.title')}
+        description={t('alerts.invoiceOnly.description')}
+        accentClassName="text-warning-700 dark:text-warning-400"
+        rows={sortedInvoiceOnly}
+        columns={invoiceOnlyColumns}
+        csvRows={sortedInvoiceOnly}
+        csvColumns={[
+          { key: 'hatNo', header: t('table.hatNo') },
+          { key: 'tariff', header: t('table.tariff') },
+          { key: 'invoiceAmount', header: t('table.invoiceAmount') },
+        ]}
+        csvFilename={t('alerts.invoiceOnly.csvFilename')}
+        getHatNo={(r) => r.hatNo}
+        emptyMessage={t('alerts.invoiceOnly.empty')}
+      />
+
+      <ResultSection
         title={t('alerts.inventoryOnly.title')}
         description={t('alerts.inventoryOnly.description')}
-        count={inventoryOnly.length}
-        defaultOpen={false}
-      >
-        <AlertTable rows={inventoryOnly} columns={inventoryOnlyColumns} />
-      </AlertSection>
+        accentClassName="text-info-700 dark:text-info-400"
+        rows={sortedInventoryOnly}
+        columns={inventoryOnlyColumns}
+        csvRows={sortedInventoryOnly.map((r) => ({
+          hatNo: r.phone_number,
+          status: statusLabel(r.status),
+        }))}
+        csvColumns={[
+          { key: 'hatNo', header: t('table.hatNo') },
+          { key: 'status', header: t('table.status') },
+        ]}
+        csvFilename={t('alerts.inventoryOnly.csvFilename')}
+        getHatNo={(r) => r.phone_number}
+        emptyMessage={t('alerts.inventoryOnly.empty')}
+      />
     </div>
   );
 }

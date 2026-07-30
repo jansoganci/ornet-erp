@@ -1,11 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Download, Upload, FileSpreadsheet, AlertTriangle, XCircle } from 'lucide-react';
+import { AlertTriangle, XCircle } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Button, Spinner, Card } from '../../components/ui';
 import { ErrorState } from '../../components/ui/ErrorState';
-import { ImportInstructionCard, ImportResultSummary } from '../../components/import';
+import { ImportInstructionCard, ImportResultSummary, ImportDropzone } from '../../components/import';
 import { parseXlsxFile, validateAndMapRows, buildTemplateBlob } from './importUtils';
 import { useImportSubscriptions } from './hooks';
 import { getErrorMessage } from '../../lib/errorHandler';
@@ -150,9 +150,7 @@ export function SubscriptionImportPage() {
     URL.revokeObjectURL(url);
   }, []);
 
-  const handleFileChange = useCallback((e) => {
-    const file = e.target?.files?.[0];
-    if (!file) return;
+  const handleFileChange = useCallback((file) => {
     setImportResult(null);
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -167,7 +165,6 @@ export function SubscriptionImportPage() {
       }
     };
     reader.readAsArrayBuffer(file);
-    e.target.value = '';
   }, []);
 
   const handleImport = useCallback(async () => {
@@ -210,16 +207,17 @@ export function SubscriptionImportPage() {
           />
         )}
 
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={handleDownloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
-            {t('subscriptions:import.downloadTemplate')}
-          </Button>
-          <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-[#171717] cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900/50 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            <Upload className="w-4 h-4" />
-            {t('subscriptions:import.selectFile')}
-            <input type="file" accept=".xlsx" className="sr-only" onChange={handleFileChange} />
-          </label>
-        </div>
+        {!importResult && (
+          <ImportDropzone
+            title={t('subscriptions:import.uploadTitle')}
+            description={t('subscriptions:import.uploadDescription')}
+            accept=".xlsx"
+            onFile={handleFileChange}
+            selectLabel={t('subscriptions:import.selectFile')}
+            templateLabel={t('subscriptions:import.downloadTemplate')}
+            onDownloadTemplate={handleDownloadTemplate}
+          />
+        )}
 
         {hasLimitError && (
           <p className="text-sm text-amber-600 dark:text-amber-400">
@@ -337,15 +335,6 @@ export function SubscriptionImportPage() {
             message={getErrorMessage(importMutation.error, 'subscriptions.importFailed')}
             onRetry={handleImport}
           />
-        )}
-
-        {!rows.length && !importResult && !importMutation.error && (
-          <div className="flex flex-col items-center justify-center py-8 text-neutral-500 dark:text-neutral-400">
-            <FileSpreadsheet className="w-12 h-12 mb-3 opacity-50" />
-            <p className="text-sm text-center">
-              {t('subscriptions:import.selectFile')} (.xlsx, {t('subscriptions:import.limitError')})
-            </p>
-          </div>
         )}
 
         <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">

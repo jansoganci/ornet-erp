@@ -1,13 +1,14 @@
 # Paraşüt Integration — Implementation Roadmap (PR Blueprint)
 
-Date: 2026-05-14 (updated: 2026-07-17 — three Paraşüt documents merged into this file)  
+Date: 2026-05-14 (updated: 2026-07-22 — API facts cross-checked against official Paraşüt docs + third-party SDKs; see **Appendix C**)  
 Status: Codebase written (migrations / edge functions / UI files in scope of PR-1–PR-8 exist in the repo), **NOT ACTIVE in production** — no production OAuth token, live sync has never run. Before go-live, the **mandatory safeguards in Section 10** must be completed.
 
-> **This file is the SINGLE document for Paraşüt integration.** `docs/analysis/parasut-integration-audit.md` and `docs/technical-assessment-parasut-go-live.md` were folded into this file on 2026-07-17 and deleted: technical assessment evidence → **Appendix A**, Paraşüt API reference → **Appendix B**. (Audit document §§1–7 were historically obsolete “no code” findings and were not preserved.) Non-Paraşüt operational topics (backups, OAuth refresh race analysis, system-wide “verified good” list) were moved the same day to `docs/active/operational-reliability-notes.md`.
+> **This file is the SINGLE document for Paraşüt integration.** `docs/analysis/parasut-integration-audit.md` and `docs/technical-assessment-parasut-go-live.md` were folded into this file on 2026-07-17 and deleted: technical assessment evidence → **Appendix A**, Paraşüt API reference → **Appendix B**. (Audit document §§1–7 were historically obsolete “no code” findings and were not preserved.) Non-Paraşüt operational topics (backups, OAuth refresh race analysis, system-wide “verified good” list) were moved the same day to `docs/active/operational-reliability-notes.md`. On 2026-07-22, Appendix B's assumptions were checked against the official docs site and independent SDKs — corrections and new facts are in **Appendix C**; §10.4 and the PR-3 contact-matching plan below were updated to match.
 
 Related documents:
 - `CLAUDE.md` (finance module rules — immutable reference)
 - `docs/active/operational-reliability-notes.md` (backups + OAuth analysis + system-wide notes)
+- **`docs/active/parasut-implementation-plan.md`** (2026-07-23) — the execution checklist: phase-by-phase, file-and-line-accurate fix/build tasks grounded in a real code audit of the existing `parasut-dispatch`/`parasut-reconcile` implementation. Read this roadmap for *why*; read that document for exactly *what to change and where*.
 
 ---
 
@@ -41,6 +42,7 @@ Supabase Edge Function: parasut-dispatch
    │   ├── idempotency.ts        deterministic key, response cache
    │   ├── job-poller.ts         trackable_jobs polling
    │   ├── mappers.ts            ERP → Paraşüt payload mapping
+   │   ├── product-resolver.ts   CONDITIONAL — get-or-create generic products, only if §10.8's empirical test shows a product relationship is actually required
    │   ├── errors.ts             domain error taxonomy
    │   └── logger.ts             structured JSON log + audit
    ├── handlers/
@@ -108,6 +110,7 @@ Each phase is **one PR**. The next PR does not start until the previous one is m
   - `customers` → `parasut_contact_id`, `identity_type`, `tax_office`
   - `parasut_match_candidates` table + RLS (admin SELECT/UPDATE)
   - `idx_customers_parasut_contact` partial index
+  - **Note (Appendix C.19, confirmed from swagger `ContactAttributes`):** Paraşüt's own schema has no VKN-vs-TCKN `identity_type` field — only a single `tax_number` string plus `contact_type` (enum: `person`/`company`) and `account_type` (`customer`/`supplier`, required). Ornet's `identity_type` (`vkn`/`tckn`) stays a **local-only** validation/UX concept (10 vs 11 digit tax number); when creating a Paraşüt contact, map `identity_type='tckn'` → `contact_type='person'` and `identity_type='vkn'` → `contact_type='company'` — don't try to send `identity_type` to Paraşüt directly, there's no matching field. `ContactAttributes` required fields overall: `name`, `account_type` only — `tax_number`/`tax_office` are optional at the API level even though this project always wants them filled for invoicing eligibility (§10.3).
 - `src/features/customers/schema.js` — add `identity_type`, `tax_office` to zod schema
 - `src/features/customers/CustomerFormPage.jsx` — two new fields (tax office, identity-type dropdown)
 - `src/locales/tr/customers.json` — new labels
@@ -146,7 +149,7 @@ Each phase is **one PR**. The next PR does not start until the previous one is m
 - `supabase/functions/parasut-dispatch/core/errors.ts`
   - `ParasutAuthError`, `ParasutRateLimitError`, `ParasutValidationError`, `ParasutJobError`
 - `supabase/functions/parasut-dispatch/handlers/ping.ts`
-  - Calls `GET /v4/{company_id}/me`, returns company name
+  - **Corrected 2026-07-22 (Appendix C.17):** calls `GET /me` — **not** company-scoped, no `{company_id}` prefix (confirmed against official docs; the earlier `/v4/{company_id}/me` path in this spec was wrong). Response `type: "users"`, not a company resource. To confirm which company the token is scoped to, call with `?include=companies` and read the company name from `included`, not from `data.attributes` directly.
 - `.env.example` — new secret list (commented, reference only)
 - `docs/active/parasut-integration-roadmap.md` — update this file with PR-2 status
 
@@ -162,7 +165,7 @@ PARASUT_COMPANY_ID=...
 ```
 
 #### Acceptance criteria
-- [ ] `supabase functions invoke parasut-dispatch --body '{"action":"ping"}'` returns the company name
+- [ ] `supabase functions invoke parasut-dispatch --body '{"action":"ping"}'` calls `GET /me?include=companies` and returns the matching company's name from `included` (not from `data.attributes` — `/me` is user-scoped, Appendix C.17)
 - [ ] Token refresh happens once (parallel-request race test passed)
 - [ ] Backoff engages under simulated 429
 - [ ] Audit log is written on every call
@@ -177,11 +180,9 @@ PARASUT_COMPANY_ID=...
 
 #### Files
 - `supabase/functions/parasut-dispatch/handlers/bulk-match.ts`
-  - Paraşüt `GET /contacts` (paginated, page[size]=100)
-  - Match against Ornet customers:
-    - `exact_vkn` → equal tax_number + identity_type='vkn'
-    - `exact_tckn` → equal tax_number + identity_type='tckn'
-    - `name_only` → normalized name match
+  - **Revised 2026-07-22 (Appendix C.5):** `page[size]` max is **25**, not 100 — Paraşüt clamps/rejects above that. Every query (both paths below) should also add `filter[account_type]=customer` — Ornet only matches customer contacts, and this excludes supplier-side false matches on shared VKN/TCKN. Two matching paths:
+    - `exact_vkn` / `exact_tckn` → query `GET /contacts?filter[tax_number]=...&filter[account_type]=customer` directly per customer (server-side exact match, no bulk pull needed for this path)
+    - `name_only` → still requires a full paginated pull (`page[size]=25` + loop over `links.next` / increment `page[number]`, `filter[account_type]=customer`) + normalized client-side name match, since there's no fuzzy-name filter
   - Write results to `parasut_match_candidates`
   - **Admin only** may trigger
 - `supabase/functions/parasut-dispatch/handlers/create-contact.ts`
@@ -222,9 +223,12 @@ PARASUT_COMPANY_ID=...
 - `supabase/functions/parasut-dispatch/core/idempotency.ts`
   - Key format: `invoice:financial_tx:{uuid}:v1`
   - `acquire` → INSERT … ON CONFLICT DO NOTHING; on conflict return cached response
+- `supabase/functions/parasut-dispatch/core/product-resolver.ts` — **conditional on §10.8's empirical test result (2026-07-22: downgraded from "mandatory" — swagger shows `relationships.product` is not in `SalesInvoiceDetailAttributes`' required fields, contradicting the quick-start prose). Do the one-draft-invoice test in §10.8 before writing this file** — skip it entirely if the test succeeds without a product relationship.
 - `supabase/functions/parasut-dispatch/core/mappers.ts`
   - `financialTxToSalesInvoicePayload(tx, customer)` — convert to JSON:API
+  - Required fields confirmed from swagger (Appendix C.18): `SalesInvoiceAttributes` needs only `item_type`, `issue_date`; each `details[]` entry needs only `quantity`, `unit_price`, `vat_rate` — `currency` must be `TRL` (§10.4), `description` recommended per line even if `product` turns out to be optional (§10.8)
   - VAT, FX rate, line items, description, date (YYYY-MM-DD, Turkey time)
+  - Each `details[]` entry calls `product-resolver.ts` for a product id **only if §10.8's test shows it's required**
 - `supabase/functions/parasut-dispatch/core/job-poller.ts`
   - Trackable job poll: 2s → 5s → 10s → 20s (max 60s)
 - `supabase/functions/parasut-dispatch/handlers/prepare-invoice.ts`
@@ -395,6 +399,8 @@ For every PR:
 | Wrong e-invoice / e-archive decision | High | Live `e_invoice_inboxes` query every time; no cache |
 | trackable_job timeout | Medium | 60s poll, then mark failed + manual retry button |
 | Customer matched incorrectly | High | Only `exact_vkn`/`exact_tckn` auto; name matches need manual approve |
+| Invoice date rejected — precedes own e-Fatura activation date, or precedes buyer's e-Fatura inbox registration date (Appendix C.3) | Medium | Read buyer's registration date from the `e_invoice_inboxes` response before finalize; default invoice date to "today", never backdate to `transaction_date` if that predates registration |
+| `trackable_job` id polled after its 15-minute TTL (Appendix C.3) | Medium | Keep in-request poll well under 15 min (already 60s ceiling); `refresh-status` recovery action (§10.5) must also run within 15 min of job creation, or fall back to re-querying invoice state via `?include=active_e_document` instead of the stale job id |
 
 ---
 
@@ -402,6 +408,7 @@ For every PR:
 
 Not in this roadmap, but may be considered later:
 - Importing Paraşüt expense invoices into Ornet (Module 13 v2)
+- Pushing Ornet expense-side `financial_transactions` (recurring templates, subscription COGS, etc.) to Paraşüt as supplier bills — the opposite direction from the item above. Confirmed (Appendix C.14, owner-fetched official docs, 2026-07-22): Paraşüt models this as an entirely separate `purchase_bills` resource (`GET/POST /{company_id}/purchase_bills`, own `item_type` enum `purchase_bill`/`refund`/`cancelled`, its own `payments`/`cancel`/`recover`/`archive` action set mirroring `sales_invoices`) — not a flag on `sales_invoices`. Noted for reference only; not scoped, not started.
 - Webhook-based payment feedback (Paraşüt → Ornet)
 - Multi-company support
 - e-Dispatch / e-SMM integrations
@@ -412,9 +419,10 @@ Not in this roadmap, but may be considered later:
 ## 8. Prerequisites before coding
 
 - [ ] OAuth credential pack obtained from Paraşüt (`client_id`, `client_secret`, user, password, `company_id`)
-- [ ] Paraşüt test/sandbox company created (do not pollute production data)
+- [ ] Paraşüt trial/test company created (no dedicated sandbox exists — confirmed Appendix C.3; the trial company against production API + bulk-delete-test-data is the intended approach)
 - [ ] Test e-Invoice taxpayer VKN list ready (at least 1 taxpayer + 1 non-taxpayer)
 - [ ] Completeness of existing customer VKN/TCKN and tax office data reviewed (if incomplete, a backfill UI may be needed after PR-1)
+- [ ] Identify the Paraşüt `account_id` (Kasa/Banka) that `sync-payment.ts` should post collections against (Appendix C.19 — `PaymentFormAttributes.account_id`, not previously a documented prerequisite)
 - [ ] Sentry project live (`VITE_SENTRY_DSN` set)
 
 ---
@@ -461,7 +469,7 @@ When PR-8 is green, move this file under `docs/archive/completed/`.
 ### 10.4 Mapper currency fix + invoice currency policy — MANDATORY
 - [ ] **Policy decision:** In which currency should USD-sourced documents be invoiced? (Recommendation: always TRY — use `amount_try` + `output_vat`.)
 - [ ] Mapper fix: current code sends USD `unit_price` (`amount_original`) with TRY `total_vat` (`output_vat`) → mixed currencies in one payload. Evidence: 00246:219+234 (proposal), 00247:298+ (WO), `mappers.ts:39-42`. Example: $1,000 / rate 40.00 / VAT 20% → payload: USD, unit_price 1,000, total_vat 8,000, total_amount 9,000 (correct: 200 / 1,200 USD).
-- [ ] `TRY` vs `TRL` verification: Paraşüt v4 `sales_invoices` currency enum historically uses `TRL`; the mapper sends `"TRY"`. Verify on first controlled test or swagger; one-line fix if needed. Affects **all** TRY invoices.
+- [ ] **`TRY` vs `TRL` — CONFIRMED DIRECTLY FROM THE PRIMARY SWAGGER SPEC (Appendix C.4/C.18), not just SDK cross-reference.** `mappers.ts:51` sends `"TRY"`. The official `parasutcom/api-doc` swagger's `currency` enum for `SalesInvoiceAttributes` is `[TRL, USD, EUR, GBP]` — **`TRY` is not a valid enum value at all**, so the API almost certainly rejects it outright (400/422) rather than silently misbehaving; four independent third-party SDKs corroborate. Treat as a required one-line fix before the first controlled test, not something to "verify on first test." Affects **all** TRY invoices, not only the USD-mixed-payload rows above.
 - Note: TRY-sourced paths (subscription, TRY proposal, TRY work order) are currency-consistent — the defect is only on USD source rows and the currency code.
 
 ### 10.5 `finalize-invoice` and `sync-payment` idempotency + recovery action — MANDATORY (before routine use)
@@ -475,15 +483,27 @@ When PR-8 is green, move this file under `docs/archive/completed/`.
 - Why low priority: with one operator + one daily cron, collision odds are very low; worst case is one failed request and automatic recovery. Full analysis: `docs/active/operational-reliability-notes.md` §2 (summary: Appendix A.7).
 
 ### 10.7 Reconcile (PR-8) must NOT be scheduled as currently written
-- [ ] Replace aggregate compare with invoice-level matching: pull Paraşüt invoices via a **pagination loop**, match ERP rows on `parasut_invoice_id`; report (a) confirmed ERP rows missing in Paraşüt, (b) amount diffs on matched pairs. Invoices present in Paraşüt but not ERP (including manual credit notes) are informational, not errors.
+- [ ] Replace aggregate compare with invoice-level matching: pull Paraşüt invoices via a **pagination loop** (`page[size]=25` max, confirmed Appendix C.5/C.12), match ERP rows on `parasut_invoice_id`; report (a) confirmed ERP rows missing in Paraşüt, (b) amount diffs on matched pairs. Invoices present in Paraşüt but not ERP (including manual credit notes) are informational, not errors.
+- [ ] **New (Appendix C.12): add `filter[item_type]=invoice` to the Paraşüt-side query.** The index endpoint defaults `item_type` to `'invoice, refund, estimate'` — without this filter, reconcile silently counts credit notes and quotes as if they were invoices, a second false-positive source beyond the manual-invoice issue below.
+- [ ] Optional but recommended (Appendix C.12): add `filter[print_status]=e_invoice_sent,e_archive_sent` (verify whether the API accepts a comma-separated value or requires separate calls) to restrict the Paraşüt side to sent e-documents only, tightening the match against ERP's `confirmed` semantics.
 - [ ] Optional: rolling 7-day window instead of “yesterday only” (catches late finalizations).
-- Why: current code does not separate origins (manual credit notes always false-alarm), has no pagination (>1 page silently undercounts), and compares TRY ERP totals to USD invoice totals incorrectly. A control that false-alarms is ignored within a month.
+- Why: current code does not separate origins (manual credit notes always false-alarm) or document types (refunds/estimates counted as invoices), has no pagination (>1 page silently undercounts), and compares TRY ERP totals to USD invoice totals incorrectly. A control that false-alarms is ignored within a month.
+
+### 10.8 Product resolution for invoice line items — DOWNGRADED to "verify first" 2026-07-22 (Appendix C.16/C.18, was briefly MANDATORY, schema evidence now contradicts the earlier prose-only finding)
+- **What changed:** this item was added earlier the same day as a hard blocker, based only on the quick-start guide's prose ("bir veya birden fazla ürün id'sine ihtiyacınız vardır"). A direct fetch of the primary swagger spec (`raw.githubusercontent.com/parasutcom/api-doc/master/spec/swagger.yaml`) shows `SalesInvoiceDetailAttributes`' required fields are only `quantity`, `unit_price`, `vat_rate` — **`relationships.product` is not in any required list**, at the detail level or the endpoint's relationships schema. Prose and formal schema disagree; do not build engineering around either one alone.
+- [ ] **Resolve empirically, cheaply, before writing `product-resolver.ts`:** in the trial/test company (§8, no sandbox exists — see B.1/C.3), send one `POST /sales_invoices` draft with a single detail carrying only `quantity`/`unit_price`/`vat_rate`/`description` and **no** `relationships.product`. Two outcomes:
+  - **Succeeds** → the quick-start prose was describing the common case (most Paraşüt users invoice against a product catalog), not a hard requirement. Skip `product-resolver.ts` entirely; `mappers.ts` sends line items with `description` directly (matches accrual-based line items like subscription/proposal/work-order revenue rows, which don't naturally correspond to a physical product SKU anyway).
+  - **422s** → the quick-start prose was right despite the schema not marking it `required` (schemas sometimes under-declare `required` when a field is conditionally required by business logic, not by JSON-Schema validation). Build the get-or-create fallback below.
+- [ ] **Fallback plan if the test 422s** (kept from the original finding, now explicitly conditional): don't create/match a distinct Paraşüt product per work-order material or proposal line item — that reproduces the contact catalog-bloat/false-match problem for no benefit. Instead define a small fixed set of generic service products (one per income category — `subscription`, `proposal_service`, `work_order_service`, `material_resale`, …; align with `service_category_enum`) and resolve each with get-or-create: `GET /products?filter[code]=ORNET_<CATEGORY>` → if empty, `POST /products` (required: `name` only; also set `inventory_tracking: false` — confirmed field, Appendix C.18/Appendix D — to avoid stock-tracking side effects) → cache the returned id. New file `supabase/functions/parasut-dispatch/core/product-resolver.ts`, called from `mappers.ts`.
+- Why this is worth a dedicated empirical test rather than picking a side: building `product-resolver.ts` unnecessarily is wasted PR-4 effort; *not* building it when it's actually required means every invoice 422s in production. One draft-invoice test (never finalized, freely deletable, no GİB reporting risk since drafts aren't e-documents) resolves it for near-zero cost.
 
 ### Suggested go-live order
-1. 10.1 → 10.4 (**before** the first controlled test invoice; ~1–2 focused days)
-2. First controlled production test: 1 TRY subscription + 1 USD proposal scenario, including `TRL` verification
-3. 10.5 (before routine monthly invoicing)
-4. 10.6–10.7 (after routine use / when enabling PR-8)
+1. **Resolve §10.8 empirically first** (one draft-invoice test, no product relationship) — cheapest possible unblock, determines whether `product-resolver.ts` is in scope at all
+2. 10.1 → 10.4 (**before** the first controlled test invoice; ~1–2 focused days)
+3. Determine the Paraşüt `account_id` (Kasa/Banka) to post payments against (Appendix C.19) — needed before any `sync-payment.ts` test, not previously a documented prerequisite
+4. First controlled production test: 1 TRY subscription + 1 USD proposal scenario, including `TRL` verification and (if needed) the generic-product get-or-create path
+5. 10.5 (before routine monthly invoicing)
+6. 10.6–10.7 (after routine use / when enabling PR-8)
 
 ---
 
@@ -550,7 +570,8 @@ Caveat: Paraşüt may recompute detail totals server-side from `quantity × unit
 
 **Proven noise sources:**
 1. **Manual Paraşüt invoices** — §0 keeps cancel/credit notes manual in the Paraşüt UI; the date filter counts *every* invoice in the company, so each manual invoice inflates the Paraşüt side with no ERP counterpart.
-2. **Pagination is missing** — `:89` consumes `parasutResponse?.data` once; no `page[number]` loop, no `links.next`. Paraşüt v4 paginates list endpoints (default 15/page — why PR-3 specifies `page[size]=100` for contacts). >1 page/day silently undercounts.
+1a. **Refunds and estimates counted as invoices (Appendix C.12, 2026-07-22 finding)** — `GET /sales_invoices` defaults `filter[item_type]` to `'invoice, refund, estimate'`; current reconcile code sets no `item_type` filter at all, so credit notes and quotes silently inflate the Paraşüt-side count/sum on top of the manual-invoice noise in point 1. Fix: explicit `filter[item_type]=invoice`.
+2. **Pagination is missing** — `:89` consumes `parasutResponse?.data` once; no `page[number]` loop, no `links.next`. Paraşüt v4 paginates list endpoints (default `page[size]=15`, **max 25** per Appendix C.5 — PR-3's original `page[size]=100` spec was itself wrong and has been corrected below). >1 page/day silently undercounts.
 3. **Currency** — ERP sum is TRY; Paraşüt `gross_total` for a USD invoice is in invoice currency. (Disappears if §10.4 policy = always TRY.)
 4. **Window** — only "yesterday" is ever checked: a draft finalized days after its `transaction_date` is never re-checked (silent non-coverage, the inverse failure). Amounts themselves are fine (0.01 tolerance).
 
@@ -574,14 +595,14 @@ The two-step Prepare → Finalize flow with no trigger-driven Paraşüt writes (
 
 - Base URL: `https://api.parasut.com/v4` — all paths are prefixed with `/{company_id}`.
 - Format: **JSON:API** (`application/vnd.api+json`). List endpoints are **paginated** (`page[number]`, `page[size]`; default 15).
-- Rate limit: **10 requests / 10 s.** Applied: 8/10 s + exponential backoff + jitter (429/5xx).
-- **No sandbox.** Practical approach: separate Paraşüt test company + separate OAuth credentials; keep finalization off for test invoices (they report to GİB).
+- Rate limit: **10 requests / 10 s** (confirmed twice over — official docs prose + independent third-party SDK, Appendix C.2). Applied: 8/10 s + exponential backoff + jitter (429/5xx).
+- **No sandbox exists — resolved 2026-07-22 (Appendix C.3), do not ask support, proceed on this basis.** The primary swagger spec defines exactly one host (`api.parasut.com`) and one `basePath` (`/v4`) — no staging/alternate host anywhere in the 19k-line spec, and the strings "sandbox"/"staging" don't appear in it at all. `parasutcom/api-doc`'s GitHub issues return zero hits for "sandbox" or "test". One secondary source (dukkan.io) claimed a staging toggle but was unreachable to verify and contradicts the primary source — treated as likely boilerplate copied from an unrelated payment-gateway integration, not evidence. **Practical approach (the de facto sandbox):** Paraşüt's own free trial company (14 days, real production API, disposable data) — Paraşüt explicitly supports bulk-deleting all test data from a trial company, which is the intended cleanup path. Separate OAuth credentials for the trial company; keep finalization off for test invoices until deliberately testing e-document creation (they report to GİB once finalized).
 
 ### B.2 OAuth and tokens
 
-- Credential pack from Paraşüt support: `client_id`, `client_secret`, user email/password, `company_id`.
-- First token: `POST https://api.parasut.com/oauth/token` — `grant_type=password` (+ client_id/secret + username/password). Access token valid **7200 s**.
-- Refresh: `grant_type=refresh_token` — response includes a **new refresh_token** (rotation) → watch parallel refresh races (Appendix A.7; single-flight lock = §10.6).
+- Credential pack from Paraşüt support (`destek@parasut.com`): `client_id`, `client_secret`, `company_id`; for the password grant also user email/password. Official docs list OAuth2 with an `accessCode` (authorization_code) flow as the formal security scheme (`authorize: https://api.parasut.com/oauth/authorize`, `token: https://api.parasut.com/oauth/token`) — `grant_type=password` is documented as a second, simpler option ("2. grant_type=password") and is what this project uses for the unattended Edge Function. Both are officially supported; no need to switch to authorization_code.
+- First token: `POST https://api.parasut.com/oauth/token` — `grant_type=password` (+ client_id/secret + username/password + `redirect_uri=urn:ietf:wg:oauth:2.0:oob`). Access token valid **7200 s** (confirmed, official docs).
+- Refresh: `grant_type=refresh_token` — response includes a **new refresh_token** (rotation, confirmed by official docs, not just third-party observation) → watch parallel refresh races (Appendix A.7; single-flight lock = §10.6).
 - Every request: `Authorization: Bearer <access_token>`.
 - Secrets only in Edge Function secrets; never `VITE_*`.
 
@@ -594,10 +615,18 @@ The two-step Prepare → Finalize flow with no trigger-driven Paraşüt writes (
 | Taxpayer check | `GET /{company_id}/e_invoice_inboxes?filter[vkn]=...` |
 | e-Invoice | `POST /{company_id}/e_invoices` |
 | e-Archive | `POST /{company_id}/e_archives` |
-| Job tracking | `GET /{company_id}/trackable_jobs/{id}` |
+| Connectivity check ("ping") | `GET /me` — **not** company-scoped (no `{company_id}` prefix); `type: "users"`; add `?include=companies` to confirm which company the token resolves to (Appendix C.17) |
+| Job tracking | `GET /{company_id}/trackable_jobs/{id}` (confirmed exact shape via official docs, Appendix C.17 — no new status-enum detail beyond B.5/C.7) |
 | Collection / payment | `POST /{company_id}/sales_invoices/{id}/payments` |
 | Delete payment | `DELETE /{company_id}/transactions/{transaction_id}` |
 | History | `GET /{company_id}/sales_invoices?filter[contact_id]=...&include=payments,active_e_document` |
+| Contact exact-match lookup | `GET /{company_id}/contacts?filter[tax_number]=...` (also supports `filter[name]`, `filter[email]`, `filter[tax_office]`, `filter[city]`, `filter[account_type]`) — confirmed in swagger, Appendix C.5; use this directly for `exact_vkn`/`exact_tckn` matching instead of bulk-pulling contacts |
+| PDF (per e-document) | `GET /{company_id}/e_archives/{id}/pdf` (mirror: `/e_invoices/{id}/pdf`) — **note the `{id}` here is the e-document's own id (`e_archives`/`e_invoices` resource id = our `financial_transactions.parasut_e_document_id`), not the `sales_invoice` id** (Appendix C.15); returns type `e_document_pdfs`; **204 until ready** per the official quick-start guide (poll), then a URL valid 1 hour (Appendix C.3) |
+| e-Archive detail (backlink to invoice) | `GET /{company_id}/e_archives/{id}?include=sales_invoice` — confirms `e_archives` is an addressable resource distinct from `sales_invoices`, matching the 00217 schema (`parasut_e_document_id` is this id, not the invoice id) (Appendix C.15) |
+| e-Invoice detail (backlink to invoice) | `GET /{company_id}/e_invoices/{id}?include=invoice` — mirrors `e_archives`, confirmed via official docs (Appendix C.15). **Note the relationship name differs by resource: `e_archives` backlinks via `sales_invoice`, `e_invoices` backlinks via `invoice`** — the mapper/handler code must use the correct include name per document type, not a shared constant. |
+| Draft delete (used by `cancel-draft.ts`) | `DELETE /{company_id}/sales_invoices/{id}` — plain delete, distinct from the `.../cancel` action below (Appendix C.13) |
+| Formal cancel (not currently used — §0 keeps this manual) | `DELETE /{company_id}/sales_invoices/{id}/cancel` — API-level equivalent of the Paraşüt UI cancel action; exists but intentionally not wired up (Appendix C.13) |
+| Undo a delete | `PATCH /{company_id}/sales_invoices/{id}/recover` — safety net if a delete targets the wrong invoice (Appendix C.13) |
 
 ### B.4 e-Invoice vs e-Archive
 
@@ -605,19 +634,24 @@ The two-step Prepare → Finalize flow with no trigger-driven Paraşüt writes (
 |---|---|---|
 | Buyer | e-Invoice taxpayer (B2B) | Non-taxpayer / individual |
 | Delivery | Electronic via GİB | Email / print + daily GİB report |
-| Cancel window | Commercial: ~7–8 day buyer rejection window | ~7 day “Cancel” window |
+| Cancel window | Commercial: **8-day** buyer rejection window (confirmed, parasut.com/blog, Appendix C.9) | ~7 day “Cancel” window |
 | After window | Credit note | Credit note / expense voucher |
 
-Decision flow: query buyer VKN against `e_invoice_inboxes` **live every time** (no cache) → if registered use `e_invoices`, else `e_archives`. **Once an e-document is issued it cannot be undone; final human approval is required.**
+Decision flow: query buyer VKN against `e_invoice_inboxes` **live every time** (no cache) → if registered use `e_invoices`, else `e_archives`. **Once an e-document is issued it cannot be undone; final human approval is required.** Export invoices (`İhracat Faturaları`) are always issued as `e_invoices` regardless of the inbox check (official docs, Appendix C.3) — not currently a case this project needs, but relevant if export customers are ever added.
+
+**Invoice date constraint (Appendix C.10, field names confirmed Appendix C.18):** the invoice's issue date must be (a) after your own company's e-Fatura/e-Smm activation date, and (b) not before the date the buyer started using their e-Fatura label. Exact response fields on `e_invoice_inboxes` (`EInvoiceInboxAttributes`, confirmed from swagger): **`registered_at`** and **`address_registered_at`** (both date-time) — read one of these (verify which on first test; likely `address_registered_at` = the specific e-Fatura address' registration date) when deciding the invoice date, don't just default to `transaction_date`. A `finalize-invoice` call with a backdated `transaction_date` (e.g. a job completed days before invoicing) can fail this check. See §6 risk table.
 
 ### B.5 Asynchronous e-document flow
 
-`e_invoices`/`e_archives` POST is async: poll returned `trackable_job_id` (`status: running → done | error`). **HTTP 201 is not success** — the job can end in `error`. After `done`, verify with `sales_invoices?include=active_e_document,payments`. PDF URLs are time-limited — persist on your side if you need a durable archive.
+`e_invoices`/`e_archives` POST is async: poll returned `trackable_job_id`. Status values per the official quick-start prose: `pending` (queued, not started) → `running` (in progress) → `done` (success) | `error` (failed, inspect response for the error message) — our doc previously only listed `running → done|error`, missing the initial `pending` state. **Caveat (Appendix C.18):** the formal swagger `TrackableJobAttributes.status` enum only lists `running`/`done`/`error` — no `pending` — so the prose and schema disagree here too (lower stakes than the C.16 product question; just don't hard-fail if an unexpected status string appears, log and treat unknowns as still-in-progress). **HTTP 201 is not success** — the job can end in `error`. **The `trackable_job_id` is only valid for 15 minutes after creation** (official docs, not previously documented) — polling or recovery logic (§10.5 `refresh-status`) must either finish within that window or fall back to re-querying invoice state via `sales_invoices?include=active_e_document,payments` instead of the stale job id.
+
+After `done`, verify with `sales_invoices?include=active_e_document,payments`. **PDF generation is itself a separate async step**, not previously documented: the PDF endpoint returns **204 with an empty body** until the PDF is ready, so it must be polled at intervals (no fixed interval documented); once ready, response type `e_document_pdfs` with confirmed fields (`EDocumentPdfAttributes`, Appendix C.18) **`url`** and **`expires_at`** — read `expires_at` rather than hardcoding "1 hour" in code, persist the PDF on your side if you need a durable archive, don't hand the URL directly to customers.
 
 ### B.6 Collections / payments
 
 - Partial payments supported: multiple `payments` POSTs on the same invoice; remaining balance tracked via Paraşüt `remaining`.
 - Payment delete goes through `transactions/{transaction_id}` (not the payment id).
+- **`PaymentFormAttributes` has no formally required fields, but practically needs `account_id`** (the Paraşüt Kasa/Banka account the payment lands in — also determines the payment's currency) plus `date`, `amount`, and `exchange_rate` where relevant (Appendix C.18/C.19). **This `account_id` was not a documented prerequisite anywhere in the original roadmap** — it must be decided/looked up (via the accounts UI or an `/accounts`-style endpoint, not yet explored in this research pass) before `sync-payment.ts` can be tested. Added to §8 prerequisites.
 - Response `payment_id` + `transaction_id` are written to ERP (`financial_transaction_payments.parasut_payment_id` / `parasut_transaction_id`, 00218).
 
 ### B.7 Idempotency
@@ -641,3 +675,153 @@ Paraşüt has **no** standard `Idempotency-Key` header → mandatory at applicat
 2. e-Invoice/e-Archive cancellation: https://www.parasut.com/blog/e-fatura-e-arsiv-nasil-iptal-edilir
 3. Commercial e-Invoice: https://www.parasut.com/blog/ticari-e-fatura-nedir
 4. Supabase Edge Functions / Secrets: https://supabase.com/docs/guides/functions
+5. Official Paraşüt API docs site (quick-start / "Sık Kullanılan İşlemler" pages): https://apidocs.parasut.com/ — fetched directly by project owner 2026-07-22 (this SPA is not reachable via automated static fetch; see Appendix C)
+6. e-Fatura cancellation window, current: https://www.parasut.com/blog/e-fatura-nasil-iptal-edilir
+7. Third-party Paraşüt client SDKs used to cross-check the live API surface: https://github.com/bigoen/parasut (PHP), https://github.com/yigitkonur/mcp-parasut
+
+---
+
+## Appendix C — API verification pass (2026-07-22)
+
+> Purpose: the owner flagged that a wrong e-invoice is costly to unwind (manual credit note, customer call), so before writing any Paraşüt-facing code, Appendix B's claims were checked against real, current sources — the official docs site (fetched directly by the owner, since it's a JS-rendered SPA that automated fetch tools can't reach) plus independent third-party SDKs and the public swagger spec (via a research pass). Findings are folded into Appendix B and §10 above (each patched line links back here); this appendix is the evidence log.
+
+**Sources used:** official `apidocs.parasut.com` quick-start pages (owner-fetched, primary for OAuth/async/date-constraint facts); `github.com/parasutcom/api-doc` swagger spec (primary for `page[size]`, `filter[tax_number]`, `e_invoice_inboxes` params); `github.com/bigoen/parasut` and `github.com/yigitkonur/mcp-parasut` (independent client implementations, used to cross-check currency code and polling behavior since the swagger enum itself was not directly viewable); `parasut.com/blog/e-fatura-nasil-iptal-edilir` (current cancellation-window post).
+
+| # | Item | Verdict | Detail |
+|---|---|---|---|
+| C.1 | OAuth grants | Confirmed | `authorization_code` (`accessCode`) is the formal documented scheme; `grant_type=password` is an official second option (used by this project). Token `expires_in=7200`, `refresh_token` rotates on every refresh — confirmed by the official docs, not just observed in code. |
+| C.2 | Rate limit | Confirmed | 10 requests / 10 s — official docs prose + independent SDK agree. |
+| C.3 | Sandbox | **Resolved: no sandbox exists** | Primary swagger spec: single host, no staging/alternate host in 19k lines, "sandbox"/"staging" absent from the spec text. `parasutcom/api-doc` GitHub issues: zero hits for "sandbox"/"test". De facto approach: Paraşüt's free trial company (14 days, real production API) + Paraşüt's own bulk-delete-test-data feature for cleanup. |
+| C.4 | `sales_invoices` currency field | **Corrected: `TRL`, not `TRY`** | Four independent third-party SDKs built against the live v4 API all hardcode `TRL`; none use `TRY`. **Now also corroborated by the official docs themselves**: the `sales_invoices` index `sort` parameter lists a `remaining_in_trl` field (Appendix C.12) — Paraşüt's own naming convention uses `trl`, not `try`. `mappers.ts:51` currently sends `"TRY"` — fix before first test invoice, treat as confirmed defect (§10.4), confidence now very high. |
+| C.5 | `contacts` pagination + filters | **Corrected + new capability found — double-confirmed** | `page[size]` default 15, **max 25** (PR-3's original `page[size]=100` spec was wrong, now fixed above). Confirmed twice: once via swagger (research pass), once directly against the official `apidocs.parasut.com` contacts index page (owner-fetched 2026-07-22) — both list `filter[tax_number]`, `filter[name]`, `filter[email]`, `filter[tax_office]`, `filter[city]`, `filter[account_type]` (values: `customer`, `supplier`). Exact VKN/TCKN matching can query directly instead of bulk-pulling + client-side matching (PR-3 updated above); **add `filter[account_type]=customer`** to every match/lookup query too — Ornet only matches customers, and without this filter a VKN/TCKN that happens to also exist as a supplier contact could produce a false match. |
+| C.6 | `e_invoice_inboxes` | Confirmed | `filter[vkn]` (integer) param, same 15/25 pagination cap. |
+| C.7 | Async e-document flow | Confirmed + new facts | Status enum is `pending → running → done \| error` (we previously omitted `pending`). **New: `trackable_job_id` expires 15 minutes after creation** — not previously documented, added to §6 risk table and B.5. **New: PDF generation is a second, separate async step** (204-until-ready, then a 1-hour URL) — not previously documented, added to B.5. |
+| C.8 | Payments payload | Confirmed | To read a payment's underlying transaction id for deletion: `GET` the sales invoice with `?include=payments.transaction`, then `DELETE /transactions/{id}` — matches B.6, now sourced from official docs rather than inferred. |
+| C.9 | e-Fatura cancellation window | Confirmed, sharpened | **8 days** (owner's blog source, dated 2026), replacing our previous "~7–8 gün" estimate. |
+| C.10 | Invoice date constraint | **New finding, not previously documented** | Issue date must be after your own e-Fatura/e-Smm activation date AND not before the buyer's e-Fatura inbox registration date (read from the `e_invoice_inboxes` response). Added as a new risk (§6) — a backdated `transaction_date` used as invoice date could fail finalize. |
+| C.11 | Export invoices | New, low relevance today | Always issued as `e_invoices` regardless of the inbox check — not a case this project currently has, noted in B.4 for future reference. |
+| C.12 | `sales_invoices` index (`GET /sales_invoices`) full parameter set | New, from official docs — **directly improves §10.7 reconcile fix** | `filter[item_type]` **defaults to `'invoice, refund, estimate'`** — i.e. an index call with no explicit `item_type` filter (which is what `parasut-reconcile` currently does) counts credit notes (`refund`) and quotes (`estimate`) alongside real invoices, a second and previously-undocumented noise source on top of Appendix A.6's "manual invoices" finding. Fix: reconcile must set `filter[item_type]=invoice` explicitly. `filter[print_status]` supports `e_invoice_sent` / `e_archive_sent` / `e_smm_sent` (also `printed`, `not_printed`, `invoices_not_sent`) — reconcile can additionally filter to sent e-documents only, excluding drafts, further tightening the match against ERP's `confirmed` status. `page[size]` cap confirmed at 25 here too (consistent with C.5) — the reconcile pagination fix in §10.7 must use it. Also surfaces `filter[payment_status]` (`overdue`/`not_due`/`unscheduled`/`paid`) — not needed for reconcile today, but useful if a future receivables cross-check is built. |
+| C.13 | `sales_invoices` action endpoints: `.../cancel`, `.../recover`, `.../archive`, `.../unarchive` | New — **reconsider a §0 assumption, don't change it yet** | §0 states invoice cancellation is manual-only in the Paraşüt UI. The official docs show `DELETE /sales_invoices/{id}/cancel` exists as a formal API action (distinct from the plain `DELETE /sales_invoices/{id}` used by our `cancel-draft.ts` for drafts) — likely the API path for the legal e-Fatura/e-Arşiv cancellation within the buyer's rejection window (Appendix B.4). We are **not** changing §0's "manual only" decision now — the two-step approval + no-automation stance is a deliberate safety choice, not a gap — but a future PR could offer a "Cancel in Paraşüt" button that calls this endpoint instead of sending the operator to the Paraşüt UI, now that we know it's programmatically reachable. Also noted: `PATCH /sales_invoices/{id}/recover` can undo a delete — a safety net worth knowing about if `cancel-draft.ts` ever deletes the wrong invoice. |
+| C.14 | `contacts` sub-resources: `contact_debit_transactions` (labelled "Tahsilat"), `contact_credit_transactions` (labelled "Ödeme") | New, confirmed out of scope | Direct contact-ledger transactions not tied to a specific invoice. Our design always links payments to a specific `sales_invoices/{id}` (matches the project's per-document, accrual-based collection model — see CLAUDE.md's Tahsilat/receivables rules) via `sales_invoices/{id}/payments` (B.6), so these endpoints are intentionally unused. Logged so a future contributor doesn't have to re-discover and re-evaluate them. |
+| C.15 | `e_archives` / `e_invoices` as standalone addressable resources | Confirmed, clarifies PDF + backlink implementation | Both `POST /e_archives` and `POST /e_invoices` return a `trackable_jobs` record (id ≠ the eventual e-document id). Once `done`, the e-document itself is independently addressable: `GET /e_archives/{id}` / `GET /e_invoices/{id}` — this `{id}` **is** what belongs in `financial_transactions.parasut_e_document_id` (00217), not the `sales_invoice` id, confirming the schema was already shaped correctly. PDF fetch uses this same id: `GET /e_archives/{id}/pdf` or `GET /e_invoices/{id}/pdf` → type `e_document_pdfs`. Backlink-to-invoice relationship name differs by type: `include=sales_invoice` for `e_archives`, `include=invoice` for `e_invoices` — code must not assume a shared include name. `purchase_bills` (the separate expense-side resource, §7) was also confirmed distinct from `sales_invoices`. |
+| C.16 | **`products` resource + whether line items require a product id** | **Downgraded same-day, 2026-07-22 — prose vs. primary schema conflict, now an empirical open question, not a confirmed blocker** | Original finding (this same day, before C.18): quick-start guide states a sales invoice needs a customer id **and one or more product ids** per line, and `/products` is confirmed as a full resource. **Superseded by C.18**: a direct fetch of the primary swagger spec shows `relationships.product` is **not** in `SalesInvoiceDetailAttributes`'s required-fields list at any level. Prose and formal schema disagree — resolved not by picking a source but by deferring to one cheap empirical test (§10.8) before committing to building `product-resolver.ts`. Kept as a table row for the history; §10.8 in the body is now the authoritative, current version of this finding. |
+| C.17 | `GET /me` and `GET /trackable_jobs/{id}` | `/me` **corrected**; `trackable_jobs` confirmed, no new detail | PR-2's `ping.ts` spec had the wrong path (`/v4/{company_id}/me`, implying a company-scoped resource returning a company name directly). Official docs: `GET /me` has **no** `{company_id}` prefix, returns `type: "users"` — get the company via `?include=companies`, not from `data.attributes`. Fixed in PR-2's handler spec and acceptance criteria above. `GET /{company_id}/trackable_jobs/{id}` shape matches what B.5/C.7 already documented (`TrackableJobAttributes`, `relationships` present but untyped in the doc) — no correction needed, just confirmed. |
+| C.18 | **Full attribute schemas, direct primary-source fetch** (`raw.githubusercontent.com/parasutcom/api-doc/master/spec/swagger.yaml`, 19,206 lines) | Confirmed, supersedes several earlier "verify on first test" notes; full field lists in **Appendix D** | Highlights: `SalesInvoiceAttributes` required = `item_type`, `issue_date` only; `currency` enum = `[TRL, USD, EUR, GBP]` (`TRY` not valid at all — settles C.4 definitively). `SalesInvoiceDetailAttributes` required = `quantity`, `unit_price`, `vat_rate` only — **`relationships.product` not required** (→ C.16/§10.8 downgrade). `ProductAttributes` required = `name` only; has `inventory_tracking: boolean`. `ContactAttributes` required = `name`, `account_type` only; **no `identity_type`/vkn-vs-tckn field** — just `tax_number` + `contact_type` (`person`/`company`) (→ PR-1 note above). `PaymentFormAttributes`: no required list, but `account_id` is practically needed (→ C.19). `EInvoiceInboxAttributes`: `vkn`, `e_invoice_address`, `name`, `inbox_type`, `address_registered_at`, `registered_at` (→ B.4 invoice-date check now has exact field names). `EDocumentPdfAttributes`: `url`, `expires_at` (→ B.5 PDF handling now has exact field names). `TrackableJobAttributes.status` enum in swagger = `running`/`done`/`error` only — no `pending`, a second (low-stakes) prose-vs-schema gap alongside C.16. `POST /e_archives`/`/e_invoices` relationship confirmed as `relationships.sales_invoice.data.id` — matches what was already assumed, no correction needed there. |
+| C.19 | Payment `account_id` prerequisite | **New, not previously documented anywhere in the roadmap** | `PaymentFormAttributes` has no formal required-fields list, but every real payment practically needs `account_id` (the Kasa/Banka account it lands in, which also determines currency) — `sync-payment.ts` (PR-5) cannot be tested without first deciding/looking up which Paraşüt account this project should post collections against. Added to §8 prerequisites and B.6. |
+
+**Net effect on the roadmap:** **the single most impactful change this pass is a correction, not a new finding** — the same-day C.16/§10.8 "product resolution mandatory" conclusion was itself based on prose only and is now downgraded to "verify with one cheap test" after a direct primary-source (swagger) fetch showed the opposite of what the quick-start guide implied; treat this as a reminder that prose sources in this API's docs are not always schema-accurate, and that a primary-source fetch is worth doing before hardening a "mandatory" claim into code. Separately, this pass **strengthened** C.4 (currency) to the highest possible confidence (`TRY` isn't even a valid enum value, confirmed directly in swagger) and **fully resolved** C.3 (no sandbox exists, use the trial-company + bulk-delete approach — stop treating this as an open question). One new, previously-undocumented prerequisite surfaced (C.19, payment `account_id`). Full attribute schemas for six resource types are now available (Appendix D), replacing guesswork in `mappers.ts`/`create-contact.ts`/`product-resolver.ts` (if still needed) with confirmed field names.
+
+---
+
+## Appendix D — Confirmed attribute schemas (source: `parasutcom/api-doc` swagger, fetched 2026-07-22)
+
+> Field lists extracted directly from the primary OpenAPI spec (`raw.githubusercontent.com/parasutcom/api-doc/master/spec/swagger.yaml`). **Required** = present in the schema's formal `required` array. Everything else is optional at the JSON-Schema level even if this project always wants it filled (e.g. `tax_number` on a contact) — optionality here is about what the API will accept, not what our own business rules should require before calling it. Where §10.8 (Appendix C.16) showed prose and schema can disagree, treat "not required" as "not required by the validator," not as "definitely works as a free-text field" — verify anything load-bearing with a real test before relying on it in production.
+
+### D.1 `SalesInvoiceAttributes` (base of `SalesInvoiceCreateUpdateAttributes`, used by `POST/PUT /sales_invoices`)
+
+**Required:** `item_type`, `issue_date`
+
+| Field | Notes |
+|---|---|
+| `item_type` | enum: `invoice`, `export`, `estimate`, `cancelled`, `recurring_invoice`, `recurring_estimate`, `recurring_export`, `refund` — use `invoice` for normal sales |
+| `issue_date` | required |
+| `due_date` | optional |
+| `currency` | enum **`[TRL, USD, EUR, GBP]`** — `TRY` is not a valid value (§10.4) |
+| `exchange_rate` | for non-TRL currencies |
+| `description` | |
+| `invoice_series` / `invoice_id` | Paraşüt-side numbering, don't set unless a specific series is required |
+| `withholding_rate` | tevkifat, not currently used by this project's revenue types |
+| `invoice_discount_type` / `invoice_discount` | invoice-level discount, distinct from per-line `discount_*` (D.2) |
+| `billing_address` / `billing_postal_code` / `phone` / `fax` | |
+| `tax_office` / `tax_number` | can override the contact's own values for this specific invoice |
+| `country` / `city` / `district` / `is_abroad` | `is_abroad` relevant only for `export` item_type |
+| `order_no` / `order_date` | must be set **together** if set at all; required for some special-requirement flows (Amazon, per the earlier "Belirli Firmalar İçin Özel Gereksinimler" note — not relevant to this project's current customers) |
+| `shipment_addres` (sic, typo in the API itself — not ours) / `shipment_included` | |
+| `cash_sale` | boolean — relevant to `PaymentFormAttributes` inline creation via `payment_account_id`/`payment_date`/`payment_description` on `SalesInvoiceCreateUpdateAttributes` |
+| `payer_tax_numbers` | required for public-sector ("kamu") buyers — not currently relevant |
+| `invoice_note` | free-text note printed on the invoice |
+| `append_contact_balance` | |
+| `e_document_accounts` | |
+
+`SalesInvoiceCreateUpdateAttributes` (the `POST`/`PUT` variant) adds only: `payment_account_id`, `payment_date`, `payment_description` — for creating an invoice with an inline cash-sale payment in one call (this project's PR-4/PR-5 split creates the invoice and payment as separate steps, so these three are likely unused unless a future optimization merges them).
+
+### D.2 `SalesInvoiceDetailAttributes` (each entry in `relationships.details[]`)
+
+**Required:** `quantity`, `unit_price`, `vat_rate`
+
+| Field | Notes |
+|---|---|
+| `quantity` | required |
+| `unit_price` | required, in the invoice's `currency` |
+| `vat_rate` | required, percent |
+| `discount_type` / `discount_value` | line-level discount |
+| `vat_withholding_rate` | |
+| `excise_duty_type` / `excise_duty_value` | ÖTV, not relevant to this project's services |
+| `communications_tax_rate` | ÖİV, not relevant |
+| `description` | recommended even though not required — this is what a human sees on the line if no `product` name is shown |
+| `delivery_method` / `shipping_method` | |
+
+**`relationships.product` is not in this schema's required list** — see §10.8 for why this doesn't settle the question by itself and what the empirical test plan is.
+
+### D.3 `ProductAttributes` (`POST/PUT /products`)
+
+**Required:** `name`
+
+| Field | Notes |
+|---|---|
+| `name` | required |
+| `code` | maps to `filter[code]` for lookups (used by `product-resolver.ts` if built) |
+| `vat_rate` | default VAT for this product on new invoice lines |
+| `unit` | e.g. "Adet" |
+| `list_price` / `currency` | |
+| `barcode` / `gtip` | not relevant to generic service products |
+| `inventory_tracking` | **boolean — set `false` for any generic service product** to avoid stock-tracking side effects (relevant if §10.8's test shows products are needed) |
+
+### D.4 `ContactAttributes` (`POST/PUT /contacts`)
+
+**Required:** `name`, `account_type`
+
+| Field | Notes |
+|---|---|
+| `name` | required |
+| `account_type` | required, enum `customer`/`supplier` — always `customer` for this project's matching flow (also usable as a query filter, C.5) |
+| `contact_type` | enum `person`/`company` — the closest Paraşüt equivalent to Ornet's `identity_type`; map `tckn`→`person`, `vkn`→`company` (no direct `identity_type` field exists on the Paraşüt side, see PR-1 note above) |
+| `tax_number` | optional at the API level; this project always wants it filled for invoicing eligibility (§10.3) |
+| `tax_office` | optional at the API level, same note |
+| (address/email/phone fields exist but weren't enumerated in this pass — not currently blocking) | |
+
+### D.5 `PaymentFormAttributes` (`POST /sales_invoices/{id}/payments`)
+
+**Required:** none formally declared, but practically:
+
+| Field | Notes |
+|---|---|
+| `account_id` | the Kasa/Banka account the payment lands in; also determines the payment's currency — **must be decided/looked up before PR-5 can be tested** (C.19, new §8 prerequisite) |
+| `date` | |
+| `amount` | |
+| `exchange_rate` | for non-TRL invoices |
+| `description` | |
+
+### D.6 `EInvoiceInboxAttributes` (`GET /e_invoice_inboxes` results)
+
+| Field | Notes |
+|---|---|
+| `vkn` | |
+| `e_invoice_address` | the buyer's e-Fatura routing address ("etiket") |
+| `name` | buyer's registered name |
+| `inbox_type` | |
+| `registered_at` | date-time |
+| `address_registered_at` | date-time — **use one of these two for the B.4/C.10 invoice-date-vs-registration-date check; confirm which on the first controlled test**, since the spec doesn't make explicit which governs the "cannot invoice before this date" rule |
+
+### D.7 `EDocumentPdfAttributes` (`GET /e_archives|e_invoices/{id}/pdf` once ready)
+
+| Field | Notes |
+|---|---|
+| `url` | time-limited PDF URL |
+| `expires_at` | **read this instead of hardcoding "1 hour"** in code (B.5) |
+
+### D.8 `TrackableJobAttributes` (`GET /trackable_jobs/{id}`)
+
+| Field | Notes |
+|---|---|
+| `status` | swagger enum: `running`, `done`, `error` — quick-start prose additionally describes a `pending` state not present in this enum (B.5); handle unknown status strings defensively rather than hard-failing |

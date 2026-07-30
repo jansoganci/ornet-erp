@@ -84,6 +84,7 @@ export async function fetchCollectionStats(filters = {}) {
   let pendingQuery = supabase
     .from('subscription_payments')
     .select(`
+      payment_month,
       amount,
       vat_amount,
       total_amount,

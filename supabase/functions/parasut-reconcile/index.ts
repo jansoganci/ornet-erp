@@ -1,4 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { assertCronAuthorized } from "../_shared/cronAuth.ts";
 import { parasutRequest } from "../parasut-dispatch/core/parasut-client.ts";
 
 const CORS_HEADERS = {
@@ -50,8 +51,47 @@ function totalsMatch(left: number, right: number): boolean {
   return Math.abs(left - right) < 0.01;
 }
 
+// page[size] max is 25 (confirmed, docs/active/parasut-integration-roadmap.md
+// Appendix C.5/C.12); filter[item_type]=invoice excludes refunds/estimates
+// that the API otherwise includes by default (Appendix C.12 — a second,
+// previously-undocumented source of reconcile false positives beyond the
+// manual-invoice noise this control already has to tolerate).
+async function fetchAllInvoicesForDate(
+  supabase: SupabaseClient,
+  correlationId: string,
+  issueDate: string,
+): Promise<SalesInvoiceRecord[]> {
+  const invoices: SalesInvoiceRecord[] = [];
+
+  for (let page = 1; page <= 400; page += 1) {
+    const response = await parasutRequest(supabase, {
+      path:
+        `/sales_invoices?filter[issue_date]=${encodeURIComponent(issueDate)}` +
+        `&filter[item_type]=invoice&include=payments&page[size]=25&page[number]=${page}`,
+      operation: "reconcile",
+      correlationId,
+    }) as { data?: SalesInvoiceRecord[]; meta?: { total_pages?: number } };
+
+    const pageData = response?.data ?? [];
+    invoices.push(...pageData);
+
+    const totalPages = response?.meta?.total_pages ?? page;
+    if (page >= totalPages || pageData.length === 0) break;
+  }
+
+  return invoices;
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS });
+
+  // Same pattern as extend-subscription-payments (Appendix A.1/§10.1): this
+  // function is cron-only, verify_jwt=false in config.toml, so in-function
+  // auth is mandatory. Previously this handler had none at all — anyone who
+  // derived the function URL from the public VITE_SUPABASE_URL could read
+  // daily revenue totals and burn Paraşüt API quota.
+  const authFailure = assertCronAuthorized(req);
+  if (authFailure) return authFailure;
 
   const supabase = createClient(
     requireEnv("SUPABASE_URL"),
@@ -80,13 +120,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   let parasutError: string | null = null;
 
   try {
-    const parasutResponse = await parasutRequest(supabase, {
-      path: `/sales_invoices?filter[issue_date]=${encodeURIComponent(issueDate)}&include=payments`,
-      operation: "reconcile",
-      correlationId,
-    }) as { data?: SalesInvoiceRecord[] };
-
-    const invoices = parasutResponse?.data ?? [];
+    const invoices = await fetchAllInvoicesForDate(supabase, correlationId, issueDate);
     parasutCount = invoices.length;
     parasutSum = invoices.reduce((sum, invoice) => sum + invoiceGrossTotal(invoice), 0);
   } catch (reconcileError) {

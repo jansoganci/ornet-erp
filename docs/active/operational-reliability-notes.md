@@ -10,20 +10,18 @@
 ### What exists today
 
 - **Supabase platform backups only**, and their existence depends on the plan tier: Pro plan = automated daily backups with ~7-day retention (restore = whole-project rollback, not table-level); point-in-time recovery (PITR) is a separate paid add-on; Free plan = no automated backups. The tier is **not verifiable from the repo** → first action is a one-minute dashboard check.
-- **Custom/application-level backup: none.** Verified: `.github/workflows/` contains only `fetch-tcmb-rates.yml`; no dump script exists under `scripts/`; `docs/DATA_STRATEGY_4_YEAR_PLAN.md` §5 documents the *intent* (pg_dump → encrypted S3, weekly) but nothing is implemented. Intended future behavior: automated nightly backup around 23:00 or 01:00.
+- **Owner decision (2026-07-30):** Do not build a custom GitHub Actions / `pg_dump` / Cloudflare R2 backup pipeline. Ornet will rely on Supabase-managed backups for now. Revisit this decision only if the production project has no managed daily backups or the recovery requirement changes.
 
 ### Do files/assets need backup too?
 
 **No.** `supabase.storage` is not referenced anywhere in `src/` and no migration creates storage buckets — the app stores no user files in Supabase Storage. Proposal PDFs are generated client-side on demand; static assets live in git (`public/`). **The Postgres database is the only stateful store.** Edge Function secrets and `config.toml` are re-settable configuration, not data — keep a secrets inventory in a password manager (they are not captured by a DB dump).
 
-### Smallest reliable setup (matching the intended nightly schedule)
+### Required checks
 
 1. **Now (minutes):** check the Supabase dashboard — confirm plan tier, that daily platform backups are present, and whether PITR is worth enabling (best RPO, zero maintenance).
-2. **One GitHub Actions workflow** (the repo already uses this exact pattern for `fetch-tcmb-rates`): `cron: "0 22 * * *"` (= 01:00 TRT) → `pg_dump --format=custom` over the direct (non-pooler) connection string stored as a GitHub secret → compress + encrypt (`age` or `gpg`, key in a secret) → upload to a **private Cloudflare R2 bucket** (existing Cloudflare account; effectively free at this size). Retention: keep ~30 dailies + 12 monthlies via a small prune step.
-3. **Alerting:** GitHub emails on workflow failure by default — no extra infrastructure.
-4. **One restore drill** into a scratch Supabase project to prove the dump restores; repeat quarterly.
+2. **One restore drill** into a scratch Supabase project to prove the managed backup restores; repeat quarterly if the process remains practical.
 
-**Priority:** real, owner-confirmed gap; sensible to close around Paraşüt go-live since production-account testing raises the value of a rollback point. Effort: Small (one workflow file + one bucket + one drill).
+**Priority:** confirm that Supabase-managed daily backups exist before relying on them. No custom backup automation is planned.
 
 ---
 

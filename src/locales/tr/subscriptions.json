@@ -347,6 +347,8 @@
   "import": {
     "title": "Excel ile toplu yükle",
     "pageTitle": "Abonelikler — Excel ile toplu yükle",
+    "uploadTitle": "Excel Dosyası Yükleyin",
+    "uploadDescription": "Abonelik listesini içeren .xlsx dosyasını sürükleyin veya seçin.",
     "downloadTemplate": "Şablon İndir",
     "selectFile": "Dosya Seç",
     "preview": "Önizleme",

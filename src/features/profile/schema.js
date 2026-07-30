@@ -8,7 +8,7 @@ export const profileSchema = z.object({
     .max(100),
   phone: z
     .string()
-    .regex(/^[0-9+\s\-()]{7,20}$/, 'Geçerli bir telefon numarası giriniz')
+    .regex(/^[0-9+\s\-()]{7,20}$/, i18n.t('profile:validation.phoneInvalid'))
     .optional()
     .or(z.literal('')),
 });

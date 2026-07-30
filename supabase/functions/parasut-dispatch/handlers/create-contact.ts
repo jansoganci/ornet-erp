@@ -20,12 +20,24 @@ export async function createContact(params: {
 
   const { data: customer, error } = await params.supabase
     .from("customers")
-    .select("id, company_name, tax_number, tax_office, parasut_contact_id")
+    .select("id, company_name, tax_number, tax_office, identity_type, parasut_contact_id")
     .eq("id", customerId)
     .single();
 
   if (error) throw error;
   if (customer.parasut_contact_id) return { contact_id: customer.parasut_contact_id, already_exists: true };
+
+  // Required, not just recommended: without identity_type, mappers.ts's
+  // contact_type mapping (tckn→person, else→company) silently defaults to
+  // "company" for a customer whose identity is simply unknown, rather than
+  // stopping to ask for the missing data. Confirmed bug, independent audit
+  // 2026-07-23.
+  if (customer.identity_type !== "vkn" && customer.identity_type !== "tckn") {
+    throw new ParasutValidationError(
+      "Customer identity_type (vkn/tckn) must be set before creating a Paraşüt contact",
+      400,
+    );
+  }
 
   const body = customerToContactPayload(customer);
   const result = await parasutRequest(params.supabase, {

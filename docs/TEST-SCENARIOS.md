@@ -24,26 +24,26 @@
 | MAN-02 | Manual | A-C2 | Password recovery on slow connection | Pending |
 | MAN-03 | Manual | A-C3 | Password change requires current password | Pending |
 | MAN-04 | Manual | AB-C1 | Action board hidden during profile load | Pending |
-| MAN-05 | Manual | SA-C1 | Bulk asset registration from list page | Pending |
-| MAN-06 | Manual | TA-C1 | Single submit creates one task only | Pending |
-| MAN-07 | Manual | WO-C1 | Work order update refreshes materials list | Pending |
-| MAN-08 | Manual | CU-C2 | Deleted site disappears immediately | Pending |
+| MAN-05 | Manual | SA-C1 | Bulk asset registration from list page | ✅ Done |
+| MAN-06 | Manual | TA-C1 | Single submit creates one task only | ✅ Done |
+| MAN-07 | Manual | WO-C1 | Work order update refreshes materials list | ✅ Done |
+| MAN-08 | Manual | CU-C2 | Deleted site disappears immediately | ✅ Done |
 | MAN-09 | Manual | NO-C1 | Notification badge updates after resolve | Pending |
 | MAN-10 | Manual | DA-C1 | Dashboard fallback for missing customer name | Pending |
 | MAN-11 | Manual | DA-C2 | Action board warning when queries fail | Pending |
-| MAN-12 | Manual | WO-C2 | New work order preserves pre-filled site_id | Pending |
-| MAN-13 | Manual | PR-C2 | PDF export shows error toast on failure | Pending |
-| MAN-14 | Manual | SC-C1 | SIM import warns on failure, no redirect | Pending |
-| MAN-15 | Manual | SC-C2 | Excel dates import with correct day values | Pending |
-| MAN-16 | Manual | MA-C1 | Malformed Excel shows parse error toast | Pending |
+| MAN-12 | Manual | WO-C2 | New work order preserves pre-filled site_id | ✅ Done |
+| MAN-13 | Manual | PR-C2 | PDF export shows error toast on failure | ✅ Done |
+| MAN-14 | Manual | SC-C1 | SIM import warns on failure, no redirect | ✅ Done |
+| MAN-15 | Manual | SC-C2 | Excel dates import with correct day values | ✅ Done |
+| MAN-16 | Manual | MA-C1 | Malformed Excel shows parse error toast | ✅ Done |
 | MAN-17 | Manual | WH-I1 | Workers column populated in work history | Pending |
-| MAN-18 | Manual | SB-C3 | Pause keeps current month payment status | Pending |
+| MAN-18 | Manual | SB-C3 | Pause keeps current month payment status | ✅ Done |
 | MAN-19 | Manual | 6C | Invalid date format triggers validation error | Pending |
 | MAN-20 | Manual | 6D | Invalid IBAN triggers validation error | Pending |
 | MAN-21 | Manual | 6A | Currency enum enforced by dropdown | Pending |
 | MAN-22 | Manual | Tur-5 | Error toasts show Turkish, not raw errors | Pending |
-| MAN-23 | Manual | notes-max | Subscription notes accepts 10 000 characters | Pending |
-| MAN-24 | Manual | 6F | All 16 units available in materials dropdown | Pending |
+| MAN-23 | Manual | notes-max | Subscription notes accepts 10 000 characters | ✅ Done |
+| MAN-24 | Manual | 6F | All 16 units available in materials dropdown | ✅ Done |
 
 ---
 

@@ -6,6 +6,12 @@
 
 ---
 
+## Permissions
+
+Run shell/CLI commands (build, test, lint, git, supabase CLI, etc.) directly without asking for confirmation first.
+
+---
+
 ## Project identity
 
 **Ornet ERP** — Work order management and ERP for a **Turkish security company**: customers and sites, work orders, materials, subscriptions, SIM inventory, proposals/quotes, finance ledger (with accrual receivables + collections/“Tahsilat”), notifications, site equipment (“Equipment” in UI), operations board, technical guide, and an in-progress **Paraşüt** (e-invoice/accounting) integration.

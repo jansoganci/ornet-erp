@@ -31,12 +31,13 @@ export function FinanceDashboardFilters({ year, month, viewMode, onYearChange, o
   return (
     <Card className="p-4 border-neutral-200/60 dark:border-neutral-800/60">
       <div className="flex flex-col md:flex-row gap-3 flex-wrap items-end">
-        <div className="w-full md:w-28">
+        <div className="w-full md:w-36 shrink-0">
           <ListboxSelect
             options={yearOptions}
             value={String(year)}
             onChange={(v) => onYearChange(Number(v))}
             placeholder={t('dashboardV2.filters.year')}
+            triggerClassName="whitespace-nowrap"
           />
         </div>
         <div className="w-full md:w-36">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { RefreshCw, Check, X } from 'lucide-react';
+import { RefreshCw, Check, X, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Badge, Button, Card, EmptyState, Select, Spinner } from '../../components/ui';
@@ -10,6 +10,7 @@ import {
   useMatchCandidates,
   useRejectMatch,
   useRunBulkMatch,
+  useRunBulkMatchNameFallback,
 } from './parasutMatchingHooks';
 
 const STATUS_OPTIONS = [
@@ -23,10 +24,18 @@ export function ParasutMatchingPage() {
   const { t } = useTranslation(['customers', 'common']);
   const { isAdmin } = useRole();
   const [status, setStatus] = useState('pending');
+  const [batchProgress, setBatchProgress] = useState(null);
   const { data: candidates = [], isLoading } = useMatchCandidates(status);
   const runBulkMatch = useRunBulkMatch();
+  const runNameFallback = useRunBulkMatchNameFallback();
   const acceptMatch = useAcceptMatch();
   const rejectMatch = useRejectMatch();
+
+  const handleRunBatch = (offset = 0) => {
+    runBulkMatch.mutate(offset, {
+      onSuccess: (result) => setBatchProgress(result),
+    });
+  };
 
   if (!isAdmin) {
     return (
@@ -42,17 +51,43 @@ export function ParasutMatchingPage() {
         title={t('customers:parasutMatching.title')}
         description={t('customers:parasutMatching.description')}
         actions={
-          <Button
-            type="button"
-            variant="primary"
-            leftIcon={<RefreshCw className="h-4 w-4" />}
-            loading={runBulkMatch.isPending}
-            onClick={() => runBulkMatch.mutate()}
-          >
-            {t('customers:parasutMatching.runBulkMatch')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="primary"
+              leftIcon={<RefreshCw className="h-4 w-4" />}
+              loading={runBulkMatch.isPending}
+              onClick={() => handleRunBatch(batchProgress?.done === false ? batchProgress.nextOffset : 0)}
+            >
+              {batchProgress?.done === false
+                ? t('customers:parasutMatching.runNextBatch', {
+                    processed: batchProgress.processed,
+                    total: batchProgress.totalUnmatched,
+                  })
+                : t('customers:parasutMatching.runBulkMatch')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              leftIcon={<Users className="h-4 w-4" />}
+              loading={runNameFallback.isPending}
+              onClick={() => runNameFallback.mutate()}
+            >
+              {t('customers:parasutMatching.runNameFallback')}
+            </Button>
+          </div>
         }
       />
+
+      {batchProgress && (
+        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+          {t('customers:parasutMatching.bulkMatchProgress', {
+            processed: batchProgress.processed,
+            total: batchProgress.totalUnmatched,
+            inserted: batchProgress.inserted,
+          })}
+        </p>
+      )}
 
       <div className="mt-6 max-w-xs">
         <Select

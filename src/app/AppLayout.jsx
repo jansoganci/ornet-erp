@@ -124,7 +124,7 @@ export function AppLayout() {
       />
 
       <div className={cn(
-        'flex flex-col min-h-screen transition-all duration-300 overflow-x-hidden',
+        'flex min-h-screen min-w-0 flex-col transition-all duration-300 overflow-x-hidden',
         isSidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'
       )}>
         {/* Topbar */}
@@ -179,12 +179,14 @@ export function AppLayout() {
 
         {/* Main Content - mobilde FAB yok, ekstra 4rem padding kaldırıldı */}
         <main className={cn(
-          'flex-1 p-4 sm:p-6 lg:p-8 lg:pb-8',
+          'min-w-0 flex-1 p-4 sm:p-6 lg:p-8 lg:pb-8',
           'max-lg:pb-[calc(5rem+env(safe-area-inset-bottom))]'
         )}>
           <ErrorBoundary>
             <MobileSidebarProvider openSidebar={openMobileSidebarDrawer}>
-              <Outlet />
+              <div className="min-w-0 w-full max-w-full">
+                <Outlet />
+              </div>
             </MobileSidebarProvider>
           </ErrorBoundary>
         </main>

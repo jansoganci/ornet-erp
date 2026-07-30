@@ -2,95 +2,62 @@
   "title": "Fatura Analizi",
   "upload": {
     "title": "Turkcell Fatura Yükle",
-    "description": "Aylık Turkcell faturanızı PDF veya CSV olarak yükleyin. Sistem hat verilerini okuyarak envanterdeki maliyetlerle karşılaştırır.",
+    "description": "Aylık Turkcell faturanızı PDF, CSV veya e-fatura XML olarak yükleyin. Sistem hat verilerini okuyarak envanterdeki kayıtlarla karşılaştırır.",
     "button": "Dosya Seç",
     "parsingPdf": "PDF okunuyor...",
     "parsingCsv": "CSV okunuyor...",
+    "parsingXml": "XML okunuyor...",
     "parsing": "Fatura okunuyor...",
-    "accept": ".pdf, .csv"
+    "accept": ".pdf, .csv, .xml"
   },
   "summary": {
-    "totalLines": "Faturadaki Hat Sayısı",
-    "totalAmount": "Ödenecek Tutar",
-    "matched": "Sistemde Kayıtlı",
-    "invoiceOnly": "Sistemde Kayıtsız",
-    "costDiffHigh": "Önemli Fark (≥25 TL)",
-    "costDiffMedium": "Orta Fark (10–25 TL)",
-    "costDiffLow": "Az Fark (1–10 TL)",
-    "costIncreaseCount": "Fiyat Sapması",
-    "estimatedProfitLoss": "Tahmini Zarar"
+    "loss": "Zarar Eden Hatlar",
+    "invoiceOnly": "Faturada Var, Sistemde Yok",
+    "inventoryOnly": "Sistemde Var, Faturada Yok"
   },
   "alerts": {
-    "costDiffHigh": {
-      "title": "Önemli Maliyet Farkı (25 TL ve üzeri)",
-      "description": "Fatura tutarı, kayıtlı maliyetten 25 TL veya daha fazla yüksek."
-    },
-    "costDiffMedium": {
-      "title": "Orta Maliyet Farkı (10–25 TL)",
-      "description": "Fatura tutarı, kayıtlı maliyetten 10 TL ile 25 TL arasında yüksek."
-    },
-    "costDiffLow": {
-      "title": "Az Maliyet Farkı (1–10 TL)",
-      "description": "Fatura tutarı, kayıtlı maliyetten 1 TL ile 10 TL arasında yüksek."
+    "loss": {
+      "title": "Zarar Eden Hatlar",
+      "description": "Bu hatlarda Turkcell'e ödenen tutar, müşteriden alınan satış fiyatının üzerinde.",
+      "empty": "Zarar eden hat yok ✓",
+      "csvFilename": "zarar_eden_hatlar"
     },
     "invoiceOnly": {
-      "title": "Faturada Olan, Sistemde Olmayan Hatlar",
-      "description": "Bu telefon numaraları faturada görünüyor ama SIM kart envanterinizde kayıtlı değil. Ödemesi yapılıyor ancak takip edilmiyor."
-    },
-    "costIncrease": {
-      "title": "Beklenenden Fazla Ücretlendirilen Hatlar",
-      "description": "Bu hatların fatura tutarı, sisteminizde kayıtlı birim maliyetten 1 TL veya daha fazla yüksek."
-    },
-    "loss": {
-      "title": "Maliyeti Satış Fiyatını Aşan Hatlar",
-      "description": "Bu hatlarda Turkcell'e ödenen tutar, müşteriden alınan ücretin üzerinde. Doğrudan zarar oluşuyor."
+      "title": "Faturada Var, Sistemde Yok",
+      "description": "Bu telefon numaraları faturada görünüyor ama SIM kart envanterinizde kayıtlı değil. Ödemesi yapılıyor ancak takip edilmiyor.",
+      "empty": "Tüm faturalı hatlar sistemde kayıtlı ✓",
+      "csvFilename": "faturada_var_sistemde_yok"
     },
     "inventoryOnly": {
-      "title": "Sistemde Kayıtlı Ama Faturada Görünmeyen Hatlar",
-      "description": "Bu Turkcell hatları SIM kart envanterinizde kayıtlı, ancak bu faturada herhangi bir ücret görünmüyor."
-    },
-    "unknownCost": "{{count}} hat için maliyet girilmemiş",
-    "unknownCostDescription": "Bu hatların kar/zarar hesaplaması doğru olsa da; maliyet fiyatı girilmediği için fark analizi yapılamıyor. SIM kart kayıtlarına maliyet girin."
-  },
-  "tabs": {
-    "matched": "Eşleşenler",
-    "invoiceOnly": "Sadece Faturada",
-    "inventoryOnly": "Sadece Envanterde"
+      "title": "Sistemde Var, Faturada Yok",
+      "description": "Bu Turkcell hatları SIM kart envanterinizde kayıtlı, ancak bu faturada herhangi bir ücret görünmüyor.",
+      "empty": "Tüm kayıtlı hatlar bu faturada var ✓",
+      "csvFilename": "sistemde_var_faturada_yok"
+    }
   },
   "table": {
     "hatNo": "Hat No",
     "tariff": "Tarife",
     "invoiceAmount": "Fatura Tutarı",
-    "costPrice": "Maliyet",
     "salePrice": "Satış Fiyatı",
-    "profitLoss": "Kar/Zarar",
-    "kdv": "KDV",
-    "oiv": "ÖİV",
+    "loss": "Zarar",
     "status": "Durum",
-    "buyer": "Alıcı",
-    "costIncrease": "Maliyet Artışı",
-    "costDiffTier": "Fark Derecesi",
-    "diff": "Fark",
-    "lineUnit": "hat",
-    "unknownCost": "Maliyet Girilmemiş",
-    "tierHigh": "Önemli",
-    "tierMedium": "Orta",
-    "tierLow": "Az"
+    "lineUnit": "hat"
   },
-  "chart": {
-    "title": "Tarife Dağılımı",
-    "byCount": "Hat Sayısı",
-    "byAmount": "Tutar (₺)",
-    "noData": "Tarife verisi bulunamadı.",
-    "csvSkipped": "CSV formatında tarife bilgisi bulunmuyor."
+  "status": {
+    "active": "Aktif",
+    "available": "Boşta",
+    "subscription": "Abonelik",
+    "cancelled": "İptal Edildi"
   },
   "filters": {
-    "costIncreaseOnly": "Sadece Maliyet Farkı Olanları Göster",
-    "showMore": "{{count}} satır daha göster"
+    "showMore": "{{count}} satır daha göster",
+    "searchPlaceholder": "Hat no ile ara",
+    "downloadCsv": "CSV İndir"
   },
   "errors": {
-    "parseFailed": "Dosya okunamadı. Lütfen geçerli bir Turkcell fatura dosyası (PDF veya CSV) yükleyin.",
-    "unsupportedFormat": "Desteklenmeyen dosya formatı. PDF veya CSV yükleyin.",
+    "parseFailed": "Dosya okunamadı. Lütfen geçerli bir Turkcell fatura dosyası (PDF, CSV veya XML) yükleyin.",
+    "unsupportedFormat": "Desteklenmeyen dosya formatı. PDF, CSV veya XML yükleyin.",
     "noLinesFound": "Dosyada hat verisi bulunamadı. Fatura formatı desteklenmiyor olabilir.",
     "fetchFailed": "Envanter verileri alınamadı. Lütfen tekrar deneyin.",
     "integrityWarning": "Fatura bütünlük uyarısı: Satır toplamları fatura toplamı ile uyuşmuyor. Bazı satırlar okunamıyor olabilir — sonuçlar eksik olabilir."
@@ -101,10 +68,12 @@
   },
   "invoice": {
     "period": "Fatura Dönemi",
+    "sourceLabel": "Dosya Türü",
     "no": "Fatura No",
     "date": "Fatura Tarihi",
     "paymentDate": "Ödeme Tarihi",
     "sourcePdf": "PDF",
-    "sourceCsv": "CSV"
+    "sourceCsv": "CSV",
+    "sourceXml": "XML"
   }
 }

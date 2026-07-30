@@ -33,6 +33,16 @@ const SECTION_TITLE = 'text-[11px] font-semibold uppercase tracking-[0.18em] tex
 const DESKTOP_FORM_GRID = 'grid grid-cols-1 gap-4 xl:grid-cols-12';
 const DESKTOP_FIELD_GRID = 'grid grid-cols-1 gap-4 md:grid-cols-2';
 
+function toActivationDateInputValue(raw) {
+  if (!raw) return '';
+  const s = String(raw);
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return m[1];
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
+
 export function SimCardFormPage() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -96,18 +106,23 @@ export function SimCardFormPage() {
         sale_price: simCard.sale_price || 0,
         vat_rate: simCard.vat_rate ?? 0,
         currency: simCard.currency || 'TRY',
+        activation_date: toActivationDateInputValue(simCard.activation_date),
         notes: simCard.notes || '',
       });
     }
   }, [isEdit, simCard, reset]);
 
   const onSubmit = async (data) => {
+    const payload = {
+      ...data,
+      activation_date: data.activation_date ? data.activation_date : null,
+    };
     try {
       if (isEdit) {
-        await updateSimCard.mutateAsync({ id, ...data });
+        await updateSimCard.mutateAsync({ id, ...payload });
         setIsEditing(false);
       } else {
-        await createSimCard.mutateAsync(data);
+        await createSimCard.mutateAsync(payload);
         navigate('/sim-cards');
       }
     } catch {
@@ -186,6 +201,7 @@ export function SimCardFormPage() {
           sale_price: simCard.sale_price || 0,
           vat_rate: simCard.vat_rate ?? 0,
           currency: simCard.currency || 'TRY',
+          activation_date: toActivationDateInputValue(simCard.activation_date),
           notes: simCard.notes || '',
         });
       }
@@ -318,6 +334,13 @@ export function SimCardFormPage() {
                   {...register('status')}
                 />
               </div>
+              <Input
+                label={t('simCards:form.activationDate')}
+                type="date"
+                error={errors.activation_date?.message}
+                className="rounded-xl font-mono"
+                {...register('activation_date')}
+              />
             </div>
           </div>
 
@@ -555,6 +578,13 @@ export function SimCardFormPage() {
                   error={errors.status?.message}
                   className="rounded-xl"
                   {...register('status')}
+                />
+                <Input
+                  label={t('simCards:form.activationDate')}
+                  type="date"
+                  error={errors.activation_date?.message}
+                  className="rounded-xl font-mono"
+                  {...register('activation_date')}
                 />
               </div>
             </Card>

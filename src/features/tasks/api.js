@@ -261,7 +261,7 @@ export async function fetchProfiles(filters = {}) {
   try {
     let query = supabase
       .from('profiles')
-      .select('id, full_name, role, avatar_url')
+      .select('id, full_name, role, avatar_url, phone')
       .order('full_name');
 
     if (filters.role) {

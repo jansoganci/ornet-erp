@@ -1,15 +1,14 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileSearch, UploadCloud, RefreshCw, AlertTriangle, AlertCircle, TrendingUp, TrendingDown, Smartphone, Receipt, CheckCircle } from 'lucide-react';
+import { RefreshCw, AlertTriangle, TrendingDown, FileWarning, Archive } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { Button, Card, Spinner, ErrorState, KpiCard } from '../../components/ui';
+import { Button, Spinner, ErrorState, KpiCard } from '../../components/ui';
+import { ImportDropzone } from '../../components/import';
 import { parseTurkcellInvoice } from './utils/parseTurkcellInvoice';
 import { compareInvoiceToInventory } from './utils/compareInvoiceToInventory';
 import { fetchAllTurkcellSimCards } from './api';
 import { formatCurrency } from '../../lib/utils';
 import { InvoiceAlertsPanel } from './components/InvoiceAlertsPanel';
-import { InvoiceTariffChart } from './components/InvoiceTariffChart';
-import { InvoiceResultTabs } from './components/InvoiceResultTabs';
 
 // Page state machine: idle → parsing → loading_inventory → ready | error
 const STATES = {
@@ -22,7 +21,6 @@ const STATES = {
 
 export function InvoiceAnalysisPage() {
   const { t } = useTranslation('invoiceAnalysis');
-  const fileInputRef = useRef(null);
 
   const [state, setState] = useState(STATES.IDLE);
   const [errorMessage, setErrorMessage] = useState('');
@@ -36,14 +34,11 @@ export function InvoiceAnalysisPage() {
     setParseResult(null);
     setComparison(null);
     setSourceFormat(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setSourceFormat(file.name.toLowerCase().endsWith('.csv') ? 'csv' : 'pdf');
+  const processFile = async (file) => {
+    const name = file.name.toLowerCase();
+    setSourceFormat(name.endsWith('.csv') ? 'csv' : name.endsWith('.xml') ? 'xml' : 'pdf');
     setState(STATES.PARSING);
 
     try {
@@ -71,7 +66,7 @@ export function InvoiceAnalysisPage() {
 
       // Phase 3: Compare
       const result = compareInvoiceToInventory(parsed.lines, simCards || []);
-      setComparison({ ...result, tariffBreakdown: parsed.tariffBreakdown });
+      setComparison(result);
       setState(STATES.READY);
     } catch (err) {
       setErrorMessage(err?.message === 'unsupported_format' ? t('errors.unsupportedFormat') : t('errors.parseFailed'));
@@ -91,7 +86,7 @@ export function InvoiceAnalysisPage() {
             <Spinner size="lg" className="mb-4 mx-auto" />
             <p className="font-medium text-neutral-700 dark:text-neutral-300">
               {state === STATES.PARSING
-                ? (sourceFormat === 'csv' ? t('upload.parsingCsv') : sourceFormat === 'pdf' ? t('upload.parsingPdf') : t('upload.parsing'))
+                ? (sourceFormat === 'csv' ? t('upload.parsingCsv') : sourceFormat === 'xml' ? t('upload.parsingXml') : sourceFormat === 'pdf' ? t('upload.parsingPdf') : t('upload.parsing'))
                 : t('loading.inventory')}
             </p>
           </div>
@@ -109,31 +104,13 @@ export function InvoiceAnalysisPage() {
             ]}
           />
           <div className="mt-6">
-            <Card className="p-12 border-dashed border-2 border-neutral-300 dark:border-neutral-700 flex flex-col items-center justify-center text-center">
-              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
-                <FileSearch className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50 mb-2">
-                {t('upload.title')}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm text-sm">
-                {t('upload.description')}
-              </p>
-              <input
-                type="file"
-                accept=".pdf,.csv"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-              />
-              <Button
-                variant="primary"
-                leftIcon={<UploadCloud className="w-4 h-4" />}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {t('upload.button')}
-              </Button>
-            </Card>
+            <ImportDropzone
+              title={t('upload.title')}
+              description={t('upload.description')}
+              accept=".pdf,.csv,.xml"
+              onFile={processFile}
+              selectLabel={t('upload.button')}
+            />
           </div>
         </>
       )}
@@ -183,8 +160,8 @@ export function InvoiceAnalysisPage() {
               <div className="mb-4 flex flex-wrap gap-x-6 gap-y-1 px-4 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700 text-sm text-neutral-600 dark:text-neutral-400">
                 {sourceFormat && (
                   <span>
-                    <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('upload.accept')}: </span>
-                    {sourceFormat === 'csv' ? t('invoice.sourceCsv') : t('invoice.sourcePdf')}
+                    <span className="font-medium text-neutral-800 dark:text-neutral-200">{t('invoice.sourceLabel')}: </span>
+                    {sourceFormat === 'csv' ? t('invoice.sourceCsv') : sourceFormat === 'xml' ? t('invoice.sourceXml') : t('invoice.sourcePdf')}
                   </span>
                 )}
                 {parseResult.invoiceNo && (
@@ -208,156 +185,63 @@ export function InvoiceAnalysisPage() {
               </div>
             )}
 
-            {/* Fix 3: Parse integrity warning */}
-            {parseResult.parseWarning && (
-              <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800">
-                <AlertTriangle className="w-5 h-5 text-error-600 dark:text-error-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-error-800 dark:text-error-300 text-sm">
-                    {t('errors.integrityWarning')}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {parseResult.parseErrors.length > 0 && (
-              <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
-                <AlertTriangle className="w-5 h-5 text-warning-600 dark:text-warning-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-warning-800 dark:text-warning-300 text-sm">
-                    {parseResult.parseErrors.length} sayfa okunamadı — sonuçlar eksik olabilir
-                  </p>
-                  <ul className="mt-1 space-y-0.5">
-                    {parseResult.parseErrors.map((err, i) => (
-                      <li key={i} className="text-xs text-warning-700 dark:text-warning-400">{err}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {comparison.unresolvableCards.length > 0 && (
-              <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800">
-                <AlertTriangle className="w-5 h-5 text-error-600 dark:text-error-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-error-800 dark:text-error-300 text-sm">
-                    {comparison.unresolvableCards.length} envanter kaydı eşleştirilemedi — geçersiz telefon formatı
-                  </p>
-                  <p className="text-xs text-error-700 dark:text-error-400 mt-0.5">
-                    Bu numaralar 10 haneye normalize edilemedi ve karşılaştırmadan çıkarıldı:{' '}
-                    {comparison.unresolvableCards.join(', ')}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {comparison.summary?.unknownCostCount > 0 && (
-              <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
-                <AlertTriangle className="w-5 h-5 text-warning-600 dark:text-warning-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-warning-800 dark:text-warning-300 text-sm">
-                    {t('alerts.unknownCost', { count: comparison.summary.unknownCostCount })}
-                  </p>
-                  <p className="text-xs text-warning-700 dark:text-warning-400 mt-0.5">
-                    {t('alerts.unknownCostDescription')}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {comparison.duplicateHatNos.length > 0 && (
-              <div className="mb-4 flex items-start gap-3 p-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
-                <AlertTriangle className="w-5 h-5 text-warning-600 dark:text-warning-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-warning-800 dark:text-warning-300 text-sm">
-                    {comparison.duplicateHatNos.length} tekrarlanan hat numarası tespit edildi
-                  </p>
-                  <p className="text-xs text-warning-700 dark:text-warning-400 mt-0.5">
-                    Bu hatlar faturada birden fazla kez görünüyor; son kayıt esas alındı:{' '}
-                    {comparison.duplicateHatNos.join(', ')}
-                  </p>
-                </div>
+            {/* Teknik bütünlük notları — ikincil, kısa liste */}
+            {(parseResult.parseWarning ||
+              parseResult.parseErrors.length > 0 ||
+              comparison.unresolvableCards.length > 0 ||
+              comparison.duplicateHatNos.length > 0) && (
+              <div className="mb-4 flex items-start gap-2 px-4 py-2.5 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700">
+                <AlertTriangle className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
+                <ul className="text-xs text-neutral-500 dark:text-neutral-400 space-y-0.5">
+                  {parseResult.parseWarning && <li>{t('errors.integrityWarning')}</li>}
+                  {parseResult.parseErrors.map((err, i) => <li key={`pe-${i}`}>{err}</li>)}
+                  {comparison.unresolvableCards.length > 0 && (
+                    <li>{comparison.unresolvableCards.length} envanter kaydı eşleştirilemedi (geçersiz telefon formatı)</li>
+                  )}
+                  {comparison.duplicateHatNos.length > 0 && (
+                    <li>{comparison.duplicateHatNos.length} tekrarlanan hat numarası — son kayıt esas alındı</li>
+                  )}
+                </ul>
               </div>
             )}
 
             {(() => {
-              const totalProfit = comparison.summary?.totalProfit ?? 0;
+              const lossLines = comparison.matched.filter((m) => m.isLoss);
+              const lossTotal = lossLines.reduce((s, m) => s + Math.abs(m.profit), 0);
+
               return (
-                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 mb-6">
-                  <KpiCard
-                    title={t('summary.totalLines')}
-                    value={(comparison.summary?.totalLines ?? 0).toLocaleString('tr-TR')}
-                    icon={Smartphone}
-                    variant="default"
+                <>
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 mb-6">
+                    <KpiCard
+                      title={t('summary.loss')}
+                      value={lossLines.length.toLocaleString('tr-TR')}
+                      subtitle={formatCurrency(lossTotal)}
+                      icon={TrendingDown}
+                      variant="error"
+                    />
+                    <KpiCard
+                      title={t('summary.invoiceOnly')}
+                      value={comparison.summary.invoiceOnlyCount.toLocaleString('tr-TR')}
+                      subtitle={formatCurrency(comparison.summary.invoiceOnlyTotal)}
+                      icon={FileWarning}
+                      variant="warning"
+                    />
+                    <KpiCard
+                      title={t('summary.inventoryOnly')}
+                      value={comparison.summary.inventoryOnlyCount.toLocaleString('tr-TR')}
+                      icon={Archive}
+                      variant="info"
+                    />
+                  </div>
+
+                  <InvoiceAlertsPanel
+                    lossLines={lossLines}
+                    invoiceOnly={comparison.invoiceOnly}
+                    inventoryOnly={comparison.inventoryOnly}
                   />
-                  <KpiCard
-                    title={t('summary.totalAmount')}
-                    value={formatCurrency(parseResult.totalInvoiceAmount ?? comparison.summary?.totalInvoiceAmount ?? 0)}
-                    icon={Receipt}
-                    variant="default"
-                  />
-                  <KpiCard
-                    title={t('summary.matched')}
-                    value={(comparison.summary?.matchedCount ?? 0).toLocaleString('tr-TR')}
-                    icon={CheckCircle}
-                    variant="default"
-                  />
-                  <KpiCard
-                    title={t('summary.invoiceOnly')}
-                    value={(comparison.summary?.invoiceOnlyCount ?? 0).toLocaleString('tr-TR')}
-                    icon={AlertCircle}
-                    variant="default"
-                  />
-                  <KpiCard
-                    title={t('summary.costDiffHigh')}
-                    value={(comparison.summary?.costDiffHighCount ?? 0).toLocaleString('tr-TR')}
-                    icon={TrendingUp}
-                    variant="default"
-                  />
-                  <KpiCard
-                    title={t('summary.costDiffMedium')}
-                    value={(comparison.summary?.costDiffMediumCount ?? 0).toLocaleString('tr-TR')}
-                    icon={TrendingUp}
-                    variant="default"
-                  />
-                  <KpiCard
-                    title={t('summary.costDiffLow')}
-                    value={(comparison.summary?.costDiffLowCount ?? 0).toLocaleString('tr-TR')}
-                    icon={TrendingUp}
-                    variant="default"
-                  />
-                  <KpiCard
-                    title={t('summary.estimatedProfitLoss')}
-                    value={
-                      <span className={totalProfit < 0 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
-                        {formatCurrency(totalProfit)}
-                      </span>
-                    }
-                    icon={totalProfit < 0 ? TrendingDown : TrendingUp}
-                    variant="default"
-                  />
-                </div>
+                </>
               );
             })()}
-
-            <InvoiceAlertsPanel
-              invoiceOnly={comparison.invoiceOnly}
-              costDiffHigh={comparison.costDiffHigh}
-              costDiffMedium={comparison.costDiffMedium}
-              costDiffLow={comparison.costDiffLow}
-              lossLines={comparison.matched.filter((m) => m.isLoss)}
-              inventoryOnly={comparison.inventoryOnly}
-            />
-
-            {sourceFormat !== 'csv' && (
-              <InvoiceTariffChart tariffBreakdown={comparison.tariffBreakdown} />
-            )}
-
-            <InvoiceResultTabs
-              matched={comparison.matched}
-              invoiceOnly={comparison.invoiceOnly}
-              inventoryOnly={comparison.inventoryOnly}
-            />
           </div>
         </>
       )}

@@ -22,6 +22,13 @@ export const simCardSchema = z.object({
   cost_price: z.number().min(0).default(0),
   sale_price: z.number().min(0).default(0),
   customer_label: z.string().optional().or(z.literal('')),
+  activation_date: z
+    .union([
+      z.literal(''),
+      z.null(),
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçerli bir tarih giriniz'),
+    ])
+    .optional(),
   notes: z.string().optional().or(z.literal('')),
   vat_rate: z.preprocess(toNumber, z.number().min(0).max(100).default(0)),
 });
@@ -41,6 +48,7 @@ export const simCardDefaultValues = {
   sale_price: 0,
   currency: 'TRY',
   customer_label: '',
+  activation_date: '',
   notes: '',
   vat_rate: 0,
 };

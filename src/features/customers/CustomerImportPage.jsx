@@ -1,13 +1,13 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Upload, AlertCircle, CheckCircle2, X, Save, Download } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X, Save } from 'lucide-react';
 import { parseXlsxFile, validateAndMapRows, buildTemplateBlob } from './importUtils';
 import { fetchExistingCustomerNames } from './api';
 import { useImportCustomersAndSites } from './hooks';
 import { normalizeForSearch } from '../../lib/normalizeForSearch';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { ImportInstructionCard, ImportResultSummary } from '../../components/import';
+import { ImportInstructionCard, ImportResultSummary, ImportDropzone } from '../../components/import';
 import { Button, Card, Badge, Spinner, ErrorState } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { toast } from 'sonner';
@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 export function CustomerImportPage() {
   const { t } = useTranslation(['customers', 'common']);
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -27,10 +26,7 @@ export function CustomerImportPage() {
     onProgress: (progress) => setImportProgress(progress),
   });
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const handleFileUpload = (file) => {
     setIsParsing(true);
     setImportResult(null);
     setDuplicateNames(new Set());
@@ -57,7 +53,6 @@ export function CustomerImportPage() {
     };
 
     reader.readAsArrayBuffer(file);
-    e.target.value = '';
   };
 
   const handleImport = async () => {
@@ -83,7 +78,6 @@ export function CustomerImportPage() {
     setErrors([]);
     setImportResult(null);
     setDuplicateNames(new Set());
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const downloadTemplate = () => {
@@ -145,32 +139,15 @@ export function CustomerImportPage() {
               intro={t('common:import.instructionIntro')}
               steps={instructionSteps}
             />
-            <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
-              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
-                <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-                {t('customers:import.uploadTitle')}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-                {t('customers:import.uploadDescription')}
-              </p>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-              />
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button onClick={() => fileInputRef.current?.click()}>
-                  {t('customers:import.selectFile')}
-                </Button>
-                <Button variant="outline" onClick={downloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
-                  {t('customers:import.downloadTemplate')}
-                </Button>
-              </div>
-            </Card>
+            <ImportDropzone
+              title={t('customers:import.uploadTitle')}
+              description={t('customers:import.uploadDescription')}
+              accept=".xlsx,.xls"
+              onFile={handleFileUpload}
+              selectLabel={t('customers:import.selectFile')}
+              templateLabel={t('customers:import.downloadTemplate')}
+              onDownloadTemplate={downloadTemplate}
+            />
           </div>
         ) : (
           <div className="space-y-6">

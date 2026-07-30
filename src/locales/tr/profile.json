@@ -7,19 +7,22 @@
   },
   "usersManagement": {
     "title": "Kullanıcı Yönetimi",
-    "subtitle": "Erişim listesi",
     "searchPlaceholder": "İsim veya rol ile ara…",
     "filterRole": "Rol filtresi",
     "filterAllRoles": "Tüm roller",
     "columns": {
       "user": "Kullanıcı",
+      "phone": "Telefon",
       "role": "Rol"
     },
     "empty": "Kullanıcı bulunamadı.",
-    "loadError": "Kullanıcı listesi yüklenemedi."
+    "loadError": "Kullanıcı listesi yüklenemedi.",
+    "totalCount": "{{count}} Toplam"
   },
   "accountCard": {
-    "title": "Hesap Bilgileri"
+    "title": "Hesap Bilgileri",
+    "unsavedChanges": "Kaydedilmemiş değişiklikler var",
+    "upToDate": "Tüm bilgiler güncel"
   },
   "securityCard": {
     "title": "Güvenlik",
@@ -35,19 +38,13 @@
     "role": "Rol",
     "avatar": "Profil Fotoğrafı"
   },
-  "roles": {
-    "admin": "Yönetici",
-    "fieldWorker": "Saha Ekibi",
-    "accountant": "Muhasebe"
-  },
   "placeholders": {
     "fullName": "Adınızı girin",
     "phone": "0555 123 4567"
   },
   "sections": {
     "personalInfo": "Kişisel Bilgiler",
-    "security": "Güvenlik",
-    "preferences": "Tercihler"
+    "security": "Güvenlik"
   },
   "actions": {
     "save": "Değişiklikleri Kaydet",
@@ -58,7 +55,8 @@
     "updated": "Profil başarıyla güncellendi"
   },
   "validation": {
-    "fullNameRequired": "Ad Soyad zorunludur"
+    "fullNameRequired": "Ad Soyad zorunludur",
+    "phoneInvalid": "Geçerli bir telefon numarası giriniz"
   },
   "changePassword": {
     "currentPassword": "Mevcut Şifre",
@@ -66,10 +64,5 @@
     "confirmPassword": "Yeni Şifre Tekrar",
     "success": "Şifreniz başarıyla güncellendi.",
     "forgotLink": "Şifremi unuttum"
-  },
-  "logout": {
-    "title": "Çıkış Yap",
-    "message": "Çıkış yapmak istediğinizden emin misiniz?",
-    "confirm": "Çıkış Yap"
   }
 }

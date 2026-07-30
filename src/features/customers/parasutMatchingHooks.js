@@ -7,6 +7,7 @@ import {
   fetchParasutMatchCandidates,
   rejectParasutMatch,
   runParasutBulkMatch,
+  runParasutBulkMatchNameFallback,
 } from './parasutMatchingApi';
 import { customerKeys } from './hooks';
 
@@ -22,15 +23,36 @@ export function useMatchCandidates(status) {
   });
 }
 
+// Batched: call with an offset (default 0), read result.nextOffset/done to
+// keep going. Each call processes one bounded batch of customers so the
+// edge function invocation stays well under Supabase's sync response time
+// limit even with 300-500 customers (see parasut-implementation-plan.md
+// Phase 1.4).
 export function useRunBulkMatch() {
   const queryClient = useQueryClient();
   const { t } = useTranslation('customers');
 
   return useMutation({
-    mutationFn: runParasutBulkMatch,
+    mutationFn: (offset = 0) => runParasutBulkMatch(offset),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: parasutMatchKeys.all });
-      toast.success(t('parasutMatching.bulkMatchSuccess', { count: result?.inserted ?? 0 }));
+      if (result?.done) {
+        toast.success(t('parasutMatching.bulkMatchDone', { count: result?.processed ?? 0 }));
+      }
+    },
+    onError: (error) => toast.error(error.message),
+  });
+}
+
+export function useRunBulkMatchNameFallback() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation('customers');
+
+  return useMutation({
+    mutationFn: runParasutBulkMatchNameFallback,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: parasutMatchKeys.all });
+      toast.success(t('parasutMatching.nameFallbackSuccess', { count: result?.inserted ?? 0 }));
     },
     onError: (error) => toast.error(error.message),
   });

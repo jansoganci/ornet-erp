@@ -44,7 +44,7 @@ export const Input = forwardRef(function Input(
   const ActiveLeftIcon = LeftIcon || Icon;
 
   return (
-    <div className={cn('w-full', wrapperClassName)}>
+    <div className={cn('w-full min-w-0', wrapperClassName)}>
       {label && (
         <label
           htmlFor={inputId}
@@ -53,7 +53,7 @@ export const Input = forwardRef(function Input(
           {label}
         </label>
       )}
-      <div className="relative">
+      <div className="relative min-w-0">
         {ActiveLeftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <span className="h-5 w-5 text-neutral-400 flex items-center justify-center">
@@ -68,7 +68,7 @@ export const Input = forwardRef(function Input(
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={errorId || hintId}
           className={cn(
-            'block w-full rounded-lg border shadow-sm transition-colors',
+            'block w-full min-w-0 rounded-lg border shadow-sm transition-colors',
             'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
             'focus:outline-none focus:ring-2 focus:ring-offset-0',
             'bg-white dark:bg-[#171717] text-neutral-900 dark:text-neutral-50',

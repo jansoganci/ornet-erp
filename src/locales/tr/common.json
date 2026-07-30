@@ -290,7 +290,8 @@
     "summaryPartial": "Bir kısmı tamamlandı; ayrıntılar aşağıda.",
     "summaryError": "İşlem tamamlanamadı.",
     "fileReadFailed": "Dosya açılamadı. .xlsx veya .xls seçtiğinizden ve ilk sayfada veri olduğundan emin olun.",
-    "bulkImportButton": "Excel ile toplu yükle"
+    "bulkImportButton": "Excel ile toplu yükle",
+    "dropHint": "Dosyayı buraya sürükleyin ya da seçin"
   },
   "unsavedChanges": {
     "title": "Kaydedilmemiş Değişiklikler",

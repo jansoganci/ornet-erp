@@ -23,8 +23,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 
 /**
  * Line regex: F2-{10 digits}?{tariff}#{invoiceAmount}${payableAmount}+{kdvAmount}!{oivAmount}
+ * Exported so parseTurkcellXml can reuse the exact same encoding — Turkcell's
+ * e-fatura UBL XML embeds this same "Fatura Notu" text verbatim in <cbc:Note> elements.
  */
-const LINE_REGEX = /F2-(\d{10})\?([^#]*)#([\d.,]+)\$([\d.,]+)\+([\d.,]+)!([\d.,]+)/g;
+export const LINE_REGEX = /F2-(\d{10})\?([^#]*)#([\d.,]+)\$([\d.,]+)\+([\d.,]+)!([\d.,]+)/g;
 
 /**
  * Parse a Turkcell invoice PDF file.

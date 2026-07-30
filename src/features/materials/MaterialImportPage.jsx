@@ -1,11 +1,11 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
-import { Upload, AlertCircle, CheckCircle2, X, Save, Download } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X, Save } from 'lucide-react';
 import { useBulkUpsertMaterials } from './hooks';
 import { PageContainer, PageHeader } from '../../components/layout';
-import { ImportInstructionCard, ImportResultSummary } from '../../components/import';
+import { ImportInstructionCard, ImportResultSummary, ImportDropzone } from '../../components/import';
 import { Button, Card, Spinner, ErrorState } from '../../components/ui';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { toast } from 'sonner';
@@ -37,7 +37,6 @@ function parsePrice(val) {
 export function MaterialImportPage() {
   const { t } = useTranslation(['materials', 'common']);
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
   const [data, setData] = useState([]);
   const [errors, setErrors] = useState([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -45,10 +44,7 @@ export function MaterialImportPage() {
   const [hasProcessed, setHasProcessed] = useState(false);
   const bulkUpsertMutation = useBulkUpsertMaterials();
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const handleFileUpload = (file) => {
     setIsParsing(true);
     setHasProcessed(false);
     setErrors([]);
@@ -174,7 +170,6 @@ export function MaterialImportPage() {
     setErrors([]);
     setImportResult(null);
     setHasProcessed(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
@@ -195,36 +190,15 @@ export function MaterialImportPage() {
               intro={t('common:import.instructionIntro')}
               steps={instructionSteps}
             />
-            <Card className="p-12 border-dashed border-2 flex flex-col items-center justify-center text-center">
-              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full mb-4">
-                <Upload className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-              </div>
-              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-                {t('materials:import.uploadTitle')}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm">
-                {t('materials:import.uploadHint')}
-              </p>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button
-                  variant="outline"
-                  leftIcon={<Download className="w-4 h-4" />}
-                  onClick={downloadTemplate}
-                >
-                  {t('materials:import.downloadTemplate')}
-                </Button>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  className="hidden"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                />
-                <Button onClick={() => fileInputRef.current?.click()}>
-                  {t('materials:import.selectFile')}
-                </Button>
-              </div>
-            </Card>
+            <ImportDropzone
+              title={t('materials:import.uploadTitle')}
+              description={t('materials:import.uploadHint')}
+              accept=".xlsx,.xls"
+              onFile={handleFileUpload}
+              selectLabel={t('materials:import.selectFile')}
+              templateLabel={t('materials:import.downloadTemplate')}
+              onDownloadTemplate={downloadTemplate}
+            />
           </div>
         ) : (
           <div className="space-y-6">
