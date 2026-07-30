@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
   <rect width="192" height="192" rx="32" fill="#dc2626"/>
-  <text x="96" y="108" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="800" font-size="72" fill="#ffffff" dominant-baseline="central">O</text>
-  <text x="96" y="152" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="600" font-size="20" fill="rgba(255,255,255,0.8)" dominant-baseline="central">ERP</text>
+  <g transform="translate(36,36) scale(5)">
+    <path fill="#ffffff" d="M16.56 5.44l-1.45 1.45C16.84 7.94 18 9.83 18 12c0 3.31-2.69 6-6 6s-6-2.69-6-6c0-2.17 1.16-4.06 2.88-5.12L7.44 5.44C5.36 6.82 4 9.26 4 12c0 4.42 3.58 8 8 8s8-3.58 8-8c0-2.74-1.36-5.18-3.44-6.56zM13 3h-2v10h2V3z"/>
+  </g>
 </svg>
