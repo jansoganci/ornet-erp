@@ -51,8 +51,6 @@ export const subscriptionSchema = z.object({
   card_bank_name: optionalString,
   card_last4: z.union([z.string().max(4), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
   sim_card_id: optionalUuid,
-  alarm_center: optionalString,
-  alarm_center_account: optionalString,
   subscriber_title: optionalString,
   payment_start_month: z.preprocess(toNumber, z.number().int().min(1).max(12).nullable().optional()),
 }).refine(
@@ -92,8 +90,6 @@ export const subscriptionDefaultValues = {
   card_bank_name: '',
   card_last4: '',
   sim_card_id: '',
-  alarm_center: '',
-  alarm_center_account: '',
   subscriber_title: '',
   payment_start_month: null,
 };

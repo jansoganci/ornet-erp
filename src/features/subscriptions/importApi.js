@@ -115,8 +115,9 @@ export async function importSubscriptionsFromRows(rows, { onProgress } = {}) {
       notes:                row.notes || null,
       setup_notes:          row.setup_notes || null,
       subscriber_title:     row.subscriber_title || null,
-      alarm_center:         row.alarm_center || null,
-      alarm_center_account: row.alarm_center_account || null,
+      // Site-fill only (RPC writes empty customer_sites fields; not stored on subscriptions)
+      site_alarm_center:    row.site_alarm_center || null,
+      site_account_no:      row.site_account_no || null,
     });
   }
 

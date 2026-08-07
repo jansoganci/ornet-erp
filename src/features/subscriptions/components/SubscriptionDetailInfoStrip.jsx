@@ -20,12 +20,21 @@ function InfoCell({ label, value, children }) {
   );
 }
 
+/**
+ * Merkez/ACC from site via subscriptions_detail (site_alarm_center, account_no).
+ */
 export function SubscriptionDetailInfoStrip({ subscription }) {
   const { t } = useTranslation(['subscriptions', 'common']);
 
-  const alarmLine = [subscription.alarm_center, subscription.alarm_center_account && `ACC: ${subscription.alarm_center_account}`]
-    .filter(Boolean)
-    .join(' · ');
+  const siteAccountNo = subscription.account_no?.trim() || '';
+  const alarmCenter = (subscription.site_alarm_center || '').trim();
+
+  const alarmParts = [
+    alarmCenter,
+    siteAccountNo && `ACC: ${siteAccountNo}`,
+  ].filter(Boolean);
+  const alarmLine = alarmParts.join(' · ');
+
   const monthlyAmount = Number(subscription.base_price || 0)
     + Number(subscription.sms_fee || 0)
     + Number(subscription.line_fee || 0)

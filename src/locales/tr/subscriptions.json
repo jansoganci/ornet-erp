@@ -146,10 +146,22 @@
     "sections": {
       "customer": "Müşteri & Lokasyon",
       "details": "Abonelik Detayları",
+      "siteAlarmInfo": "Merkez Bilgisi",
       "pricing": "Fiyatlandırma",
       "payment": "Ödeme Bilgileri",
       "assignment": "Atama",
       "notes": "Notlar"
+    },
+    "hints": {
+      "alarmFromSite": "Merkez ve ACC bilgisi lokasyon kaydından gelir. Değiştirmek için lokasyonu düzenleyin.",
+      "selectSiteFirst": "Önce lokasyon seçin"
+    },
+    "buttons": {
+      "editSite": "Lokasyonu Düzenle"
+    },
+    "warnings": {
+      "missingSiteAccountNo": "Hesap numarası girilmedi.",
+      "missingSiteAccountNoHint": "Alarm izleme hesabı lokasyona eklenir; abonelik formunda ayrıca girilmez."
     },
     "fields": {
       "site": "Lokasyon",

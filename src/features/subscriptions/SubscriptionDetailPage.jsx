@@ -477,8 +477,13 @@ export function SubscriptionDetailPage() {
                 {t('subscriptions:form.fields.alarmCenter')}
               </p>
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                {subscription.alarm_center || '—'}
+                {(subscription.site_alarm_center || '—')}
               </p>
+              {subscription.account_no && (
+                <p className="mt-0.5 text-xs font-mono text-neutral-500 dark:text-neutral-400">
+                  ACC: {subscription.account_no}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center justify-between">

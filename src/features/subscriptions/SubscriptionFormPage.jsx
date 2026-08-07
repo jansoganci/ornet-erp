@@ -29,7 +29,9 @@ import { useProfiles } from '../tasks/hooks';
 import { useSite } from '../customerSites/hooks';
 import { useSimCard } from '../simCards/hooks';
 import { CustomerSiteSelector } from '../workOrders/CustomerSiteSelector';
+import { SiteFormModal } from '../customerSites/SiteFormModal';
 import { SubscriptionFormHero } from './components/SubscriptionFormHero';
+import { SubscriptionSiteAlarmCard } from './components/SubscriptionSiteAlarmCard';
 import { getErrorMessage } from '../../lib/errorHandler';
 import { toast } from 'sonner';
 
@@ -79,14 +81,29 @@ export function SubscriptionFormPage() {
   const officialInvoice = useWatch({ control, name: 'official_invoice' });
   const selectedCurrency = useWatch({ control, name: 'currency' }) || 'TRY';
 
-  const { data: siteData } = useSite(selectedSiteId);
+  const { data: siteData, isLoading: isSiteLoading } = useSite(selectedSiteId);
   const { data: selectedSim } = useSimCard(simCardId);
+  // Guard against acting on stale/undefined site data while a newly selected
+  // site is still loading (avoids the edit modal opening in "create" mode).
+  const siteReady = !!selectedSiteId && !isSiteLoading && siteData?.id === selectedSiteId;
 
   const [selectedCustomerIdOverride, setSelectedCustomerIdOverride] = useState(null);
   const [conflictModal, setConflictModal] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState(null);
+  const [showSiteModal, setShowSiteModal] = useState(false);
+  const [siteModalMode, setSiteModalMode] = useState('edit'); // 'edit' | 'create'
   const loadedUpdatedAtRef = useRef(null);
   const selectedCustomerId = selectedCustomerIdOverride ?? (subscription?.customer_id || (!isEdit ? (urlCustomerId || '') : ''));
+
+  const openEditSiteModal = () => {
+    setSiteModalMode('edit');
+    setShowSiteModal(true);
+  };
+
+  const openCreateSiteModal = () => {
+    setSiteModalMode('create');
+    setShowSiteModal(true);
+  };
 
   // Preselect customer and site from URL params (create mode)
   useEffect(() => {
@@ -151,8 +168,6 @@ export function SubscriptionFormPage() {
         card_bank_name: subscription.card_bank_name || subscription.pm_bank_name || '',
         card_last4: subscription.card_last4 || subscription.pm_card_last4 || '',
         sim_card_id: subscription.sim_card_id || '',
-        alarm_center: subscription.alarm_center || '',
-        alarm_center_account: subscription.alarm_center_account || '',
         subscriber_title: subscription.subscriber_title || '',
         payment_start_month: subscription.payment_start_month ?? null,
       });
@@ -217,8 +232,6 @@ export function SubscriptionFormPage() {
       card_bank_name: cleanValue(data.card_bank_name),
       card_last4: cleanValue(data.card_last4) ? String(data.card_last4).trim().slice(0, 4) : null,
       sim_card_id: cleanValue(data.sim_card_id),
-      alarm_center: cleanValue(data.alarm_center),
-      alarm_center_account: cleanValue(data.alarm_center_account),
       subscriber_title: cleanValue(data.subscriber_title),
       payment_start_month: data.payment_start_month != null ? Number(data.payment_start_month) : null,
     };
@@ -301,7 +314,7 @@ export function SubscriptionFormPage() {
             }}
             onSiteChange={(sid) => setValue('site_id', sid, { shouldValidate: true })}
             onAddNewCustomer={() => navigate('/customers/new')}
-            onAddNewSite={() => {}}
+            onAddNewSite={openCreateSiteModal}
             error={errors.site_id?.message}
           />
         </Card>
@@ -385,21 +398,14 @@ export function SubscriptionFormPage() {
                   {...register('subscriber_title')}
                 />
 
-                {/* Alarm center */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <Input
-                    label={t('subscriptions:form.fields.alarmCenter')}
-                    error={errors.alarm_center?.message}
-                    className="rounded-xl"
-                    {...register('alarm_center')}
-                  />
-                  <Input
-                    label={t('subscriptions:form.fields.alarmCenterAccount')}
-                    error={errors.alarm_center_account?.message}
-                    className="rounded-xl"
-                    {...register('alarm_center_account')}
-                  />
-                </div>
+                {/* Merkez + ACC from site (source of truth) */}
+                <SubscriptionSiteAlarmCard
+                  site={siteData}
+                  hasSiteSelected={!!selectedSiteId}
+                  loading={!!selectedSiteId && !siteReady}
+                  onEdit={openEditSiteModal}
+                  disabled={!siteReady || !(selectedCustomerId || siteData?.customer_id)}
+                />
 
                 <div className={cn(
                   "grid grid-cols-1 gap-8",
@@ -715,6 +721,18 @@ export function SubscriptionFormPage() {
           </p>
         </div>
       </Modal>
+
+      <SiteFormModal
+        open={showSiteModal}
+        onClose={() => setShowSiteModal(false)}
+        customerId={selectedCustomerId || siteData?.customer_id || ''}
+        site={siteModalMode === 'edit' && siteReady ? siteData : null}
+        onSuccess={(newSite) => {
+          if (newSite?.id) {
+            setValue('site_id', newSite.id, { shouldValidate: true });
+          }
+        }}
+      />
     </PageContainer>
   );
 }
