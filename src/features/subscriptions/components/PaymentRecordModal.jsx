@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,10 +13,23 @@ function getMonthLabel(paymentMonth, t) {
   return `${t('common:monthsShort.' + d.getMonth())} ${d.getFullYear()}`;
 }
 
+function getInvoiceDefaults(payment) {
+  // Same source as collection list: official_invoice, then payment.should_invoice
+  const preferredShouldInvoice =
+    payment?.subscriptions?.official_invoice ?? payment?.should_invoice ?? true;
+  return {
+    preferredShouldInvoice: !!preferredShouldInvoice,
+    vatRate: preferredShouldInvoice
+      ? (payment?.subscriptions?.vat_rate ?? 20)
+      : 0,
+  };
+}
+
 export function PaymentRecordModal({ open, onClose, payment }) {
   const { t } = useTranslation(['subscriptions', 'common']);
   const recordMutation = useRecordPayment();
   const revertMutation = useRevertWriteOff();
+  const skipMethodSyncRef = useRef(false);
 
   const isLocked = payment?.status === 'paid' && !!payment?.invoice_no;
   const isWriteOff = payment?.status === 'write_off';
@@ -40,12 +53,39 @@ export function PaymentRecordModal({ open, onClose, payment }) {
   const isCard = watchedMethod === 'card';
   const isBankTransfer = watchedMethod === 'bank_transfer';
 
-  // Card payments always have should_invoice = true
+  // Open / payment change: default method stays card (always invoiced).
   useEffect(() => {
+    if (!open || !payment) return;
+
+    skipMethodSyncRef.current = true;
+    reset({
+      ...paymentRecordDefaultValues,
+      payment_date: new Date().toISOString().slice(0, 10),
+      should_invoice: true,
+      vat_rate: payment.subscriptions?.vat_rate ?? 20,
+    });
+  }, [open, payment, reset]);
+
+  // When user switches method: card forces invoice; cash/bank restore preference
+  // so "Faturasız" rows get an unchecked "Fatura kesilsin mi?" checkbox.
+  useEffect(() => {
+    if (!open || !payment) return;
+
+    if (skipMethodSyncRef.current) {
+      skipMethodSyncRef.current = false;
+      return;
+    }
+
+    const { preferredShouldInvoice, vatRate } = getInvoiceDefaults(payment);
+
     if (isCard) {
       setValue('should_invoice', true);
+      setValue('vat_rate', payment.subscriptions?.vat_rate ?? 20);
+    } else {
+      setValue('should_invoice', preferredShouldInvoice);
+      setValue('vat_rate', vatRate);
     }
-  }, [isCard, setValue]);
+  }, [isCard, open, payment, setValue]);
 
   // Compute live amounts based on should_invoice and vat_rate
   const amounts = useMemo(() => {
@@ -61,25 +101,6 @@ export function PaymentRecordModal({ open, onClose, payment }) {
     const vat = Math.round(baseAmount * (rate / 100) * 100) / 100;
     return { amount: baseAmount, vatAmount: vat, totalAmount: baseAmount + vat };
   }, [payment, watchedShouldInvoice, watchedVatRate]);
-
-  useEffect(() => {
-    if (open && payment) {
-      const subscription = payment.subscriptions;
-      const officialInvoice = subscription?.official_invoice ?? true;
-      
-      // If official_invoice is false, VAT should be 0
-      // Otherwise use subscription's vat_rate or default to 20
-      const defaultVatRate = !officialInvoice 
-        ? 0 
-        : (subscription?.vat_rate ?? 20);
-
-      reset({
-        ...paymentRecordDefaultValues,
-        payment_date: new Date().toISOString().slice(0, 10),
-        vat_rate: defaultVatRate,
-      });
-    }
-  }, [open, payment, reset]);
 
   const onSubmit = async (data) => {
     try {
