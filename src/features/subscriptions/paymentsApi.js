@@ -31,9 +31,8 @@ export async function fetchSubscriptionYearSchedule(subscriptionId, year) {
 export async function recordPayment(paymentId, paymentData) {
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Resolve invoice flag (card always invoiced)
-  const isCard = paymentData.payment_method === 'card';
-  const shouldInvoice = isCard ? true : !!paymentData.should_invoice;
+  // Invoice flag is user-chosen for all methods (including card)
+  const shouldInvoice = !!paymentData.should_invoice;
 
   // Resolve vat_rate client-side so the DB function receives a concrete value.
   // When no explicit rate is provided we need the existing payment to derive it.

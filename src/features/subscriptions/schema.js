@@ -105,15 +105,6 @@ export const paymentRecordSchema = z.object({
   invoice_type: optionalEnum(INVOICE_TYPES),
   notes: optionalString,
   reference_no: optionalString,
-}).refine((data) => {
-  // Card payments must always be invoiced
-  if (data.payment_method === 'card' && data.should_invoice === false) {
-    return false;
-  }
-  return true;
-}, {
-  message: i18n.t('subscriptions:validation.cardPaymentsMustBeInvoiced'),
-  path: ['should_invoice'],
 });
 
 export const paymentRecordDefaultValues = {

@@ -10,10 +10,12 @@ import {
   Search,
   ArrowLeft,
   Calendar,
+  Pencil,
 } from 'lucide-react';
 import { PageContainer, PageHeader } from '../../components/layout';
 import { Card, Badge, Spinner, EmptyState, ErrorState, Button, IconButton } from '../../components/ui';
 import { useCollectionPayments, useCollectionStats } from './collectionHooks';
+import { CollectionQuickPayRow } from './components/CollectionQuickPayRow';
 import { PaymentRecordModal } from '../subscriptions/components/PaymentRecordModal';
 import { formatCurrency, cn } from '../../lib/utils';
 
@@ -66,6 +68,15 @@ export function CollectionDeskPage() {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [periodPickerOpen, setPeriodPickerOpen] = useState(false);
+  const [quickPayMode, setQuickPayMode] = useState(false);
+
+  const toggleQuickPayMode = () => {
+    setQuickPayMode((v) => {
+      const next = !v;
+      if (next) setSelectedPayment(null);
+      return next;
+    });
+  };
 
   const filters = useMemo(() => {
     const f = {};
@@ -346,28 +357,47 @@ export function CollectionDeskPage() {
         </div>
 
         <Card className="p-4">
-          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('collection:filters.search')}
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t('collection:filters.search')}
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 items-center shrink-0">
+                <div className="hidden md:flex gap-2 items-center">
+                  <CollectionPeriodSelects
+                    selectedYear={selectedYear}
+                    selectedMonth={selectedMonth}
+                    yearOptions={yearOptions}
+                    monthOptions={monthOptions}
+                    now={now}
+                    onPeriodChange={handlePeriodChange}
+                    t={t}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant={quickPayMode ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={toggleQuickPayMode}
+                  leftIcon={<Pencil className="w-4 h-4" />}
+                  className="shrink-0"
+                >
+                  {t('collection:quickPay.toggle')}
+                </Button>
+              </div>
             </div>
-            <div className="hidden md:flex gap-2 items-center shrink-0">
-              <CollectionPeriodSelects
-                selectedYear={selectedYear}
-                selectedMonth={selectedMonth}
-                yearOptions={yearOptions}
-                monthOptions={monthOptions}
-                now={now}
-                onPeriodChange={handlePeriodChange}
-                t={t}
-              />
-            </div>
+            {quickPayMode ? (
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-snug">
+                {t('collection:quickPay.hint')}
+              </p>
+            ) : null}
           </div>
         </Card>
 
@@ -452,25 +482,39 @@ export function CollectionDeskPage() {
                               {formatCurrency(totalDue)}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Button
-                              variant="primary"
-                              size="md"
-                              className="rounded-xl px-5 shadow-lg shadow-primary-500/20"
-                              onClick={() => setSelectedPayment(p)}
-                            >
-                              {t('collection:actions.recordPayment')}
-                            </Button>
+                          {!quickPayMode ? (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                variant="primary"
+                                size="md"
+                                className="rounded-xl px-5 shadow-lg shadow-primary-500/20"
+                                onClick={() => setSelectedPayment(p)}
+                              >
+                                {t('collection:actions.recordPayment')}
+                              </Button>
+                              <IconButton
+                                icon={ExternalLink}
+                                variant="ghost"
+                                size="md"
+                                aria-label={t('collection:actions.viewSubscription')}
+                                onClick={() => navigate(`/subscriptions/${p.subscription_id}`)}
+                                className="shrink-0 text-neutral-500 dark:text-neutral-400"
+                              />
+                            </div>
+                          ) : (
                             <IconButton
                               icon={ExternalLink}
                               variant="ghost"
                               size="md"
                               aria-label={t('collection:actions.viewSubscription')}
                               onClick={() => navigate(`/subscriptions/${p.subscription_id}`)}
-                              className="shrink-0 text-neutral-500 dark:text-neutral-400"
+                              className="shrink-0 text-neutral-500 dark:text-neutral-400 self-end"
                             />
-                          </div>
+                          )}
                         </div>
+                        {quickPayMode ? (
+                          <CollectionQuickPayRow key={p.id} payment={p} variant="card" />
+                        ) : null}
                       </div>
                     </Card>
                   );
@@ -519,7 +563,11 @@ export function CollectionDeskPage() {
                             {t('collection:columns.vat')}
                           </th>
                           <th className="px-4 py-3 font-medium text-right">{t('collection:columns.total')}</th>
-                          <th className="px-4 py-3 font-medium text-center">{t('collection:columns.actions')}</th>
+                          <th className={cn('px-4 py-3 font-medium', quickPayMode ? 'text-left min-w-[28rem]' : 'text-center')}>
+                            {quickPayMode
+                              ? t('collection:quickPay.toggle')
+                              : t('collection:columns.actions')}
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
@@ -573,26 +621,35 @@ export function CollectionDeskPage() {
                               <td className="px-4 py-3 text-right font-bold tabular-nums text-neutral-900 dark:text-neutral-100">
                                 {formatCurrency(totalDue)}
                               </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center justify-center gap-1">
-                                  <Button
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={() => setSelectedPayment(p)}
-                                    leftIcon={<Zap className="w-3.5 h-3.5" />}
-                                  >
-                                    {t('collection:actions.pay')}
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => navigate(`/subscriptions/${p.subscription_id}`)}
-                                    title={t('collection:actions.viewSubscription')}
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                  </Button>
-                                </div>
-                              </td>
+                              {quickPayMode ? (
+                                <CollectionQuickPayRow
+                                  key={p.id}
+                                  payment={p}
+                                  variant="table"
+                                  onViewSubscription={() => navigate(`/subscriptions/${p.subscription_id}`)}
+                                />
+                              ) : (
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Button
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={() => setSelectedPayment(p)}
+                                      leftIcon={<Zap className="w-3.5 h-3.5" />}
+                                    >
+                                      {t('collection:actions.pay')}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => navigate(`/subscriptions/${p.subscription_id}`)}
+                                      title={t('collection:actions.viewSubscription')}
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              )}
                             </tr>
                           );
                         })}
@@ -606,11 +663,13 @@ export function CollectionDeskPage() {
         )}
       </div>
 
-      <PaymentRecordModal
-        open={!!selectedPayment}
-        onClose={() => setSelectedPayment(null)}
-        payment={selectedPayment}
-      />
+      {!quickPayMode ? (
+        <PaymentRecordModal
+          open={!!selectedPayment}
+          onClose={() => setSelectedPayment(null)}
+          payment={selectedPayment}
+        />
+      ) : null}
     </PageContainer>
   );
 }

@@ -41,7 +41,31 @@
   "actions": {
     "pay": "Öde",
     "recordPayment": "Ödeme Al",
-    "viewSubscription": "Aboneliğe Git"
+    "viewSubscription": "Aboneliğe Git",
+    "saveQuickPay": "Kaydet"
+  },
+  "quickPay": {
+    "toggle": "Hızlı ödeme",
+    "hint": "Satırda tarih, yöntem, POS ve KDV girip Kaydet veya Enter ile kaydedin.",
+    "fields": {
+      "paymentDate": "Tarih",
+      "paymentMethod": "Yöntem",
+      "posCode": "POS",
+      "shouldInvoice": "Fatura",
+      "vatRate": "KDV %",
+      "referenceNo": "Referans"
+    },
+    "errors": {
+      "posRequired": "POS tahsilat kodu zorunludur",
+      "dateRequired": "Ödeme tarihi zorunludur",
+      "vatRequired": "Faturalı ödemelerde KDV oranı zorunludur",
+      "vatRange": "KDV oranı 0–100 arasında olmalıdır"
+    },
+    "preview": {
+      "net": "Net",
+      "vat": "KDV",
+      "total": "Toplam"
+    }
   },
   "badges": {
     "overdue": "Gecikmiş",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,7 +29,6 @@ export function PaymentRecordModal({ open, onClose, payment }) {
   const { t } = useTranslation(['subscriptions', 'common']);
   const recordMutation = useRecordPayment();
   const revertMutation = useRevertWriteOff();
-  const skipMethodSyncRef = useRef(false);
 
   const isLocked = payment?.status === 'paid' && !!payment?.invoice_no;
   const isWriteOff = payment?.status === 'write_off';
@@ -39,7 +38,6 @@ export function PaymentRecordModal({ open, onClose, payment }) {
     handleSubmit,
     reset,
     control,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(paymentRecordSchema),
@@ -50,42 +48,20 @@ export function PaymentRecordModal({ open, onClose, payment }) {
   const watchedShouldInvoice = useWatch({ control, name: 'should_invoice' });
   const watchedVatRate = useWatch({ control, name: 'vat_rate' });
 
-  const isCard = watchedMethod === 'card';
   const isBankTransfer = watchedMethod === 'bank_transfer';
 
-  // Open / payment change: default method stays card (always invoiced).
+  // Open / payment change: prefer subscription invoice flag for all methods
   useEffect(() => {
     if (!open || !payment) return;
 
-    skipMethodSyncRef.current = true;
+    const { preferredShouldInvoice, vatRate } = getInvoiceDefaults(payment);
     reset({
       ...paymentRecordDefaultValues,
       payment_date: new Date().toISOString().slice(0, 10),
-      should_invoice: true,
-      vat_rate: payment.subscriptions?.vat_rate ?? 20,
+      should_invoice: preferredShouldInvoice,
+      vat_rate: vatRate,
     });
   }, [open, payment, reset]);
-
-  // When user switches method: card forces invoice; cash/bank restore preference
-  // so "Faturasız" rows get an unchecked "Fatura kesilsin mi?" checkbox.
-  useEffect(() => {
-    if (!open || !payment) return;
-
-    if (skipMethodSyncRef.current) {
-      skipMethodSyncRef.current = false;
-      return;
-    }
-
-    const { preferredShouldInvoice, vatRate } = getInvoiceDefaults(payment);
-
-    if (isCard) {
-      setValue('should_invoice', true);
-      setValue('vat_rate', payment.subscriptions?.vat_rate ?? 20);
-    } else {
-      setValue('should_invoice', preferredShouldInvoice);
-      setValue('vat_rate', vatRate);
-    }
-  }, [isCard, open, payment, setValue]);
 
   // Compute live amounts based on should_invoice and vat_rate
   const amounts = useMemo(() => {
@@ -244,30 +220,20 @@ export function PaymentRecordModal({ open, onClose, payment }) {
               />
             )}
 
-            {/* Invoice logic section */}
-            {isCard ? (
-              /* Card: always invoiced — show info text */
-              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40">
-                <p className="text-xs text-blue-700 dark:text-blue-400">
-                  {t('subscriptions:payment.invoice.cardAutoInvoice')}
-                </p>
-              </div>
-            ) : (
-              /* Cash/Bank: show should_invoice checkbox */
-              <label className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                  {...register('should_invoice')}
-                />
-                <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                  {t('subscriptions:payment.invoice.shouldInvoice')}
-                </span>
-              </label>
-            )}
+            {/* Invoice choice — all payment methods */}
+            <label className="flex items-center gap-3 p-3 rounded-lg bg-neutral-50 dark:bg-neutral-900/50 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
+                {...register('should_invoice')}
+              />
+              <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                {t('subscriptions:payment.invoice.shouldInvoice')}
+              </span>
+            </label>
 
             {/* No invoice warning */}
-            {!isCard && !watchedShouldInvoice && (
+            {!watchedShouldInvoice && (
               <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
                 <p className="text-xs text-amber-700 dark:text-amber-400">
                   {t('subscriptions:payment.invoice.noInvoiceWarning')}
