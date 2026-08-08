@@ -38,6 +38,7 @@ export function PaymentRecordModal({ open, onClose, payment }) {
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(paymentRecordSchema),
@@ -225,7 +226,12 @@ export function PaymentRecordModal({ open, onClose, payment }) {
               <input
                 type="checkbox"
                 className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500"
-                {...register('should_invoice')}
+                {...register('should_invoice', {
+                  // Faturasız açılan formda kutu işaretlenince KDV 0'da kalmasın —
+                  // CollectionQuickPayRow ile aynı davranış.
+                  onChange: (e) =>
+                    setValue('vat_rate', e.target.checked ? (payment?.subscriptions?.vat_rate ?? 20) : 0),
+                })}
               />
               <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                 {t('subscriptions:payment.invoice.shouldInvoice')}

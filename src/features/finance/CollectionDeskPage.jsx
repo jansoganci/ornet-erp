@@ -559,10 +559,16 @@ export function CollectionDeskPage() {
                             {t('collection:columns.frequency')}
                           </th>
                           <th className="px-4 py-3 font-medium text-right">{t('collection:columns.net')}</th>
-                          <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
-                            {t('collection:columns.vat')}
-                          </th>
-                          <th className="px-4 py-3 font-medium text-right">{t('collection:columns.total')}</th>
+                          {/* Hızlı modda KDV/Toplam satır içi önizlemeden okunur — statik kolonlar
+                              abonelik varsayılanını gösterip formla çelişeceği için gizlenir. */}
+                          {!quickPayMode && (
+                            <>
+                              <th className="px-4 py-3 font-medium text-right hidden sm:table-cell">
+                                {t('collection:columns.vat')}
+                              </th>
+                              <th className="px-4 py-3 font-medium text-right">{t('collection:columns.total')}</th>
+                            </>
+                          )}
                           <th className={cn('px-4 py-3 font-medium', quickPayMode ? 'text-left min-w-[28rem]' : 'text-center')}>
                             {quickPayMode
                               ? t('collection:quickPay.toggle')
@@ -615,12 +621,16 @@ export function CollectionDeskPage() {
                               <td className="px-4 py-3 text-right font-medium tabular-nums">
                                 {formatCurrency(p.amount)}
                               </td>
-                              <td className="px-4 py-3 text-right text-neutral-500 tabular-nums hidden sm:table-cell">
-                                {hasInvoice ? formatCurrency(vatAmount) : '-'}
-                              </td>
-                              <td className="px-4 py-3 text-right font-bold tabular-nums text-neutral-900 dark:text-neutral-100">
-                                {formatCurrency(totalDue)}
-                              </td>
+                              {!quickPayMode && (
+                                <>
+                                  <td className="px-4 py-3 text-right text-neutral-500 tabular-nums hidden sm:table-cell">
+                                    {hasInvoice ? formatCurrency(vatAmount) : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-right font-bold tabular-nums text-neutral-900 dark:text-neutral-100">
+                                    {formatCurrency(totalDue)}
+                                  </td>
+                                </>
+                              )}
                               {quickPayMode ? (
                                 <CollectionQuickPayRow
                                   key={p.id}

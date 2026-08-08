@@ -299,7 +299,6 @@
     },
     "invoice": {
       "shouldInvoice": "Fatura kesilsin mi?",
-      "cardAutoInvoice": "Kart ödemeleri otomatik faturalandırılır",
       "noInvoiceWarning": "Bu ödeme faturasız kaydedilecektir",
       "vatRate": "KDV Oranı (%)"
     },
@@ -532,7 +531,6 @@
   "priceUpdatePartialError": "Abonelik fiyatı güncellendi ancak ödeme tutarları güncellenemedi. Lütfen ödemeleri manuel olarak kontrol edin.",
   "validation": {
     "paymentMethodRequired": "Kart aboneliği için ödeme yöntemi zorunludur",
-    "cardPaymentsMustBeInvoiced": "Kart ödemeleri faturalanmalıdır",
     "paymentStartMonthRequired": "Aylık dışı aboneliklerde ödeme başlangıç ayı zorunludur"
   }
 }

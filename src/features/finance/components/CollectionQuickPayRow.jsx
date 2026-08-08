@@ -301,6 +301,8 @@ export function CollectionQuickPayRow({ payment, variant = 'table', onViewSubscr
             onClick={onViewSubscription}
             title={t('collection:actions.viewSubscription')}
             disabled={recordMutation.isPending}
+            /* Enter burada gezinme demek — satırın kaydet handler'ına düşmesin */
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <ExternalLink className="w-3.5 h-3.5" />
           </Button>

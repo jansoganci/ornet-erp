@@ -603,6 +603,7 @@ export function SubscriptionDetailPage() {
         <div className="min-w-0 space-y-4">
           <MonthlyPaymentGrid
             subscriptionId={id}
+            subscription={subscription}
             subscriptionStatus={subscription.status}
             className={SURFACE_CARD}
           />

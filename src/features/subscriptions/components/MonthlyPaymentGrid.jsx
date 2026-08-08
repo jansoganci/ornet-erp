@@ -58,7 +58,7 @@ function getMonthIndex(paymentMonth) {
   return new Date(paymentMonth).getMonth();
 }
 
-export function MonthlyPaymentGrid({ subscriptionId, className }) {
+export function MonthlyPaymentGrid({ subscriptionId, subscription, className }) {
   const { t } = useTranslation(['subscriptions', 'common']);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
@@ -69,7 +69,11 @@ export function MonthlyPaymentGrid({ subscriptionId, className }) {
     // Projected rows have no real DB row — clicking opens nothing.
     // Paid rows are read-only.  Only actionable statuses open the modal.
     if (['pending', 'failed', 'write_off'].includes(payment.status)) {
-      setSelectedPayment(payment);
+      // get_subscription_year_schedule() returns neither should_invoice nor the
+      // parent subscription, so attach it here in the same shape the collection
+      // desk emits (payment.subscriptions).  PaymentRecordModal reads
+      // official_invoice / vat_rate from it instead of falling back to 20%.
+      setSelectedPayment(subscription ? { ...payment, subscriptions: subscription } : payment);
     }
   };
 
