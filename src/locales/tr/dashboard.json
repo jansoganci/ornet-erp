@@ -90,6 +90,10 @@
   },
   "chart": {
     "revenue": "Gelir",
-    "expense": "Gider"
+    "expense": "Gider",
+    "months_3": "3 ay",
+    "months_6": "6 ay",
+    "months_12": "12 ay",
+    "rangeAria": "Zaman aralığı"
   }
 }

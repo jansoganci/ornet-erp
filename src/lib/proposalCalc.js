@@ -229,25 +229,56 @@ export function calcVatTevkifatSummary(
 }
 
 /**
+ * Internal line cost (unit cost × qty) in the parent's currency.
+ * Prefers `cost` / `cost_usd`; falls back to legacy per-component cost fields.
+ * @param {object} item
+ * @param {string} [proposalCurrency]
+ * @returns {number}
+ */
+export function resolveProposalItemLineCost(item, proposalCurrency = 'USD') {
+  const qty = Number(item?.quantity) || 0;
+  const cost = resolveProposalItemCost(item, proposalCurrency);
+  if (Number.isFinite(cost) && cost > 0) return cost * qty;
+
+  const breakdown =
+    (Number(item?.product_cost) || 0) +
+    (Number(item?.labor_cost) || 0) +
+    (Number(item?.shipping_cost) || 0) +
+    (Number(item?.material_cost) || 0) +
+    (Number(item?.misc_cost) || 0);
+  return breakdown * qty;
+}
+
+/**
  * Calculate total internal costs from items.
  * @param {Array<object>} items
  * @param {string} [proposalCurrency]
  * @returns {number}
  */
 export function calcTotalCosts(items = [], proposalCurrency = 'USD') {
-  return items.reduce((sum, item) => {
-    const qty = Number(item.quantity) || 0;
-    const cost = resolveProposalItemCost(item, proposalCurrency);
-    if (!Number.isNaN(cost) && cost > 0) return sum + cost * qty;
+  return items.reduce(
+    (sum, item) => sum + resolveProposalItemLineCost(item, proposalCurrency),
+    0,
+  );
+}
 
-    const breakdown =
-      (Number(item.product_cost) || 0) +
-      (Number(item.labor_cost) || 0) +
-      (Number(item.shipping_cost) || 0) +
-      (Number(item.material_cost) || 0) +
-      (Number(item.misc_cost) || 0);
-    return sum + breakdown * qty;
-  }, 0);
+/**
+ * Internal cost subtotals per revenue_type (no discount — cost is not discounted).
+ * @param {Array<object>} items
+ * @param {string} [proposalCurrency]
+ * @returns {{ material: number, labor_service: number, other: number }}
+ */
+export function calcCostByType(items = [], proposalCurrency = 'USD') {
+  const totals = { material: 0, labor_service: 0, other: 0 };
+  for (const item of items || []) {
+    const type = normalizeProposalRevenueTypeForCalc(item.revenue_type);
+    totals[type] += resolveProposalItemLineCost(item, proposalCurrency);
+  }
+  return {
+    material: round2(totals.material),
+    labor_service: round2(totals.labor_service),
+    other: round2(totals.other),
+  };
 }
 
 /** Annual fixed-cost line (informational; per-row currency). */

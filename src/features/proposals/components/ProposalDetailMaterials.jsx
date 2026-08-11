@@ -8,7 +8,7 @@ import {
   resolveProposalItemUnitPrice,
 } from '../../../lib/proposalCalc';
 import { buildProposalSectionGroups, findSectionById } from '../proposalSectionGroups';
-import { ProposalRevenueTypeSubtotals } from './ProposalRevenueTypeSubtotals';
+import { ProposalCostTypeSubtotals } from './ProposalCostTypeSubtotals';
 
 const DESKTOP_ROW_GRID =
   'grid-cols-[32px_minmax(0,1fr)_52px_56px_96px_96px]';
@@ -216,9 +216,8 @@ export function ProposalDetailMaterials({
             {hasSections ? renderSectionedList() : renderFlatList()}
 
             <div className="flex flex-col items-end gap-4 pt-4 border-t border-neutral-200 dark:border-[#262626]">
-              <ProposalRevenueTypeSubtotals
+              <ProposalCostTypeSubtotals
                 items={items}
-                sections={sections}
                 currency={currency}
                 className="w-full md:w-[min(100%,320px)]"
               />
