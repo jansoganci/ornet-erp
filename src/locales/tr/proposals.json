@@ -212,7 +212,7 @@
       "customerSite": "Müşteri ve lokasyonu kısa özet ile seçin.",
       "proposalMeta": "Tarih, para birimi ve iletişim bilgilerini tek alanda düzenleyin.",
       "proposalIdentity": "Teklifin görünen başlığını ve kapsam özetini girin.",
-      "financialSettings": "KDV ve tevkifat alanları şimdilik pasif tutuluyor."
+      "financialSettings": "Teklife KDV ve isteğe bağlı tevkifat uygulamak için işaretleyin."
     },
     "sections": {
       "customerSite": "Müşteri ve Lokasyon",

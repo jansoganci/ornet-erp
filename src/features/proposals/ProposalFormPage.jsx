@@ -277,7 +277,10 @@ export function ProposalFormPage() {
     if (hasVat && (vatRate === 0 || vatRate === '0' || !vatRate)) {
       setValue('vat_rate', 20);
     }
-  }, [hasVat, vatRate, setValue]);
+    if (!hasVat && hasTevkifat) {
+      setValue('has_tevkifat', false);
+    }
+  }, [hasVat, hasTevkifat, vatRate, setValue]);
 
   useEffect(() => {
     if (isEdit) {
@@ -726,30 +729,31 @@ export function ProposalFormPage() {
                     </button>
 
                     {financeSettingsOpen && (
-                      <fieldset
-                        disabled
-                        className="border-t border-neutral-200 px-4 py-4 dark:border-[#262626]"
-                      >
-                        <div className="space-y-4 opacity-60">
+                      <div className="border-t border-neutral-200 px-4 py-4 dark:border-[#262626]">
+                        <div className="space-y-4">
                           <div className="flex flex-wrap items-center gap-3">
                             <label className="flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#303030] dark:bg-[#171717]">
                               <input
                                 type="checkbox"
                                 className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600"
-                                checked={!!hasVat}
-                                readOnly
+                                {...register('has_vat')}
                               />
                               <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                                 {t('proposals:form.fields.hasVat')}
                               </span>
                             </label>
 
-                            <label className="flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#303030] dark:bg-[#171717]">
+                            <label
+                              className={cn(
+                                'flex items-center gap-3 rounded-lg border border-neutral-300 bg-white px-3 py-2.5 dark:border-[#303030] dark:bg-[#171717]',
+                                !hasVat && 'opacity-60',
+                              )}
+                            >
                               <input
                                 type="checkbox"
                                 className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600"
-                                checked={!!hasTevkifat}
-                                readOnly
+                                disabled={!hasVat}
+                                {...register('has_tevkifat')}
                               />
                               <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                                 {t('proposals:form.fields.hasTevkifat')}
@@ -761,14 +765,16 @@ export function ProposalFormPage() {
                             <Input
                               label={t('proposals:form.fields.vatRate')}
                               type="number"
-                              value={hasVat ? (vatRate ?? 0) : 0}
-                              readOnly
-                              disabled
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              disabled={!hasVat}
                               rightIcon={<span className="text-neutral-400 font-bold">%</span>}
+                              {...register('vat_rate')}
                             />
                           </div>
                         </div>
-                      </fieldset>
+                      </div>
                     )}
                   </div>
                 </div>
