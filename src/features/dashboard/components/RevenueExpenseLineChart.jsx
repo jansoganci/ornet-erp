@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ResponsiveContainer,
@@ -12,12 +13,14 @@ import {
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { ChartTooltip } from '../../../components/ui/ChartTooltip';
 import { CHART_COLORS, formatTL } from '../../../lib/chartTheme';
+import { cn } from '../../../lib/utils';
 import { useRole } from '../../../lib/roles';
 import { useMonthlyRevenue } from '../hooks';
 
 // ── Month label helpers ─────────────────────────────────────────────────────
 
 const TR_MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const MONTH_PRESETS = [3, 6, 12];
 
 function monthLabel(yyyyMM) {
   const parts = yyyyMM?.split('-');
@@ -44,13 +47,15 @@ function ChartSkeleton() {
 
 /**
  * RevenueExpenseLineChart — Line chart showing monthly income vs. expense.
- * Data source: useMonthlyRevenue() → get_monthly_revenue_expense(7)
+ * Data source: useMonthlyRevenue(monthsBack) → get_monthly_revenue_expense
  * Two lines: revenue (green) and expense (red).
+ * Range presets: 3 / 6 / 12 months (default 12).
  */
 export function RevenueExpenseLineChart() {
   const { t } = useTranslation('dashboard');
   const { canWrite } = useRole();
-  const { data: raw, isLoading } = useMonthlyRevenue(7, { enabled: canWrite });
+  const [monthsBack, setMonthsBack] = useState(12);
+  const { data: raw, isLoading } = useMonthlyRevenue(monthsBack, { enabled: canWrite });
 
   const chartData = Array.isArray(raw)
     ? raw.map((row) => ({
@@ -63,10 +68,35 @@ export function RevenueExpenseLineChart() {
   return (
     <div className="rounded-xl border overflow-hidden bg-white border-gray-200 dark:bg-gray-800/40 dark:backdrop-blur-sm dark:border-white/10 flex flex-col min-h-0 h-full">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-gray-100 dark:border-white/5 flex-shrink-0">
+      <div className="px-5 py-3 border-b border-gray-100 dark:border-white/5 flex-shrink-0 flex items-center justify-between gap-3">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
           {t('sections.revenueChart')}
         </h3>
+        <div
+          className="inline-flex items-center gap-0.5 rounded-lg p-0.5 bg-neutral-100 dark:bg-[#171717]"
+          role="group"
+          aria-label={t('chart.rangeAria')}
+        >
+          {MONTH_PRESETS.map((months) => {
+            const isActive = monthsBack === months;
+            return (
+              <button
+                key={months}
+                type="button"
+                onClick={() => setMonthsBack(months)}
+                aria-pressed={isActive}
+                className={cn(
+                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                  isActive
+                    ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-neutral-50'
+                    : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200',
+                )}
+              >
+                {t(`chart.months_${months}`)}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Body */}

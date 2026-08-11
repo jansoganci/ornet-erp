@@ -212,7 +212,7 @@
       "customerSite": "Müşteri ve lokasyonu kısa özet ile seçin.",
       "proposalMeta": "Tarih, para birimi ve iletişim bilgilerini tek alanda düzenleyin.",
       "proposalIdentity": "Teklifin görünen başlığını ve kapsam özetini girin.",
-      "financialSettings": "KDV ve tevkifat alanları şimdilik pasif tutuluyor."
+      "financialSettings": "Teklife KDV ve isteğe bağlı tevkifat uygulamak için işaretleyin."
     },
     "sections": {
       "customerSite": "Müşteri ve Lokasyon",
@@ -289,6 +289,11 @@
     "revenueTypeSubtotals": {
       "title": "Gelir tipi özeti (dahili)",
       "hint": "Bölüm indirimleri satır tutarına oransal yansıtılır."
+    },
+    "costTypeSubtotals": {
+      "title": "Maliyet özeti (dahili)",
+      "hint": "Satır birim maliyet × adet. İskonto maliyete uygulanmaz.",
+      "total": "Toplam Maliyet"
     }
   },
   "status": {
@@ -366,6 +371,9 @@
     "suggestedHint": "TCMB kuru: {{rate}} ({{date}} tarihli)",
     "noSuggestedRate": "Güncel kur bulunamadı",
     "convertedAmount": "TRY Karşılığı",
+    "netExclVat": "KDV hariç",
+    "vatAtRate": "KDV (%{{rate}})",
+    "totalWithVat": "Toplam",
     "deviationWarning": "Girilen kur, önerilen kurdan %{{pct}} sapıyor. Devam etmek istediğinizden emin misiniz?",
     "noUsdTotal": "Bu teklifin USD tutarı girilmemiş. Teklifi düzenleyerek USD tutarını ekleyin.",
     "confirm": "Tamamla ve Kaydet"
