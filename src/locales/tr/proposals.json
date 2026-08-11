@@ -366,6 +366,9 @@
     "suggestedHint": "TCMB kuru: {{rate}} ({{date}} tarihli)",
     "noSuggestedRate": "Güncel kur bulunamadı",
     "convertedAmount": "TRY Karşılığı",
+    "netExclVat": "KDV hariç",
+    "vatAtRate": "KDV (%{{rate}})",
+    "totalWithVat": "Toplam",
     "deviationWarning": "Girilen kur, önerilen kurdan %{{pct}} sapıyor. Devam etmek istediğinizden emin misiniz?",
     "noUsdTotal": "Bu teklifin USD tutarı girilmemiş. Teklifi düzenleyerek USD tutarını ekleyin.",
     "confirm": "Tamamla ve Kaydet"

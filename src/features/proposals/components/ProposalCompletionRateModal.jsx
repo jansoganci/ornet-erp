@@ -3,11 +3,72 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, XCircle } from 'lucide-react';
 import { Modal, Button, Input } from '../../../components/ui';
 import { useLatestRate } from '../../finance/hooks';
+import { calcVatTevkifatSummary } from '../../../lib/proposalCalc';
 import { formatCurrency, formatDate } from '../../../lib/utils';
 
 const DEVIATION_THRESHOLD = 0.20;
 
-export function ProposalCompletionRateModal({ open, onClose, onConfirm, proposal, totalUsd: totalUsdProp, isLoading }) {
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
+function AmountBreakdown({ currency, net, vatRate, emphasis = false }) {
+  const { t } = useTranslation('proposals');
+  const rate = Math.max(Number(vatRate) || 0, 0);
+  const showVat = rate > 0;
+  const { vatAmount, totalWithVat } = calcVatTevkifatSummary(net, rate, false, 0, 1);
+  const rateLabel = rate.toLocaleString('tr-TR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  const valueClass = emphasis
+    ? 'text-lg font-semibold text-primary-700 dark:text-primary-300'
+    : 'text-lg font-semibold text-neutral-900 dark:text-neutral-100';
+  const rowClass = 'flex items-center justify-between gap-3 text-sm';
+
+  if (!showVat) {
+    return <p className={valueClass}>{formatCurrency(net, currency)}</p>;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className={rowClass}>
+        <span className="text-neutral-500 dark:text-neutral-400">
+          {t('completionRate.netExclVat')}
+        </span>
+        <span className="tabular-nums text-neutral-900 dark:text-neutral-100">
+          {formatCurrency(net, currency)}
+        </span>
+      </div>
+      <div className={rowClass}>
+        <span className="text-neutral-500 dark:text-neutral-400">
+          {t('completionRate.vatAtRate', { rate: rateLabel })}
+        </span>
+        <span className="tabular-nums text-neutral-900 dark:text-neutral-100">
+          {formatCurrency(vatAmount, currency)}
+        </span>
+      </div>
+      <div className={`${rowClass} pt-1.5 mt-0.5 border-t border-neutral-200 dark:border-neutral-700`}>
+        <span className="font-medium text-neutral-700 dark:text-neutral-200">
+          {t('completionRate.totalWithVat')}
+        </span>
+        <span className={`tabular-nums ${valueClass}`}>
+          {formatCurrency(totalWithVat, currency)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function ProposalCompletionRateModal({
+  open,
+  onClose,
+  onConfirm,
+  proposal,
+  totalUsd: totalUsdProp,
+  vatRate: vatRateProp,
+  isLoading,
+}) {
   const { t } = useTranslation(['proposals', 'common']);
   const { data: latestRateData } = useLatestRate('USD');
 
@@ -20,11 +81,15 @@ export function ProposalCompletionRateModal({ open, onClose, onConfirm, proposal
   const totalUsd = (typeof totalUsdProp === 'number' && totalUsdProp > 0)
     ? totalUsdProp
     : (Number(proposal?.total_amount_usd) || 0);
+  const vatRate = typeof vatRateProp === 'number'
+    ? vatRateProp
+    : (Number(proposal?.vat_rate) || 0);
   const isBlocked   = totalUsd <= 0;                        // M3
   const effectiveRateInput = rateInput || (open && suggestedRate ? String(suggestedRate) : '');
   const enteredRate = parseFloat(effectiveRateInput) || 0;
+  // Finance posts VAT on TRY net after FX (amount_try * vat_rate / 100).
   const amountTry   = (!isBlocked && enteredRate > 0)
-    ? Math.round(totalUsd * enteredRate * 100) / 100
+    ? round2(totalUsd * enteredRate)
     : null;
 
   const deviation =
@@ -75,13 +140,11 @@ export function ProposalCompletionRateModal({ open, onClose, onConfirm, proposal
             </p>
           </div>
         ) : (
-          <div className="rounded-lg bg-neutral-50 dark:bg-neutral-800 px-4 py-3 space-y-1">
+          <div className="rounded-lg bg-neutral-50 dark:bg-neutral-800 px-4 py-3 space-y-2">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {t('proposals:completionRate.proposalTotal')}
             </p>
-            <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-              {formatCurrency(totalUsd, 'USD')}
-            </p>
+            <AmountBreakdown currency="USD" net={totalUsd} vatRate={vatRate} />
           </div>
         )}
 
@@ -105,13 +168,16 @@ export function ProposalCompletionRateModal({ open, onClose, onConfirm, proposal
         />
 
         {amountTry !== null && (
-          <div className="rounded-lg bg-primary-50 dark:bg-primary-900/20 px-4 py-3 space-y-1">
+          <div className="rounded-lg bg-primary-50 dark:bg-primary-900/20 px-4 py-3 space-y-2">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               {t('proposals:completionRate.convertedAmount')}
             </p>
-            <p className="text-lg font-semibold text-primary-700 dark:text-primary-300">
-              {formatCurrency(amountTry, 'TRY')}
-            </p>
+            <AmountBreakdown
+              currency="TRY"
+              net={amountTry}
+              vatRate={vatRate}
+              emphasis
+            />
           </div>
         )}
 

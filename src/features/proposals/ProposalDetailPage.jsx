@@ -794,6 +794,7 @@ export function ProposalDetailPage() {
         onConfirm={handleCompletionRateConfirm}
         proposal={proposal}
         totalUsd={grandTotal}
+        vatRate={vatRate}
         isLoading={completeWithRateMutation.isPending}
       />
 
